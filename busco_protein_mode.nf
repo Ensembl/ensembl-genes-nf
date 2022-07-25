@@ -57,7 +57,7 @@ process fetchProteins {
   tuple val(db) from csv_data2
   val species_dir from query
 
-  storeDir "${workflow.workDir}/busco_score_RR/${species_dir.trim()}/fasta/"
+  storeDir "${workflow.outDir}/busco_score_RR/${species_dir.trim()}/fasta/"
 
   output:
   file "translations.fa" into fasta
@@ -85,7 +85,7 @@ process runBusco {
   maxRetries 2
   module 'singularity-3.7.0-gcc-9.3.0-dp5ffrp'
   container "ezlabgva/busco:${params.busco_version}"
-  containerOptions "-B ${workflow.workDir}:/busco_wd"
+  containerOptions "-B ${workflow.outDir}:/busco_wd"
   //runOptions = '--pull=always'
 
   input:
@@ -98,10 +98,10 @@ process runBusco {
   path "statistics/*.txt" into summary_file
   val outdir into species_outdir
   // ourdir is Salmo_trutta (production name)
-  publishDir "${workflow.workDir}/busco_score_RR/${outdir}/",  mode: 'copy' 
+  publishDir "${workflow.outDir}/busco_score_RR/${outdir}/",  mode: 'copy' 
 
   script:
-  println "${workflow.workDir}/busco_score_RR/${outdir}/statistics/"
+  println "${workflow.outDir}/busco_score_RR/${outdir}/statistics/"
   
   //busco -f -i ${translations} --out busco_score_output --mode proteins -l ${params.busco_set} -c ${task.cpus}
   //singularity exec  --bind ${workflow.workDir}:/busco_wd /hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/busco-v5.1.2_cv1.simg  busco -f -i ${translations}  --mode proteins -l ${params.busco_set} -c ${task.cpus} -o statistics
@@ -187,14 +187,14 @@ process renameOutput {
     val gca from get_gca
     val outdir from species_outdir4
 
-    publishDir "${workflow.workDir}/busco_score_RR/${outdir}/",  mode: 'copy'
+    publishDir "${workflow.outDir}/busco_score_RR/${outdir}/",  mode: 'copy'
     output:
     //stdout into pippo
     //path busco into busco_path
 
     """
-    mv -f ${workflow.workDir}/busco_score_RR/${outdir}/statistics/short_summary*  ${workflow.workDir}/busco_score_RR/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_busco_short_summary.txt
-    sed  -i '/genebuild/d' ${workflow.workDir}/busco_score_RR/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_busco_short_summary.txt
+    mv -f ${workflow.outDir}/busco_score_RR/${outdir}/statistics/short_summary*  ${workflow.outDir}/busco_score_RR/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_busco_short_summary.txt
+    sed  -i '/genebuild/d' ${workflow.outDir}/busco_score_RR/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_busco_short_summary.txt
     """
     //publishDir "${workflow.workDir}/busco_score_RR/${outdir}/*.txt", mode: "copy", pattern: 'busco_score_output/${x//_/[1]}_${x//_/[2]}_short_summary.txt'
 }

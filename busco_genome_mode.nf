@@ -54,7 +54,7 @@ process fetchGenome {
 
   input:
   val species_dir from query
-  storeDir "${workflow.workDir}/busco_score_RR/${species_dir.trim()}/genome/"
+  storeDir "${workflow.outDir}/busco_score_RR/${species_dir.trim()}/genome/"
   output:
   file "genome.fa" into fasta
   val "${species_dir.trim()}" into output_dir
@@ -65,9 +65,9 @@ process fetchGenome {
 
   script:
   """
-  mkdir -p  ${workflow.workDir}/busco_score_RR/${species_dir.trim()}/genome/ 
-  cp /nfs/production/flicek/ensembl/production/ensemblftp/rapid-release/species/${species_dir.trim()}/genome/*-unmasked.fa.gz ${workflow.workDir}/busco_score_RR/${species_dir.trim()}/genome/genome.fa.gz
-  gzip -d -f ${workflow.workDir}/busco_score_RR/${species_dir.trim()}/genome/genome.fa.gz  
+  mkdir -p  ${workflow.outDir}/busco_score_RR/${species_dir.trim()}/genome/ 
+  cp /nfs/production/flicek/ensembl/production/ensemblftp/rapid-release/species/${species_dir.trim()}/genome/*-unmasked.fa.gz ${workflow.outDir}/busco_score_RR/${species_dir.trim()}/genome/genome.fa.gz
+  gzip -d -f ${workflow.outDir}/busco_score_RR/${species_dir.trim()}/genome/genome.fa.gz  
   """
 }
 
@@ -82,9 +82,9 @@ process runBusco {
   maxRetries 2
   module 'singularity-3.7.0-gcc-9.3.0-dp5ffrp'
   container "ezlabgva/busco:${params.busco_version}"
-  containerOptions "-B ${workflow.workDir}:/busco_wd"
+  containerOptions "-B ${workflow.outDir}:/busco_wd"
   //runOptions = '--pull=always'
-
+  clusterOptions = '-n 20 -R "select[mem>6000] rusage[mem=6000]" -M6000'
   input:
   file genome from fasta.flatten()
   //tuple val(host), val(port), val(user), val(db), val(dnahost), val(dnaport), val(dnauser), val(dnadb) from csv_data3
@@ -95,10 +95,10 @@ process runBusco {
   path "statistics/*.txt" into summary_file
   val outdir into species_outdir
   // ourdir is Salmo_trutta (production name)
-  publishDir "${workflow.workDir}/busco_score_RR/${outdir}/",  mode: 'copy' 
+  publishDir "${workflow.outDir}/busco_score_RR/${outdir}/",  mode: 'copy' 
 
   script:
-  println "${workflow.workDir}/busco_score_RR/${outdir}/statistics/"
+  println "${workflow.outDir}/busco_score_RR/${outdir}/statistics/"
   
   //busco -f -i ${translations} --out busco_score_output --mode proteins -l ${params.busco_set} -c ${task.cpus}
   //singularity exec  --bind ${workflow.workDir}:/busco_wd /hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/busco-v5.1.2_cv1.simg  busco -i ${genome}  --mode genome -l ${params.busco_set} -c ${task.cpus} -o statistics
@@ -184,14 +184,13 @@ process renameOutput {
     val gca from get_gca
     val outdir from species_outdir4
 
-    publishDir "${workflow.workDir}/busco_score_RR/${outdir}/",  mode: 'copy'
+    publishDir "${workflow.outDir}/busco_score_RR/${outdir}/",  mode: 'copy'
     output:
-    //stdout into pippo
     //path busco into busco_path
 
     """
-    mv -f ${workflow.workDir}/busco_score_RR/${outdir}/statistics/short_summary*  ${workflow.workDir}/busco_score_RR/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_genome_busco_short_summary.txt
-    sed  -i '/genebuild/d' ${workflow.workDir}/busco_score_RR/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_genome_busco_short_summary.txt
+    mv -f ${workflow.outDir}/busco_score_RR/${outdir}/statistics/short_summary*  ${workflow.outDir}/busco_score_RR/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_genome_busco_short_summary.txt
+    sed  -i '/genebuild/d' ${workflow.outDir}/busco_score_RR/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_genome_busco_short_summary.txt
     """
     //publishDir "${workflow.workDir}/busco_score_RR/${outdir}/*.txt", mode: "copy", pattern: 'busco_score_output/${x//_/[1]}_${x//_/[2]}_short_summary.txt'
 }
