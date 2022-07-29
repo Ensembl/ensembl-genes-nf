@@ -41,7 +41,7 @@ process queryDb {
   script:
   // get <Production name>/GCA
   """
-  mysql -N -u ${params.user}  -h ${params.host} -P ${params.port} -D $db < "${meta}" 
+  mysql -N -u ${params.user}  -h ${params.host} -P ${params.port} -D $db < "${params.meta_file}" 
   """
 
 }
