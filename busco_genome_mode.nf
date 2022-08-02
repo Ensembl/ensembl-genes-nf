@@ -80,7 +80,7 @@ process fetchGenome {
 }
 
 
-/* run Busco in protein mode */
+/* run Busco in genome mode */
 process runBusco {
 
   cpus 20
