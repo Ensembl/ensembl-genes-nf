@@ -11,7 +11,6 @@ process BUSCODATASET {
   beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
   input:
   tuple val(db)
-  //file script
 
   output:
   val(db), emit:dbname
@@ -28,7 +27,6 @@ process BUSCODATASET {
 process SPECIESOUTDIR {
   cpus 1
   memory { 2.GB * task.attempt }
-  clusterOptions = '-R "select[mem>2000] rusage[mem=2000]" -M2000'
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
 
@@ -95,7 +93,6 @@ process BUSCOGENOME {
   module 'singularity-3.7.0-gcc-9.3.0-dp5ffrp'
   container "ezlabgva/busco:${params.busco_version}"
   containerOptions "-B ${params.outDir}:/busco_wd"
-  clusterOptions = '-n 20 -R "select[mem>60000] rusage[mem=60000]" -M60000'
 
   input:
   file genome 
@@ -104,32 +101,32 @@ process BUSCOGENOME {
   val busco_dataset
 
   output:
-  path "statistics/*.txt", emit:summary_file
+  path "genome/*.txt", emit:summary_file
   val output_dir, emit:species_outdir
 
   // ourdir is Production_name/GCA 
   publishDir "${params.outDir}/${output_dir}/",  mode: 'copy'
 
   script:
-  println "${params.outDir}/${output_dir}/statistics/"
+  println "${params.outDir}/${output_dir}/genome/"
 
   """
-  busco -f -i ${genome}  --mode genome -l ${busco_dataset}  -c ${task.cpus} -o statistics --offline --download_path /nfs/production/flicek/ensembl/genebuild/ftricomi/busco_ftp/busco-data.ezlab.org/v5/data
+  busco -f -i ${genome}  --mode genome -l ${busco_dataset}  -c ${task.cpus} -o genome --offline --download_path ${params.download_path}
   """
 }
+
+
 /* Dump canonical translations */
-process fetchProteins {
+process FETCHPROTEINS {
   cpus 1
   memory { 6.GB * task.attempt }
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
-  clusterOptions = '-R "select[mem>2000] rusage[mem=2000]" -M2000'
 
   input:
-  //tuple  val(host), val(port), val(user), val(db), val(dnahost), val(dnaport), val(dnauser), val(dnadb) from csv_data2
-
   val species_dir
   val db
+  val busco_dataset
 
   storeDir "${params.outDir}/busco_score_test/${species_dir.trim()}/fasta/"
 
@@ -137,63 +134,104 @@ process fetchProteins {
   path "translations.fa", emit: fasta
   val "${species_dir.trim()}", emit: output_dir
   val db, emit:dbname
-  //beforeScript "source ${params.perl5lib}"
-  //beforeScript "export PERL5LIB=${params.perl5lib}"
+  val busco_dataset, emit:busco_dataset  
+
+  beforeScript "export ${params.enscode}"
+  beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
+
   script:
-  //perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost $dnahost -dnadbport $dnaport -dnadbname $dnadb -dnadbuser $dnauser -canonical_only 1 -file translations.fa  ${params.dump_params}
   """
   perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -canonical_only 1 -file translations.fa  ${params.dump_params}
   """
 }
 
 
+/* run Busco in protein mode */
+process BUSCOPROTEIN {
+
+  cpus 20
+  memory { 40.GB * task.attempt }
+
+  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
+  maxRetries 2
+  module 'singularity-3.7.0-gcc-9.3.0-dp5ffrp'
+  container "ezlabgva/busco:${params.busco_version}"
+  containerOptions "-B ${params.outDir}:/busco_wd"
+
+  input:
+  file translations
+  val outdir
+  val db
+  val busco_dataset
+
+  output:
+  path "statistics/*.txt", emit: summary_file
+  val outdir, emit:species_outdir
+
+  // ourdir is Salmo_trutta (production name)
+  publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
+
+  script:
+  println "${params.outDir}/${outdir}/fasta/"
+
+  """
+  busco -f -i ${translations}  --mode proteins -l ${params.busco_set} -c ${task.cpus} -o fasta --offline --download_path ${params.download_path}
+  """
+}
 
 /*ftp directory is Salmo_trutta/GCA_901001165.1/statistics/salmo_trutta_gca901001165v1_busco_short_summary.txt
 in the following processes, summary file name is changed in <production name>_gca_busco_short_summary.txt
 
 */
-process lowerLetters {
-    // in: <Production name>/GCA
-    // out: <production name>/gca
-    input:
-    val production_name
-    output:
-    stdout   emit:lower_name
-    val production_name, emit:species_outdir
 
-    """
-    printf '$production_name' | tr '[A-Z]' '[a-z]' | tr . v
-    """
-}
-
-process getSpecies {
-    //in : <production name>/gcav1
+process GETSPECIESNAME {
+    //in : <Production name>/GCA.1
     //out: <production name>
     input:
     val production_name
-    val outdir
 
     output:
-    stdout  emit:species
-    val production_name, emit:get_species
+    stdout  emit:species_name
     val outdir, emit:species_outdir
+
     """
-    printf '$production_name' | cut -d'/' -f1
+    printf '$production_name' | tr '[A-Z]' '[a-z]' | tr . v | cut -d'/' -f1
     """
 }
 
-process getGca {
-    //in : <production name>/gcav1
+process GETGCA {
+    //in : <Production name>/GCA.1
     //out: gcav1
     input:
-    val production_name 
-    val outdir 
+    val production_name  
     val species_name 
     output:
     stdout emit:get_gca
     val outdir, emit:species_outdir
-    val species_name, emit:production_name
+    val species_name, emit:species_name
     """
-    printf '$production_name' | cut -d'/' -f2 | tr -d '_'
+    printf '$production_name' | tr '[A-Z]' '[a-z]' | tr . v | cut -d'/' -f2 | tr -d '_'
     """
+}
+
+process OUTPUT {
+    /*
+        rename busco summary file in <production name>_gca_busco_short_summary.txt
+    */
+    input:
+    val species_name
+    val gca
+    val outdir
+
+    publishDir "${params.outDir}/busco_score_RR/${outdir}/",  mode: 'copy'
+
+    """
+    mkdir statistics 
+    if [ -f "${params.outDir}/${outdir}/genome/short_summary*" ]; then mv -f ${params.outDir}/${outdir}/genome/short_summary*  ${params.outDir}/${outdir}/statistics/${species_name.trim()}_${gca.trim()}_genome_busco_short_summary.txt;fi
+    if [ -f "${params.outDir}/${outdir}/fasta/short_summary*" ]; then mv -f ${params.outDir}/${outdir}/fasta/short_summary*  ${params.outDir}/${outdir}/statistics/${species_name.trim()}_${gca.trim()}_busco_short_summary.txt;fi
+    """
+
+   // mv -f ${params.outDir}/busco_score_test/${outdir}/statistics/short_summary*  ${params.outDir}/busco_score_test/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_busco_short_summary.txt
+   // sed  -i '/genebuild/d' ${params.outDir}/busco_score_test/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_busco_short_summary.txt
+   
 }
