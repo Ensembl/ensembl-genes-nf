@@ -1,6 +1,4 @@
 def get_species_name(name) {
-  //def m = name =~ /(.*)_\d+\.fa\.aln.*/
-  //m.matches() ? m.group(1) : 'unknown_tree_name'   .tr('.','v').split('/')[1]
   final m = name.tr('[A-Z]','[a-z]').tr('.','v').split('/')[0]
   return m
 }
@@ -99,13 +97,13 @@ process FETCHGENOME {
 process BUSCOGENOME {
 
   cpus 20
-  memory { 60.GB * task.attempt }
+  memory { 30.GB * task.attempt }
 
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
   module 'singularity-3.7.0-gcc-9.3.0-dp5ffrp'
   container "ezlabgva/busco:${params.busco_version}"
-  containerOptions "-B ${params.outDir}:/busco_wd"
+  containerOptions "-B ${params.outDir}/${outdir}/genome_fasta/:/busco_wd"
 
   input:
   file genome 
@@ -114,15 +112,17 @@ process BUSCOGENOME {
   val busco_dataset
 
   output:
-  path "genome_fasta/*.txt", emit:summary_file
+  path "genome_fasta/*.txt", emit: summary_file
   val outdir, emit:species_outdir
+
+  // ourdir is Salmo_trutta (production name)
+  publishDir "${params.outDir}/${outdir}/genome_fasta",  mode: 'copy'
 
   // ourdir is Production_name/GCA 
   
-  storeDir "${params.outDir}/${outdir}/genome_fasta"
+  //storeDir "${params.outDir}/${outdir}/genome_fasta"
   script:
   println "${params.outDir}/${outdir}/genome/"
-
   """
   busco -f -i ${genome}  --mode genome -l ${busco_dataset}  -c ${task.cpus} -o genome_fasta --offline --download_path ${params.download_path}
   sed  -i '/genebuild/d' ${params.outDir}/${outdir}/genome_fasta/short_summary*
@@ -140,9 +140,6 @@ process FETCHPROTEINS {
   maxRetries 2
 
   input:
-  //val species_dir
-  //val db
-  //val busco_dataset
   tuple val(species_dir),val(db), val(busco_dataset), val(mode)
   storeDir "${params.outDir}/${species_dir.trim()}/fasta/"
 
@@ -156,8 +153,6 @@ process FETCHPROTEINS {
   beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
  
   script:
-  println get_gca("${species_dir.trim()}")
-  println concatString(get_species_name("${species_dir.trim()}"),get_gca("${species_dir.trim()}"),'_busco_short_summary.txt')
   """
   perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -canonical_only 1 -file translations.fa  ${params.dump_params}
   """
@@ -190,24 +185,12 @@ process BUSCOPROTEIN {
   publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
 
   script:
-  println "${params.outDir}/${outdir}/fasta/"
-  println "$busco_dataset"
-  println "$outdir"
-  println get_gca("${outdir.trim()}")
-  println get_species_name("${outdir.trim()}")
-  println concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'_busco_short_summary.txt')
-
-  //println get_species_name("${species_dir.trim()}")
   """
   busco -f -i ${translations}  --mode proteins -l ${busco_dataset} -c ${task.cpus} -o fasta --offline --download_path ${params.download_path}
   sed  -i '/genebuild/d' ${params.outDir}/${outdir}/fasta/short_summary*
   mkdir -p ${params.outDir}/${outdir}/statistics 
   mv -f ${params.outDir}/${outdir}/fasta/short_summary*  ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'busco_short_summary.txt')}
   """
-  //mv -f ${params.outDir}/${outdir}/fasta/short_summary*  ${params.outDir}/${outdir}/statistics/${get_species_name(${outdir}).trim()}_${get_gca(${outdir}).trim()}_busco_short_summary.txt
-  
-  //if [ -f "${params.outDir}/${outdir}/fasta/short_summary*" ]; then mv -f ${params.outDir}/${outdir}/fasta/short_summary*  ${params.outDir}/${outdir}/statistics/${get_species_name(${outdir}).trim()}_${get_gca(${outdir}).trim()}_busco_short_summary.txt;fi
-  //"""
 }
 
 /*ftp directory is Salmo_trutta/GCA_901001165.1/statistics/salmo_trutta_gca901001165v1_busco_short_summary.txt
@@ -271,18 +254,3 @@ process OUTPUT {
    // sed  -i '/genebuild/d' ${params.outDir}/busco_score_test/${outdir}/statistics/${production_name.trim()}_${gca.trim()}_busco_short_summary.txt
    
 }
-process INPUT_CHECK {
-    input:
-    val species_dir
-    val dbname                       
-    val busco_dataset
-
-    output:
-    tuple val(species_dir), val(dbname), val(busco_dataset)
-    script:
-    println "${dbname}"
-    """
-    printf "${params.mode}"
-    """ 
-}
-
