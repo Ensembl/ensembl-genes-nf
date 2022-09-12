@@ -43,34 +43,60 @@ include { GETGCA } from params.modules_path
 include { OUTPUT } from params.modules_path
 include { INPUT_CHECK } from params.modules_path
 
-//def get_species_name(name) { 
-  //def m = name =~ /(.*)_\d+\.fa\.aln.*/
-  //m.matches() ? m.group(1) : 'unknown_tree_name' 
-  //m = name =~ tr '[A-Z]' '[a-z]' | tr . v | cut -d'/' -f1
-  //return m
-//}
+params.help = false
 
-
-//def get_gca(name) {
-//  m =  name =~ tr '[A-Z]' '[a-z]' | tr . v | cut -d'/' -f2 | tr -d '_'
-  
-//}
-
-process INPUT_CHECK1 {
-    input:
-    val species_dir
-    val dbname 
-    val busco_dataset
-
-    output:
-    val species_dir, emit:species_outdir
-    val dbname, emit:dbname                       
-    val busco_dataset, emit:busco_dataset
-    """
-    printf '$dbname'  SPECIESOUTDIR.out.species_dir, SPECIESOUTDIR.out.dbname, SPECIESOUTDIR.out.busco_datase
-    """
+ // print usage
+if (params.help) {
+  log.info ''
+  log.info 'Pipeline to run Busco score in protein and/or genome mode'
+  log.info '-------------------------------------------------------'
+  log.info ''
+  log.info 'Usage: '
+  log.info '  nextflow -C ensembl-genes-nf/nextflow.config run ensembl-genes-nf/busco_pipeline.nf --enscode --csvFile --genome_file --mode'
+  log.info ''
+  log.info 'Options:'
+  log.info '  --host                    Db host server '
+  log.info '  --port                    Db port  '
+  log.info '  --user                    Db user  '
+  log.info '  --enscode                 Enscode path '
+  log.info '  --perl5lib                PERL5LIB '
+  log.info '  --outDir                  Output directory '
+  log.info '  --csvfile                 Path for the csv containing the db name'
+  log.info '  --mode                    Busco mode: genome or protein'
+  log.info '  --genome_file      	FASTA genome file (unmasked)'
+  log.info '  --cpus INT	        Number of CPUs to use. Default 1.'
+  exit 1
 }
-workflow {
+
+if( !params.host) {
+  exit 1, "Undefined --host parameter. Please provide the server host for the db connection"
+}
+
+if( !params.port) {
+  exit 1, "Undefined --port parameter. Please provide the server port for the db connection"
+}
+if( !params.user) {
+  exit 1, "Undefined --user parameter. Please provide the server user for the db connection"
+}
+
+if( !params.enscode) {
+  exit 1, "Undefined --enscode parameter. Please provide the enscode path"
+}
+if( !params.perl5lib) {
+  exit 1, "Undefined --perl5lib parameter. Please provide the PERL5LIB path"
+}
+if( !params.outDir) {
+  exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
+}
+if( !params.mode) {
+  exit 1, "Undefined --mode parameter. Please define Busco running mode"
+}
+csvFile = file(params.csvfile)
+if( !csvFile.exists() ) {
+  exit 1, "The specified csv file does not exist: ${params.csvfile}"
+}
+
+workflow{
         csvData = Channel.fromPath("${params.csvFile}").splitCsv(header: ['db'])
         mode = Channel.from("${params.mode}").view()
         println "${mode}"
