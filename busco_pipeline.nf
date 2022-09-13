@@ -36,10 +36,7 @@ include { FETCHGENOME } from params.modules_path
 include { FETCHPROTEINS } from params.modules_path
 include { BUSCOGENOME } from params.modules_path
 include { BUSCOPROTEIN } from params.modules_path
-include { GETSPECIESNAME } from params.modules_path
-include { GETGCA } from params.modules_path
-include { OUTPUT } from params.modules_path
-include { INPUT_CHECK } from params.modules_path
+include { BUSCOGENOMEOUTPUT } from params.modules_path
 
 params.help = false
 
@@ -104,7 +101,7 @@ workflow{
         
         FETCHGENOME (ch_mode.genome)
         BUSCOGENOME (FETCHGENOME.out.fasta.flatten(), FETCHGENOME.out.output_dir, FETCHGENOME.out.db_name, FETCHGENOME.out.busco_dataset)
-        
+        BUSCOGENOMEOUTPUT(BUSCOGENOME.out.species_outdir)        
         FETCHPROTEINS (ch_mode.protein)
         BUSCOPROTEIN (FETCHPROTEINS.out.fasta.flatten(), FETCHPROTEINS.out.output_dir, FETCHPROTEINS.out.db_name, FETCHPROTEINS.out.busco_dataset)
          

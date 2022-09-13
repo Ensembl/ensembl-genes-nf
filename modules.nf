@@ -70,7 +70,7 @@ process FETCHGENOME {
   input:
   tuple val(species_dir),val(db), val(busco_dataset), val(mode)
 
-  storeDir "${params.outDir}/${species_dir.trim()}/genome_fasta/"
+  storeDir "${params.outDir}/${species_dir.trim()}/genome/"
 
   output:
   path "genome.fa", emit:fasta
@@ -85,8 +85,8 @@ process FETCHGENOME {
 
   script:
   """
-  mkdir -p ${params.outDir}/${species_dir.trim()}/genome_fasta/
-  cp "${params.genome_file}" ${params.outDir}/${species_dir.trim()}/genome_fasta/genome.fa
+  mkdir -p ${params.outDir}/${species_dir.trim()}/genome/
+  cp "${params.genome_file}" ${params.outDir}/${species_dir.trim()}/genome/genome.fa
   """
   //cp /nfs/ftp/ensemblftp/ensembl/PUBLIC/pub/rapid-release/species/${species_dir.trim()}/genome/*-unmasked.fa.gz ${params.outDir}/busco_score_RR_NEW/${species_dir.trim()}/genome/genome.fa.gz
   //gzip -d -f ${params.outDir}/busco_score_RR_NEW/${species_dir.trim()}/genome/genome.fa.gz
@@ -97,39 +97,50 @@ process FETCHGENOME {
 process BUSCOGENOME {
 
   cpus 20
-  memory { 30.GB * task.attempt }
+  memory { 60.GB * task.attempt }
 
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
   module 'singularity-3.7.0-gcc-9.3.0-dp5ffrp'
   container "ezlabgva/busco:${params.busco_version}"
-  containerOptions "-B ${params.outDir}/${outdir}/genome_fasta/:/busco_wd"
+  containerOptions "-B ${params.outDir}/:/busco_wd"
 
   input:
-  file genome 
-  val outdir 
-  val db 
+  file genome
+  val outdir
+  val db
   val busco_dataset
 
   output:
-  path "genome_fasta/*.txt", emit: summary_file
+  path "genome/*.txt", emit: summary_file
   val outdir, emit:species_outdir
 
   // ourdir is Salmo_trutta (production name)
-  publishDir "${params.outDir}/${outdir}/genome_fasta",  mode: 'copy'
+  publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
 
-  // ourdir is Production_name/GCA 
-  
-  //storeDir "${params.outDir}/${outdir}/genome_fasta"
   script:
-  println "${params.outDir}/${outdir}/genome/"
   """
-  busco -f -i ${genome}  --mode genome -l ${busco_dataset}  -c ${task.cpus} -o genome_fasta --offline --download_path ${params.download_path}
-  sed  -i '/genebuild/d' ${params.outDir}/${outdir}/genome_fasta/short_summary*
-  mkdir -p ${params.outDir}/${outdir}/statistics
-  mv -f ${params.outDir}/${outdir}/genome_fasta/short_summary*  ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'genome_busco_short_summary.txt')}
+  busco -f -i ${genome} -o genome --mode genome -l ${busco_dataset} -c ${task.cpus} --offline --download_path ${params.download_path}
   """
 }
+
+
+ process BUSCOGENOMEOUTPUT {
+     /*
+         rename busco summary file in <production name>_gca_busco_short_summary.txt
+     */
+     input:
+     val outdir
+
+     publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
+     script:
+     """
+     mkdir -p  statistics
+     sed  -i '/genebuild/d' ${params.outDir}/${outdir}/genome/short_summary* 
+     mv -f ${params.outDir}/${outdir}/genome/short_summary* ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'genome_busco_short_summary.txt')}
+     """
+ }
+
 
 
 /* Dump canonical translations */
