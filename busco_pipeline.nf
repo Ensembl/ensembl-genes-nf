@@ -90,14 +90,13 @@ if( !csvFile.exists() ) {
 workflow{
         csvData = Channel.fromPath("${params.csvFile}").splitCsv(header: ['db'])
         mode = Channel.from("${params.mode}").view()
-        println "${mode}"
+        
         BUSCODATASET (csvData.flatten())
 	SPECIESOUTDIR (BUSCODATASET.out.dbname, BUSCODATASET.out.busco_dataset, params.mode)
         SPECIESOUTDIR.out.branch {
                         protein: it[3] == 'protein'
                         genome: it[3] == 'genome'
              }.set { ch_mode }
-        ch_mode.protein.view {"puzzaaa"} 
         
         FETCHGENOME (ch_mode.genome)
         BUSCOGENOME (FETCHGENOME.out.fasta.flatten(), FETCHGENOME.out.output_dir, FETCHGENOME.out.db_name, FETCHGENOME.out.busco_dataset)

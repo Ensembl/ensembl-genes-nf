@@ -18,8 +18,6 @@ process BUSCODATASET {
   memory { 2.GB * task.attempt }
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
-  //beforeScript "source ${params.perl5lib}"
-  //beforeScript "export PERL5LIB=${params.perl5lib}"
   beforeScript "export ENSCODE=${params.enscode}"
   beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
   input:
@@ -33,7 +31,6 @@ process BUSCODATASET {
   """
   bash ${params.get_dataset_query} ${params.user} ${params.host} ${params.port} ${db}
   """
-  //mysql -N -u ${params.user}  -h ${params.host} -P ${params.port} -D $db < "${params.meta_file}"
 }
 /* Get species name and accession from meta table to build the output directory tree */
 process SPECIESOUTDIR {
@@ -44,16 +41,11 @@ process SPECIESOUTDIR {
 
   input:
   val db
-  //file meta 
   val busco_dataset
   val mode
   output:
-  //val db, emit:dbname
-  //val busco_dataset, emit:busco_dataset
-  //stdout  emit:species_dir  
   tuple stdout, val(db), val(busco_dataset),val(mode)
   script:
-  println "${mode}"
   // get <Production name>/GCA
   """
   mysql -N -u ${params.user}  -h ${params.host} -P ${params.port} -D $db < "${params.meta_query_file}"
@@ -127,7 +119,7 @@ process BUSCOGENOME {
 
  process BUSCOGENOMEOUTPUT {
      /*
-         rename busco summary file in <production name>_gca_busco_short_summary.txt
+         rename busco summary file in <production name>_gca_genome_busco_short_summary.txt
      */
      input:
      val outdir
