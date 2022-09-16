@@ -43,7 +43,7 @@ params.help = false
  // print usage
 if (params.help) {
   log.info ''
-  log.info 'Pipeline to run Busco score in protein and/or genome mode'
+  log.info 'Pipeline to run OMArk score measuring proteome (protein-coding gene repertoire) quality assessment'
   log.info '-------------------------------------------------------'
   log.info ''
   log.info 'Usage: '
