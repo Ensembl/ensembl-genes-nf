@@ -23,7 +23,7 @@ params.genome_file = ''
 params.busco_set = ''
 params.mode = ''
 params.busco_version = 'v5.3.2_cv1'
-params.download_path = '/nfs/production/flicek/ensembl/genebuild/ftricomi/busco_ftp/busco-data.ezlab.org/v5/data'
+params.download_path = '/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data'
 params.dump_params = ''
 params.meta_file = "$ENSCODE/ensembl-genes-nf/supplementary_files/meta.sql"
 
