@@ -3,19 +3,19 @@ nextflow.enable.dsl=2
 
 // db connection
 params.db = ''
-//params.host = 'mysql-ens-sta-5'
-params.host = 'mysql-ens-genebuild-prod-6.ebi.ac.uk'
-//params.port = '4684'
-params.port = '4532'
+params.host = 'mysql-ens-sta-5'
+//params.host = 'mysql-ens-genebuild-prod-6.ebi.ac.uk'
+params.port = '4684'
+//params.port = '4532'
 params.user = 'ensro'
 params.pass = ''
 //repos
 params.enscode = ''
-params.modules_path='/hps/software/users/ensembl/repositories/ftricomi/ensembl-genes-nf/modules.nf'
+params.modules_path=params.enscode+'/ensembl-genes-nf/modules.nf'
 
 params.csvFile = ''
-params.meta_query_file = '$ENSCODE/ensembl-genes-nf/supplementary_files/meta.sql'
-params.get_dataset_query = '$ENSCODE/ensembl-genes-nf/supplementary_files/get_busco_dataset.sh'
+params.meta_query_file = params.enscode+'/ensembl-genes-nf/supplementary_files/meta.sql'
+params.get_dataset_query = params.enscode+'/ensembl-genes-nf/supplementary_files/get_busco_dataset.sh'
 params.outDir = "/nfs/production/flicek/ensembl/genebuild/ftricomi/nextflow/busco_score_test"
 params.genome_file = ''
 
