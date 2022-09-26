@@ -3,10 +3,10 @@ nextflow.enable.dsl=2
 
 // db connection
 params.db = ''
-params.host = 'mysql-ens-sta-5'
-//params.host = 'mysql-ens-genebuild-prod-6.ebi.ac.uk'
-params.port = '4684'
-//params.port = '4532'
+//params.host = 'mysql-ens-sta-5'
+params.host = 'mysql-ens-genebuild-prod-6.ebi.ac.uk'
+//params.port = '4684'
+params.port = '4532'
 params.user = 'ensro'
 params.pass = ''
 //repos
@@ -16,7 +16,7 @@ params.modules_path=params.enscode+'/ensembl-genes-nf/modules.nf'
 params.csvFile = ''
 params.meta_query_file = params.enscode+'/ensembl-genes-nf/supplementary_files/meta.sql'
 params.get_dataset_query = params.enscode+'/ensembl-genes-nf/supplementary_files/get_busco_dataset.sh'
-params.outDir = "/nfs/production/flicek/ensembl/genebuild/ftricomi/nextflow/busco_score_test"
+params.outDir = "/nfs/production/flicek/ensembl/genebuild/ftricomi/nextflow/busco_score_RR_NEW"
 params.genome_file = ''
 
 // Busco params
@@ -25,7 +25,7 @@ params.mode = ''
 params.busco_version = 'v5.3.2_cv1'
 params.download_path = '/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data'
 params.dump_params = ''
-params.meta_file = "$ENSCODE/ensembl-genes-nf/supplementary_files/meta.sql"
+params.meta_file = params.enscode+"/ensembl-genes-nf/supplementary_files/meta.sql"
 
 
 //Modules
@@ -37,7 +37,7 @@ include { FETCHPROTEINS } from params.modules_path
 include { BUSCOGENOME } from params.modules_path
 include { BUSCOPROTEIN } from params.modules_path
 include { BUSCOGENOMEOUTPUT } from params.modules_path
-
+include { BUSCOPROTEINOUTPUT } from params.modules_path
 params.help = false
 
  // print usage
@@ -103,5 +103,5 @@ workflow{
         BUSCOGENOMEOUTPUT(BUSCOGENOME.out.species_outdir)        
         FETCHPROTEINS (ch_mode.protein)
         BUSCOPROTEIN (FETCHPROTEINS.out.fasta.flatten(), FETCHPROTEINS.out.output_dir, FETCHPROTEINS.out.db_name, FETCHPROTEINS.out.busco_dataset)
-         
+        BUSCOPROTEINOUTPUT(BUSCOPROTEIN.out.species_outdir) 
 }

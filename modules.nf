@@ -7,6 +7,10 @@ def get_gca(name) {
   final m = name.tr('[A-Z]', '[a-z]').tr('.', 'v').replaceAll("_","").split('/').getAt(1)
   return m
 }
+def get_gca_anno(name) {
+  final m = name.split('/').getAt(1)
+  return m
+}
 
 def concatString(string1, string2, string3){
  return string1 + '_'+string2 + '_'+string3
@@ -69,17 +73,19 @@ process FETCHGENOME {
   val "${species_dir.trim()}", emit:output_dir
   val db, emit:db_name
   val "${busco_dataset.trim()}", emit:busco_dataset
-
   //check that the genome file is available 
-  when:
+  //when:
   //file("/nfs/ftp/ensemblftp/ensembl/PUBLIC/pub/rapid-release/species/${species_dir.trim()}/genome").isDirectory()
-  file("${params.genome_file}").isFile()
-
+  // file("${params.genome_file}").isFile()
+  //file(/nfs/production/flicek/ensembl/genebuild/ftricomi/anno_annotation/get_gca("${species_dir.trim()}")).isDirectory()
+  //a=get_gca("${species_dir.trim()}")
   script:
   """
   mkdir -p ${params.outDir}/${species_dir.trim()}/genome/
-  cp "${params.genome_file}" ${params.outDir}/${species_dir.trim()}/genome/genome.fa
+  cp /hps/nobackup/flicek/ensembl/genebuild/ftricomi/anno_annotations/from_nfs/${get_gca_anno("${species_dir.trim()}")}/*_reheadered_toplevel.fa ${params.outDir}/${species_dir.trim()}/genome/genome.fa
   """
+  //cp "${params.genome_file}" ${params.outDir}/${species_dir.trim()}/genome/genome.fa
+  
   //cp /nfs/ftp/ensemblftp/ensembl/PUBLIC/pub/rapid-release/species/${species_dir.trim()}/genome/*-unmasked.fa.gz ${params.outDir}/busco_score_RR_NEW/${species_dir.trim()}/genome/genome.fa.gz
   //gzip -d -f ${params.outDir}/busco_score_RR_NEW/${species_dir.trim()}/genome/genome.fa.gz
   
@@ -127,7 +133,7 @@ process BUSCOGENOME {
      publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
      script:
      """
-     mkdir -p  statistics
+     mkdir -p  ${params.outDir}/${outdir}/statistics
      sed  -i '/genebuild/d' ${params.outDir}/${outdir}/genome/short_summary* 
      mv -f ${params.outDir}/${outdir}/genome/short_summary* ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'genome_busco_short_summary.txt')}
      """
@@ -190,9 +196,25 @@ process BUSCOPROTEIN {
   script:
   """
   busco -f -i ${translations}  --mode proteins -l ${busco_dataset} -c ${task.cpus} -o fasta --offline --download_path ${params.download_path}
-  sed  -i '/genebuild/d' ${params.outDir}/${outdir}/fasta/short_summary*
-  mkdir -p ${params.outDir}/${outdir}/statistics 
-  mv -f ${params.outDir}/${outdir}/fasta/short_summary*  ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'busco_short_summary.txt')}
   """
+  //sed  -i '/genebuild/d' ${params.outDir}/${outdir}/fasta/short_summary*
+  //mkdir -p ${params.outDir}/${outdir}/statistics 
+  //mv -f ${params.outDir}/${outdir}/fasta/short_summary*  ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'busco_short_summary.txt')}
+  //"""
 }
 
+process BUSCOPROTEINOUTPUT {
+     /*
+         rename busco summary file in <production name>_gca_genome_busco_short_summary.txt
+     */
+     input:
+     val outdir
+
+     publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
+     script:
+     """
+     mkdir -p  ${params.outDir}/${outdir}/statistics
+     sed  -i '/genebuild/d' ${params.outDir}/${outdir}/fasta/short_summary*
+     mv -f ${params.outDir}/${outdir}/fasta/short_summary* ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'busco_short_summary.txt')}
+     """
+ }
