@@ -3,9 +3,7 @@ nextflow.enable.dsl=2
 
 // db connection
 params.db = ''
-//params.host = 'mysql-ens-sta-5'
 params.host = 'mysql-ens-genebuild-prod-6.ebi.ac.uk'
-//params.port = '4684'
 params.port = '4532'
 params.user = 'ensro'
 params.pass = ''
