@@ -33,7 +33,7 @@ process BUSCODATASET {
   script:
   // get <Production name>/GCA
   """
-  bash ${params.get_dataset_query} ${params.user} ${params.host} ${params.port} ${db}
+  bash ${params.get_dataset_query} ${params.user} ${params.host} ${params.port} ${db} ${params.ortho_list}
   """
 }
 /* Get species name and accession from meta table to build the output directory tree */
