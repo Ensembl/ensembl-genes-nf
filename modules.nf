@@ -12,26 +12,6 @@ def concatString(string1, string2, string3){
  return string1 + '_'+string2 + '_'+string3
 }
 
-/* Get Busco dataset using NSCBI taxonomy in meta table */
-process BUSCODATASET {
-  cpus 1
-  memory { 2.GB * task.attempt }
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
-  beforeScript "export ENSCODE=${params.enscode}"
-  beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
-  input:
-  tuple val(db)
-
-  output:
-  val db, emit:dbname
-  stdout  emit:busco_dataset
-  script:
-  // get <Production name>/GCA
-  """
-  bash ${params.get_dataset_query} ${params.user} ${params.host} ${params.port} ${db}
-  """
-}
 /* Get species name and accession from meta table to build the output directory tree */
 process SPECIESOUTDIR {
   cpus 1
@@ -41,10 +21,8 @@ process SPECIESOUTDIR {
 
   input:
   val db
-  val busco_dataset
-  val mode
   output:
-  tuple stdout, val(db), val(busco_dataset),val(mode)
+  tuple stdout, val(db)
   script:
   // get <Production name>/GCA
   """
@@ -52,105 +30,22 @@ process SPECIESOUTDIR {
   """
 }
 
-/* copy (and unzip) unmasked genome file */
-process FETCHGENOME {
-  cpus 1
-  memory { 6.GB * task.attempt }
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
-  
-  input:
-  tuple val(species_dir),val(db), val(busco_dataset), val(mode)
-
-  storeDir "${params.outDir}/${species_dir.trim()}/genome/"
-
-  output:
-  path "genome.fa", emit:fasta
-  val "${species_dir.trim()}", emit:output_dir
-  val db, emit:db_name
-  val "${busco_dataset.trim()}", emit:busco_dataset
-
-  //check that the genome file is available 
-  when:
-  //file("/nfs/ftp/ensemblftp/ensembl/PUBLIC/pub/rapid-release/species/${species_dir.trim()}/genome").isDirectory()
-  file("${params.genome_file}").isFile()
-
-  script:
-  """
-  mkdir -p ${params.outDir}/${species_dir.trim()}/genome/
-  cp "${params.genome_file}" ${params.outDir}/${species_dir.trim()}/genome/genome.fa
-  """
-  //cp /nfs/ftp/ensemblftp/ensembl/PUBLIC/pub/rapid-release/species/${species_dir.trim()}/genome/*-unmasked.fa.gz ${params.outDir}/busco_score_RR_NEW/${species_dir.trim()}/genome/genome.fa.gz
-  //gzip -d -f ${params.outDir}/busco_score_RR_NEW/${species_dir.trim()}/genome/genome.fa.gz
-  
-}
-
-
-process BUSCOGENOME {
-
-  cpus 20
-  memory { 60.GB * task.attempt }
-
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
-  module 'singularity-3.7.0-gcc-9.3.0-dp5ffrp'
-  container "ezlabgva/busco:${params.busco_version}"
-  containerOptions "-B ${params.outDir}/:/busco_wd"
-
-  input:
-  file genome
-  val outdir
-  val db
-  val busco_dataset
-
-  output:
-  path "genome/*.txt", emit: summary_file
-  val outdir, emit:species_outdir
-
-  // ourdir is Salmo_trutta (production name)
-  publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
-
-  script:
-  """
-  busco -f -i ${genome} -o genome --mode genome -l ${busco_dataset} -c ${task.cpus} --offline --download_path ${params.download_path}
-  """
-}
-
-
- process BUSCOGENOMEOUTPUT {
-     /*
-         rename busco summary file in <production name>_gca_genome_busco_short_summary.txt
-     */
-     input:
-     val outdir
-
-     publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
-     script:
-     """
-     mkdir -p  statistics
-     sed  -i '/genebuild/d' ${params.outDir}/${outdir}/genome/short_summary* 
-     mv -f ${params.outDir}/${outdir}/genome/short_summary* ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'genome_busco_short_summary.txt')}
-     """
- }
-
-
-
 /* Dump canonical translations */
 process FETCHPROTEINS {
   cpus 1
-  memory { 6.GB * task.attempt }
+  memory { 9.GB * task.attempt }
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
 
   input:
-  tuple val(species_dir),val(db), val(busco_dataset), val(mode)
+  tuple val(species_dir),val(db)
+  
   storeDir "${params.outDir}/${species_dir.trim()}/fasta/"
 
   output:
   path "translations.fa", emit: fasta
   val "${species_dir.trim()}", emit: output_dir
   val db, emit:db_name
-  val "${busco_dataset.trim()}", emit:busco_dataset  
 
   beforeScript "export ${params.enscode}"
   beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
@@ -162,26 +57,21 @@ process FETCHPROTEINS {
 }
 
 
-/* run Busco in protein mode */
-process BUSCOPROTEIN {
+process CREATEOMAMER {
 
   cpus 20
-  memory { 40.GB * task.attempt }
+  memory { 10.GB * task.attempt }
 
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
-  module 'singularity-3.7.0-gcc-9.3.0-dp5ffrp'
-  container "ezlabgva/busco:${params.busco_version}"
-  containerOptions "-B ${params.outDir}:/busco_wd"
 
   input:
   file translations
   val outdir
   val db
-  val busco_dataset
 
   output:
-  path "fasta/*.txt", emit: summary_file
+  path "*.omamer", emit: omamer_file
   val outdir, emit:species_outdir
 
   // ourdir is Salmo_trutta (production name)
@@ -189,10 +79,32 @@ process BUSCOPROTEIN {
 
   script:
   """
-  busco -f -i ${translations}  --mode proteins -l ${busco_dataset} -c ${task.cpus} -o fasta --offline --download_path ${params.download_path}
-  sed  -i '/genebuild/d' ${params.outDir}/${outdir}/fasta/short_summary*
-  mkdir -p ${params.outDir}/${outdir}/statistics 
-  mv -f ${params.outDir}/${outdir}/fasta/short_summary*  ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'busco_short_summary.txt')}
+  singularity exec /hps/software/users/ensembl/genebuild/ftricomi/singularity/omark.sif omamer search --query ${translations} --db ${params.omamer_database} --score sensitive --out proteins.omamer
   """
 }
 
+
+process RUNOMARK {
+
+  cpus 20
+  memory { 20.GB * task.attempt }
+
+  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
+  maxRetries 2
+
+  input:
+  file omamer_file
+  val outdir
+  
+
+  output:
+  path("omark_output/*"), emit: summary_file
+  val outdir, emit:species_outdir
+
+  publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
+
+  script:
+  """
+  singularity exec /hps/software/users/ensembl/genebuild/ftricomi/singularity/omark.sif omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output
+  """
+}
