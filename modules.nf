@@ -23,7 +23,6 @@ process BUSCODATASET {
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
   beforeScript "export ENSCODE=${params.enscode}"
-  beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
   input:
   tuple val(db)
 
