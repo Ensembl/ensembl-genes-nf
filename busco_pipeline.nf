@@ -24,7 +24,6 @@ params.mode = ''
 params.busco_version = 'v5.3.2_cv1'
 params.download_path = '/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data'
 params.dump_params = ''
-params.meta_file = params.enscode+"/ensembl-genes-nf/supplementary_files/meta.sql"
 
 
 //Modules
