@@ -5,14 +5,14 @@ dbname=$4
 file=$ENSCODE/ensembl-genes-nf/supplementary_files/busco_dataset.txt
 #mysql-ens-sta-5,4684,ensro,canis_lupus_gca905319855v2_core_106_1,mysql-ens-sta-5,4684,ensro,canis_lupus_gca905319855v2_core_106_1
 #match the first correspondence between the list of metavalues and the list of busco datasets
-mapfile result < <(mysql -N -u $user -h $host -P $port -D $dbname -e "select meta_value from meta where meta_key='species.classification' order by meta_id;")
+mapfile result < <(mysql -u $user -h $host -P $port -D $dbname -NB -e "SELECT meta_value FROM meta where meta_key='species.classification' ORDER BY meta_id")
 
 for i in "${result[@]}";
 do      
 	species=$(echo "$i" | tr '[:upper:]' '[:lower:]')	
-	if grep -q $species $file;then
-            echo $(grep $species $file) | cut -d'.' -f1
-            #echo $db	$(grep $species $file) >> test.txt
+	FILE=($(grep -e "^${species}_" $file))
+	if [[ $? -eq 0 ]];then
+            echo ${FILE[0]} | cut -d '.' -f1
             break;
     fi
 done
