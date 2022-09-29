@@ -11,11 +11,12 @@ params.user = 'ensro'
 params.pass = ''
 //repos
 params.enscode = ''
-params.modules_path=params.enscode+'/ensembl-genes-nf/modules.nf'
+params.modules_path="${projectDir}/modules.nf"
 
 params.csvFile = ''
-params.meta_query_file = params.enscode+'/ensembl-genes-nf/supplementary_files/meta.sql'
-params.get_dataset_query = params.enscode+'/ensembl-genes-nf/supplementary_files/get_busco_dataset.sh'
+params.meta_query_file = "${projectDir}/supplementary_files/meta.sql"
+params.get_dataset_query = "${projectDir}/supplementary_files/get_busco_dataset.sh"
+params.ortho_list = "${projectDir}/supplementary_files/busco_dataset.txt"
 params.outDir = "/nfs/production/flicek/ensembl/genebuild/ftricomi/nextflow/busco_score_RR_NEW"
 params.genome_file = ''
 
