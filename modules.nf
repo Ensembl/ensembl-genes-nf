@@ -158,8 +158,7 @@ process FETCHPROTEINS {
   val db, emit:db_name
   val "${busco_dataset.trim()}", emit:busco_dataset  
 
-  beforeScript "export ${params.enscode}"
-  beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
+  beforeScript "ENSCODE=${params.enscode} source ${projectDir}/supplementary_files/perl5lib.sh"
  
   script:
   """
