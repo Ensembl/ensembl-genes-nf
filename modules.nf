@@ -32,7 +32,7 @@ process BUSCODATASET {
   script:
   // get <Production name>/GCA
   """
-  bash ${params.get_dataset_query} ${params.user} ${params.host} ${params.port} ${db} ${params.ortho_list}
+  bash ${params.get_dataset_query} ${params.user} ${params.host} ${params.port} ${db} ${params.ortho_list} | tr -d '\n'
   """
 }
 /* Get species name and accession from meta table to build the output directory tree */
@@ -51,7 +51,7 @@ process SPECIESOUTDIR {
   script:
   // get <Production name>/GCA
   """
-  mysql -N -u ${params.user}  -h ${params.host} -P ${params.port} -D $db < "${params.meta_query_file}"
+  mysql -N -u ${params.user}  -h ${params.host} -P ${params.port} -D $db < "${params.meta_query_file}" | tr -d '\n'
   """
 }
 
@@ -69,9 +69,9 @@ process FETCHGENOME {
 
   output:
   path "genome.fa", emit:fasta
-  val "${species_dir.trim()}", emit:output_dir
+  val "${species_dir}", emit:output_dir
   val db, emit:db_name
-  val "${busco_dataset.trim()}", emit:busco_dataset
+  val busco_dataset, emit:busco_dataset
   //check that the genome file is available 
   //when:
   //file("/nfs/ftp/ensemblftp/ensembl/PUBLIC/pub/rapid-release/species/${species_dir.trim()}/genome").isDirectory()
@@ -149,13 +149,14 @@ process FETCHPROTEINS {
 
   input:
   tuple val(species_dir),val(db), val(busco_dataset), val(mode)
-  storeDir "${params.outDir}/${species_dir.trim()}/fasta/"
+
+  storeDir "${params.outDir}/${species_dir}/fasta/"
 
   output:
   path "translations.fa", emit: fasta
-  val "${species_dir.trim()}", emit: output_dir
+  val species_dir, emit: output_dir
   val db, emit:db_name
-  val "${busco_dataset.trim()}", emit:busco_dataset  
+  val busco_dataset, emit:busco_dataset
 
   beforeScript "ENSCODE=${params.enscode} source ${projectDir}/supplementary_files/perl5lib.sh"
  
