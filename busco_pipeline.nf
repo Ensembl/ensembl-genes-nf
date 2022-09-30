@@ -86,7 +86,7 @@ if( !csvFile.exists() ) {
 }
 
 workflow{
-        csvData = Channel.fromPath("${params.csvFile}").splitCsv(header: ['db'])
+        csvData = Channel.fromPath(params.csvFile).splitCsv()
         mode = Channel.from("${params.mode}").view()
         
         BUSCODATASET (csvData.flatten())

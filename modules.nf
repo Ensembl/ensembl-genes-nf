@@ -24,7 +24,7 @@ process BUSCODATASET {
   maxRetries 2
   beforeScript "export ENSCODE=${params.enscode}"
   input:
-  tuple val(db)
+  val db
 
   output:
   val db, emit:dbname
