@@ -45,9 +45,8 @@ process SPECIESOUTDIR {
   input:
   val db
   val busco_dataset
-  val mode
   output:
-  tuple stdout, val(db), val(busco_dataset),val(mode)
+  tuple stdout, val(db), val(busco_dataset)
   script:
   // get <Production name>/GCA
   """

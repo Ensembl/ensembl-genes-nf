@@ -20,7 +20,7 @@ params.genome_file = ''
 
 // Busco params
 params.busco_set = ''
-params.mode = ''
+params.mode = ['protein', 'genome']
 params.busco_version = 'v5.3.2_cv1'
 params.download_path = '/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data'
 params.dump_params = ''
@@ -54,7 +54,7 @@ if (params.help) {
   log.info '  --enscode STR                Enscode path '
   log.info '  --outDir STR                 Output directory '
   log.info '  --csvFile STR                Path for the csv containing the db name'
-  log.info '  --mode STR                   Busco mode: genome or protein'
+  log.info '  --mode STR                   Busco mode: genome or protein, default is to run both'
   log.info '  --genome_file STR            Unmasked FASTA genome file (genome mode)'
   log.info '  --cpus INT                   Number of CPUs to use. Default 1.'
   exit 1
@@ -84,14 +84,20 @@ csvFile = file(params.csvFile)
 if( !csvFile.exists() ) {
   exit 1, "The specified csv file does not exist: ${params.csvfile}"
 }
-
+busco_mode = []
+if (params.mode instanceof java.lang.String) {
+  busco_mode = [params.mode]
+}
+else {
+  busco_mode = params.mode
+}
 workflow{
         csvData = Channel.fromPath(params.csvFile).splitCsv()
-        mode = Channel.from("${params.mode}").view()
+        buscoModes = Channel.fromList(busco_mode)
         
         BUSCODATASET (csvData.flatten())
-	SPECIESOUTDIR (BUSCODATASET.out.dbname, BUSCODATASET.out.busco_dataset, params.mode)
-        SPECIESOUTDIR.out.branch {
+        SPECIESOUTDIR (BUSCODATASET.out.dbname, BUSCODATASET.out.busco_dataset)
+        SPECIESOUTDIR.out.combine(buscoModes).branch {
                         protein: it[3] == 'protein'
                         genome: it[3] == 'genome'
              }.set { ch_mode }
