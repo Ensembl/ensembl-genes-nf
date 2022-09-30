@@ -56,7 +56,6 @@ if (params.help) {
   log.info '  --csvFile STR                Path for the csv containing the db name'
   log.info '  --mode STR                   Busco mode: genome or protein, default is to run both'
   log.info '  --genome_file STR            Unmasked FASTA genome file (genome mode)'
-  log.info '  --cpus INT                   Number of CPUs to use. Default 1.'
   exit 1
 }
 
@@ -80,6 +79,7 @@ if( !params.outDir) {
 if( !params.mode) {
   exit 1, "Undefined --mode parameter. Please define Busco running mode"
 }
+
 csvFile = file(params.csvFile)
 if( !csvFile.exists() ) {
   exit 1, "The specified csv file does not exist: ${params.csvfile}"

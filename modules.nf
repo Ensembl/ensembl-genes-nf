@@ -29,6 +29,7 @@ process BUSCODATASET {
   output:
   val db, emit:dbname
   stdout  emit:busco_dataset
+
   script:
   // get <Production name>/GCA
   """
@@ -88,7 +89,6 @@ process FETCHGENOME {
   //gzip -d -f ${params.outDir}/busco_score_RR_NEW/${species_dir.trim()}/genome/genome.fa.gz
   
 }
-
 
 process BUSCOGENOME {
 
