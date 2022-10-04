@@ -68,7 +68,7 @@ process FETCHGENOME {
   storeDir "${params.outDir}/${species_dir.trim()}/genome/"
 
   output:
-  path "genome.fa", emit:fasta
+  path "genome_toplevel.fa", emit:fasta
   val "${species_dir}", emit:output_dir
   val db, emit:db_name
   val busco_dataset, emit:busco_dataset
@@ -76,13 +76,15 @@ process FETCHGENOME {
   //when:
   //file("/nfs/ftp/ensemblftp/ensembl/PUBLIC/pub/rapid-release/species/${species_dir.trim()}/genome").isDirectory()
   // file("${params.genome_file}").isFile()
-  //file(/nfs/production/flicek/ensembl/genebuild/ftricomi/anno_annotation/get_gca("${species_dir.trim()}")).isDirectory()
-  //a=get_gca("${species_dir.trim()}")
+  beforeScript "ENSCODE=${params.enscode} source ${projectDir}/supplementary_files/perl5lib.sh"
+  
   script:
   """
   mkdir -p ${params.outDir}/${species_dir.trim()}/genome/
-  cp /hps/nobackup/flicek/ensembl/genebuild/ftricomi/anno_annotations/from_nfs/${get_gca_anno("${species_dir.trim()}")}/*_reheadered_toplevel.fa ${params.outDir}/${species_dir.trim()}/genome/genome.fa
+  perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl -dbhost ${params.host} -dbport ${params.port} -dbname $db -dbuser ${params.user} -coord_system_name toplevel -toplevel -onefile -nonref -filename genome_toplevel.fa
   """
+
+  //cp /hps/nobackup/flicek/ensembl/genebuild/ftricomi/anno_annotations/from_nfs/${get_gca_anno("${species_dir.trim()}")}/*_reheadered_toplevel.fa ${params.outDir}/${species_dir.trim()}/genome/genome.fa
   //cp "${params.genome_file}" ${params.outDir}/${species_dir.trim()}/genome/genome.fa
   
   //cp /nfs/ftp/ensemblftp/ensembl/PUBLIC/pub/rapid-release/species/${species_dir.trim()}/genome/*-unmasked.fa.gz ${params.outDir}/busco_score_RR_NEW/${species_dir.trim()}/genome/genome.fa.gz

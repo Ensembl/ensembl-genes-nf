@@ -1,2 +1,2 @@
-export PERL5LIB=${ENSCODE}/ensembl/modules:$BIOPERL_LIB
+export PERL5LIB=${ENSCODE}/ensembl/modules:${ENSCODE}/ensembl-io/modules:$BIOPERL_LIB
 
