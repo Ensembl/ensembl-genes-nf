@@ -79,7 +79,7 @@ process CREATEOMAMER {
 
   script:
   """
-  singularity exec /hps/software/users/ensembl/genebuild/ftricomi/singularity/omark.sif omamer search --query ${translations} --db ${params.omamer_database} --score sensitive --out proteins.omamer
+  singularity exec /hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif omamer search --query ${translations} --db ${params.omamer_database} --score sensitive --out proteins.omamer
   """
 }
 
@@ -105,6 +105,6 @@ process RUNOMARK {
 
   script:
   """
-  singularity exec /hps/software/users/ensembl/genebuild/ftricomi/singularity/omark.sif omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output
+  singularity exec /hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output
   """
 }
