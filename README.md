@@ -1,6 +1,6 @@
 # Busco Nextflow pipeline
 
-Busco is a easure of completeness of genome assembly and annotation of the gene set. See the documentation for further details https://busco.ezlab.org/busco_userguide.html
+Busco is a measure of completeness of genome assembly and annotation of the gene set. See the documentation for further details https://busco.ezlab.org/busco_userguide.html
 ###Requirements
 
 ##Busco
