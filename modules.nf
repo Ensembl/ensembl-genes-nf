@@ -159,7 +159,7 @@ process FETCHPROTEINS {
   storeDir "${params.outDir}/${species_dir}/fasta/"
 
   output:
-  path "translations.fa", emit: fasta
+  path "${db}_translations.fa", emit: fasta
   val species_dir, emit: output_dir
   val db, emit:db_name
   val busco_dataset, emit:busco_dataset
@@ -168,7 +168,7 @@ process FETCHPROTEINS {
  
   script:
   """
-  perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -canonical_only 1 -file translations.fa  ${params.dump_params}
+  perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -file ${db}_translations.fa
   """
 }
 
