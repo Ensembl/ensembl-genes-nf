@@ -14,10 +14,8 @@ def concatString(string1, string2, string3){
 
 /* Get Busco dataset using NSCBI taxonomy in meta table */
 process BUSCODATASET {
-  cpus 1
-  memory { 2.GB * task.attempt }
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
+  executor 'local'
+  scratch false
 
   beforeScript "export ENSCODE=${params.enscode}"
 
@@ -35,10 +33,8 @@ process BUSCODATASET {
 }
 /* Get species name and accession from meta table to build the output directory tree */
 process SPECIESOUTDIR {
-  cpus 1
-  memory { 2.GB * task.attempt }
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
+  executor 'local'
+  scratch false
 
   input:
   val db
