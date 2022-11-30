@@ -92,6 +92,7 @@ process BUSCOGENOME {
 
   cpus 20
   memory { 60.GB * task.attempt }
+  time "4h"
 
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
@@ -125,6 +126,9 @@ process BUSCOGENOME {
      /*
          rename busco summary file in <production name>_gca_genome_busco_short_summary.txt
      */
+     cpus 1
+     memory "1GB"
+     time "5m"
 
      input:
      val outdir
@@ -147,6 +151,7 @@ process FETCHPROTEINS {
   memory { 6.GB * task.attempt }
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
+  time "2h"
 
   input:
   tuple val(species_dir),val(db), val(busco_dataset), val(mode)
@@ -173,6 +178,7 @@ process BUSCOPROTEIN {
 
   cpus 20
   memory { 40.GB * task.attempt }
+  time "2h"
 
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
@@ -203,6 +209,10 @@ process BUSCOPROTEINOUTPUT {
      /*
          rename busco summary file in <production name>_gca_busco_short_summary.txt
      */
+     cpus 1
+     memory "1GB"
+     time "5m"
+
      input:
      val outdir
 
