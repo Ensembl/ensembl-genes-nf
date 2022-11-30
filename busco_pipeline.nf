@@ -15,7 +15,7 @@ params.csvFile = ''
 params.meta_query_file = "${projectDir}/supplementary_files/meta.sql"
 params.get_dataset_query = "${projectDir}/supplementary_files/get_busco_dataset.sh"
 params.ortho_list = "${projectDir}/supplementary_files/busco_dataset.txt"
-params.outDir = "/nfs/production/flicek/ensembl/genebuild/ftricomi/nextflow/busco_score_RR_NEW"
+params.outDir = "${workDir}"
 params.genome_file = ''
 
 // Busco params
@@ -52,7 +52,7 @@ if (params.help) {
   log.info '  --port INT                   Db port  '
   log.info '  --user STR                   Db user  '
   log.info '  --enscode STR                Enscode path '
-  log.info '  --outDir STR                 Output directory '
+  log.info '  --outDir STR                 Output directory. Default is workDir'
   log.info '  --csvFile STR                Path for the csv containing the db name'
   log.info '  --mode STR                   Busco mode: genome or protein, default is to run both'
   log.info '  --genome_file STR            Unmasked FASTA genome file (genome mode)'
