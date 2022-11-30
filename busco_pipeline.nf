@@ -17,9 +17,9 @@ params.get_dataset_query = "${projectDir}/supplementary_files/get_busco_dataset.
 params.ortho_list = "${projectDir}/supplementary_files/busco_dataset.txt"
 params.outDir = "${workDir}"
 params.genome_file = ''
+params.help = false
 
 // Busco params
-params.busco_set = ''
 params.mode = ['protein', 'genome']
 params.busco_version = 'v5.3.2_cv1'
 params.download_path = '/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data'
@@ -36,7 +36,6 @@ include { BUSCOGENOME } from params.modules_path
 include { BUSCOPROTEIN } from params.modules_path
 include { BUSCOGENOMEOUTPUT } from params.modules_path
 include { BUSCOPROTEINOUTPUT } from params.modules_path
-params.help = false
 
  // print usage
 if (params.help) {
