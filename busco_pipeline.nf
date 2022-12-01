@@ -23,7 +23,10 @@ params.help = false
 params.mode = ['protein', 'genome']
 params.busco_version = 'v5.3.2_cv1'
 params.download_path = '/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data'
-params.dump_params = ''
+
+// Params for dumping the translations. Default is canonical transcripts only
+// You should use '--nocanonical_only' if you want all proteins to be dumped
+params.dump_params = '--canonical_only'
 
 
 //Modules
