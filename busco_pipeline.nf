@@ -15,15 +15,18 @@ params.csvFile = ''
 params.meta_query_file = "${projectDir}/supplementary_files/meta.sql"
 params.get_dataset_query = "${projectDir}/supplementary_files/get_busco_dataset.sh"
 params.ortho_list = "${projectDir}/supplementary_files/busco_dataset.txt"
-params.outDir = "/nfs/production/flicek/ensembl/genebuild/ftricomi/nextflow/busco_score_RR_NEW"
+params.outDir = "${workDir}"
 params.genome_file = ''
+params.help = false
 
 // Busco params
-params.busco_set = ''
 params.mode = ['protein', 'genome']
 params.busco_version = 'v5.3.2_cv1'
 params.download_path = '/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data'
-params.dump_params = ''
+
+// Params for dumping the translations. Default is canonical transcripts only
+// You should use '--nocanonical_only' if you want all proteins to be dumped
+params.dump_params = '--canonical_only'
 
 
 //Modules
@@ -36,7 +39,6 @@ include { BUSCOGENOME } from params.modules_path
 include { BUSCOPROTEIN } from params.modules_path
 include { BUSCOGENOMEOUTPUT } from params.modules_path
 include { BUSCOPROTEINOUTPUT } from params.modules_path
-params.help = false
 
  // print usage
 if (params.help) {
@@ -52,7 +54,7 @@ if (params.help) {
   log.info '  --port INT                   Db port  '
   log.info '  --user STR                   Db user  '
   log.info '  --enscode STR                Enscode path '
-  log.info '  --outDir STR                 Output directory '
+  log.info '  --outDir STR                 Output directory. Default is workDir'
   log.info '  --csvFile STR                Path for the csv containing the db name'
   log.info '  --mode STR                   Busco mode: genome or protein, default is to run both'
   log.info '  --genome_file STR            Unmasked FASTA genome file (genome mode)'

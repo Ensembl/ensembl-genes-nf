@@ -14,10 +14,8 @@ def concatString(string1, string2, string3){
 
 /* Get Busco dataset using NSCBI taxonomy in meta table */
 process BUSCODATASET {
-  cpus 1
-  memory { 2.GB * task.attempt }
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
+  executor 'local'
+  scratch false
 
   beforeScript "export ENSCODE=${params.enscode}"
 
@@ -35,10 +33,8 @@ process BUSCODATASET {
 }
 /* Get species name and accession from meta table to build the output directory tree */
 process SPECIESOUTDIR {
-  cpus 1
-  memory { 2.GB * task.attempt }
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
+  executor 'local'
+  scratch false
 
   input:
   val db
@@ -96,6 +92,7 @@ process BUSCOGENOME {
 
   cpus 20
   memory { 60.GB * task.attempt }
+  time "4h"
 
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
@@ -129,6 +126,9 @@ process BUSCOGENOME {
      /*
          rename busco summary file in <production name>_gca_genome_busco_short_summary.txt
      */
+     cpus 1
+     memory "1GB"
+     time "5m"
 
      input:
      val outdir
@@ -151,6 +151,7 @@ process FETCHPROTEINS {
   memory { 6.GB * task.attempt }
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
+  time "2h"
 
   input:
   tuple val(species_dir),val(db), val(busco_dataset), val(mode)
@@ -158,7 +159,7 @@ process FETCHPROTEINS {
   storeDir "${params.outDir}/${species_dir}/fasta/"
 
   output:
-  path "translations.fa", emit: fasta
+  path "${db}_translations.fa", emit: fasta
   val species_dir, emit: output_dir
   val db, emit:db_name
   val busco_dataset, emit:busco_dataset
@@ -167,7 +168,7 @@ process FETCHPROTEINS {
  
   script:
   """
-  perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -canonical_only 1 -file translations.fa  ${params.dump_params}
+  perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -file ${db}_translations.fa  ${params.dump_params}
   """
 }
 
@@ -177,6 +178,7 @@ process BUSCOPROTEIN {
 
   cpus 20
   memory { 40.GB * task.attempt }
+  time "2h"
 
   errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
   maxRetries 2
@@ -207,6 +209,10 @@ process BUSCOPROTEINOUTPUT {
      /*
          rename busco summary file in <production name>_gca_busco_short_summary.txt
      */
+     cpus 1
+     memory "1GB"
+     time "5m"
+
      input:
      val outdir
 
