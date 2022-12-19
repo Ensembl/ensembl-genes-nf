@@ -36,6 +36,12 @@ The read only username for the host. The password is expected to be empty.
 The directory containing the Perl repositories
 
 
+### Recommended options
+
+#### outDir
+The path to a directory to store your results, default is workDir.
+
+
 ### Using the provided nextflow.config
 We are using profiles to be able to run the pipeline on different HPC. The default is 'standard'. To use a different profile, use `-profile <profile name>` in your nextflow command.
 
@@ -54,9 +60,6 @@ The path to the scratch directory to use
 
 #### workDir
 The directory where nextflow stores any file
-
-#### outDir
-The directory to use to store the results of the pipeline
 
 
 ### Running the different Busco modes
