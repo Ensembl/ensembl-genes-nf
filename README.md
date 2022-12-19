@@ -50,7 +50,7 @@ Uses SLURM to run the compute heavy jobs. It expects the usage of `scratch` to u
 You can use a local config with `-c` to finely configure your pipeline. All parameters can be configured, we recommend setting the ones mentionned below.
 
 #### process.scratch
-The patch to the scratch directory to use
+The path to the scratch directory to use
 
 #### workDir
 The directory where nextflow stores any file
