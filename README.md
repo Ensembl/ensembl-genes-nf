@@ -37,7 +37,7 @@ The directory containing the Perl repositories
 
 
 ### Using the provided nextflow.config
-We are using profiles to be able to run the pipeline on different HPC. The default is 'standard'
+We are using profiles to be able to run the pipeline on different HPC. The default is 'standard'. To use a different profile, use `-profile <profile name>` in your nextflow command.
 
 #### standard
 Uses LSF to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem
