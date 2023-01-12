@@ -13,6 +13,7 @@ We recommend that you clone all the repositories into one directory
 |-----------------|--------|----|
 | ensembl | default | https://github.com/Ensembl/ensembl.git |
 | ensembl-analysis | default | https://github.com/Ensembl/ensembl-analysis.git |
+| ensembl-io | default | https://github.com/Ensembl/ensembl-io.git |
 
 
 ## Running the pipeline
