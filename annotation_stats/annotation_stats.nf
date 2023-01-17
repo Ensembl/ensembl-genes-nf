@@ -26,36 +26,29 @@ log.info """\
 Genebuild annotation statistics Nextflow pipeline
 
 Usage:
-    nextflow run annotation_stats.nf --message MESSAGE
+    nextflow run annotation_stats.nf [...]
 """
 
 
-// default pipeline parameters
-params.message = "Hello World!"
-
-
-// default workflow
-workflow {
-    // input data channel
-    input_channel = Channel.value(params.message)
-
-    print_message(input_channel)
-
-    // print process output to the terminal
-    print_message.out.view()
-}
-
-
-// https://www.nextflow.io/docs/latest/process.html
-process print_message {
+process check_stats_files {
     input:
-    val message
+    val annotation_directory
+    val production_name
 
     output:
     stdout
 
     script:
     """
-    echo "${params.message}"
+    python "$projectDir/tasks.py" check_stats_files "$annotation_directory" "$production_name"
     """
+}
+
+
+workflow {
+    annotation_directory = Channel.fromPath(params.annotation_directory)
+    production_name = Channel.value(params.production_name)
+    check_stats_files(annotation_directory, production_name)
+
+    check_stats_files.out.view()
 }
