@@ -47,9 +47,9 @@ process FETCHPROTEINS {
   val "${species_dir.trim()}", emit: output_dir
   val db, emit:db_name
 
-  beforeScript "export ${params.enscode}"
+  beforeScript "export ENSCODE=${params.enscode}"
   beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
- 
+  //beforeScript "ENSCODE=${params.enscode} source ${projectDir}/supplementary_files/perl5lib.sh"
   script:
   """
   perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -canonical_only 1 -file translations.fa  ${params.dump_params}
