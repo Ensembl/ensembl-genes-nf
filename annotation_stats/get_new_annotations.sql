@@ -1,16 +1,4 @@
 -- get new annotations
-
-
--- SELECT
---   *
--- FROM data_release
--- -- FROM data_release_database
--- -- WHERE rand() <= 0.2
--- -- WHERE rand() <= 0.1
--- -- WHERE rand() <= 0.01
--- ;
-
-
 SELECT
   -- genome_annotation.genome_annotation_id AS 'genome_annotation_id',
   genome_annotation.type AS 'genome_annotation.type',
@@ -35,6 +23,6 @@ WHERE genome_annotation.type = 'genebuild_method'
   ) - 1
   -- AND rand() <= 0.1
   -- AND rand() <= 0.01
-  -- AND rand() <= 0.001
+  AND rand() <= 0.001
 -- LIMIT 10
 ;

@@ -37,27 +37,25 @@ from tabulate import tabulate
 # project
 
 
-def get_new_annotations(query_file_path):
-    """
-    Retrieve new annotation from the production metadata database.
-    """
-    with open(query_file_path, "r") as query_file:
-        query = query_file.read()
+meta1 = {
+    "host": "mysql-ens-meta-prod-1",
+    "port": 4483,
+    "user": "ensro",
+}
 
-    meta1 = {
-        "host": "mysql-ens-meta-prod-1",
-        "port": 4483,
-        "user": "ensro",
-        "database": "ensembl_metadata_qrp",
-    }
 
-    connection_args = meta1
+def run_sql_query(query_file: str, connection_config: dict=meta1, database: str="ensembl_metadata_qrp"):
+    """
+    Run the SQL query in query_file on the server and database defined in connection_config.
+    """
+    with open(query_file, "r") as file:
+        query = file.read()
 
     connection = pymysql.connect(
-        host=connection_args["host"],
-        port=connection_args["port"],
-        user=connection_args["user"],
-        database=connection_args["database"],
+        host=connection_config["host"],
+        port=connection_config["port"],
+        user=connection_config["user"],
+        database=database,
         # cursorclass=pymysql.cursors.DictCursor,
     )
 
@@ -68,11 +66,22 @@ def get_new_annotations(query_file_path):
 
             columns = [column[0] for column in cursor.description]
 
-    print(tabulate(query_result, headers=columns, tablefmt="psql"))
+    return (columns, query_result)
 
-    exit()
 
-    return query_result
+def get_new_annotations(query_file, new_annotations_csv):
+    """
+    Retrieve new annotations from the production metadata database.
+    """
+    database = "ensembl_metadata_qrp"
+    columns, query_result = run_sql_query(query_file=query_file, connection_config=meta1, database=database)
+
+    # print(tabulate(query_result, headers=columns, tablefmt="psql"))
+
+    with open(new_annotations_csv, "w") as file:
+        for annotation in query_result:
+            annotation_database = annotation[3]
+            file.write(f"{annotation_database}\n")
 
 
 def check_stats_files(annotation_directory: str, production_name: str):
