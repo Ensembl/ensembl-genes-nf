@@ -69,16 +69,16 @@ def run_sql_query(query_file: str, connection_config: dict=meta1, database: str=
     return (columns, query_result)
 
 
-def get_new_annotations(query_file, new_annotations_csv):
+def get_recent_annotations(query_file, annotations_csv):
     """
-    Retrieve new annotations from the production metadata database.
+    Retrieve recent annotations from the production metadata database.
     """
     database = "ensembl_metadata_qrp"
     columns, query_result = run_sql_query(query_file=query_file, connection_config=meta1, database=database)
 
     # print(tabulate(query_result, headers=columns, tablefmt="psql"))
 
-    with open(new_annotations_csv, "w") as file:
+    with open(annotations_csv, "w") as file:
         for annotation in query_result:
             annotation_database = annotation[3]
             file.write(f"{annotation_database}\n")
