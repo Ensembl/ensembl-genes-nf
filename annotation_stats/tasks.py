@@ -44,7 +44,12 @@ meta1 = {
 }
 
 
-def run_sql_query(query_file: str, connection_config: dict=meta1, database: str="ensembl_metadata_qrp"):
+def run_sql_query(
+    query_file: str,
+    connection_config: dict = meta1,
+    database: str = "ensembl_metadata_qrp",
+    debug: bool = False,
+):
     """
     Run the SQL query in query_file on the server and database defined in connection_config.
     """
@@ -66,17 +71,21 @@ def run_sql_query(query_file: str, connection_config: dict=meta1, database: str=
 
             columns = [column[0] for column in cursor.description]
 
+    if debug:
+        print(tabulate(query_result, headers=columns, tablefmt="psql"))
+        exit()
+
     return (columns, query_result)
 
 
-def get_recent_annotations(query_file, annotations_csv):
+def get_recent_annotations(query_file: str, annotations_csv: str):
     """
     Retrieve recent annotations from the production metadata database.
     """
     database = "ensembl_metadata_qrp"
-    columns, query_result = run_sql_query(query_file=query_file, connection_config=meta1, database=database)
-
-    # print(tabulate(query_result, headers=columns, tablefmt="psql"))
+    columns, query_result = run_sql_query(
+        query_file=query_file, connection_config=meta1, database=database
+    )
 
     with open(annotations_csv, "w") as file:
         for annotation in query_result:

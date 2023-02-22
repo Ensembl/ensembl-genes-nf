@@ -1,10 +1,12 @@
 -- get recent annotations
 SELECT
-  genome_annotation.type AS 'genome_annotation.type',
+  DISTINCT
+  -- genome_annotation.type AS 'genome_annotation.type',
   genome_annotation.value AS 'genome_annotation.value',
-  genome_database.genome_database_id AS 'genome_database_id',
+  -- genome_annotation.genome_database_id AS 'genome_annotation.genome_database_id',
   genome_database.dbname AS 'genome_database.dbname',
-  genome.genome_id AS 'genome.genome_id',
+  -- genome_annotation.genome_id AS 'genome_annotation.genome_id',
+  -- genome.data_release_id AS 'genome.data_release_id',
   data_release.ensembl_genomes_version AS 'data_release.ensembl_genomes_version'
 FROM genome_annotation
 INNER JOIN genome_database
@@ -26,6 +28,7 @@ WHERE genome_annotation.type = 'genebuild_method'
   -- unique 'genebuild_method' values:
   -- ('full_genebuild', 'import', 'external_annotation_import', 'curated', 'anno', 'braker', 'projection_build')
   AND genome_annotation.value IN ('full_genebuild', 'anno', 'braker')
+  -- result samples for development
   -- AND rand() <= 0.01
-  AND rand() <= 0.001
+  -- AND rand() <= 0.001
 ;
