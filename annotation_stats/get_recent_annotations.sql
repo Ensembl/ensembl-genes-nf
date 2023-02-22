@@ -2,12 +2,12 @@
 SELECT
   DISTINCT
   -- genome_annotation.type AS 'genome_annotation.type',
-  genome_annotation.value AS 'genome_annotation.value',
+  -- genome_annotation.value AS 'genome_annotation.value',
   -- genome_annotation.genome_database_id AS 'genome_annotation.genome_database_id',
-  genome_database.dbname AS 'genome_database.dbname',
   -- genome_annotation.genome_id AS 'genome_annotation.genome_id',
   -- genome.data_release_id AS 'genome.data_release_id',
-  data_release.ensembl_genomes_version AS 'data_release.ensembl_genomes_version'
+  -- data_release.ensembl_genomes_version AS 'data_release.ensembl_genomes_version',
+  genome_database.dbname AS 'genome_database.dbname'
 FROM genome_annotation
 INNER JOIN genome_database
   ON genome_annotation.genome_database_id = genome_database.genome_database_id

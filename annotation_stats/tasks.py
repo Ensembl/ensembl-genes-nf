@@ -89,7 +89,7 @@ def get_recent_annotations(query_file: str, annotations_csv: str):
 
     with open(annotations_csv, "w") as file:
         for annotation in query_result:
-            annotation_database = annotation[3]
+            annotation_database = annotation[0]
             file.write(f"{annotation_database}\n")
 
 
