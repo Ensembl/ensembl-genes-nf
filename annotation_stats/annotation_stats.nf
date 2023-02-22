@@ -30,6 +30,17 @@ Usage:
 """
 
 
+process get_recent_annotations {
+    input:
+    val annotations_csv
+
+    script:
+    """
+    python "$projectDir/tasks.py" get_recent_annotations --query_file="$projectDir/get_recent_annotations.sql" --annotations_csv="$annotations_csv"
+    """
+}
+
+
 process check_stats_files {
     input:
     val annotation_directory
@@ -46,9 +57,12 @@ process check_stats_files {
 
 
 workflow {
-    annotation_directory = Channel.fromPath(params.annotation_directory)
-    production_name = Channel.value(params.production_name)
-    check_stats_files(annotation_directory, production_name)
+    annotations_csv = Channel.fromPath(params.annotations_csv)
+    get_recent_annotations(annotations_csv)
 
-    check_stats_files.out.view()
+    /*annotation_directory = Channel.fromPath(params.annotation_directory)*/
+    /*production_name = Channel.value(params.production_name)*/
+    /*check_stats_files(annotation_directory, production_name)*/
+
+    /*check_stats_files.out.view()*/
 }
