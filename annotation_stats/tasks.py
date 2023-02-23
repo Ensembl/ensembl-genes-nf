@@ -87,10 +87,16 @@ def get_recent_annotations(query_file: str, annotations_csv: str):
         query_file=query_file, connection_config=meta1, database=database
     )
 
+    annotation_databases = [annotation[0] for annotation in query_result]
+
+    # save annotation databases list to a file
     with open(annotations_csv, "w") as file:
-        for annotation in query_result:
-            annotation_database = annotation[0]
+        for annotation_database in annotation_databases:
             file.write(f"{annotation_database}\n")
+
+    # output annotation databases list to stdout
+    for annotation_database in annotation_databases:
+        print(annotation_database)
 
 
 def check_stats_files(annotation_directory: str, production_name: str):

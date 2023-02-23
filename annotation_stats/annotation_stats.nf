@@ -34,6 +34,9 @@ process get_recent_annotations {
     input:
     val annotations_csv
 
+    output:
+    stdout
+
     script:
     """
     python "$projectDir/tasks.py" get_recent_annotations --query_file="$projectDir/get_recent_annotations.sql" --annotations_csv="$annotations_csv"
@@ -57,8 +60,9 @@ process check_stats_files {
 
 
 workflow {
-    annotations_csv = Channel.fromPath(params.annotations_csv)
-    get_recent_annotations(annotations_csv)
+    annotations_csv_path = "$workDir/annotations.csv"
+    get_recent_annotations(annotations_csv_path)
+    get_recent_annotations.out.view()
 
     /*annotation_directory = Channel.fromPath(params.annotation_directory)*/
     /*production_name = Channel.value(params.production_name)*/
