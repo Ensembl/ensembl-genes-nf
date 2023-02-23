@@ -69,7 +69,6 @@ def run_sql_query(
         port=connection_config["port"],
         user=connection_config["user"],
         database=database,
-        # cursorclass=pymysql.cursors.DictCursor,
     )
 
     with connection:
@@ -110,7 +109,7 @@ def get_recent_annotations(query_file: str, annotations_csv: str):
     Retrieve recent annotations from the production metadata database.
     """
     database = "ensembl_metadata_qrp"
-    columns, query_result = run_sql_query(
+    _columns, query_result = run_sql_query_file(
         query_file=query_file, mysql_server="mysql_ens_meta_prod_1", database=database
     )
 
@@ -124,6 +123,32 @@ def get_recent_annotations(query_file: str, annotations_csv: str):
     # output annotation databases list to stdout
     for annotation_database in annotation_databases:
         print(annotation_database)
+
+
+def get_annotation_info(annotation_database: str):
+    """
+    Get annotation information from the annotation core database.
+    """
+    # get species.scientific_name
+    query = "SELECT meta_value FROM meta WHERE meta_key = 'species.scientific_name';"
+    _columns, query_result = run_sql_query(
+        query=query, mysql_server="mysql_ens_mirror_5", database=annotation_database
+    )
+    species_scientific_name = query_result[0][0]
+
+    # get assembly.accession
+    query = "SELECT meta_value FROM meta WHERE meta_key = 'assembly.accession';"
+    _columns, query_result = run_sql_query(
+        query=query, mysql_server="mysql_ens_mirror_5", database=annotation_database
+    )
+    assembly_accession = query_result[0][0]
+
+    annotation_info = {
+        "species_scientific_name": species_scientific_name,
+        "assembly_accession": assembly_accession,
+    }
+
+    return annotation_info
 
 
 def check_stats_files(annotation_directory: str, production_name: str):
