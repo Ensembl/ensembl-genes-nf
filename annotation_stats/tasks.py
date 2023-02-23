@@ -37,24 +37,32 @@ from tabulate import tabulate
 # project
 
 
-meta1 = {
-    "host": "mysql-ens-meta-prod-1",
-    "port": 4483,
-    "user": "ensro",
+connection_configs = {
+    "mysql_ens_meta_prod_1": {
+        "alias": "meta1",
+        "host": "mysql-ens-meta-prod-1",
+        "port": 4483,
+        "user": "ensro",
+    },
+    "mysql_ens_mirror_5": {
+        "alias": "m5",
+        "host": "mysql-ens-mirror-5",
+        "port": 4692,
+        "user": "ensro",
+    },
 }
 
 
 def run_sql_query(
-    query_file: str,
-    connection_config: dict = meta1,
-    database: str = "ensembl_metadata_qrp",
+    query: str,
+    mysql_server: str,
+    database: str,
     debug: bool = False,
 ):
     """
-    Run the SQL query in query_file on the server and database defined in connection_config.
+    Run the SQL query on the specified server and database.
     """
-    with open(query_file, "r") as file:
-        query = file.read()
+    connection_config = connection_configs[mysql_server]
 
     connection = pymysql.connect(
         host=connection_config["host"],
@@ -78,13 +86,32 @@ def run_sql_query(
     return (columns, query_result)
 
 
+def run_sql_query_file(
+    query_file: str,
+    mysql_server: str,
+    database: str,
+    debug: bool = False,
+):
+    """
+    Run the SQL query in query_file on the specified server and database.
+    """
+    with open(query_file, "r") as file:
+        query = file.read()
+
+    columns, query_result = run_sql_query(
+        query=query, mysql_server=mysql_server, database=database, debug=debug
+    )
+
+    return (columns, query_result)
+
+
 def get_recent_annotations(query_file: str, annotations_csv: str):
     """
     Retrieve recent annotations from the production metadata database.
     """
     database = "ensembl_metadata_qrp"
     columns, query_result = run_sql_query(
-        query_file=query_file, connection_config=meta1, database=database
+        query_file=query_file, mysql_server="mysql_ens_meta_prod_1", database=database
     )
 
     annotation_databases = [annotation[0] for annotation in query_result]
