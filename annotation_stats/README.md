@@ -6,5 +6,5 @@ Generate statistics for a (Rapid Release) Genebuild annotation.
 ## run
 
 ```
-nextflow annotation_stats.nf [...]
+nextflow annotation_stats.nf
 ```
