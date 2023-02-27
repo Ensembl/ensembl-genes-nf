@@ -44,7 +44,7 @@ process get_recent_annotations {
 }
 
 
-process get_annotation_info {
+process process_annotation {
     errorStrategy 'ignore'
 
     input:
@@ -55,22 +55,7 @@ process get_annotation_info {
 
     script:
     """
-    python "$projectDir/tasks.py" get_annotation_info --annotation_database="$annotation_database"
-    """
-}
-
-
-process check_stats_files {
-    input:
-    val annotation_directory
-    val production_name
-
-    output:
-    stdout
-
-    script:
-    """
-    python "$projectDir/tasks.py" check_stats_files "$annotation_directory" "$production_name"
+    python "$projectDir/tasks.py" process_annotation --annotation_database="$annotation_database"
     """
 }
 
@@ -80,12 +65,6 @@ workflow {
     get_recent_annotations(annotations_csv_path)
     /*get_recent_annotations.out.view()*/
 
-    get_annotation_info(get_recent_annotations.out.splitText())
-    get_annotation_info.out.view()
-
-    /*annotation_directory = Channel.fromPath(params.annotation_directory)*/
-    /*production_name = Channel.value(params.production_name)*/
-    /*check_stats_files(annotation_directory, production_name)*/
-
-    /*check_stats_files.out.view()*/
+    process_annotation(get_recent_annotations.out.splitText())
+    process_annotation.out.view()
 }

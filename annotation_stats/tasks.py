@@ -19,7 +19,7 @@
 
 
 """
-Annotation stats Nextflow pipeline tasks.
+Annotation statistics Nextflow pipeline tasks.
 """
 
 
@@ -80,7 +80,7 @@ def run_sql_query(
 
     if debug:
         print(tabulate(query_result, headers=columns, tablefmt="psql"))
-        exit()
+        return
 
     return (columns, query_result)
 
@@ -125,6 +125,22 @@ def get_recent_annotations(query_file: str, annotations_csv: str):
         print(annotation_database)
 
 
+def process_annotation(annotation_database: str):
+    try:
+        annotation_info = get_annotation_info(annotation_database)
+    # skip errors about missing databases (metadata database out of sync?)
+    except pymysql.err.OperationalError as ex:
+        print(ex)
+        return
+
+    species_scientific_name = annotation_info["species_scientific_name"]
+    assembly_accession = annotation_info["assembly_accession"]
+    species_production_name = annotation_info["species_production_name"]
+
+    if statistics_files_exist(species_scientific_name, assembly_accession, species_production_name):
+        return
+
+
 def get_annotation_info(annotation_database: str):
     """
     Get annotation information from the annotation core database.
@@ -143,20 +159,37 @@ def get_annotation_info(annotation_database: str):
     )
     assembly_accession = query_result[0][0]
 
+    # get species.production_name
+    query = "SELECT meta_value FROM meta WHERE meta_key = 'species.production_name';"
+    _columns, query_result = run_sql_query(
+        query=query, mysql_server="mysql_ens_mirror_5", database=annotation_database
+    )
+    species_production_name = query_result[0][0]
+
     annotation_info = {
         "species_scientific_name": species_scientific_name,
         "assembly_accession": assembly_accession,
+        "species_production_name": species_production_name,
     }
 
     return annotation_info
 
 
-def check_stats_files(annotation_directory: str, production_name: str):
-    annotation_directory = pathlib.Path(annotation_directory)
+def statistics_files_exist(species_scientific_name: str, assembly_accession: str, species_production_name: str):
+    rapid_release_root_directory = pathlib.Path("/nfs/production/flicek/ensembl/production/ensemblftp/rapid-release/species")
 
-    readme_file = annotation_directory / "statistics_README.txt"
+    annotation_directory = rapid_release_root_directory / species_scientific_name.replace(" ", "_") / assembly_accession
+
+    if (annotation_directory / "ensembl").exists():
+        statistics_directory = annotation_directory / "ensembl" / "statistics"
+    elif (annotation_directory / "braker").exists():
+        statistics_directory = annotation_directory / "braker" / "statistics"
+    else:
+        return False
+
+    readme_file = statistics_directory / "statistics_README.txt"
     statistics_file = (
-        annotation_directory / f"{production_name}_annotation_statistics.txt"
+        statistics_directory / f"{species_production_name}_annotation_statistics.txt"
     )
 
     return readme_file.exists() and statistics_file.exists()
