@@ -138,6 +138,7 @@ def process_annotation(annotation_database: str):
     species_production_name = annotation_info["species_production_name"]
 
     if statistics_files_exist(species_scientific_name, assembly_accession, species_production_name):
+        print(f"statistics files in place for {annotation_database}")
         return
 
 
@@ -186,6 +187,7 @@ def statistics_files_exist(species_scientific_name: str, assembly_accession: str
         statistics_directory = annotation_directory / "braker" / "statistics"
     else:
         return False
+    print(statistics_directory)
 
     readme_file = statistics_directory / "statistics_README.txt"
     statistics_file = (
