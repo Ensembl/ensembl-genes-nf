@@ -19,7 +19,7 @@
 
 
 """
-Annotation statistics Nextflow pipeline tasks.
+Annotation statistics Nextflow pipeline tasks and auxiliary functions.
 """
 
 
@@ -126,6 +126,10 @@ def get_recent_annotations(query_file: str, annotations_csv: str):
 
 
 def process_annotation(annotation_database: str):
+    """
+    1. Get annotation information from the annotation core database.
+    2. Construct root annotation and statistics paths and check for statistics files existence.
+    """
     try:
         annotation_info = get_annotation_info(annotation_database)
     # skip errors about missing databases (metadata database out of sync?)
@@ -137,7 +141,9 @@ def process_annotation(annotation_database: str):
     assembly_accession = annotation_info["assembly_accession"]
     species_production_name = annotation_info["species_production_name"]
 
-    if statistics_files_exist(species_scientific_name, assembly_accession, species_production_name):
+    if statistics_files_exist(
+        species_scientific_name, assembly_accession, species_production_name
+    ):
         print(f"statistics files in place for {annotation_database}")
         return
 
@@ -176,10 +182,21 @@ def get_annotation_info(annotation_database: str):
     return annotation_info
 
 
-def statistics_files_exist(species_scientific_name: str, assembly_accession: str, species_production_name: str):
-    rapid_release_root_directory = pathlib.Path("/nfs/production/flicek/ensembl/production/ensemblftp/rapid-release/species")
+def statistics_files_exist(
+    species_scientific_name: str, assembly_accession: str, species_production_name: str
+):
+    """
+    Construct root annotation and statistics paths and check for statistics files existence.
+    """
+    rapid_release_root_directory = pathlib.Path(
+        "/nfs/production/flicek/ensembl/production/ensemblftp/rapid-release/species"
+    )
 
-    annotation_directory = rapid_release_root_directory / species_scientific_name.replace(" ", "_") / assembly_accession
+    annotation_directory = (
+        rapid_release_root_directory
+        / species_scientific_name.replace(" ", "_")
+        / assembly_accession
+    )
 
     if (annotation_directory / "ensembl").exists():
         statistics_directory = annotation_directory / "ensembl" / "statistics"

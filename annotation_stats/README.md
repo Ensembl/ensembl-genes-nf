@@ -5,13 +5,13 @@ Generate statistics for a (Rapid Release) Genebuild annotation.
 
 ## setup environment
 
-create Python 3.10 or 3.9 virtual environment
+create a Python 3.10 or 3.9 virtual environment with name `annotation_stats`
 ```
 # e.g.
 pyenv virtualenv 3.10.9 annotation_stats
 ```
 
-install Python dependencies
+install Python dependencies (using Poetry version >= 1.3)
 ```
 poetry install
 ```
