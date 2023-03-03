@@ -1,3 +1,5 @@
+#!/usr/bin/env nextflow
+
 def get_species_name(name) {
   final m = name.tr('[A-Z]','[a-z]').tr('.','v').split('/')[0]
   return m
@@ -8,103 +10,72 @@ def get_gca(name) {
   return m
 }
 
+
+
+def get_gca_path(gca, assembly_name) {
+  final gca_splitted = gca.replaceAll("_","").tokenize(".")[0].split("(?<=\\G.{3})").join('/')
+  //return gca_splitted
+  return  'https://ftp.ncbi.nlm.nih.gov/genomes/all'  + '/' + gca_splitted + '/' + "$gca" +'_' + assembly_name.replaceAll(" ","_") + '/' + "$gca" + '_' + assembly_name.replaceAll(" ","_") + '_genomic.fna.gz'
+  //return gca + '_' + assembly_name.replaceAll(" ","_") + '_genomic.fna.gz'    ?<=\\G.{3}
+}
+
+
 def concatString(string1, string2, string3){
  return string1 + '_'+string2 + '_'+string3
 }
 
-/* Get species name and accession from meta table to build the output directory tree */
-process SPECIESOUTDIR {
-  cpus 1
-  memory { 2.GB * task.attempt }
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
 
-  input:
-  val db
-  output:
-  tuple stdout, val(db)
-  script:
-  // get <Production name>/GCA
-  """
-  mysql -N -u ${params.user}  -h ${params.host} -P ${params.port} -D $db < "${params.meta_query_file}"
-  """
-}
-
-/* Dump canonical translations */
-process FETCHPROTEINS {
-  cpus 1
-  memory { 9.GB * task.attempt }
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
-
-  input:
-  tuple val(species_dir),val(db)
+process PROCESSASSEMBLY {
+  memory { 8.GB * task.attempt }
   
-  storeDir "${params.outDir}/${species_dir.trim()}/fasta/"
-
-  output:
-  path "translations.fa", emit: fasta
-  val "${species_dir.trim()}", emit: output_dir
-  val db, emit:db_name
-
-  beforeScript "export ENSCODE=${params.enscode}"
-  beforeScript "source $ENSCODE/ensembl-genes-nf/supplementary_files/perl5lib.sh"
-  //beforeScript "ENSCODE=${params.enscode} source ${projectDir}/supplementary_files/perl5lib.sh"
-  script:
-  """
-  perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -canonical_only 1 -file translations.fa  ${params.dump_params}
-  """
-}
-
-
-process CREATEOMAMER {
-
-  cpus 20
-  memory { 10.GB * task.attempt }
-
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
-
   input:
-  file translations
-  val outdir
-  val db
+  tuple val(gca), val(assembly_name)
 
+  storeDir "${params.outDir}/${gca}/data/"
+  //publishDir "${params.outDir}/${gca}/data",  mode: 'copy'
   output:
-  path "*.omamer", emit: omamer_file
-  val outdir, emit:species_outdir
-
-  // ourdir is Salmo_trutta (production name)
-  publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
-
+  val(gca), emit:gca
+  path "*.fna", emit: genome_file
+  //print ${get_gca_path(${gca}, ${assembly_name})
   script:
+  //"""
+  //x= get_gca_path("${gca}", "${assembly_name}")
+  //print x
   """
-  singularity exec /hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif omamer search --query ${translations} --db ${params.omamer_database} --score sensitive --out proteins.omamer
+  wget  ${get_gca_path("${gca}", "${assembly_name}")}
+  gzip -d -f ${concatString("${gca}", "${assembly_name.replaceAll(" ","_")}", 'genomic.fna.gz')}
   """
-}
-
-
-process RUNOMARK {
-
-  cpus 20
-  memory { 20.GB * task.attempt }
-
-  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
-  maxRetries 2
-
-  input:
-  file omamer_file
-  val outdir
+  //gzip -d ${concatString("${gca}",  "${assembly_name}.replaceAll(' ','_')", 'genomic.fna')}   ${get_gca_path("${gca}", "${assembly_name}")};
+  //"""
   
+}
+
+/* run Busco in genome mode */
+process BUSCOGENOME {
+
+  cpus 40
+  memory { 40.GB * task.attempt }
+  time "24h"
+
+  errorStrategy { task.exitStatus == 130 ? 'retry' : 'terminate' }
+  maxRetries 2
+  module 'singularity-3.7.0-gcc-9.3.0-dp5ffrp'
+  container "ezlabgva/busco:${params.busco_version}"
+  containerOptions "-B ${params.outDir}/:/busco_wd"
+
+  input:
+  val gca
+  file genome_file
 
   output:
-  path("omark_output/*"), emit: summary_file
-  val outdir, emit:species_outdir
-
-  publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
+  path "busco_output/*.txt", emit: summary_file
+  publishDir "${params.outDir}/${gca}/",  mode: 'copy'
 
   script:
   """
-  singularity exec /hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output
+  busco -f -i ${genome_file} -o busco_output --mode genome --auto-lineage -c ${task.cpus} 
   """
+  //--offline --download_path ${params.download_path}
+  //"""
 }
+
