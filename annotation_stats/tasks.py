@@ -19,14 +19,12 @@
 
 
 """
-Annotation statistics Nextflow pipeline tasks.
+Annotation statistics Nextflow pipeline tasks and auxiliary functions.
 """
 
 
 # standard library
 import pathlib
-
-from pprint import pp as pprint
 
 # third party
 import fire
@@ -126,6 +124,10 @@ def get_recent_annotations(query_file: str, annotations_csv: str):
 
 
 def process_annotation(annotation_database: str):
+    """
+    1. Get annotation information from the annotation core database.
+    2. Construct root annotation and statistics paths and check for statistics files existence.
+    """
     try:
         annotation_info = get_annotation_info(annotation_database)
     # skip errors about missing databases (metadata database out of sync?)
@@ -137,9 +139,9 @@ def process_annotation(annotation_database: str):
     assembly_accession = annotation_info["assembly_accession"]
     species_production_name = annotation_info["species_production_name"]
 
-    if statistics_files_exist(species_scientific_name, assembly_accession, species_production_name):
-        print(f"statistics files in place for {annotation_database}")
-        return
+    check_statistics_files(
+        species_scientific_name, assembly_accession, species_production_name
+    )
 
 
 def get_annotation_info(annotation_database: str):
@@ -176,10 +178,21 @@ def get_annotation_info(annotation_database: str):
     return annotation_info
 
 
-def statistics_files_exist(species_scientific_name: str, assembly_accession: str, species_production_name: str):
-    rapid_release_root_directory = pathlib.Path("/nfs/production/flicek/ensembl/production/ensemblftp/rapid-release/species")
+def check_statistics_files(
+    species_scientific_name: str, assembly_accession: str, species_production_name: str
+):
+    """
+    Construct root annotation and statistics paths and check for the existence of statistics files.
+    """
+    rapid_release_root_directory = pathlib.Path(
+        "/nfs/production/flicek/ensembl/production/ensemblftp/rapid-release/species"
+    )
 
-    annotation_directory = rapid_release_root_directory / species_scientific_name.replace(" ", "_") / assembly_accession
+    annotation_directory = (
+        rapid_release_root_directory
+        / species_scientific_name.replace(" ", "_")
+        / assembly_accession
+    )
 
     if (annotation_directory / "ensembl").exists():
         statistics_directory = annotation_directory / "ensembl" / "statistics"
@@ -187,14 +200,24 @@ def statistics_files_exist(species_scientific_name: str, assembly_accession: str
         statistics_directory = annotation_directory / "braker" / "statistics"
     else:
         return False
-    print(statistics_directory)
+    print(f"checking {statistics_directory}")
+
+    busco_statistics_file = (
+        statistics_directory / f"{species_production_name}_busco_short_summary.txt"
+    )
+    genome_busco_statistics_file = (
+        statistics_directory
+        / f"{species_production_name}_genome_busco_short_summary.txt"
+    )
+    if busco_statistics_file.exists() and genome_busco_statistics_file.exists():
+        print(f"{species_production_name} BUSCO statistics files in place")
 
     readme_file = statistics_directory / "statistics_README.txt"
     statistics_file = (
         statistics_directory / f"{species_production_name}_annotation_statistics.txt"
     )
-
-    return readme_file.exists() and statistics_file.exists()
+    if readme_file.exists() and statistics_file.exists():
+        print(f"{species_production_name} summary statistics and README files in place")
 
 
 if __name__ == "__main__":

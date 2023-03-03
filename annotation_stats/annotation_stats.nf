@@ -26,7 +26,7 @@ log.info """\
 Genebuild annotation statistics Nextflow pipeline
 
 Usage:
-    nextflow run annotation_stats.nf [...]
+    nextflow annotation_stats.nf
 """
 
 
