@@ -1,37 +1,47 @@
-# OMArk Nextflow pipeline
+# Assembly Checker Nextflow pipeline
   
-OMArk is a software of proteome (protein-coding gene repertoire) quality assessment. It provides measure of proteome completeness, characterize all protein coding genes in the light of existing homologs, and identify the presence of contamination from other species.
-Further information available in the official repo https://github.com/DessimozLab/OMArk
+The pipeline aims to check the quality of an assembly downloading the genome sequences from the NCBI ftp and running Busco in genome mode. The assembly is defined good if the Busco score is above 90%.
 
 ### Requirements
 
-## OMArk
-We built a  Docker image available in the cluster as singularity
+### Busco
+We are using the Docker image available in https://hub.docker.com/r/ezlabgva/busco
 
-### Perl EnsEMBL repositories you need to have
-
-We recommend that you clone all the repositories into one directory
-| Repository name | branch | URL|
-|-----------------|--------|----|
-| ensembl | default | https://github.com/Ensembl/ensembl.git |
-
-## Initialise the pipeline
-
-Edit the config file specifying the scratch and the workDir
+## Running the pipeline
 
 
-To run the pipeline in the cluster a csv with the list of database names is needed. Moreover, in omark_pipeline.nf the database connections are specified but they can be overwritten specifying the db connections in the command. All the dbs in csv are supposed to have the same db connections.
+### Mandatory options
 
-The default option is to run busco in both genome and protein mode
+#### csvFile
+A file containing the list of "GCA,assembly name"
+
+### Using the provided nextflow.config
+We are using profiles to be able to run the pipeline on different HPC. The default is 'standard'
+
+#### standard
+Uses LSF to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem
+
+#### cluster
+Uses SLURM to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem
+
+#### process.scratch
+The patch to the scratch directory to use
+
+#### workDir
+The directory where nextflow stores any file
+
+#### outDir
+The directory to use to store the results of the pipeline
+
 
 ## Run the pipeline
 
 ```
-bsub -Is "/hps/software/users/ensembl/genebuild/bin/nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/omark_pipeline.nf --enscode $ENSCODE --csvFile dbname.csv  -w ../work"
+nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/assembly_checker.nf --csvFile 
 ```
 
 Further information in the help
 
 ```
-/hps/software/users/ensembl/genebuild/bin/nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/omark_pipeline.nf --help# ensembl-genes-nf
+nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/assembly_checker.nf --help
 ```
