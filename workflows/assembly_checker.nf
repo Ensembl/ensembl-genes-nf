@@ -44,8 +44,8 @@ if (params.help) {
   log.info '  nextflow -C ensembl-genes-nf/nextflow.config run ensembl-genes-nf/workflows/assembly_checker.nf --csvFile -profile slurm, standard'
   log.info ''
   log.info 'Options:'
-  log.info '  --outDir                  Output directory '
-  log.info '  --csvFile                 Path for the csv containing the db name'
+  log.info '  --outDir STR              Output directory '
+  log.info '  --csvFile STR             Path for the csv containing the db name'
   exit 1
 }
 
