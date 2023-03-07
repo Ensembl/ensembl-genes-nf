@@ -14,24 +14,60 @@ We recommend that you clone all the repositories into one directory
 | Repository name | branch | URL|
 |-----------------|--------|----|
 | ensembl | default | https://github.com/Ensembl/ensembl.git |
-
-## Initialise the pipeline
-
-Edit the config file specifying the scratch and the workDir
+| ensembl-analysis | default | https://github.com/Ensembl/ensembl-analysis.git |
+| ensembl-io | default | https://github.com/Ensembl/ensembl-io.git |
 
 
-To run the pipeline in the cluster a csv with the list of database names is needed. Moreover, in omark_pipeline.nf the database connections are specified but they can be overwritten specifying the db connections in the command. All the dbs in csv are supposed to have the same db connections.
+## Running the pipeline
 
-The default option is to run busco in both genome and protein mode
+
+### Mandatory options
+
+#### csvFile
+A file containing the list of databases you want to run Busco on. The databases need to have DNA.
+
+#### host
+The host name for the databases
+
+#### port
+The port number of the host
+
+#### user
+The read only username for the host. The password is expected to be empty.
+
+#### enscode
+The directory containing the Perl repositories
+
+
+### Using the provided nextflow.config
+We are using profiles to be able to run the pipeline on different HPC. The default is 'standard'
+
+#### standard
+Uses LSF to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem
+
+#### cluster
+Uses SLURM to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem
+
+
+### Using a local config
+You can use a local config with `-c` to finely configure your pipeline. All parameters can be configured, we recommend setting the ones mentionned below.
+
+#### process.scratch
+The patch to the scratch directory to use
+
+#### workDir
+The directory where nextflow stores any file
+
+#### outDir
+The directory to use to store the results of the pipeline
 
 ## Run the pipeline
 
 ```
-bsub -Is "/hps/software/users/ensembl/genebuild/bin/nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/omark_pipeline.nf --enscode $ENSCODE --csvFile dbname.csv  -w ../work"
+nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/omark_pipeline.nf -profile slurm --enscode $ENSCODE --csvFile dbname.csv -w ../../work
 ```
-
-Further information in the help
+### Information about all the parameters
 
 ```
-/hps/software/users/ensembl/genebuild/bin/nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/omark_pipeline.nf --help# ensembl-genes-nf
+nextflow run ./ensembl-genes-nf/workflows/omark_pipeline.nf --help
 ```
