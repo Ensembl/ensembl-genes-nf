@@ -66,16 +66,17 @@ The default option is to run busco in both genome and protein mode
 #### BUSCO in genome mode
 
 ```
-/hps/software/users/ensembl/genebuild/bin/nextflow run ./ensembl-genes-nf/busco_pipeline.nf --enscode $ENSCODE --csvFile dbname.csv --genome_file genome.fa  --mode genome -w ../../work
+nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/busco_pipeline.nf --enscode $ENSCODE --csvFile dbname.csv --genome_file genome.fa  --mode genome -w ../../work
+
 ``` 
 #### BUSCO in protein mode
 
 ```
-/hps/software/users/ensembl/genebuild/bin/nextflow run ./ensembl-genes-nf/busco_pipeline.nf -profile slurm --enscode $ENSCODE --csvFile dbname.csv --mode protein -w ../../work
+nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/busco_pipeline.nf -profile slurm --enscode $ENSCODE --csvFile dbname.csv --mode protein -w ../../work
 ```
 
 ### Information about all the parameters
 
 ```
-/hps/software/users/ensembl/genebuild/bin/nextflow run ./ensembl-genes-nf/busco_pipeline.nf --help
+nextflow run ./ensembl-genes-nf/workflows/busco_pipeline.nf --help
 ```
