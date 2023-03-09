@@ -7,21 +7,26 @@ Busco is a measure of completeness of genome assembly and annotation of the gene
 ### Busco
 We are using the Docker image available in https://hub.docker.com/r/ezlabgva/busco
 
-### Perl EnsEMBL repositories you need to have
-We recommend that you clone all the repositories into one directory
+### Ensembl dependencies
+These are the Ensembl repositories required by this pipeline:
+
 | Repository name | branch | URL|
 |-----------------|--------|----|
 | ensembl | default | https://github.com/Ensembl/ensembl.git |
 | ensembl-analysis | default | https://github.com/Ensembl/ensembl-analysis.git |
 | ensembl-io | default | https://github.com/Ensembl/ensembl-io.git |
 
-Remember that, following the instructions about [Ensembl's Perl API installation](http://www.ensembl.org/info/docs/api/api_installation.html), you will also need to have BioPerl v1.6.924 available in your system. If you don't, you can install it as follows:
+It is recommended that all the repositories are cloned into the same folder.
+
+Remember that, following the instructions in [Ensembl's Perl API installation](http://www.ensembl.org/info/docs/api/api_installation.html), you will also need to have BioPerl v1.6.924 available in your system. If you do not, you can install it executing the following commands:
 
 ```bash
 wget https://github.com/bioperl/bioperl-live/archive/release-1-6-924.zip
 unzip release-1-6-924.zip
 mv bioperl-live-release-1-6-924 bioperl-1.6.924
 ```
+
+It is recommended to install it in the same folder as the Ensembl repositories.
 
 ## Running the pipeline
 
