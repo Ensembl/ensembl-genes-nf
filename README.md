@@ -78,18 +78,16 @@ The directory to use to store the results of the pipeline
 
 
 ### Running the different Busco modes
-The default option is to run busco in both genome and protein mode
+The default option is to run Busco in both genome and protein mode as follows:
 
-#### BUSCO in genome mode
-
+#### Running BUSCO in LSF in genome mode
 ```bash
-nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/busco_pipeline.nf --enscode $ENSCODE --csvFile dbname.csv --genome_file genome.fa  --mode genome -w ../../work
+nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/workflows/busco_pipeline.nf --host <mysql_host> --port <mysql_port> --user <mysql_user> --enscode $ENSCODE --csvFile <csv_file_path> --mode genome
 
 ``` 
-#### BUSCO in protein mode
-
+#### Running BUSCO in Slurm in protein mode
 ```bash
-nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/busco_pipeline.nf -profile slurm --enscode $ENSCODE --csvFile dbname.csv --mode protein -w ../../work
+nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/workflows/busco_pipeline.nf --profile slurm --host <mysql_host> --port <mysql_port> --user <mysql_user> --enscode $ENSCODE --csvFile <csv_file_path> --mode protein
 ```
 
 ### Information about all the parameters
