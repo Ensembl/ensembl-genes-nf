@@ -32,10 +32,6 @@ process FETCH_GENOME {
   val db, emit:db_name
   val busco_dataset, emit:busco_dataset
 
-
-  beforeScript "export ENSCODE=${params.enscode}"
-  beforeScript "source ${projectDir}/../bin/perl5lib.sh"
-
   script:
   """
   mkdir -p ${params.outDir}//${species_dir.trim()}/genome/
