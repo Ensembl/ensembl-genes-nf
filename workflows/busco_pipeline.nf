@@ -24,30 +24,31 @@ nextflow.enable.dsl=2
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-if( !params.host) {
+if (!params.host) {
   exit 1, "Undefined --host parameter. Please provide the server host for the db connection"
 }
 
-if( !params.port) {
+if (!params.port) {
   exit 1, "Undefined --port parameter. Please provide the server port for the db connection"
 }
-if( !params.user) {
+if (!params.user) {
   exit 1, "Undefined --user parameter. Please provide the server user for the db connection"
 }
 
-if( !params.enscode) {
+if (!params.enscode) {
   exit 1, "Undefined --enscode parameter. Please provide the enscode path"
 }
-if( !params.outDir) {
+if (!params.outDir) {
   exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
 }
-if( !params.mode) {
+if (!params.mode) {
   exit 1, "Undefined --mode parameter. Please define Busco running mode"
 }
 
-csvFile = file(params.csvFile)
-if( !csvFile.exists() ) {
-  exit 1, "The specified csv file does not exist: ${params.csvfile}"
+if (params.csvFile) {
+    csvFile = file(params.csvFile, checkIfExists: true)
+} else {
+    exit 1, 'CSV file not specified!'
 }
 
 busco_mode = []
@@ -80,6 +81,7 @@ if (params.help) {
   log.info '  --outDir STR                 Output directory. Default is workDir'
   log.info '  --csvFile STR                Path for the csv containing the db name'
   log.info '  --mode STR                   Busco mode: genome or protein, default is to run both'
+  log.info '  --bioperl STR                BioPerl path (optional)'
   exit 1
 }
 
@@ -105,7 +107,7 @@ include { BUSCO_PROTEIN_OUTPUT } from '../modules/busco_protein_output.nf'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow{
+workflow {
         csvData = Channel.fromPath(params.csvFile).splitCsv()
         buscoModes = Channel.fromList(busco_mode)
 
