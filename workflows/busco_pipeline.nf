@@ -46,7 +46,7 @@ if (!params.mode) {
 }
 
 if (params.csvFile) {
-    ch_csvFile = file(params.csvFile, checkIfExists: true)
+    csvFile = file(params.csvFile, checkIfExists: true)
 } else {
     exit 1, 'CSV file not specified!'
 }
@@ -108,7 +108,7 @@ include { BUSCO_PROTEIN_OUTPUT } from '../modules/busco_protein_output.nf'
 */
 
 workflow {
-        csvData = ch_csvFile.splitCsv()
+        csvData = Channel.fromPath(params.csvFile).splitCsv()
         buscoModes = Channel.fromList(busco_mode)
 
         //
