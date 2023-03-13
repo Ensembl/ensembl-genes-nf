@@ -15,10 +15,10 @@
  limitations under the License.
 */
 
-def getDataset(busco_lineage){
- String fileContents = new File(busco_lineage).text
- return fileContents
-}
+
+// Import utility functions
+include { getDataset } from './utils.nf'
+
 // run Busco in genome mode 
 process BUSCO_GENOME_LINEAGE {
 

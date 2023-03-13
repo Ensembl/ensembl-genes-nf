@@ -25,3 +25,8 @@ def build_ncbi_path(gca, assembly_name) {
 def concatString(string1, string2, string3){
  return string1 + '_'+string2 + '_'+string3
 }
+
+def getDataset(busco_lineage){
+ String fileContents = new File(busco_lineage).text
+ return fileContents
+}
