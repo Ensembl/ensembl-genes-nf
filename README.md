@@ -12,7 +12,7 @@ We are using the Docker image available in https://hub.docker.com/r/ezlabgva/bus
 
 ### Mandatory options
 
-#### csvFile
+#### `--csvFile`
 A file containing the list of "GCA, assembly name, species name"
 
 ### Using the provided nextflow.config
@@ -43,7 +43,7 @@ The directory to use to store the results of the pipeline
 nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/assembly_checker.nf --csvFile 
 ```
 
-##Information about all the parameters
+## Information about all the parameters
 
 ```
 nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/assembly_checker.nf --help
