@@ -24,14 +24,17 @@ process PROCESS_ASSEMBLY {
   label 'default'
 
   input:
-  tuple val(gca), val(assembly_name)
-
+  //tuple val(gca), val(assembly_name)
+  val gca
+  val assembly_name
+  val busco_lineage
   storeDir "${params.outDir}/${gca}/data/"
   
   output:
   val(gca), emit:gca
   path "*.fna", emit: genome_file
-  
+  val busco_lineage, emit:busco_lineage
+
   script:
   """
   wget  ${build_ncbi_path("${gca}", "${assembly_name}")}
