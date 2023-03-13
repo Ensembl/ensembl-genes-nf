@@ -24,12 +24,12 @@ nextflow.enable.dsl=2
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-csvFile = file(params.csvFile)
-  if( !csvFile.exists() ) {
-    exit 1, "The specified csv file does not exist: ${params.csvfile}"
-  }
-
+if (params.csvFile) {
+     csvFile = file(params.csvFile, checkIfExists: true)
+ } else {
+     exit 1, 'CSV file not specified!'
 /*
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     HELP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,6 +56,7 @@ if (params.help) {
 */
 // MODULE: Loaded from modules/
 
+include { BUSCO_LINEAGE } from '../modules/busco_lineage.nf'
 include { PROCESS_ASSEMBLY } from '../modules/process_assembly.nf'
 include { BUSCO_GENOME_AUTOLINEAGE } from '../modules/busco_genome_autolineage.nf'
 
@@ -68,15 +69,21 @@ include { BUSCO_GENOME_AUTOLINEAGE } from '../modules/busco_genome_autolineage.n
 workflow {
         
         csvData = Channel.fromPath(params.csvFile).splitCsv(sep:',')
-        
+
+        //
+        // MODULE: Define the closest busco lineage according to the NCBI taxonomy
+        //
+
+        BUSCO_LINEAGE (csvData)
+
         //
         // MODULE: Download genomic sequences from NCBI FTP and store in the assembly accession directory
         //        
         
-        PROCESS_ASSEMBLY (csvData)
+        PROCESS_ASSEMBLY (BUSCO_LINEAGE.out.gca,BUSCO_LINEAGE.out.assembly_name, BUSCO_LINEAGE.out.busco_lineage.flatten())
 
         //
         // MODULE: Run Busco in genome mode and store the result in the assembly accession directory
         //
-        BUSCO_GENOME_AUTOLINEAGE (PROCESS_ASSEMBLY.out.gca, PROCESS_ASSEMBLY.out.genome_file.flatten())
+        BUSCO_GENOME_AUTOLINEAGE (PROCESS_ASSEMBLY.out.gca, PROCESS_ASSEMBLY.out.genome_file.flatten(), PROCESS_ASSEMBLY.out.busco_lineage)
 }
