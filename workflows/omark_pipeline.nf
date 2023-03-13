@@ -30,6 +30,7 @@ if( !params.host) {
 if( !params.port) {
   exit 1, "Undefined --port parameter. Please provide the server port for the db connection"
 }
+
 if( !params.user) {
   exit 1, "Undefined --user parameter. Please provide the server user for the db connection"
 }
@@ -37,12 +38,15 @@ if( !params.user) {
 if( !params.enscode) {
   exit 1, "Undefined --enscode parameter. Please provide the enscode path"
 }
+
 if( !params.outDir) {
   exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
 }
-csvFile = file(params.csvFile)
-if( !csvFile.exists() ) {
-  exit 1, "The specified csv file does not exist: ${params.csvfile}"
+
+if (params.csvFile) {
+    csvFile = file(params.csvFile, checkIfExists: true)
+} else {
+    exit 1, 'CSV file not specified!'
 }
 
 /*
