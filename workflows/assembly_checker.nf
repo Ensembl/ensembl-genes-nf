@@ -28,6 +28,7 @@ if (params.csvFile) {
      csvFile = file(params.csvFile, checkIfExists: true)
  } else {
      exit 1, 'CSV file not specified!'
+ }    
 /*
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
