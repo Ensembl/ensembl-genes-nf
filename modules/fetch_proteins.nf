@@ -30,9 +30,6 @@ process FETCH_PROTEINS {
   val species_dir, emit: output_dir
   val db, emit:db_name
 
-  beforeScript "export ENSCODE=${params.enscode}"
-  beforeScript "source ${projectDir}/../bin/perl5lib.sh"
-
   script:
   """
   perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -file ${db}_translations.fa  ${params.dump_params}
