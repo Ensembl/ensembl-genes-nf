@@ -13,7 +13,7 @@ We are using the Docker image available in https://hub.docker.com/r/ezlabgva/bus
 ### Mandatory options
 
 #### csvFile
-A file containing the list of "GCA,assembly name"
+A file containing the list of "GCA, assembly name, species name"
 
 ### Using the provided nextflow.config
 We are using profiles to be able to run the pipeline on different HPC. The default is 'standard'
@@ -24,7 +24,10 @@ Uses LSF to run the compute heavy jobs. It expects the usage of `scratch` to use
 #### cluster
 Uses SLURM to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem
 
-#### process.scratch
+### Using a local config
+You can use a local config with -c to finely configure your pipeline. All parameters can be configured, we recommend setting the ones mentioned below.
+
+#### scratch
 The patch to the scratch directory to use
 
 #### workDir
@@ -40,7 +43,7 @@ The directory to use to store the results of the pipeline
 nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/assembly_checker.nf --csvFile 
 ```
 
-Further information in the help
+##Information about all the parameters
 
 ```
 nextflow -C ./ensembl-genes-nf/nextflow.config run ./ensembl-genes-nf/workflows/assembly_checker.nf --help
