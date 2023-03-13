@@ -59,7 +59,7 @@ if (params.help) {
 
 include { BUSCO_LINEAGE } from '../modules/busco_lineage.nf'
 include { PROCESS_ASSEMBLY } from '../modules/process_assembly.nf'
-include { BUSCO_GENOME_AUTOLINEAGE } from '../modules/busco_genome_autolineage.nf'
+include { BUSCO_GENOME_LINEAGE } from '../modules/busco_genome_lineage.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -86,5 +86,5 @@ workflow {
         //
         // MODULE: Run Busco in genome mode and store the result in the assembly accession directory
         //
-        BUSCO_GENOME_AUTOLINEAGE (PROCESS_ASSEMBLY.out.gca, PROCESS_ASSEMBLY.out.genome_file.flatten(), PROCESS_ASSEMBLY.out.busco_lineage)
+        BUSCO_GENOME_LINEAGE (PROCESS_ASSEMBLY.out.gca, PROCESS_ASSEMBLY.out.genome_file.flatten(), PROCESS_ASSEMBLY.out.busco_lineage)
 }
