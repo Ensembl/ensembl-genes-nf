@@ -1,1 +1,3 @@
-.nextflow/
+ensembl-anno/.nextflow*
+ensembl-anno/singularity/
+ensembl-anno/work/
