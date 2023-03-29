@@ -11,6 +11,6 @@ process CMSEARCH {
 
     script:
         """
-        
+        cmsearch -h
         """
 }

@@ -10,7 +10,9 @@ process TRNASCAN {
         
 
     script:
+        // """
+        // tRNAscan-SE -o -f -H -q --detail -Q
         """
-        
+        tRNAscan-SE -h
         """
 }
