@@ -1,9 +1,10 @@
 
 process TRNASCAN {
 
-    publishDir "${params.outdir}/trnascan", mode: copy
+    publishDir "${params.outdir}/trnascan_output", mode: copy
 
     input:
+        
 
     output:
         
