@@ -1,7 +1,7 @@
 
 process CMSEARCH {
 
-    publishDir "${params.outdir}/cmsearch_output", mode: copy
+    // publishDir "${params.outdir}/cmsearch_output", mode: copy
 
     input:
         

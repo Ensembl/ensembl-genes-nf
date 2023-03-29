@@ -1,7 +1,9 @@
 
 process TRNASCAN {
 
-    publishDir "${params.outdir}/trnascan_output", mode: copy
+    // publishDir "${params.outdir}/trnascan_output", mode: copy
+
+    // container "${projectDir}/singularity/trnascan-se%3A2.0.9--pl5321hec16e2b_3"
 
     input:
         
@@ -10,9 +12,7 @@ process TRNASCAN {
         stdout
 
     script:
-        // """
-        // tRNAscan-SE -o -f -H -q --detail -Q
         """
-        tRNAscan-SE -h
+        tRNAscan-SE --help
         """
 }

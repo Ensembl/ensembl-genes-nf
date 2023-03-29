@@ -8,6 +8,6 @@ workflow sncRNA {
     main:
 
     emit:
-        TRNASCAN()
-        CMSEARCH()
+        TRNASCAN() | view
+        CMSEARCH() | view
 }
