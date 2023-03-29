@@ -16,6 +16,6 @@ log.info """\
 
 workflow {
 
-    sncRNA(params.genome_file, params.trnascan_files, params.rfam_files)
+    sncRNA()
 }
 

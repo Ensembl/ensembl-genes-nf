@@ -7,7 +7,7 @@ process TRNASCAN {
         
 
     output:
-        
+        stdout
 
     script:
         // """

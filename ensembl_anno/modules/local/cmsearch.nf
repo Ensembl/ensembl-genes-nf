@@ -7,7 +7,7 @@ process CMSEARCH {
         
 
     output:
-        
+        stdout
 
     script:
         """
