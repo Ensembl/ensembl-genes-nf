@@ -1,6 +1,6 @@
 nextflow.enable.dsl = 2
 
-include { sncRNA } from './subworkflows/local/sncrna.nf'
+include { sncRNA } from './workflows/local/sncrna.nf'
 
 log.info """\
     
