@@ -116,18 +116,18 @@ workflow {
         
         // Create directory path for FTP
         SPECIES_OUTDIR (BUSCO_DATASET.out.dbname, BUSCO_DATASET.out.busco_dataset)
-        SPECIES_OUTDIR.out.combine(buscoModes).branch {
-                        protein: it[3] == 'protein'
-                        genome: it[3] == 'genome'
-             }.set { ch_mode }
         
         // Run Busco in genome mode
-        FETCH_GENOME (ch_mode.genome)
-        BUSCO_GENOME_LINEAGE (FETCH_GENOME.out.fasta.flatten(), FETCH_GENOME.out.output_dir, FETCH_GENOME.out.db_name, FETCH_GENOME.out.busco_dataset)
-        BUSCO_GENOME_OUTPUT(BUSCO_GENOME_LINEAGE.out.species_outdir)        
+        if (busco_mode.contains('genome')) {
+          FETCH_GENOME (SPECIES_OUTDIR.out)
+          BUSCO_GENOME_LINEAGE (FETCH_GENOME.out.fasta.flatten(), FETCH_GENOME.out.output_dir, FETCH_GENOME.out.db_name, FETCH_GENOME.out.busco_dataset)
+          BUSCO_GENOME_OUTPUT(BUSCO_GENOME_LINEAGE.out.species_outdir)        
+        }
         
         // Run Busco in protein mode
-        FETCH_PROTEINS (ch_mode.protein)
-        BUSCO_PROTEIN_LINEAGE (FETCH_PROTEINS.out.fasta.flatten(), FETCH_PROTEINS.out.output_dir, FETCH_PROTEINS.out.db_name, FETCH_PROTEINS.out.busco_dataset)
-        BUSCO_PROTEIN_OUTPUT(BUSCO_PROTEIN_LINEAGE.out.species_outdir) 
+        if (busco_mode.contains('protein')) {
+          FETCH_PROTEINS (SPECIES_OUT_DIR.out)
+          BUSCO_PROTEIN_LINEAGE (FETCH_PROTEINS.out.fasta.flatten(), FETCH_PROTEINS.out.output_dir, FETCH_PROTEINS.out.db_name, FETCH_PROTEINS.out.busco_dataset)
+          BUSCO_PROTEIN_OUTPUT(BUSCO_PROTEIN_LINEAGE.out.species_outdir) 
+        }
 }
