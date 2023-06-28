@@ -17,7 +17,6 @@
 
 // dump unmasked dna sequences from core db 
 process FETCH_GENOME {
-
   label 'fetch_file'
 
   input:

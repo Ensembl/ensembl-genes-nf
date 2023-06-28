@@ -111,47 +111,23 @@ workflow {
         csvData = Channel.fromPath(params.csvFile).splitCsv()
         buscoModes = Channel.fromList(busco_mode)
 
-        //
-        // MODULE: Get the closest Busco dataset from the taxonomy classification stored in db meta table 
-        //        
+        // Get the closest Busco dataset from the taxonomy classification stored in db meta table 
         BUSCO_DATASET (csvData.flatten())
         
-        //
-        // MODULE: Create directory path for FTP
-        //
+        // Create directory path for FTP
         SPECIES_OUTDIR (BUSCO_DATASET.out.dbname, BUSCO_DATASET.out.busco_dataset)
         SPECIES_OUTDIR.out.combine(buscoModes).branch {
                         protein: it[3] == 'protein'
                         genome: it[3] == 'genome'
              }.set { ch_mode }
         
-        //
-        // MODULE: Get genomic sequences from db
-        //        
+        // Run Busco in genome mode
         FETCH_GENOME (ch_mode.genome)
-        
-        //
-        // MODULE: Run Busco in genome mode
-        //        
         BUSCO_GENOME_LINEAGE (FETCH_GENOME.out.fasta.flatten(), FETCH_GENOME.out.output_dir, FETCH_GENOME.out.db_name, FETCH_GENOME.out.busco_dataset)
-
-        //
-        // MODULE: Edit Busco summary file
-        //
         BUSCO_GENOME_OUTPUT(BUSCO_GENOME_LINEAGE.out.species_outdir)        
         
-        //
-        // MODULE: Get canonical protein from db
-        //        
+        // Run Busco in protein mode
         FETCH_PROTEINS (ch_mode.protein)
-        
-        //
-        // MODULE: Run Busco in protein mode
-        //        
         BUSCO_PROTEIN_LINEAGE (FETCH_PROTEINS.out.fasta.flatten(), FETCH_PROTEINS.out.output_dir, FETCH_PROTEINS.out.db_name, FETCH_PROTEINS.out.busco_dataset)
-        
-        //
-        // MODULE: Edit Busco summary file
-        //        
         BUSCO_PROTEIN_OUTPUT(BUSCO_PROTEIN_LINEAGE.out.species_outdir) 
 }

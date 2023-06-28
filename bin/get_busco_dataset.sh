@@ -9,9 +9,9 @@ mapfile result < <(mysql -u $user -h $host -P $port -D $dbname -NB -e "SELECT me
 for i in "${result[@]}";
 do      
 	species=$(echo "$i" | tr '[:upper:]' '[:lower:]')	
-	FILE=($(grep -e "^${species}_" $file))
+	BUSCO_FILE=($(grep -e "^${species}_" $file))
 	if [[ $? -eq 0 ]];then
-            echo ${FILE[0]} | cut -d '.' -f1
+            echo ${BUSCO_FILE[0]} | cut -d '.' -f1
             break;
     fi
 done
