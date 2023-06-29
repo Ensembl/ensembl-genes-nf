@@ -15,25 +15,23 @@
  limitations under the License.
 */
 
-// Import utility functions
-include { concatString } from './utils.nf'
-
 process BUSCO_PROTEIN_OUTPUT {
     // rename busco summary file in <production name>_gca_busco_short_summary.txt
     label 'default'
-    publishDir "$output_dir/${db.species}/${db.gca}/protein",  mode: 'copy'
+    publishDir "$output_dir/${db.species}/${db.gca}/statistics",  mode: 'copy'
 
     input:
-    tuple val(db), path(summary_file)
+    tuple val(db), path(summary_file, stageAs: "short_summary.txt")
+    val(output_dir)
 
     output:
-    path("statistics")
+    path("*busco_short_summary.txt")
 
     script:
-    def stats_dir = "statistics"
-    def summary_name = concatString(db.species, db.gca, 'busco_short_summary.txt')
+    def species = db.species.toLowerCase()
+    def gca = db.gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
+    def summary_name = [species, gca, "busco_short_summary.txt"].join("_")
     """
-    mkdir $stats_dir
-    sed '/Summarized benchmarking in BUSCO notation for file/d' $summary_file > $stats_dir/$summary_name
+    sed '/Summarized benchmarking in BUSCO notation for file/d' $summary_file > $summary_name
     """
- }
+}

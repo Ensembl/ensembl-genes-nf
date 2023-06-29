@@ -21,7 +21,6 @@ process BUSCO_PROTEIN_LINEAGE {
 
   input:
   tuple val(db), val(busco_dataset), path(translations)
-  file translations
 
   output:
   tuple val(db), path("fasta/*.txt")
