@@ -15,7 +15,7 @@
  limitations under the License.
 */
 
-process BUSCO_PROTEIN_OUTPUT {
+process BUSCO_OUTPUT {
     // rename busco summary file in <production name>_gca_busco_short_summary.txt
     label 'default'
     publishDir "$output_dir/${db.species}/${db.gca}/statistics",  mode: 'copy'
@@ -23,6 +23,7 @@ process BUSCO_PROTEIN_OUTPUT {
     input:
     tuple val(db), path(summary_file, stageAs: "short_summary.txt")
     val(output_dir)
+    val(name)
 
     output:
     path("*busco_short_summary.txt")
@@ -30,7 +31,7 @@ process BUSCO_PROTEIN_OUTPUT {
     script:
     def species = db.species.toLowerCase()
     def gca = db.gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
-    def summary_name = [species, gca, "busco_short_summary.txt"].join("_")
+    def summary_name = [species, gca, name, "short_summary.txt"].join("_")
     """
     sed '/Summarized benchmarking in BUSCO notation for file/d' $summary_file > $summary_name
     """

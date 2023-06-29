@@ -93,16 +93,14 @@ if (params.help) {
     IMPORT LOCAL MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-// MODULE: Loaded from modules/
 
 include { BUSCO_DATASET } from '../modules/busco_dataset.nf'
-include { SPECIES_OUTDIR } from '../modules/species_outdir.nf'
 include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 include { BUSCO_GENOME_LINEAGE } from '../modules/busco_genome_lineage.nf'
 include { BUSCO_PROTEIN_LINEAGE } from '../modules/busco_protein_lineage.nf'
-include { BUSCO_GENOME_OUTPUT } from '../modules/busco_genome_output.nf'
-include { BUSCO_PROTEIN_OUTPUT } from '../modules/busco_protein_output.nf'
+include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco_output.nf'
+include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco_output.nf'
 include { SPECIES_METADATA } from '../modules/species_metadata.nf'
 
 /*
@@ -126,13 +124,13 @@ workflow {
     if (busco_mode.contains('genome')) {
         genome_data = FETCH_GENOME(db_dataset, params.cacheDir)
         busco_genome_output = BUSCO_GENOME_LINEAGE(genome_data)
-        BUSCO_GENOME_OUTPUT(busco_genome_output, params.outDir)
+        BUSCO_GENOME_OUTPUT(busco_genome_output, params.outDir, "genome_busco")
     }
     
     // Run Busco in protein mode
     if (busco_mode.contains('protein')) {
         protein_data = FETCH_PROTEINS (db_dataset, params.cacheDir)
         busco_protein_output = BUSCO_PROTEIN_LINEAGE(protein_data)
-        BUSCO_PROTEIN_OUTPUT(busco_protein_output, params.outDir)
+        BUSCO_PROTEIN_OUTPUT(busco_protein_output, params.outDir, "busco")
     }
 }
