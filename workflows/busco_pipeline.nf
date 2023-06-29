@@ -41,6 +41,9 @@ if (!params.enscode) {
 if (!params.outDir) {
   exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
 }
+if (!params.cacheDir) {
+  exit 1, "Undefined --cacheDir parameter. Please provide the cache dir directory's path"
+}
 if (!params.mode) {
   exit 1, "Undefined --mode parameter. Please define Busco running mode"
 }
@@ -100,6 +103,7 @@ include { BUSCO_GENOME_LINEAGE } from '../modules/busco_genome_lineage.nf'
 include { BUSCO_PROTEIN_LINEAGE } from '../modules/busco_protein_lineage.nf'
 include { BUSCO_GENOME_OUTPUT } from '../modules/busco_genome_output.nf'
 include { BUSCO_PROTEIN_OUTPUT } from '../modules/busco_protein_output.nf'
+include { SPECIES_METADATA } from '../modules/species_metadata.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,26 +112,27 @@ include { BUSCO_PROTEIN_OUTPUT } from '../modules/busco_protein_output.nf'
 */
 
 workflow {
-        csvData = Channel.fromPath(params.csvFile).splitCsv()
-        buscoModes = Channel.fromList(busco_mode)
+    csvData = Channel.fromPath(params.csvFile).splitCsv()
 
-        // Get the closest Busco dataset from the taxonomy classification stored in db meta table 
-        BUSCO_DATASET (csvData.flatten())
-        
-        // Create directory path for FTP
-        SPECIES_OUTDIR (BUSCO_DATASET.out.dbname, BUSCO_DATASET.out.busco_dataset)
-        
-        // Run Busco in genome mode
-        if (busco_mode.contains('genome')) {
-          FETCH_GENOME (SPECIES_OUTDIR.out)
-          BUSCO_GENOME_LINEAGE (FETCH_GENOME.out.fasta.flatten(), FETCH_GENOME.out.output_dir, FETCH_GENOME.out.db_name, FETCH_GENOME.out.busco_dataset)
-          BUSCO_GENOME_OUTPUT(BUSCO_GENOME_LINEAGE.out.species_outdir)        
-        }
-        
-        // Run Busco in protein mode
-        if (busco_mode.contains('protein')) {
-          FETCH_PROTEINS (SPECIES_OUT_DIR.out)
-          BUSCO_PROTEIN_LINEAGE (FETCH_PROTEINS.out.fasta.flatten(), FETCH_PROTEINS.out.output_dir, FETCH_PROTEINS.out.db_name, FETCH_PROTEINS.out.busco_dataset)
-          BUSCO_PROTEIN_OUTPUT(BUSCO_PROTEIN_LINEAGE.out.species_outdir) 
-        }
+    // Get db name and its metadata
+    db = csvData.flatten()
+    db_meta = SPECIES_METADATA(db)
+        .map{ db, species, gca, source -> ["name": db, "species": species, "gca": gca, "source": source] }
+
+    // Get the closest Busco dataset from the taxonomy classification stored in db meta table 
+    db_dataset = BUSCO_DATASET(db_meta)
+    
+    // Run Busco in genome mode
+    if (busco_mode.contains('genome')) {
+        genome_data = FETCH_GENOME(db_dataset, params.cacheDir)
+        busco_output = BUSCO_GENOME_LINEAGE(genome_data)
+        BUSCO_GENOME_OUTPUT(busco_output, params.outDir)
+    }
+    
+    // Run Busco in protein mode
+    if (busco_mode.contains('protein')) {
+        FETCH_PROTEINS (db_dataset)
+        FETCH_PROTEINS (db_dataset) | BUSCO_PROTEINS_LINEAGE
+        BUSCO_PROTEIN_OUTPUT(BUSCO_PROTEIN_LINEAGE, params.output_dir) 
+    }
 }

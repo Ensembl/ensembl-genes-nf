@@ -16,25 +16,24 @@
 */
 
 // Import utility functions
-include { get_species_name } from './utils.nf'
-include { get_gca } from './utils.nf'
 include { concatString } from './utils.nf'
 
 process BUSCO_PROTEIN_OUTPUT {
-     
-     // rename busco summary file in <production name>_gca_busco_short_summary.txt
-     
-     label 'default'
+    // rename busco summary file in <production name>_gca_busco_short_summary.txt
+    label 'default'
+    publishDir "$output_dir/${db.species}/${db.gca}/protein",  mode: 'copy'
 
+    input:
+    tuple val(db), path(summary_file)
 
-     input:
-     val outdir
+    output:
+    path("statistics")
 
-     publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
-     script:
-     """
-     mkdir -p  ${params.outDir}/${outdir}/statistics
-     sed  -i '/genebuild/d' ${params.outDir}/${outdir}/fasta/short_summary*
-     mv -f ${params.outDir}/${outdir}/fasta/short_summary* ${params.outDir}/${outdir}/statistics/${concatString(get_species_name("${outdir.trim()}"),get_gca("${outdir.trim()}"),'busco_short_summary.txt')}
-     """
+    script:
+    def stats_dir = "statistics"
+    def summary_name = concatString(db.species, db.gca, 'busco_short_summary.txt')
+    """
+    mkdir $stats_dir
+    sed '/Summarized benchmarking in BUSCO notation for file/d' $summary_file > $stats_dir/$summary_name
+    """
  }

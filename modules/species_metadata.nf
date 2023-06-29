@@ -15,30 +15,30 @@
  limitations under the License.
 */
 
-// dump unmasked dna sequences from core db 
-process FETCH_GENOME {
-  label "fetch_file"
-  storeDir "$cache_dir/${db.species}/genome/"
+// Get species name, gca accession and annotation source from meta table
+process SPECIES_METADATA {
+  label 'default'
+  debug true
 
   input:
-  tuple val(db), val(busco_dataset)
-  val cache_dir
+  val db
 
   output:
-  tuple val(db), val(busco_dataset), path("genome_toplevel.fa")
+  tuple val(db), env(SPECIES), env(GCA), env(SOURCE)
 
   script:
-  def genome_fasta = "genome_toplevel.fa"
   """
-  perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl \
-    -dbhost ${params.host} \
-    -dbport ${params.port} \
-    -dbname ${db.name} -dbuser \
-    ${params.user} \
-    -coord_system_name toplevel \
-    -toplevel \
-    -onefile \
-    -nonref \
-    -filename $genome_fasta
+  function get_metadata {
+    KEY=\$1
+    mysql -N -u ${params.user} \
+             -h ${params.host} \
+             -P ${params.port} \
+             -D $db \
+             -e "SELECT meta_value FROM meta WHERE meta_key='\$KEY'"
+  }
+  SPECIES=\$(get_metadata "species.scientific_name" | sed 's/ /_/g')
+  GCA=\$(get_metadata "assembly.accession")
+  SOURCE=\$(get_metadata "species.annotation_source")
+  if [ "\$SOURCE" = "" ]; then SOURCE="NO_SOURCE"; fi
   """
 }

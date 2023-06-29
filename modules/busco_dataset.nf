@@ -22,15 +22,14 @@ process BUSCO_DATASET {
   label 'default'
    
   input:
-  val db
+  val(db)
 
   output:
-  val db, emit:dbname
-  stdout  emit:busco_dataset
-  log.info params.get_dataset_query
+  tuple val(db), stdout
+  // log.info params.get_dataset_query
 
   script:
   """
-  bash ${params.get_dataset_query} ${params.user} ${params.host} ${params.port} ${db} ${params.ortho_list} | tr -d '\n'
+  bash ${params.get_dataset_query} ${params.user} ${params.host} ${params.port} ${db.name} ${params.ortho_list} | tr -d '\n'
   """
 }

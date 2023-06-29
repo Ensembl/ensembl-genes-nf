@@ -17,22 +17,29 @@
 
 // Dump canonical translations 
 process FETCH_PROTEINS {
-
   label 'fetch_file'
+  storeDir "$cache_dir/${db.species}/protein/"
 
   input:
-  tuple val(species_dir),val(db), val(busco_dataset), val(mode)
-
-  storeDir "${params.outDir}/${species_dir}/fasta/"
+  tuple val(db), val(busco_dataset)
+  val cache_dir
 
   output:
-  path "${db}_translations.fa", emit: fasta
-  val species_dir, emit: output_dir
-  val db, emit:db_name
-  val busco_dataset, emit:busco_dataset
+  tuple val(db), val(busco_dataset), path("translations.fa")
 
   script:
+  def translations_file = "translations.fa"
   """
-  perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl -host ${params.host} -port ${params.port} -dbname $db -user ${params.user} -dnadbhost ${params.host} -dnadbport ${params.port} -dnadbname $db -dnadbuser ${params.user} -file ${db}_translations.fa  ${params.dump_params}
+  perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
+    -host ${params.host} \
+    -port ${params.port} \
+    -dbname ${db.name} \
+    -user ${params.user} \
+    -dnadbhost ${params.host} \
+    -dnadbport ${params.port} \
+    -dnadbname ${db.name} \
+    -dnadbuser ${params.user} \
+    -file $translations_file \
+    ${params.dump_params}
   """
 }
