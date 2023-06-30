@@ -19,6 +19,7 @@
 process FETCH_GENOME {
   label "fetch_file"
   storeDir "$cache_dir/${db.species}/genome/"
+  afterScript "sleep 60"  // Needed because of file system latency
 
   input:
   tuple val(db), val(busco_dataset)

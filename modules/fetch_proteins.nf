@@ -19,6 +19,7 @@
 process FETCH_PROTEINS {
   label 'fetch_file'
   storeDir "$cache_dir/${db.species}/protein/"
+  afterScript "sleep 60"  // Needed because of file system latency
 
   input:
   tuple val(db), val(busco_dataset)
