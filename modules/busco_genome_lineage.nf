@@ -29,10 +29,10 @@ process BUSCO_GENOME_LINEAGE {
   """
   busco -f \
     -i ${genome} \
-    -o genome \
     --mode genome \
     -l ${busco_dataset} \
     -c ${task.cpus} \
+    -o genome \
     --offline \
     --download_path ${params.download_path}
   """

@@ -18,7 +18,6 @@
 // Get species name, gca accession and annotation source from meta table
 process SPECIES_METADATA {
   label 'default'
-  debug true
 
   input:
   val db
