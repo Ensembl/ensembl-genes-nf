@@ -18,12 +18,13 @@
 // Get species name, gca accession and annotation source from meta table
 process SPECIES_METADATA {
   label 'default'
+  tag "$dbname"
 
   input:
-  val db
+  val dbname
 
   output:
-  tuple val(db), env(SPECIES), env(GCA), env(SOURCE)
+  tuple val(dbname), env(SPECIES), env(GCA), env(SOURCE)
 
   script:
   """
@@ -32,7 +33,7 @@ process SPECIES_METADATA {
     mysql -N -u ${params.user} \
              -h ${params.host} \
              -P ${params.port} \
-             -D $db \
+             -D $dbname \
              -e "SELECT meta_value FROM meta WHERE meta_key='\$KEY'"
   }
   SPECIES=\$(get_metadata "species.scientific_name" | sed 's/ /_/g')

@@ -18,6 +18,7 @@
 // run Busco in genome mode 
 process BUSCO_GENOME_LINEAGE {
   label "busco"
+  tag "$db.species"
 
   input:
   tuple val(db), val(busco_dataset), path(genome)

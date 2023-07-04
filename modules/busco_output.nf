@@ -17,6 +17,7 @@
 
 process BUSCO_OUTPUT {
     // rename busco summary file in <production name>_gca_busco_short_summary.txt
+    tag "$db.species-$name"
     label 'default'
     publishDir "$output_dir/${db.species}/${db.gca}/statistics",  mode: 'copy'
 

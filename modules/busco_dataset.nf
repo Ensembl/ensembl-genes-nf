@@ -18,8 +18,8 @@
 // Get Busco dataset using NCBI taxonomy in meta table 
 process BUSCO_DATASET {
   scratch false
-
   label 'default'
+  tag "$db.species"
    
   input:
   val(db)

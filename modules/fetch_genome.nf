@@ -17,6 +17,7 @@
 
 // dump unmasked dna sequences from core db 
 process FETCH_GENOME {
+  tag "$db.species"
   label "fetch_file"
   storeDir "$cache_dir/${db.species}/genome/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
