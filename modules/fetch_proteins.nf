@@ -19,7 +19,7 @@
 process FETCH_PROTEINS {
   label 'fetch_file'
   storeDir "$cache_dir/${db.species}/protein/"
-  afterScript "sleep 60"  // Needed because of file system latency
+  afterScript "sleep $params.files_latency"  // Needed because of file system latency
   publishDir "$output_dir/${db.species}/${db.gca}/fasta",  mode: 'copy'
 
   input:
