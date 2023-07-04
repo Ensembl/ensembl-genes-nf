@@ -20,16 +20,18 @@ process FETCH_PROTEINS {
   label 'fetch_file'
   storeDir "$cache_dir/${db.species}/protein/"
   afterScript "sleep 60"  // Needed because of file system latency
+  publishDir "$output_dir/${db.species}/${db.gca}/fasta",  mode: 'copy'
 
   input:
   tuple val(db), val(busco_dataset)
   val cache_dir
+  val output_dir
 
   output:
-  tuple val(db), val(busco_dataset), path("translations.fa")
+  tuple val(db), val(busco_dataset), path("*_translations.fa")
 
   script:
-  def translations_file = "translations.fa"
+  def translations_file = "${db.name}_translations.fa"
   """
   perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
     -host ${params.host} \

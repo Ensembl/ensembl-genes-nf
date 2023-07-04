@@ -122,14 +122,14 @@ workflow {
     
     // Run Busco in genome mode
     if (busco_mode.contains('genome')) {
-        genome_data = FETCH_GENOME(db_dataset, params.cacheDir)
+        genome_data = FETCH_GENOME(db_dataset, params.cacheDir, params.outDir)
         busco_genome_output = BUSCO_GENOME_LINEAGE(genome_data)
         BUSCO_GENOME_OUTPUT(busco_genome_output, params.outDir, "genome_busco")
     }
     
     // Run Busco in protein mode
     if (busco_mode.contains('protein')) {
-        protein_data = FETCH_PROTEINS (db_dataset, params.cacheDir)
+        protein_data = FETCH_PROTEINS (db_dataset, params.cacheDir, params.outDir)
         busco_protein_output = BUSCO_PROTEIN_LINEAGE(protein_data)
         BUSCO_PROTEIN_OUTPUT(busco_protein_output, params.outDir, "busco")
     }

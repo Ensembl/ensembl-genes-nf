@@ -20,10 +20,12 @@ process FETCH_GENOME {
   label "fetch_file"
   storeDir "$cache_dir/${db.species}/genome/"
   afterScript "sleep 60"  // Needed because of file system latency
+  publishDir "$output_dir/${db.species}/${db.gca}/genome",  mode: 'copy'
 
   input:
   tuple val(db), val(busco_dataset)
   val cache_dir
+  val output_dir
 
   output:
   tuple val(db), val(busco_dataset), path("genome_toplevel.fa")
