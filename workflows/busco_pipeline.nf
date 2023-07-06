@@ -127,8 +127,7 @@ workflow {
     if (busco_mode.contains('genome')) {
         genome_data = FETCH_GENOME(db_dataset, params.cacheDir)
         busco_genome_output = BUSCO_GENOME_LINEAGE(genome_data)
-        busco_genome_output.view()
-        BUSCO_GENOME_OUTPUT(busco_genome_output, "genome_busco", params.project)
+        BUSCO_GENOME_OUTPUT(busco_genome_output, "genome", params.project)
         if (params.project == 'ensembl') {
           FASTA_GENOME_OUTPUT(genome_data, params.project, 'genome')
         }
@@ -138,8 +137,7 @@ workflow {
     if (busco_mode.contains('protein')) {
         protein_data = FETCH_PROTEINS (db_dataset, params.cacheDir)
         busco_protein_output = BUSCO_PROTEIN_LINEAGE(protein_data)
-        busco_protein_output.view()
-        BUSCO_PROTEIN_OUTPUT(busco_protein_output, "busco", params.project)
+        BUSCO_PROTEIN_OUTPUT(busco_protein_output, "protein", params.project)
         if (params.project == 'ensembl') {
           FASTA_PROTEIN_OUTPUT(protein_data, params.project, 'fasta')
         }
