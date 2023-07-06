@@ -85,6 +85,7 @@ if (params.help) {
   log.info '  --csvFile STR                Path for the csv containing the db name'
   log.info '  --mode STR                   Busco mode: genome or protein, default is to run both'
   log.info '  --bioperl STR                BioPerl path (optional)'
+  log.info '  --project STR                Project, for the formatting of the output ("ensembl" or "BRC")'
   exit 1
 }
 
@@ -101,6 +102,8 @@ include { BUSCO_GENOME_LINEAGE } from '../modules/busco_genome_lineage.nf'
 include { BUSCO_PROTEIN_LINEAGE } from '../modules/busco_protein_lineage.nf'
 include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco_output.nf'
 include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco_output.nf'
+include { FASTA_OUTPUT as FASTA_GENOME_OUTPUT } from '../modules/fasta_output.nf'
+include { FASTA_OUTPUT as FASTA_PROTEIN_OUTPUT } from '../modules/fasta_output.nf'
 include { SPECIES_METADATA } from '../modules/species_metadata.nf'
 
 /*
@@ -114,7 +117,7 @@ workflow {
 
     // Get db name and its metadata
     db = csvData.flatten()
-    db_meta = SPECIES_METADATA(db)
+    db_meta = SPECIES_METADATA(db, params.outDir, params.project)
       .splitCsv(header: true)
 
     // Get the closest Busco dataset from the taxonomy classification stored in db meta table 
@@ -122,15 +125,23 @@ workflow {
     
     // Run Busco in genome mode
     if (busco_mode.contains('genome')) {
-        genome_data = FETCH_GENOME(db_dataset, params.cacheDir, params.outDir)
+        genome_data = FETCH_GENOME(db_dataset, params.cacheDir)
         busco_genome_output = BUSCO_GENOME_LINEAGE(genome_data)
-        BUSCO_GENOME_OUTPUT(busco_genome_output, params.outDir, "genome_busco")
+        busco_genome_output.view()
+        BUSCO_GENOME_OUTPUT(busco_genome_output, "genome_busco", params.project)
+        if (params.project == 'ensembl') {
+          FASTA_GENOME_OUTPUT(genome_data, params.project, 'genome')
+        }
     }
     
     // Run Busco in protein mode
     if (busco_mode.contains('protein')) {
-        protein_data = FETCH_PROTEINS (db_dataset, params.cacheDir, params.outDir)
+        protein_data = FETCH_PROTEINS (db_dataset, params.cacheDir)
         busco_protein_output = BUSCO_PROTEIN_LINEAGE(protein_data)
-        BUSCO_PROTEIN_OUTPUT(busco_protein_output, params.outDir, "busco")
+        busco_protein_output.view()
+        BUSCO_PROTEIN_OUTPUT(busco_protein_output, "busco", params.project)
+        if (params.project == 'ensembl') {
+          FASTA_PROTEIN_OUTPUT(protein_data, params.project, 'fasta')
+        }
     }
 }

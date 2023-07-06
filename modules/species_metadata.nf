@@ -22,6 +22,8 @@ process SPECIES_METADATA {
 
   input:
   val dbname
+  val output_dir
+  val project
 
   output:
   stdout
@@ -45,7 +47,15 @@ process SPECIES_METADATA {
   BRC_ORGANISM=\$(get_metadata "BRC4.organism_abbrev")
   if [ "\$BRC_ORGANISM" = "" ]; then BRC_ORGANISM=""; fi
 
-  echo "name,species,gca,source,brc_component,brc_organism"
-  echo "$dbname,\$SPECIES,\$GCA,\$SOURCE,\$BRC_COMPONENT,\$BRC_ORGANISM"
+  PUBLISH_DIR=$output_dir
+  if [ $project == 'ensembl' ]; then
+    PUBLISH_DIR="$output_dir/\$SPECIES/\$GCA"
+  fi
+  if [ $project == 'BRC' ]; then
+    PUBLISH_DIR="$output_dir/\$BRC_COMPONENT/\$BRC_ORGANISM"
+  fi
+
+  echo "name,species,gca,publish_dir,source,brc_component,brc_organism"
+  echo "$dbname,\$SPECIES,\$GCA,\$PUBLISH_DIR,\$SOURCE,\$BRC_COMPONENT,\$BRC_ORGANISM"
   """
 }
