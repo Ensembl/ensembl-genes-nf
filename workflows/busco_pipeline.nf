@@ -115,7 +115,7 @@ workflow {
     // Get db name and its metadata
     db = csvData.flatten()
     db_meta = SPECIES_METADATA(db)
-        .map{ db, species, gca, source -> ["name": db, "species": species, "gca": gca, "source": source] }
+      .splitCsv(header: true)
 
     // Get the closest Busco dataset from the taxonomy classification stored in db meta table 
     db_dataset = BUSCO_DATASET(db_meta)

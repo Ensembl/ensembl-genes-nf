@@ -24,7 +24,7 @@ process SPECIES_METADATA {
   val dbname
 
   output:
-  tuple val(dbname), env(SPECIES), env(GCA), env(SOURCE)
+  stdout
 
   script:
   """
@@ -39,6 +39,13 @@ process SPECIES_METADATA {
   SPECIES=\$(get_metadata "species.scientific_name" | sed 's/ /_/g')
   GCA=\$(get_metadata "assembly.accession")
   SOURCE=\$(get_metadata "species.annotation_source")
-  if [ "\$SOURCE" = "" ]; then SOURCE="NO_SOURCE"; fi
+  if [ "\$SOURCE" = "" ]; then SOURCE=""; fi
+  BRC_COMPONENT=\$(get_metadata "BRC4.component")
+  if [ "\$BRC_COMPONENT" = "" ]; then BRC_COMPONENT=""; fi
+  BRC_ORGANISM=\$(get_metadata "BRC4.organism_abbrev")
+  if [ "\$BRC_ORGANISM" = "" ]; then BRC_ORGANISM=""; fi
+
+  echo "name,species,gca,source,brc_component,brc_organism"
+  echo "$dbname,\$SPECIES,\$GCA,\$SOURCE,\$BRC_COMPONENT,\$BRC_ORGANISM"
   """
 }
