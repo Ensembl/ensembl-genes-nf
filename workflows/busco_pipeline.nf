@@ -62,6 +62,11 @@ else {
   busco_mode = params.mode
 }
 
+acceptable_projects = ['ensembl', 'brc']
+if (!acceptable_projects.contains(params.project)) {
+    exit 1, 'Invalid project name'
+}
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     HELP
