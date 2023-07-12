@@ -38,6 +38,16 @@ process SPECIES_METADATA {
              -D $dbname \
              -e "SELECT meta_value FROM meta WHERE meta_key='\$KEY'"
   }
+
+  function has_any {
+    TABLE=\$1
+    mysql -N -u ${params.user} \
+             -h ${params.host} \
+             -P ${params.port} \
+             -D $dbname \
+             -e "SELECT stable_id FROM \$TABLE LIMIT 1" | wc -l
+  }
+
   SPECIES=\$(get_metadata "species.scientific_name" | sed 's/ /_/g')
   GCA=\$(get_metadata "assembly.accession")
   SOURCE=\$(get_metadata "species.annotation_source")
@@ -46,6 +56,7 @@ process SPECIES_METADATA {
   if [ "\$BRC_COMPONENT" = "" ]; then BRC_COMPONENT=""; fi
   BRC_ORGANISM=\$(get_metadata "BRC4.organism_abbrev")
   if [ "\$BRC_ORGANISM" = "" ]; then BRC_ORGANISM=""; fi
+  HAS_GENES=\$(has_any "gene")
 
   PUBLISH_DIR=$output_dir
   if [ $project == 'ensembl' ]; then
@@ -55,7 +66,7 @@ process SPECIES_METADATA {
     PUBLISH_DIR="$output_dir/\$BRC_COMPONENT/\$BRC_ORGANISM"
   fi
 
-  echo "name,species,gca,publish_dir,source,brc_component,brc_organism"
-  echo "$dbname,\$SPECIES,\$GCA,\$PUBLISH_DIR,\$SOURCE,\$BRC_COMPONENT,\$BRC_ORGANISM"
+  echo "name,species,gca,publish_dir,source,has_genes,brc_component,brc_organism"
+  echo "$dbname,\$SPECIES,\$GCA,\$PUBLISH_DIR,\$SOURCE,\$HAS_GENES,\$BRC_COMPONENT,\$BRC_ORGANISM"
   """
 }
