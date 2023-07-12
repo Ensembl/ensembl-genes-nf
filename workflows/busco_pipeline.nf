@@ -85,7 +85,7 @@ if (params.help) {
   log.info '  --csvFile STR                Path for the csv containing the db name'
   log.info '  --mode STR                   Busco mode: genome or protein, default is to run both'
   log.info '  --bioperl STR                BioPerl path (optional)'
-  log.info '  --project STR                Project, for the formatting of the output ("ensembl" or "BRC")'
+  log.info '  --project STR                Project, for the formatting of the output ("ensembl" or "brc")'
   exit 1
 }
 

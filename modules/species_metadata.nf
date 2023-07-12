@@ -51,7 +51,7 @@ process SPECIES_METADATA {
   if [ $project == 'ensembl' ]; then
     PUBLISH_DIR="$output_dir/\$SPECIES/\$GCA"
   fi
-  if [ $project == 'BRC' ]; then
+  if [ $project == 'brc' ]; then
     PUBLISH_DIR="$output_dir/\$BRC_COMPONENT/\$BRC_ORGANISM"
   fi
 

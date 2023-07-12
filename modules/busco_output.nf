@@ -43,7 +43,7 @@ process BUSCO_OUTPUT {
         def species = db.species.toLowerCase()
         def gca = db.gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
         summary_name = [species, gca, name, "short_summary.txt"].join("_")
-    } else if (project == 'BRC') {
+    } else if (project == 'brc') {
         if (datatype == "genome") {
             name = "genome_busco"
         } else if (datatype == "protein") {
