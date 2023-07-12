@@ -21,12 +21,10 @@ process FETCH_PROTEINS {
   label 'fetch_file'
   storeDir "$cache_dir/${db.species}/protein/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
-  publishDir "$output_dir/${db.species}/${db.gca}/fasta",  mode: 'copy'
 
   input:
   tuple val(db), val(busco_dataset)
   val cache_dir
-  val output_dir
 
   output:
   tuple val(db), val(busco_dataset), path("*_translations.fa")

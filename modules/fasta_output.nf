@@ -16,33 +16,25 @@
 */
 
 
+include { make_publish_dir } from './utils.nf'
+
 
 // dump unmasked dna sequences from core db 
-process FETCH_GENOME {
+process FASTA_OUTPUT {
   tag "$db.species"
-  label "fetch_file"
-  storeDir "$cache_dir/${db.species}/genome/"
-  afterScript "sleep $params.files_latency"  // Needed because of file system latency
+  label "default"
+  publishDir { make_publish_dir(db.publish_dir, project, name) },  mode: 'copy'
 
   input:
-  tuple val(db), val(busco_dataset)
-  val cache_dir
+  tuple val(db), val(busco_dataset), path(fasta_file)
+  val project
+  val name
 
   output:
-  tuple val(db), val(busco_dataset), path("genome_toplevel.fa")
+  path(fasta_file)
 
   script:
-  def genome_fasta = "genome_toplevel.fa"
   """
-  perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl \
-    -dbhost ${params.host} \
-    -dbport ${params.port} \
-    -dbname ${db.name} -dbuser \
-    ${params.user} \
-    -coord_system_name toplevel \
-    -toplevel \
-    -onefile \
-    -nonref \
-    -filename $genome_fasta
+  echo 'Using publish_dir'
   """
 }

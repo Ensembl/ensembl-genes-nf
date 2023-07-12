@@ -28,3 +28,13 @@ def get_gca(name) {
 def concatString(string1, string2, string3){
  return string1 + '_'+string2 + '_'+string3
 }
+
+// If the project is ensembl, append the name to the publish_dir
+// Otherwise just use the publish_dir as is
+def make_publish_dir(publish_dir, project, name) {
+  list = [publish_dir]
+  if (project == "ensembl" && name != "") {
+    list = list + [name]
+  }
+  return list.join("/")
+}
