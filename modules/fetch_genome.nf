@@ -21,7 +21,7 @@
 process FETCH_GENOME {
   tag "$db.species"
   label "fetch_file"
-  storeDir "$cache_dir/${db.species}/genome/"
+  storeDir "$cache_dir/${db.name}/genome/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
   input:

@@ -19,7 +19,7 @@
 process FETCH_PROTEINS {
   tag "$db.species"
   label 'fetch_file'
-  storeDir "$cache_dir/${db.species}/protein/"
+  storeDir "$cache_dir/${db.name}/protein/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
   input:
