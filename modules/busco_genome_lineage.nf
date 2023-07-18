@@ -17,27 +17,24 @@
 
 // run Busco in genome mode 
 process BUSCO_GENOME_LINEAGE {
-
-  label 'busco'
+  label "busco"
+  tag "$db.species"
 
   input:
-
-  file genome
-  val outdir
-  val db
-  val busco_dataset
+  tuple val(db), val(busco_dataset), path(genome)
 
   output:
-
-  path "genome/*.txt", emit: summary_file
-  val outdir, emit:species_outdir
-
-  // ourdir is Salmo_trutta (production name)
-  publishDir "${params.outDir}/${outdir}/",  mode: 'copy'
+  tuple val(db), path("genome/*.txt")
 
   script:
   """
-  busco -f -i ${genome} -o genome --mode genome -l ${busco_dataset} -c ${task.cpus} --offline --download_path ${params.download_path}
+  busco -f \
+    -i ${genome} \
+    --mode genome \
+    -l ${busco_dataset} \
+    -c ${task.cpus} \
+    -o genome \
+    --offline \
+    --download_path ${params.download_path}
   """
 }
-

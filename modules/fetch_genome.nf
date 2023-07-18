@@ -15,27 +15,34 @@
  limitations under the License.
 */
 
+
+
 // dump unmasked dna sequences from core db 
 process FETCH_GENOME {
-
-  label 'fetch_file'
+  tag "$db.species"
+  label "fetch_file"
+  storeDir "$cache_dir/${db.name}/genome/"
+  afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
   input:
-  tuple val(species_dir),val(db), val(busco_dataset), val(mode)
-
-  storeDir "${params.outDir}/${species_dir.trim()}/genome/"
+  tuple val(db), val(busco_dataset)
+  val cache_dir
 
   output:
-
-  path "genome_toplevel.fa", emit:fasta
-  val "${species_dir}", emit:output_dir
-  val db, emit:db_name
-  val busco_dataset, emit:busco_dataset
+  tuple val(db), val(busco_dataset), path("genome_toplevel.fa")
 
   script:
+  def genome_fasta = "genome_toplevel.fa"
   """
-  mkdir -p ${params.outDir}//${species_dir.trim()}/genome/
-  perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl -dbhost ${params.host} -dbport ${params.port} -dbname $db -dbuser ${params.user} -coord_system_name toplevel -toplevel -onefile -nonref -filename genome_toplevel.fa
+  perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl \
+    -dbhost ${params.host} \
+    -dbport ${params.port} \
+    -dbname ${db.name} -dbuser \
+    ${params.user} \
+    -coord_system_name toplevel \
+    -toplevel \
+    -onefile \
+    -nonref \
+    -filename $genome_fasta
   """
-
 }

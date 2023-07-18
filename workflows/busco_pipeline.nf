@@ -41,6 +41,9 @@ if (!params.enscode) {
 if (!params.outDir) {
   exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
 }
+if (!params.cacheDir) {
+  exit 1, "Undefined --cacheDir parameter. Please provide the cache dir directory's path"
+}
 if (!params.mode) {
   exit 1, "Undefined --mode parameter. Please define Busco running mode"
 }
@@ -57,6 +60,11 @@ if (params.mode instanceof java.lang.String) {
 }
 else {
   busco_mode = params.mode
+}
+
+acceptable_projects = ['ensembl', 'brc']
+if (!acceptable_projects.contains(params.project)) {
+    exit 1, 'Invalid project name'
 }
 
 /*
@@ -82,6 +90,7 @@ if (params.help) {
   log.info '  --csvFile STR                Path for the csv containing the db name'
   log.info '  --mode STR                   Busco mode: genome or protein, default is to run both'
   log.info '  --bioperl STR                BioPerl path (optional)'
+  log.info '  --project STR                Project, for the formatting of the output ("ensembl" or "brc")'
   exit 1
 }
 
@@ -90,16 +99,17 @@ if (params.help) {
     IMPORT LOCAL MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-// MODULE: Loaded from modules/
 
 include { BUSCO_DATASET } from '../modules/busco_dataset.nf'
-include { SPECIES_OUTDIR } from '../modules/species_outdir.nf'
 include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 include { BUSCO_GENOME_LINEAGE } from '../modules/busco_genome_lineage.nf'
 include { BUSCO_PROTEIN_LINEAGE } from '../modules/busco_protein_lineage.nf'
-include { BUSCO_GENOME_OUTPUT } from '../modules/busco_genome_output.nf'
-include { BUSCO_PROTEIN_OUTPUT } from '../modules/busco_protein_output.nf'
+include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco_output.nf'
+include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco_output.nf'
+include { FASTA_OUTPUT as FASTA_GENOME_OUTPUT } from '../modules/fasta_output.nf'
+include { FASTA_OUTPUT as FASTA_PROTEIN_OUTPUT } from '../modules/fasta_output.nf'
+include { SPECIES_METADATA } from '../modules/species_metadata.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,50 +118,36 @@ include { BUSCO_PROTEIN_OUTPUT } from '../modules/busco_protein_output.nf'
 */
 
 workflow {
-        csvData = Channel.fromPath(params.csvFile).splitCsv()
-        buscoModes = Channel.fromList(busco_mode)
+    csvData = Channel.fromPath(params.csvFile).splitCsv()
 
-        //
-        // MODULE: Get the closest Busco dataset from the taxonomy classification stored in db meta table 
-        //        
-        BUSCO_DATASET (csvData.flatten())
-        
-        //
-        // MODULE: Create directory path for FTP
-        //
-        SPECIES_OUTDIR (BUSCO_DATASET.out.dbname, BUSCO_DATASET.out.busco_dataset)
-        SPECIES_OUTDIR.out.combine(buscoModes).branch {
-                        protein: it[3] == 'protein'
-                        genome: it[3] == 'genome'
-             }.set { ch_mode }
-        
-        //
-        // MODULE: Get genomic sequences from db
-        //        
-        FETCH_GENOME (ch_mode.genome)
-        
-        //
-        // MODULE: Run Busco in genome mode
-        //        
-        BUSCO_GENOME_LINEAGE (FETCH_GENOME.out.fasta.flatten(), FETCH_GENOME.out.output_dir, FETCH_GENOME.out.db_name, FETCH_GENOME.out.busco_dataset)
+    // Get db name and its metadata
+    db = csvData.flatten()
+    db_meta = SPECIES_METADATA(db, params.outDir, params.project)
+      .splitCsv(header: true)
 
-        //
-        // MODULE: Edit Busco summary file
-        //
-        BUSCO_GENOME_OUTPUT(BUSCO_GENOME_LINEAGE.out.species_outdir)        
-        
-        //
-        // MODULE: Get canonical protein from db
-        //        
-        FETCH_PROTEINS (ch_mode.protein)
-        
-        //
-        // MODULE: Run Busco in protein mode
-        //        
-        BUSCO_PROTEIN_LINEAGE (FETCH_PROTEINS.out.fasta.flatten(), FETCH_PROTEINS.out.output_dir, FETCH_PROTEINS.out.db_name, FETCH_PROTEINS.out.busco_dataset)
-        
-        //
-        // MODULE: Edit Busco summary file
-        //        
-        BUSCO_PROTEIN_OUTPUT(BUSCO_PROTEIN_LINEAGE.out.species_outdir) 
+    // Get the closest Busco dataset from the taxonomy classification stored in db meta table 
+    db_dataset = BUSCO_DATASET(db_meta)
+    
+    // Run Busco in genome mode
+    if (busco_mode.contains('genome')) {
+        genome_data = FETCH_GENOME(db_dataset, params.cacheDir)
+        busco_genome_output = BUSCO_GENOME_LINEAGE(genome_data)
+        BUSCO_GENOME_OUTPUT(busco_genome_output, "genome", params.project)
+        if (params.project == 'ensembl') {
+          FASTA_GENOME_OUTPUT(genome_data, params.project, 'genome')
+        }
+    }
+    
+    // Run Busco in protein mode
+    if (busco_mode.contains('protein')) {
+        if (params.project == 'brc') {
+            db_dataset = db_dataset.filter{ it[0].has_genes == "1" }
+        }
+        protein_data = FETCH_PROTEINS (db_dataset, params.cacheDir)
+        busco_protein_output = BUSCO_PROTEIN_LINEAGE(protein_data)
+        BUSCO_PROTEIN_OUTPUT(busco_protein_output, "protein", params.project)
+        if (params.project == 'ensembl') {
+          FASTA_PROTEIN_OUTPUT(protein_data, params.project, 'fasta')
+        }
+    }
 }

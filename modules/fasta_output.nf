@@ -15,21 +15,26 @@
  limitations under the License.
 */
 
-// Get Busco dataset using NCBI taxonomy in meta table 
-process BUSCO_DATASET {
-  scratch false
-  label 'default'
+
+include { make_publish_dir } from './utils.nf'
+
+
+// dump unmasked dna sequences from core db 
+process FASTA_OUTPUT {
   tag "$db.species"
-   
+  label "default"
+  publishDir { make_publish_dir(db.publish_dir, project, name) },  mode: 'copy'
+
   input:
-  val(db)
+  tuple val(db), val(busco_dataset), path(fasta_file)
+  val project
+  val name
 
   output:
-  tuple val(db), stdout
-  // log.info params.get_dataset_query
+  path(fasta_file)
 
   script:
   """
-  bash ${params.get_dataset_query} ${params.user} ${params.host} ${params.port} ${db.name} ${params.ortho_list} | tr -d '\n'
+  echo 'Using publish_dir'
   """
 }
