@@ -37,8 +37,8 @@ process FETCH_GENOME {
   perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl \
     -dbhost ${params.host} \
     -dbport ${params.port} \
-    -dbname ${db.name} -dbuser \
-    ${params.user} \
+    -dbname ${db.name} \
+    -dbuser ${params.user} \
     -coord_system_name toplevel \
     -toplevel \
     -onefile \
