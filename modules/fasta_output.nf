@@ -21,7 +21,7 @@ include { make_publish_dir } from './utils.nf'
 
 // dump unmasked dna sequences from core db 
 process FASTA_OUTPUT {
-  tag "$db.species"
+  tag "$db.species:$db.gca"
   label "default"
   publishDir { make_publish_dir(db.publish_dir, project, name) },  mode: 'copy'
 

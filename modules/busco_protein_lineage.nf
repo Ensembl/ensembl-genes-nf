@@ -18,7 +18,7 @@
 // run Busco in protein mode 
 process BUSCO_PROTEIN_LINEAGE {
   label 'busco'
-  tag "$db.species"
+  tag "$db.species:$db.gca"
 
   input:
   tuple val(db), val(busco_dataset), path(translations)

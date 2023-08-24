@@ -19,7 +19,7 @@ include { make_publish_dir } from './utils.nf'
 
 process BUSCO_OUTPUT {
     // rename busco summary file in <production name>_gca_busco_short_summary.txt
-    tag "$db.species-$datatype"
+    tag "$db.species:$db.gca"
     label 'default'
     publishDir { make_publish_dir(db.publish_dir, project, 'statistics') },  mode: 'copy'
 

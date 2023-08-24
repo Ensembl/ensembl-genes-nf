@@ -19,7 +19,7 @@
 process BUSCO_DATASET {
   scratch false
   label 'default'
-  tag "$db.species"
+  tag "$db.species:$db.gca"
    
   input:
   val(db)
