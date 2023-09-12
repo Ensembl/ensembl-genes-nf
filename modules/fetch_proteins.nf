@@ -17,7 +17,7 @@
 
 // Dump canonical translations 
 process FETCH_PROTEINS {
-  tag "$db.species"
+  tag "$db.species:$db.gca"
   label 'fetch_file'
   storeDir "$cache_dir/${db.name}/protein/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency

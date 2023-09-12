@@ -19,7 +19,7 @@
 
 // dump unmasked dna sequences from core db 
 process FETCH_GENOME {
-  tag "$db.species"
+  tag "$db.species:$db.gca"
   label "fetch_file"
   storeDir "$cache_dir/${db.name}/genome/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
@@ -37,8 +37,8 @@ process FETCH_GENOME {
   perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl \
     -dbhost ${params.host} \
     -dbport ${params.port} \
-    -dbname ${db.name} -dbuser \
-    ${params.user} \
+    -dbname ${db.name} \
+    -dbuser ${params.user} \
     -coord_system_name toplevel \
     -toplevel \
     -onefile \
