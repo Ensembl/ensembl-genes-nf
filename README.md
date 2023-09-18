@@ -36,6 +36,9 @@ It is recommended to install it in the same folder as the Ensembl repositories.
 #### `--csvFile`
 A file containing the list of databases you want to run Busco on. The databases need to have DNA.
 
+#### `--mode`
+Select Busco mode, i.e. genome mode (assess a genome assembly), protein mode (assess a gene set) or both. By default, run both modes.
+
 #### `--host`
 The host name for the databases
 
@@ -48,34 +51,38 @@ The read only username for the host. The password is expected to be empty.
 #### `--enscode`
 Path to the root directory containing the Perl repositories
 
+#### `--outDir`
+Path to the directory where to store the results of the pipeline
+
 ### Optional arguments
 
 #### `--bioperl`
 Path to the directory containing the BioPerl 1.6.924 library. If not provided, the value passed to `--enscode` will be used as root, i.e. `<enscode>/bioperl-1.6.924`.
 
+#### `--cacheDir`
+Path to the directory to use as cache for the intermediate files. If not provided, the value passed to `--outDir` will be used as root, i.e. `<outDir>/cache`.
 
-### Using the provided nextflow.config
-We are using profiles to be able to run the pipeline on different HPC. The default is `standard'`.
+#### `--project`
+Output directory structure. Options: `ensembl`, `brc`. By default, `ensembl` project is selected.
 
-#### standard
-Uses LSF to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem.
+#### `--files_latency`
+Sleep time (in seconds) after the genome and proteins have been fetched. Needed by several file systems due to their internal latency. By default, 60 seconds.
 
-#### cluster
-Uses SLURM to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem.
+### Pipeline configuration
+
+#### Using the provided nextflow.config
+We are using profiles to be able to run the pipeline on different HPC clusters. The default is `standard`.
+
+* `standard`: uses LSF to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem.
+* `slurm`: uses SLURM to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem.
+* `local`: TODO
 
 
-### Using a local config
-You can use a local config with `-c` to finely configure your pipeline. All parameters can be configured, we recommend setting the ones mentioned below.
+#### Using a local configuration file
+You can use a local config with `-c` to finely configure your pipeline. All parameters can be configured, we recommend setting these ones as well:
 
-#### process.scratch
-The patch to the scratch directory to use
-
-#### workDir
-The directory where nextflow stores any file
-
-#### outDir
-The directory to use to store the results of the pipeline
-
+* `process.scratch`: The patch to the scratch directory to use
+* `workDir`: The directory where nextflow stores any file
 
 ### Running the different Busco modes
 The default option is to run Busco in both genome and protein mode as follows:
