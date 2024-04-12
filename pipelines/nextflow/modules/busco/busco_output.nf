@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { make_publish_dir } from '../utils.nf'
+include { make_publish_dir } from '../../utils.nf'
 
 process BUSCO_OUTPUT {
     // rename busco summary file in <production name>_gca_busco_short_summary.txt
