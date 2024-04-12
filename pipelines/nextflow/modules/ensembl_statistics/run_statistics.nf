@@ -16,18 +16,25 @@ limitations under the License.
 */
 
 process RUN_STATISTICS {
-    label 'omamer'
+    label 'fetch_input'
     tag "$db.species:$db.gca"
     storeDir "$cache_dir/$gca/omark_output"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
-    file omamer_file
+    val db_meta
 
     output:
     path("proteins_detailed_summary.txt"), emit: summary_file
 
     script:
     """
-    omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output
+    perl ${params.enscode}/core_meta_updates/scripts/stats/generate_species_homepage_stats.pl \
+        -dbname ${db_meta.name} \
+        -host ${params.host} \
+        -port ${params.port} \
+        -production_name ${db_meta.production_name}
+    // re write the output to  have a json    
+    gb1-w amphiduros_pacificus_gca949316495v1_core_110_1 <stats_amphiduros_pacificus_gca949316495v1_core_110_1.sql
+    
     """
 }

@@ -27,9 +27,8 @@ includeConfig '../workflows/nextflow.config'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
-
-include { COPY_OUTPUT_TO_ENSEMBL_FTP  } from '../modules/copy_output_to_ensembl_ftp.nf'
+include { RUN_STATISTICS } from '../modules/ensembl_statistics/run_statistics.nf'
+include { UPLOAD_STATISTICS_ON_CORE  } from '../modules/ensembl_statistics/upload_statistics_on_core.nf'
 
 
 
@@ -42,27 +41,15 @@ include { CLEANING } from '../modules/cleaning.nf'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow RUN_OMARK{
+workflow RUN_ENSEMBL_STATS{
     take:                 
-    tuple val(dbname),val(db_meta), bool(copyToFtp)
+    tuple val(dbname),val(db_meta), bool(apply_stats)
 
     main:
-        //
-        // MODULE: Get canonical protein from db
-        // 
-        proteinFile = FETCH_PROTEINS (dbname, params.cacheDir)
-        //
-        // MODULE: Get orthologous groups from Omamer db 
-        //
-        omamerOutput = OMAMER_HOG(proteinFile, db_meta.gca)
-        //
-        // MODULE: Run Omark
-        //        
-        omarkOutput = OMARK (omamerOutput)
 
-        omarkSummaryFile = OMARK_OUTPUT(db_meta, omarkOutput, params.project)
-        if (copyToFtp) {
-          COPY_OMARK_OUTPUT(db_meta, omarkSummaryFile)
+        statisticsFile = RUN_STATISTICS (dbname, params.cacheDir)
+        if(params.apply_stats){
+        UPLOAD_STATISTICS_ON_CORE(statisticsFile, db_meta)
         }
 
 }

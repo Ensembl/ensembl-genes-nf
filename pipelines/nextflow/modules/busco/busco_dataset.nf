@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 // pyhton env?
-includeConfig '../conf/busco.config'
+
 process GET_RUN_ACCESSION_METADATA {
 
     label 'default'
@@ -24,8 +24,6 @@ process GET_RUN_ACCESSION_METADATA {
 
     input:
     val(taxon_id)
-
-
 
     output:
     stdout

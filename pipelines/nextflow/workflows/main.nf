@@ -63,7 +63,10 @@ if (params.help) {
     log.info '-------------------------------------------------------'
     log.info ''
     log.info 'Usage: '
-    log.info '  nextflow -C ensembl-genes-nf/nextflow.config run ensembl-genes-nf/workflows/main.nf --enscode --csvFile --mode'
+    log.info '  nextflow -C ensembl-genes-nf/nextflow.config run ensembl-genes-nf/workflows/main.nf \
+                --enscode --csvFile --outDir --host --port --user --bioperl --project \
+                --run_busco_core --run_busco_ncbi --run_omark --run_ensembl_stats \
+                --apply_stats --copyToFtp --busco_mode'
     log.info ''
     log.info 'Options:'
     log.info '  --host STR                   Db host server '
