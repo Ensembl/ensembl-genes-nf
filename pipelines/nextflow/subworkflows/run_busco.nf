@@ -48,7 +48,7 @@ include { CLEANING } from '../modules/cleaning.nf'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 workflow RUN_BUSCO{
-    take:                 
+    input:                 
     tuple val(db_meta), val(busco_mode), bool(copyToFtp)
 
     main:
