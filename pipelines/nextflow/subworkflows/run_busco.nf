@@ -18,8 +18,8 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-includeConfig '../../../workflows/nextflow.config'
-includeConfig '../conf/busco.config'
+//includeConfig '../../../workflows/nextflow.config'
+//includeConfig '../conf/busco.config'
 
 
 /*

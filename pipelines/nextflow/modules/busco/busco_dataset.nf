@@ -17,10 +17,10 @@ limitations under the License.
 */
 // pyhton env?
 
-process GET_RUN_ACCESSION_METADATA {
+process BUSCO_DATASET {
 
     label 'default'
-    tag "$run_accession"
+    tag "$taxon_id"
 
     input:
     val(taxon_id)
