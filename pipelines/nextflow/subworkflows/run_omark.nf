@@ -65,7 +65,7 @@ workflow RUN_OMARK{
 
         omarkSummaryFile = OMARK_OUTPUT(db_meta, omarkOutput, params.project)
         if (copyToFtp) {
-          COPY_OMARK_OUTPUT(db_meta, omarkSummaryFile)
+            COPY_OMARK_OUTPUT(db_meta, omarkSummaryFile)
         }
 
 }

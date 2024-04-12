@@ -21,7 +21,7 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
     // rename busco summary file in <production name>_gca_busco_short_summary.txt
     tag "$db.species:$db.gca"
     label 'default'
-    publishDir { make_publish_dir(db.publish_dir, project, 'statistics') },  mode: 'copy'
+    publishDir { make_publish_dir(db.publish_dir, ${params.project}, 'statistics') },  mode: 'copy'
 
     input:
     tuple val(db_meta), path(summary_file)

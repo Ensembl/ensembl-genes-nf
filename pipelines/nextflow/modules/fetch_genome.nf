@@ -19,7 +19,7 @@ limitations under the License.
 process FETCH_GENOME {
   tag "$gca:genome"
   label 'fetch_file'
-  storeDir "$cache_dir/$gca/ncbi_dataset/"
+  storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
   input:
   val gca

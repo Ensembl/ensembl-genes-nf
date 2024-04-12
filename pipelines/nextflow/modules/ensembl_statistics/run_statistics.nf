@@ -17,8 +17,8 @@ limitations under the License.
 
 process RUN_STATISTICS {
     label 'fetch_input'
-    tag "$db.species:$db.gca"
-    storeDir "$cache_dir/$gca/omark_output"
+    tag "$db_meta.species:$db_meta.gca"
+    storeDir "${params.cacheDir}/$gca/omark_output"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
     val db_meta

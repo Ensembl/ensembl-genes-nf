@@ -18,7 +18,7 @@ limitations under the License.
 process FETCH_PROTEINS {
     tag "$db.gca:protein"
     label 'fetch_file'
-    storeDir "$cache_dir/${db.gca}/fasta/"
+    storeDir "${params.cacheDir}/${db.gca}/fasta/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:

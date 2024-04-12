@@ -18,7 +18,7 @@ limitations under the License.
 // Get species name, gca accession and annotation source from meta table
 process BUILD_METADATA {
   label 'default'
-  tag "$dbname"
+
 
   input:
   tuple val(gca), val(taxon_id)

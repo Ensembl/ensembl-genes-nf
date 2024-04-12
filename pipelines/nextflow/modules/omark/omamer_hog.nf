@@ -19,10 +19,11 @@ limitations under the License.
 process OMAMER_HOG {
 
     label 'omamer'
-    storeDir "$cache_dir/$gca/omamer/"
+    storeDir "${params.cacheDir}/$gca/omamer/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
     file fasta
+    val gca
     
 
     output:

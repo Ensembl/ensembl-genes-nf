@@ -61,7 +61,7 @@ workflow RUN_BUSCO{
         buscoGenomeOutput = BUSCO_GENOME_LINEAGE(buscoDataset, genomeFile)
         buscoGenomeSummaryFile = BUSCO_GENOME_OUTPUT(db_meta, buscoGenomeOutput, "genome", params.project)
         if (params.copyToFtp) {
-          COPY_GENOME_OUTPUT(db_meta, buscoGenomeSummaryFile)
+            COPY_GENOME_OUTPUT(db_meta, buscoGenomeSummaryFile)
         }
     }
     
@@ -74,7 +74,7 @@ workflow RUN_BUSCO{
         buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(buscoDataset, proteinFile)
         buscoProteinSummaryFile = BUSCO_PROTEIN_OUTPUT(db_meta, buscoProteinOutput, "protein", params.project)
         if (copyToFtp) {
-          COPY_PROTEIN_OUTPUT(db_meta, buscoProteinSummaryFile)
+            COPY_PROTEIN_OUTPUT(db_meta, buscoProteinSummaryFile)
         }
 
     }
