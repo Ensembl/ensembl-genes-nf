@@ -106,10 +106,16 @@ include { SPECIES_METADATA } from '../modules/species_metadata.nf'
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+process installDependencies {
+    script:
+    """
+    pip install --file ../../../pyproject.toml
+    """
+}
 
 workflow STATISTICS{
     //data = Channel.fromPath(params.csvFile).splitCsv()
-
+    installDependencies()
     if (params.run_busco_ncbi) {
         // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
 
