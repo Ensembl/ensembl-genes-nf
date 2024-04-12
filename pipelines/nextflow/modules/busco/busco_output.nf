@@ -18,14 +18,13 @@ limitations under the License.
 //include { make_publish_dir } from '../utils.nf'
 
 process BUSCO_OUTPUT {
-    // rename busco summary file in <production name>_gca_busco_short_summary.txt
-    tag "busco_output:$db.gca"
     label 'default'
-    publishDir { publish_dir/'statistics' },  mode: 'copy'
+    tag "busco_output"
+    publishDir "$publish_dir/statistics", mode: 'copy'
 
     input:
-    tuple val(db), path(summary_file, stageAs: "short_summary_from_busco_run.txt"), val(datatype)
-    def publish_dir = db ? db.publish_dir? : params.outDir/db.gca
+    tuple val(db), path(summary_file), val(datatype)
+    def publish_dir = db ? db.publish_dir : $params.outDir+"/"+db.gca
     
 
     output:
