@@ -18,8 +18,8 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-includeConfig '../../../workflows/nextflow.config'
-includeConfig '../conf/omark.config'
+//includeConfig '../../../workflows/nextflow.config'
+//includeConfig '../conf/omark.config'
 
 
 /*
@@ -47,7 +47,8 @@ include { CLEANING } from '../modules/cleaning.nf'
 
 workflow RUN_OMARK{
     take:                 
-    tuple val(dbname),val(db_meta)
+    dbname
+    db_meta
 
     main:
         //
@@ -63,7 +64,7 @@ workflow RUN_OMARK{
         //        
         omarkOutput = OMARK (omamerOutput)
 
-        omarkSummaryFile = OMARK_OUTPUT(db_meta, omarkOutput, params.project)
+        omarkSummaryFile = OMARK_OUTPUT(db_meta, omarkOutput)
         if (params.copyToFtp) {
             COPY_OMARK_OUTPUT(db_meta, omarkSummaryFile)
         }

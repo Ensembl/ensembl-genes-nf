@@ -49,7 +49,9 @@ include { CLEANING } from '../modules/cleaning.nf'
 */
 workflow RUN_BUSCO{
     take:                 
-    tuple val(db_meta), val(busco_mode), bool(copyToFtp)
+    db_meta
+    busco_mode
+    copyToFtp
 
     main:
     // Get the closest Busco dataset from the taxonomy classification stored in db meta table 

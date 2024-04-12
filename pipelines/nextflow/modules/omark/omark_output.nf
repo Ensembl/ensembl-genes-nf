@@ -15,19 +15,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { make_publish_dir } from '../utils.nf'
+//include { make_publish_dir } from '../utils.nf'
 
 process OMARK_OUTPUT {
     // rename busco summary file in <production name>_gca_busco_short_summary.txt
     tag "$db.species:$db.gca"
     label 'default'
-    publishDir { make_publish_dir(db.publish_dir, project, 'statistics') },  mode: 'copy'
+    publishDir "db.publish_dir/statistics", mode: 'copy'
 
     input:
     tuple val(db), path(summary_file, stageAs: "short_summary_from_busco_run.txt")
-    val(datatype)
-    val(project)
-    path("proteins_detailed_summary.txt"), emit: summary_file
 
     output:
     path("*_proteins_detailed_summary.txt"), emit:summary_file

@@ -25,10 +25,11 @@ process BUILD_METADATA {
 
 
   output:
-  stdout
+  tuple val(db_meta)
 
   script:
   """
+
   echo "gca,taxon_id"
   echo "$gca,\$$taxon_id"
   """

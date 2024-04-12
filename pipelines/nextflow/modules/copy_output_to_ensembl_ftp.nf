@@ -15,19 +15,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { make_publish_dir } from '../utils.nf'
 
 process COPY_OUTPUT_TO_ENSEMBL_FTP {
     // rename busco summary file in <production name>_gca_busco_short_summary.txt
     tag "$db.species:$db.gca"
     label 'default'
-    publishDir { make_publish_dir(db.publish_dir, ${params.project}, 'statistics') },  mode: 'copy'
+    publishDir "${params.production_ftp_dir}/${db_meta.publish_dir}/statistics", mode: 'copy'
 
     input:
     tuple val(db_meta), path(summary_file)
 
-    output:
-    path(${params.production_ftp_dir}/${db_meta.publish_dir}/statistics)
 
     script:
     """

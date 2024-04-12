@@ -101,6 +101,7 @@ include { RUN_ENSEMBL_STATS } from '../subworkflows/run_ensembl_stats.nf'
 include { BUILD_METADATA } from '../modules/build_metadata.nf'
 include { SPECIES_METADATA } from '../modules/species_metadata.nf'
 
+include { buildMetadata } from '../modules/utils.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -119,12 +120,15 @@ workflow STATISTICS{
     if (params.run_busco_ncbi) {
         // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
 
-        data = Channel.fromPath(params.csvFile).splitCsv().map { row ->
+        data = Channel.fromPath(params.csvFile).splitCsv(sep:',').map { row ->
             def gca = row[0]
             def taxon = row[1]
             def busco_mode = 'genome'
             def copyToFtp = false
-            db_meta = BUILD_METADATA(gca,taxon_id)
+            println("GCA: $gca, Taxon: $taxon")
+            def db_meta = buildMetadata(gca, taxon_id)
+
+            //def db_meta = BUILD_METADATA(gca,taxon_id)
             RUN_BUSCO(db_meta, busco_mode, copyToFtp)
             }
     }

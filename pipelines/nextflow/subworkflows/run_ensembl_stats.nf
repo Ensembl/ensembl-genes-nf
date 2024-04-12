@@ -18,7 +18,7 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-includeConfig '../../../workflows/nextflow.config'
+//includeConfig '../../../workflows/nextflow.config'
 
 
 /*
@@ -43,7 +43,8 @@ include { CLEANING } from '../modules/cleaning.nf'
 
 workflow RUN_ENSEMBL_STATS{
     take:                 
-    tuple val(dbname),val(db_meta)
+    dbname
+    db_meta
 
     main:
 
