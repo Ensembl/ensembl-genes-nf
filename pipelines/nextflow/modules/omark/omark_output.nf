@@ -30,10 +30,10 @@ process OMARK_OUTPUT {
     path("*_proteins_detailed_summary.txt"), emit:summary_file
 
     script:
-    """
+    
     def summary_name = summary_file
     def species = db.species.toLowerCase()
     def gca = db.gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
     summary_name = [species, gca, "omark", "proteins_detailed_summary.txt"].join("_")
-    """
+    
 }
