@@ -68,7 +68,7 @@ workflow RUN_BUSCO{
     // Run Busco in protein mode
     if (busco_mode.contains('protein')) {
         if (params.project == 'brc') {
-            buscoDataset = buscoDataset.filter{ it[0].has_genes == "1" }   ????
+            buscoDataset = buscoDataset.filter{ it[0].has_genes == "1" } 
         }
         proteinFile = FETCH_PROTEINS (db_meta.name)
         buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(buscoDataset, proteinFile)
