@@ -140,11 +140,10 @@ workflow STATISTICS{
         RUN_ENSEMBL_STATS(db, db_meta)
         }
     }    
-    afterScript:
-    """
+    
     if (params.cleanCache) {
         // Clean cache directories
         exec "rm -rf ${params.cacheDir}/*"
     }
-    """
+    
 }
