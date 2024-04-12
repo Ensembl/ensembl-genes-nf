@@ -98,7 +98,7 @@ if (params.help) {
 include { RUN_BUSCO } from '../subworkflows/run_busco.nf'
 include { RUN_OMARK } from '../subworkflows/run_omark.nf'
 include { RUN_ENSEMBL_STATS } from '../subworkflows/run_ensembl_stats.nf'
-
+include { BUILD_METADATA } from '../modules/build_metadata.nf'
 include { SPECIES_METADATA } from '../modules/species_metadata.nf'
 
 /*
@@ -117,34 +117,34 @@ workflow STATISTICS{
             def gca = row[0]
             def taxon = row[1]
             def busco_mode = 'genome'
-            def copyToFtp = False
-
+            def copyToFtp = false
+            db_meta = BUILD_METADATA(gca,taxon_id)
             RUN_BUSCO(db_meta, busco_mode, copyToFtp)
             }
     }
-
-    if (params.run_busco_core) {
+    if (params.run_busco_core || params.run_omark || params.run_ensembl_stats) {
         csvData = Channel.fromPath(params.csvFile).splitCsv()
         // Get db name and its metadata
         db = csvData.flatten()
-        db_meta = SPECIES_METADATA(db, params.outDir, params.project)
+        db_meta = SPECIES_METADATA(db)
+        
+        if (params.run_busco_core) {
         RUN_BUSCO(db_meta, busco_mode, params.copyToFtp)
-    }
+        }
 
-    if (params.run_omark) {
-        csvData = Channel.fromPath(params.csvFile).splitCsv()
-        // Get db name and its metadata
-        db = csvData.flatten()
-        db_meta = SPECIES_METADATA(db, params.outDir, params.project)
-        RUN_OMARK(db, db_meta, params.copyToFtp)
-    }
+        if (params.run_omark) {
+        RUN_OMARK(db, db_meta)
+        }
 
-    if (params.run_ensembl_stats) {
-        csvData = Channel.fromPath(params.csvFile).splitCsv()
-        // Get db name and its metadata
-        db = csvData.flatten()
-        db_meta = SPECIES_METADATA(db, params.outDir, params.project)
-        RUN_ENSEMBL_STATS(db, db_meta, params.apply_stats)
+        if (params.run_ensembl_stats) {
+        RUN_ENSEMBL_STATS(db, db_meta)
+        }
+    }    
+    afterScript:
+    """
+    if (params.cleanCache) {
+        // Clean cache directories
+        exec "rm -rf ${params.cacheDir}/*"
     }
-
+    """
 }

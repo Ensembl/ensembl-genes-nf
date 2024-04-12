@@ -22,8 +22,6 @@ process SPECIES_METADATA {
 
   input:
   val dbname
-  val output_dir
-  val project
 
   output:
   stdout
@@ -60,11 +58,11 @@ process SPECIES_METADATA {
   if [ "\$BRC_ORGANISM" = "" ]; then BRC_ORGANISM=""; fi
   HAS_GENES=\$(has_any "gene")
 
-  PUBLISH_DIR=$output_dir
-  if [ $project == 'ensembl' ]; then
-    PUBLISH_DIR="$output_dir/\$SPECIES/\$GCA/\$SOURCE/"
+  PUBLISH_DIR=${params.outDir}
+  if [ ${params.project} == 'ensembl' ]; then
+    PUBLISH_DIR="${params.outDir}/\$SPECIES/\$GCA/\$SOURCE/"
   fi
-  if [ $project == 'brc' ]; then
+  if [ ${params.project} == 'brc' ]; then
     PUBLISH_DIR="$output_dir/\$BRC_COMPONENT/\$BRC_ORGANISM"
   fi
 

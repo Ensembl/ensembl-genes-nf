@@ -57,7 +57,7 @@ workflow RUN_BUSCO{
     
     // Run Busco in genome mode
     if (busco_mode.contains('genome')) {
-        genomeFile = FETCH_GENOME(db_meta.gca, params.cacheDir)
+        genomeFile = FETCH_GENOME(db_meta.gca)
         buscoGenomeOutput = BUSCO_GENOME_LINEAGE(buscoDataset, genomeFile)
         buscoGenomeSummaryFile = BUSCO_GENOME_OUTPUT(db_meta, buscoGenomeOutput, "genome", params.project)
         if (params.copyToFtp) {
@@ -70,7 +70,7 @@ workflow RUN_BUSCO{
         if (params.project == 'brc') {
             buscoDataset = buscoDataset.filter{ it[0].has_genes == "1" }   ????
         }
-        proteinFile = FETCH_PROTEINS (db_meta.name, params.cacheDir)
+        proteinFile = FETCH_PROTEINS (db_meta.name)
         buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(buscoDataset, proteinFile)
         buscoProteinSummaryFile = BUSCO_PROTEIN_OUTPUT(db_meta, buscoProteinOutput, "protein", params.project)
         if (copyToFtp) {

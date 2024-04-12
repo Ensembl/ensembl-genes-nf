@@ -23,7 +23,6 @@ process FETCH_GENOME {
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
   input:
   val gca
-  val cache_dir
 
   output:
   //tuple val(db), val(busco_dataset), path("*.fna")

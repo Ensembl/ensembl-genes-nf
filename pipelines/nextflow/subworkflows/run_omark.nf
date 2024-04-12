@@ -47,13 +47,13 @@ include { CLEANING } from '../modules/cleaning.nf'
 
 workflow RUN_OMARK{
     take:                 
-    tuple val(dbname),val(db_meta), bool(copyToFtp)
+    tuple val(dbname),val(db_meta)
 
     main:
         //
         // MODULE: Get canonical protein from db
         // 
-        proteinFile = FETCH_PROTEINS (dbname, params.cacheDir)
+        proteinFile = FETCH_PROTEINS (dbname)
         //
         // MODULE: Get orthologous groups from Omamer db 
         //
@@ -64,7 +64,7 @@ workflow RUN_OMARK{
         omarkOutput = OMARK (omamerOutput)
 
         omarkSummaryFile = OMARK_OUTPUT(db_meta, omarkOutput, params.project)
-        if (copyToFtp) {
+        if (params.copyToFtp) {
             COPY_OMARK_OUTPUT(db_meta, omarkSummaryFile)
         }
 

@@ -43,11 +43,11 @@ include { CLEANING } from '../modules/cleaning.nf'
 
 workflow RUN_ENSEMBL_STATS{
     take:                 
-    tuple val(dbname),val(db_meta), bool(apply_stats)
+    tuple val(dbname),val(db_meta)
 
     main:
 
-        statisticsFile = RUN_STATISTICS (dbname, params.cacheDir)
+        statisticsFile = RUN_STATISTICS (dbname)
         if(params.apply_stats){
         UPLOAD_STATISTICS_ON_CORE(statisticsFile, db_meta)
         }

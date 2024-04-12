@@ -23,7 +23,6 @@ process FETCH_PROTEINS {
 
     input:
     val(db)
-    val cache_dir
 
     output:
     //tuple val(db), val(busco_dataset), path("*_translations.fa")
