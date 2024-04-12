@@ -15,19 +15,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { make_publish_dir } from '../../utils.nf'
+//include { make_publish_dir } from '../utils.nf'
 
 process BUSCO_OUTPUT {
     // rename busco summary file in <production name>_gca_busco_short_summary.txt
-    tag "$db.species:$db.gca"
+    tag "busco_output:$db.gca"
     label 'default'
-    publishDir { make_publish_dir(db.publish_dir, project, 'statistics') },  mode: 'copy'
+    publishDir { publish_dir/'statistics' },  mode: 'copy'
 
     input:
-    tuple val(db), path(summary_file, stageAs: "short_summary_from_busco_run.txt")
-    val(datatype)
-    val(project)
-    def publish_dir = db ? db.publish_dir? : db.gca
+    tuple val(db), path(summary_file, stageAs: "short_summary_from_busco_run.txt"), val(datatype)
+    def publish_dir = db ? db.publish_dir? : params.outDir/db.gca
     
 
     output:
@@ -41,7 +39,7 @@ process BUSCO_OUTPUT {
     } else if (datatype == "protein") {
             name = "protein_busco"
     }
-    if (project == 'brc') {
+    if ($params.project == 'brc') {
         summary_name = [name, "short_summary.txt"].join("_")
     }
     else {

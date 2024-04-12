@@ -19,19 +19,19 @@ limitations under the License.
 
 process BUSCO_GENOME_LINEAGE {
     label "busco"
-    tag "$db.species:$db.gca"
-    storeDir "$cache_dir/$gca/busco_genome/"
+    tag "$db.gca"
+    storeDir "$cache_dir/$db.gca/busco_genome/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
-    tuple val(db),val(busco_dataset), path(genome)
+    tuple val(db),val(busco_dataset), path(genome_file)
 
     output:
-    path("busco_genome/*.txt")
+    path("*.txt"), emit:busco_output
 
     script:
     """
     busco -f \
-    -i ${genome} \
+    -i ${genome_file} \
     --mode genome \
     -l ${busco_dataset} \
     -c ${task.cpus} \

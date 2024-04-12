@@ -48,7 +48,7 @@ include { CLEANING } from '../modules/cleaning.nf'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 workflow RUN_BUSCO{
-    input:                 
+    take:                 
     tuple val(db_meta), val(busco_mode), bool(copyToFtp)
 
     main:
@@ -59,7 +59,7 @@ workflow RUN_BUSCO{
     if (busco_mode.contains('genome')) {
         genomeFile = FETCH_GENOME(db_meta.gca)
         buscoGenomeOutput = BUSCO_GENOME_LINEAGE(buscoDataset, genomeFile)
-        buscoGenomeSummaryFile = BUSCO_GENOME_OUTPUT(db_meta, buscoGenomeOutput, "genome", params.project)
+        buscoGenomeSummaryFile = BUSCO_GENOME_OUTPUT(db_meta, buscoGenomeOutput, "genome")
         if (params.copyToFtp) {
             COPY_GENOME_OUTPUT(db_meta, buscoGenomeSummaryFile)
         }
@@ -72,7 +72,7 @@ workflow RUN_BUSCO{
         }
         proteinFile = FETCH_PROTEINS (db_meta.name)
         buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(buscoDataset, proteinFile)
-        buscoProteinSummaryFile = BUSCO_PROTEIN_OUTPUT(db_meta, buscoProteinOutput, "protein", params.project)
+        buscoProteinSummaryFile = BUSCO_PROTEIN_OUTPUT(db_meta, buscoProteinOutput, "protein")
         if (copyToFtp) {
             COPY_PROTEIN_OUTPUT(db_meta, buscoProteinSummaryFile)
         }
