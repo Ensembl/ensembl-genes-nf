@@ -15,40 +15,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-// pyhton env?
 
 process BUSCO_DATASET {
 
-    label 'default'
-    tag "$taxon_id"
+    label 'python'
+    tag "$taxon_id:$core"
 
     input:
-    val(taxon_id)
+    tuple val(gca), val(taxon_id), val(core)
 
     output:
-    stdout
-
+    stdout emit: dataset
+    tuple val(gca), val(core), emit: db
+    
+    println(["GCA: gca, Taxon ID: taxon_id, Core name: core"])
     script:
     """
-    // Construct the command based on whether last_date is provided
-    def pythonScript = file("$projectDir/src/python/ensembl/genes/statistics/clade_selector.py")
-    def command = "python ${pythonScript} -d ${params.busco_datasets} -t ${taxon_id}"
-
-    // Execute the Python script
-    def process = command.execute()
-    process.waitFor()
-    
-    // Check if the script execution was successful
-    if (process.exitValue() != 0) {
-        throw new RuntimeException("Error executing Python script: ${pythonScript}")
-    }
-
-    // Get the output of the script
-    def output = process.text.trim()
-
-    // Emit the path to the JSON file
-    output
+    clade_selector.py -d ${params.busco_datasets} -t ${taxon_id}
     """
+    // the script needs to be stored in the bin dir in the workflow dir
+    
 }
 
 

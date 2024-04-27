@@ -17,23 +17,24 @@ limitations under the License.
 
 process BUSCO_PROTEIN_LINEAGE {
     label 'busco'
-    tag "$db.species:$db.gca"
-    storeDir "$cache_dir/$gca/busco_protein/"
+    tag "$gca"
+    storeDir "${params.cacheDir}/$gca/busco_protein/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
-    tuple val(db), val(busco_dataset), path(translations)
+    val(busco_dataset)
+    tuple val(gca), val(core), path(translation_file)
 
     output:
-    tuple val(db), path("fasta/*.txt")
+    tuple val(core), val(gca), path("protein_output/*.txt")
 
     script:
     """
     busco -f \
-        -i ${translations} \
+        -i ${translation_file} \
         --mode proteins \
-        -l ${busco_dataset} \
+        -l ${busco_dataset.trim()} \
         -c ${task.cpus} \
-        -o fasta \
+        --out protein_output \
         --offline \
         --download_path ${params.download_path}
         """
