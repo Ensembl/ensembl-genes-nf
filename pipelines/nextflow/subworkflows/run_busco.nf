@@ -28,6 +28,7 @@ nextflow.enable.dsl=2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+include { BUILD_BUSCO_INPUT } from '../modules/busco/build_busco_input.nf'
 include { BUSCO_DATASET } from '../modules/busco/busco_dataset.nf'
 include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
@@ -37,9 +38,6 @@ include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco/busco_out
 include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco/busco_output.nf'
 include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
-
-
-include { CLEANING } from '../modules/cleaning.nf'
 
 
 /*
@@ -54,34 +52,35 @@ workflow RUN_BUSCO{
     copyToFtp
 
     main:
-    // Get the closest Busco dataset from the taxonomy classification stored in db meta table 
-    buscoDataset = BUSCO_DATASET(db_meta.taxon_id)
+    // Get the closest Busco dataset from the taxonomy classification stored in db meta table
+    def db_meta1=db_meta
+    db_meta1.flatten().view { d -> "GCA1: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.core}"}
     
+    def (dataset, db) = BUSCO_DATASET(db_meta.flatten()) 
     // Run Busco in genome mode
     if (busco_mode.contains('genome')) {
-        genomeFile = FETCH_GENOME(db_meta.gca)
-        buscoGenomeOutput = BUSCO_GENOME_LINEAGE(buscoDataset, genomeFile)
-        buscoGenomeSummaryFile = BUSCO_GENOME_OUTPUT(db_meta, buscoGenomeOutput, "genome")
+        def output_typeG = "genome"
+        //def inputdDataG = BUILD_BUSCO_INPUT (db_meta.flatten())
+        def genomeData = FETCH_GENOME(db)
+        def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(dataset, genomeData)
+        def buscoGenomeSummaryFile, publishDirG = BUSCO_GENOME_OUTPUT(output_typeG,buscoGenomeOutput)
         if (params.copyToFtp) {
-            COPY_GENOME_OUTPUT(db_meta, buscoGenomeSummaryFile)
+            COPY_GENOME_OUTPUT(publishDirG, buscoGenomeSummaryFile)
         }
     }
     
     // Run Busco in protein mode
     if (busco_mode.contains('protein')) {
-        if (params.project == 'brc') {
-            buscoDataset = buscoDataset.filter{ it[0].has_genes == "1" } 
-        }
-        proteinFile = FETCH_PROTEINS (db_meta.name)
-        buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(buscoDataset, proteinFile)
-        buscoProteinSummaryFile = BUSCO_PROTEIN_OUTPUT(db_meta, buscoProteinOutput, "protein")
+        def output_typeP = "protein"
+        def proteinData = FETCH_PROTEINS (db)
+        def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(dataset,proteinData)
+        def buscoProteinSummaryFile, publishDirP = BUSCO_PROTEIN_OUTPUT(output_typeP, buscoProteinOutput)
         if (copyToFtp) {
-            COPY_PROTEIN_OUTPUT(db_meta, buscoProteinSummaryFile)
+            COPY_PROTEIN_OUTPUT(publishDirP, buscoProteinSummaryFile)
         }
 
     }
 }
-    
 
 
 
