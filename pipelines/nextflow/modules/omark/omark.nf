@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -15,18 +16,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+include { getMetaValue } from '../utils.nf'
+
 process OMARK {
     label 'omamer'
-    tag "$db.species:$db.gca"
-    storeDir "$cache_dir/$gca/omark_output"
+    tag "$gca"
+    
+    publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
+    //storeDir "$cache_dir/$gca/omark_output"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
-    file omamer_file
-
+    tuple val(gca), val(db), path(omamer_file)
+    
     output:
-    path("proteins_detailed_summary.txt"), emit: summary_file
+    tuple val(gca), val(db), val(publish_dir), path("omark_output/*.txt")
 
     script:
+    scientific_name = getMetaValue(db, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
+    species=scientific_name.toLowerCase()
+    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(db, "species.annotation_source")[0].meta_value.toString()
+    
     """
     omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output
     """

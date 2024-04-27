@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -15,25 +16,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//include { make_publish_dir } from '../utils.nf'
+include { getMetaValue } from '../utils.nf'
 
 process OMARK_OUTPUT {
-    // rename busco summary file in <production name>_gca_busco_short_summary.txt
-    tag "$db.species:$db.gca"
+    tag "omark_output:$gca"
     label 'default'
-    publishDir "db.publish_dir/statistics", mode: 'copy'
+    //publishDir "${params.outDir}/$publish_dir/statistics", mode: 'copy'
+    storeDir "${params.cacheDir}/$publish_dir/statistics"
 
     input:
-    tuple val(db), path(summary_file, stageAs: "short_summary_from_busco_run.txt")
+    tuple val(gca), val(dbname), val(publish_dir), path(summary_file)
 
     output:
-    path("*_proteins_detailed_summary.txt"), emit:summary_file
+    val publish_dir, emit: output_dir
+    path("*.txt"), emit: summary_file
 
     script:
-    
+    scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
+    species=scientific_name.toLowerCase()
+    gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
     def summary_name = summary_file
-    def species = db.species.toLowerCase()
-    def gca = db.gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
-    summary_name = [species, gca, "omark", "proteins_detailed_summary.txt"].join("_")
+    summary_name = [species, gca_string, "omark", "proteins_detailed_summary.txt"].join("_")
     
+    """
+    cp $summary_file $summary_name
+    """
 }

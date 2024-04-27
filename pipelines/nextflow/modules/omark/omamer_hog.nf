@@ -22,17 +22,14 @@ process OMAMER_HOG {
     storeDir "${params.cacheDir}/$gca/omamer/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
-    file fasta
-    val gca
+    tuple val(gca), val(db), path(translation_file)
     
-
     output:
-    path "proteins.omamer", emit: omamer_file
-    val outdir, emit:species_outdir
+    tuple val(gca), val(db), path("proteins.omamer")
 
     script:
     """
-    omamer search --db ${params.omamer_database} --query ${fasta} --score sensitive --out proteins.omamer
+    omamer search --db ${params.omamer_database} --query ${translation_file} --score sensitive --out proteins.omamer
     
     """
 }
