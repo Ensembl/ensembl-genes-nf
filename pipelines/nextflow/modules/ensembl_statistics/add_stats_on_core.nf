@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -15,16 +16,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process UPDATE_STATS_ON_CORE {
-    label 'default'
-    tag "$db_meta.name"
-    
-    input:
-    val db_meta
-    path statistics_file
+include { getMetaValue } from '../utils.nf'
 
+process ADD_STATS_ON_CORE {
+    label 'default'
+    tag "load_stats: $core"
+    storeDir "${params.cacheDir}/$gca/statistics"
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+
+    input:
+    tuple val(gca), val(core), path(statistics_file)
+
+    output:
+    path(json_file)
     script:
     """
-    ${params.host}-w ${db_meta.name} < statistics_file
+    ${params.host}-w ${core} < statistics_file
     """
 }

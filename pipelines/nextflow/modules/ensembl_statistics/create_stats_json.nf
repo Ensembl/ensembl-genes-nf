@@ -16,34 +16,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from '../utils.nf'
+include { generateMetadataJson } from '../utils.nf'
 
-process RUN_STATISTICS {
-    label 'fetch_file'
-    tag "core_statistics:$gca"
-    publishDir "${params.outDir}/$publish_dir/statistics", mode: 'copy'
-    //storeDir "${params.cacheDir}/$gca/statistics"
+process CREATE_STATS_JSON {
+    label 'default'
+    tag "stats_json:$gca"
+    storeDir "${params.outDir}/$publish_dir/statistics"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    
+
     input:
-    tuple val(gca), val(core)
+    tuple val(gca), val(core), path(statistics_sql)
 
     output:
-    tuple val(gca), val(core), path("*.sql")
+    tuple val(publish_dir), path(statistics_sql)
 
     script:
     scientific_name = getMetaValue(core, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
+    species=scientific_name.toLowerCase()
     publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(core, "species.annotation_source")[0].meta_value.toString()
-    production_name = getMetaValue(core, "species.production_name")[0].meta_value.toString()
-    """
-    perl ${params.enscode}/core_meta_updates/scripts/stats/generate_species_homepage_stats.pl \
-        -dbname ${core} \
-        -host ${params.host} \
-        -port ${params.port} \
-        -production_name ${production_name.trim()} \
-        -output_dir ${publish_dir}/statistic
-    // re write the output to  have a json    
-    //gb1-w amphiduros_pacificus_gca949316495v1_core_110_1 <stats_amphiduros_pacificus_gca949316495v1_core_110_1.sql
+    gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
+    json_file_name = [species, gca_string, "core_stats.json"].join("_")
     
+    //json_file = generateMetadataJson(statistics_sql)
+    """
+    generateMetadataJson(statistics_sql) > json_file_name
     """
 }
+
+
+
+
+
+
