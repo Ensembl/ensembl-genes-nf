@@ -15,26 +15,33 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+include { getMetaValue } from './utils.nf'
+
 process FETCH_PROTEINS {
-    tag "$db.gca:protein"
+    tag "$gca:protein"
     label 'fetch_file'
-    storeDir "${params.cacheDir}/${db.gca}/fasta/"
+    storeDir "${params.cacheDir}/$gca/fasta/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    val(db)
+    tuple val(gca), val(core)
 
     output:
-    //tuple val(db), val(busco_dataset), path("*_translations.fa")
-    path("*_translations.fa"), emit:fasta
+    tuple val(gca), val(core), path("*_translations.fa")
+
     script:
-    def translations_file = "${db.name}_translations.fa"
+    scientific_name = getMetaValue(core, "species.production_name")[0].meta_value.toString().toLowerCase()
+    translations_file = scientific_name +"_translations.fa"
     """
+    echo $gca
+    echo $core
+    echo $scientific_name
     perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
         -host ${params.host} \
         -port ${params.port} \
-        -dbname ${db.name} \
-        -user ${params.user} \
+        -dbname ${core} \
+        -user ${params.user_r} \
         -file $translations_file \
         ${params.dump_params}
     """

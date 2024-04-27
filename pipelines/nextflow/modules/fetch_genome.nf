@@ -22,19 +22,17 @@ process FETCH_GENOME {
   storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
   input:
-  val gca
+  tuple val(gca), val(core)
 
   output:
-  //tuple val(db), val(busco_dataset), path("*.fna")
-
-  path( "*.fna"), emit: genome_file
-  //joinPath(params.outDir, "${gca}", "ncbi_dataset", "data",
+  tuple val(gca), val(core), path("*.fna")
+  
   script:
   """
   curl -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"  -H "Accept: application/zip" --output genome_file.zip
   unzip -j genome_file.zip
 
-  
-  //ncbi_dataset/data/GCA_963576655.1/GCA_963576655.1_icGasPoly1.1_genomic.fna 
   """
+  //ncbi_dataset/data/GCA_963576655.1/GCA_963576655.1_icGasPoly1.1_genomic.fna 
+
 }
