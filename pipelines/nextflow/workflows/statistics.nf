@@ -63,17 +63,18 @@ if (params.help) {
     log.info '-------------------------------------------------------'
     log.info ''
     log.info 'Usage: '
-    log.info '  nextflow -C ensembl-genes-nf/pipelines/nextflow/workflows/nextflow.config \
+    log.info 'nextflow -C ensembl-genes-nf/pipelines/nextflow/workflows/nextflow.config \
                 run ensembl-genes-nf/pipelines/nextflow/workflows/main.nf \
                 --enscode --csvFile --outDir --host --port --user --bioperl --project \
                 --run_busco_core --run_busco_ncbi --run_omark --run_ensembl_stats \
                 --apply_stats --copyToFtp --busco_mode'
     log.info ''
     log.info 'Options:'
-    log.info '  --host STR                   Db host server '
-    log.info '  --port INT                   Db port  '
-    log.info '  --user STR                   Db user  '
-    log.info '  --enscode STR                Enscode path '
+    log.info '  --host STR                   Db host server'
+    log.info '  --port INT                   Db port'
+    log.info '  --user STR                   Db user'
+    log.info '  --user_r STR                 Db user read_only'
+    log.info '  --enscode STR                Enscode path'
     log.info '  --outDir STR                 Output directory. Default is workDir'
     log.info '  --csvFile STR                Path for the csv containing the db name' 
     log.info '  --bioperl STR                BioPerl path (optional)'
@@ -101,53 +102,68 @@ include { RUN_ENSEMBL_STATS } from '../subworkflows/run_ensembl_stats.nf'
 include { BUILD_METADATA } from '../modules/build_metadata.nf'
 include { SPECIES_METADATA } from '../modules/species_metadata.nf'
 
-include { buildMetadata } from '../modules/utils.nf'
+include { getMetaValue } from '../modules/utils.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-process installDependencies {
-    script:
-    """
-    pip install --file ../../../pyproject.toml
-    """
-}
 
 workflow STATISTICS{
-    //data = Channel.fromPath(params.csvFile).splitCsv()
-    installDependencies()
-    if (params.run_busco_ncbi) {
+    if(params.run_busco_ncbi && !params.run_busco_core){
         // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
-
-        data = Channel.fromPath(params.csvFile).splitCsv(sep:',').map { row ->
-            def gca = row[0]
-            def taxon = row[1]
-            def busco_mode = 'genome'
-            def copyToFtp = false
-            println("GCA: $gca, Taxon: $taxon")
-            def db_meta = buildMetadata(gca, taxon_id)
-
-            //def db_meta = BUILD_METADATA(gca,taxon_id)
-            RUN_BUSCO(db_meta, busco_mode, copyToFtp)
-            }
+        data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
+                 .splitCsv(sep:',', header:true)
+                 .map { row -> [gca:row.get('gca'), taxon_id:row.get('taxon_id'), core:'core']}
+                 
+        def busco_mode = 'genome'
+        def copyToFtp = false
+        data1=data
+        data1.each{ d-> d.view()}
+        RUN_BUSCO(data, busco_mode, copyToFtp)
     }
     if (params.run_busco_core || params.run_omark || params.run_ensembl_stats) {
-        csvData = Channel.fromPath(params.csvFile).splitCsv()
-        // Get db name and its metadata
-        db = csvData.flatten()
-        db_meta = SPECIES_METADATA(db)
-        
+    
+      def fullProcessedData = []
+        rows = file(params.csvFile).readLines().drop(1) // Skip header
+        rows.each { row ->
+            def core = row
+            def gcaChannel = getMetaValue(core, "assembly.accession")
+            def taxonIdChannel = getMetaValue(core, "species.taxonomy_id")
+            def gca = gcaChannel[0].meta_value.toString()
+            def taxon_id = taxonIdChannel[0].meta_value.toString()
+            fullProcessedData.add([gca: gca, taxon_id: taxon_id, core: core])
+        }
+
+    full_data = Channel.from(fullProcessedData)
+    
+    def minimalProcessedData = []
+        rows = file(params.csvFile).readLines().drop(1) // Skip header
+        rows.each { row ->
+            def core = row
+            def gcaChannel = getMetaValue(core, "assembly.accession")
+            def gca = gcaChannel[0].meta_value.toString()
+            minimalProcessedData.add([gca: gca, core: core])
+        }
+
+    minimal_data = Channel.from(minimalProcessedData)
+    data1=minimal_data
+        data1.each{ d-> d.view()}
+/*
+data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
+                 .splitCsv( header:true)
+                 .map { row -> [gca:'gca', taxon_id:'taxon_id', core:row.get('core')]}        
+*/
         if (params.run_busco_core) {
-        RUN_BUSCO(db_meta, busco_mode, params.copyToFtp)
+        RUN_BUSCO(full_data, busco_mode, params.copyToFtp)
         }
 
         if (params.run_omark) {
-        RUN_OMARK(db, db_meta)
+        RUN_OMARK(minimal_data)
         }
 
         if (params.run_ensembl_stats) {
-        RUN_ENSEMBL_STATS(db, db_meta)
+        RUN_ENSEMBL_STATS(minimal_data)
         }
     }    
     
