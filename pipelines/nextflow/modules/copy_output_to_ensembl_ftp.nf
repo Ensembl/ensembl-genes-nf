@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -15,25 +16,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+include { getMetaValue } from './utils.nf'
 
 process COPY_OUTPUT_TO_ENSEMBL_FTP {
-    // rename busco summary file in <production name>_gca_busco_short_summary.txt
-    tag "$db.species:$db.gca"
+    tag "copy on ftp"
     label 'default'
-    publishDir "${params.production_ftp_dir}/${db_meta.publish_dir}/statistics", mode: 'copy'
 
     input:
-    tuple val(db_meta), path(summary_file)
-
+    tuple val(gca), val(dbname),path(summary_file)
 
     script:
+     scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
+    species=scientific_name.toLowerCase()
+    gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
+    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString() 
+    ftp_stats = "${params.production_ftp_dir}/$publish_dir/statistics" 
+    ftp_path = "${params.production_ftp_dir}/$scientific_name"
     """
-    sudo -u genebuild mkdir -p ${params.production_ftp_dir}/${db_meta.publish_dir}/statistics
-
-
-    sudo -u genebuild rsync -ahvW ${summary_file} ${params.production_ftp_dir}/${db_meta.publish_dir}/statistics \
-    && rsync -avhc ${summary_file} ${params.production_ftp_dir}/${db_meta.publish_dir}/statistics
-
-    sudo -u genebuild find ${params.production_ftp_dir}/${db_meta.publish_dir} -user genebuild -exec chmod g+w {} \;  
+    sudo -u genebuild mkdir -p $ftp_stats; \
+    
+    sudo -u genebuild rsync -ahvW $summary_file $ftp_stats && rsync -avhc $summary_file $ftp_stats; \
+    sudo -u genebuild chmod 775 $ftp_path/* -R;
+    sudo -u genebuild chgrp ensemblftp $ftp_path/* -R;
     """
+    //sudo -u genebuild find #production_ftp_dir#/species/Urophycis_tenuis -user genebuild -exec chmod g+w {} \;
+    //sudo -u genebuild find "$ftp_path" -user genebuild -exec chmod g+w {} ; \
+    //sudo -u genebuild find "$ftp_path" -user genebuild -exec chgrp -R ensemblftp {} \;
 }
