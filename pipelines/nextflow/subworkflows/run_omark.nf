@@ -18,8 +18,6 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-//includeConfig '../../../workflows/nextflow.config'
-//includeConfig '../conf/omark.config'
 
 
 /*
@@ -36,7 +34,6 @@ include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_OMARK_OUTPUT } from '../modules/cop
 
 
 
-include { CLEANING } from '../modules/cleaning.nf'
 
 
 /*
@@ -47,26 +44,27 @@ include { CLEANING } from '../modules/cleaning.nf'
 
 workflow RUN_OMARK{
     take:                 
-    dbname
     db_meta
 
     main:
+        def db_meta1=db_meta
+    db_meta1.flatten().view { d -> "GCA1: ${d.gca},  Core name: ${d.core}"}
         //
         // MODULE: Get canonical protein from db
         // 
-        proteinFile = FETCH_PROTEINS (dbname)
+        def proteinData = FETCH_PROTEINS (db_meta.flatten())
         //
         // MODULE: Get orthologous groups from Omamer db 
         //
-        omamerOutput = OMAMER_HOG(proteinFile, db_meta.gca)
+        def omamerData = OMAMER_HOG(proteinData)
         //
         // MODULE: Run Omark
         //        
-        omarkOutput = OMARK (omamerOutput)
+        def omarkOutput = OMARK (omamerData)
 
-        omarkSummaryFile = OMARK_OUTPUT(db_meta, omarkOutput)
+        def (publishDir, omarkSummaryFile) = OMARK_OUTPUT(omarkOutput)
         if (params.copyToFtp) {
-            COPY_OMARK_OUTPUT(db_meta, omarkSummaryFile)
+            COPY_OMARK_OUTPUT(publishDir, omarkSummaryFile)
         }
 
 }
