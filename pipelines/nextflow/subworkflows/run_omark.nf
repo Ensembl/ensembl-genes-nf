@@ -62,9 +62,9 @@ workflow RUN_OMARK{
         //        
         def omarkOutput = OMARK (omamerData)
 
-        def (publishDir, omarkSummaryFile) = OMARK_OUTPUT(omarkOutput)
+        def (omarkSummaryOutput) = OMARK_OUTPUT(omarkOutput)
         if (params.copyToFtp) {
-            COPY_OMARK_OUTPUT(publishDir, omarkSummaryFile)
+            COPY_OMARK_OUTPUT(omarkSummaryOutput)
         }
 
 }

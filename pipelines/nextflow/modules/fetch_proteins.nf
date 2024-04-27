@@ -25,22 +25,19 @@ process FETCH_PROTEINS {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(gca), val(core)
+    tuple val(gca), val(dbname)
 
     output:
-    tuple val(gca), val(core), path("*_translations.fa")
+    tuple val(gca), val(dbname), path("*_translations.fa")
 
     script:
-    scientific_name = getMetaValue(core, "species.production_name")[0].meta_value.toString().toLowerCase()
+    scientific_name = getMetaValue(dbname, "species.production_name")[0].meta_value.toString().toLowerCase()
     translations_file = scientific_name +"_translations.fa"
     """
-    echo $gca
-    echo $core
-    echo $scientific_name
     perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
         -host ${params.host} \
         -port ${params.port} \
-        -dbname ${core} \
+        -dbname ${dbname} \
         -user ${params.user_r} \
         -file $translations_file \
         ${params.dump_params}

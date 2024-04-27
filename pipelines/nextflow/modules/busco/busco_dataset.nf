@@ -19,16 +19,15 @@ limitations under the License.
 process BUSCO_DATASET {
 
     label 'python'
-    tag "$taxon_id:$core"
+    tag "$taxon_id:$dbname"
 
     input:
-    tuple val(gca), val(taxon_id), val(core)
+    tuple val(gca), val(taxon_id), val(dbname)
 
     output:
     stdout emit: dataset
-    tuple val(gca), val(core), emit: db
+    tuple val(gca), val(dbname)
     
-    println(["GCA: gca, Taxon ID: taxon_id, Core name: core"])
     script:
     """
     clade_selector.py -d ${params.busco_datasets} -t ${taxon_id}

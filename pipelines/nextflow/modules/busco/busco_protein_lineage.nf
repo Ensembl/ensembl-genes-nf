@@ -22,10 +22,10 @@ process BUSCO_PROTEIN_LINEAGE {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
     val(busco_dataset)
-    tuple val(gca), val(core), path(translation_file)
+    tuple val(gca), val(dbname), path(translation_file)
 
     output:
-    tuple val(core), val(gca), path("protein_output/*.txt")
+    tuple val(gca), val(dbname), path("protein_output/*.txt")
 
     script:
     """

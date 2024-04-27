@@ -63,9 +63,9 @@ workflow RUN_BUSCO{
         //def inputdDataG = BUILD_BUSCO_INPUT (db_meta.flatten())
         def genomeData = FETCH_GENOME(db)
         def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(dataset, genomeData)
-        def buscoGenomeSummaryFile, publishDirG = BUSCO_GENOME_OUTPUT(output_typeG,buscoGenomeOutput)
+        def buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(output_typeG,buscoGenomeOutput)
         if (params.copyToFtp) {
-            COPY_GENOME_OUTPUT(publishDirG, buscoGenomeSummaryFile)
+            COPY_GENOME_OUTPUT(buscoGenomeSummaryOutput)
         }
     }
     
@@ -74,9 +74,9 @@ workflow RUN_BUSCO{
         def output_typeP = "protein"
         def proteinData = FETCH_PROTEINS (db)
         def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(dataset,proteinData)
-        def buscoProteinSummaryFile, publishDirP = BUSCO_PROTEIN_OUTPUT(output_typeP, buscoProteinOutput)
+        def (buscoProteinSummaryOutput) = BUSCO_PROTEIN_OUTPUT(output_typeP, buscoProteinOutput)
         if (copyToFtp) {
-            COPY_PROTEIN_OUTPUT(publishDirP, buscoProteinSummaryFile)
+            COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)
         }
 
     }

@@ -25,21 +25,20 @@ process BUSCO_OUTPUT {
     
     input:
     val(datatype)
-    tuple val(core), val(gca), path(summary_file) 
+    tuple val(gca), val(dbname), path(summary_file) 
 
 
     output:
-    val publish_dir, emit: output_dir
-    path("*_short_summary.txt"), emit:renamed_summary_file
+    tuple val(gca), val(dbname), path("*_short_summary.txt")
     
     script:
-    if (core=='core'){
+    if (dbname=='core'){
          publish_dir =gca 
          species="species"
     }else{
-         scientific_name = getMetaValue(core, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
+         scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
          species=scientific_name.toLowerCase()
-         publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(core, "species.annotation_source")[0].meta_value.toString()
+         publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
     }
     
     def name = ""
