@@ -29,7 +29,7 @@ process OMARK {
     tuple val(gca), val(db), path(omamer_file)
     
     output:
-    tuple val(gca), val(db), val(publish_dir), path("omark_output/*.txt")
+    tuple val(gca), val(db), val(publish_dir), path("omark_output/*.txt"), path("omark_output/*")
 
     script:
     scientific_name = getMetaValue(db, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
