@@ -21,8 +21,8 @@ include { getMetaValue } from '../utils.nf'
 process OMARK_OUTPUT {
     tag "omark_output:$gca"
     label 'default'
-    //publishDir "${params.outDir}/$publish_dir/statistics", mode: 'copy'
-    storeDir "${params.outDir}/$publish_dir/statistics"
+    publishDir "${params.outDir}/$publish_dir/statistics", mode: 'copy'
+    //storeDir "${params.outDir}/$publish_dir/statistics/"
 
     input:
     tuple val(gca), val(dbname), val(publish_dir), path(summary_file), val(omark_dir)
@@ -37,8 +37,8 @@ process OMARK_OUTPUT {
     gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
     //def summary_name = summary_file
     summary_name = [species, gca_string, "omark", "proteins_detailed_summary.txt"].join("_")
-    //summary_file= summary_name
-    omark_file = task.workDir.resolve(summary_name+'_'+summary_file)
+    summary_file= summary_name
+    //omark_file = task.workDir.resolve(summary_name+'_'+summary_file)
     //summary_file.renameTo(new File(summary_file.getParent(), summary_name))   "proteins_detailed_summary.txt"
     //"""
     //cp $summary_file $summary_name

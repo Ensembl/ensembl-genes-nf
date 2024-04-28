@@ -30,16 +30,15 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
     species=scientific_name.toLowerCase()
     gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
     publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString() 
+    statistics_files = "${params.outDir}/$publish_dir/statistics/*summary.txt"
     ftp_stats = "${params.production_ftp_dir}/$publish_dir/statistics" 
     ftp_path = "${params.production_ftp_dir}/$scientific_name"
     """
     sudo -u genebuild mkdir -p $ftp_stats; \
-    
-    sudo -u genebuild rsync -ahvW $summary_file $ftp_stats && rsync -avhc $summary_file $ftp_stats; \
+    sudo -u genebuild cp ${params.readme} $ftp_stats; 
+    sudo -u genebuild cp $statistics_files  $ftp_stats; \
     sudo -u genebuild chmod 775 $ftp_path/* -R;
     sudo -u genebuild chgrp ensemblftp $ftp_path/* -R;
     """
-    //sudo -u genebuild find #production_ftp_dir#/species/Urophycis_tenuis -user genebuild -exec chmod g+w {} \;
-    //sudo -u genebuild find "$ftp_path" -user genebuild -exec chmod g+w {} ; \
-    //sudo -u genebuild find "$ftp_path" -user genebuild -exec chgrp -R ensemblftp {} \;
+    //sudo -u genebuild rsync -ahvW $summary_file $ftp_stats && rsync -avhc $summary_file $ftp_stats; \
 }
