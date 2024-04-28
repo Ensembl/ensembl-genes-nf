@@ -26,7 +26,7 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
     tuple val(gca), val(dbname),path(summary_file)
 
     script:
-     scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
+    scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
     species=scientific_name.toLowerCase()
     gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
     publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString() 
