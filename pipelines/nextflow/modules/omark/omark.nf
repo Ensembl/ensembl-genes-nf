@@ -23,7 +23,7 @@ process OMARK {
     tag "$gca"
     
     publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
-    //storeDir "$cache_dir/$gca/omark_output"
+
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
     tuple val(gca), val(db), path(omamer_file)

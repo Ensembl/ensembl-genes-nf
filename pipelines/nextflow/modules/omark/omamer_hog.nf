@@ -29,7 +29,6 @@ process OMAMER_HOG {
 
     script:
     """
-    omamer search --db ${params.omamer_database} --query ${translation_file} --score sensitive --out proteins.omamer
-    
+    omamer search --db ${params.omamer_database} --query ${translation_file} --score sensitive --out proteins.omamer 
     """
 }

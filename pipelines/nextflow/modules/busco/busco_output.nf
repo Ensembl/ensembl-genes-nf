@@ -33,12 +33,12 @@ process BUSCO_OUTPUT {
     
     script:
     if (dbname=='core'){
-         publish_dir =gca 
-         species="species"
+        publish_dir =gca 
+        species="species"
     }else{
-         scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-         species=scientific_name.toLowerCase()
-         publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
+        scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
+        species=scientific_name.toLowerCase()
+        publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
     }
     
     def name = ""

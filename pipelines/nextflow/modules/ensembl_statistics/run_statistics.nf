@@ -22,7 +22,6 @@ process RUN_STATISTICS {
     label 'fetch_file'
     tag "core_statistics:$gca"
     publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
-    //storeDir "${params.cacheDir}/$gca/core_statistics"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     
     input:

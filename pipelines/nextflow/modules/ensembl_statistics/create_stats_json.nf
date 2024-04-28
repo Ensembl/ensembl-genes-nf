@@ -23,8 +23,6 @@ process CREATE_STATS_JSON {
     label 'default'
     tag "stats_json:$gca"
     storeDir "${params.outDir}/$publish_dir/core_statistics", mode: 'copy'
-    //storeDir "${params.cacheDir}/$gca/core_statistics"
-    //storeDir "${params.outDir}/$publish_dir/statistics"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:

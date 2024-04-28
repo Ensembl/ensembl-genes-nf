@@ -54,13 +54,12 @@ workflow RUN_BUSCO{
     main:
     // Get the closest Busco dataset from the taxonomy classification stored in db meta table
     def db_meta1=db_meta
-    db_meta1.flatten().view { d -> "GCA1: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.core}"}
+    db_meta1.flatten().view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.core}"}
     
     def (dataset, db) = BUSCO_DATASET(db_meta.flatten()) 
     // Run Busco in genome mode
     if (busco_mode.contains('genome')) {
         def output_typeG = "genome"
-        //def inputdDataG = BUILD_BUSCO_INPUT (db_meta.flatten())
         def genomeData = FETCH_GENOME(db)
         def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(dataset, genomeData)
         def buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(output_typeG,buscoGenomeOutput)

@@ -99,8 +99,6 @@ if (params.help) {
 include { RUN_BUSCO } from '../subworkflows/run_busco.nf'
 include { RUN_OMARK } from '../subworkflows/run_omark.nf'
 include { RUN_ENSEMBL_STATS } from '../subworkflows/run_ensembl_stats.nf'
-include { BUILD_METADATA } from '../modules/build_metadata.nf'
-include { SPECIES_METADATA } from '../modules/species_metadata.nf'
 
 include { getMetaValue } from '../modules/utils.nf'
 /*
@@ -113,9 +111,9 @@ workflow STATISTICS{
     if(params.run_busco_ncbi && !params.run_busco_core){
         // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
         data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
-                 .splitCsv(sep:',', header:true)
-                 .map { row -> [gca:row.get('gca'), taxon_id:row.get('taxon_id'), core:'core']}
-                 
+                .splitCsv(sep:',', header:true)
+                .map { row -> [gca:row.get('gca'), taxon_id:row.get('taxon_id'), core:'core']}
+                
         def busco_mode = 'genome'
         def copyToFtp = false
         data1=data
@@ -124,7 +122,7 @@ workflow STATISTICS{
     }
     if (params.run_busco_core || params.run_omark || params.run_ensembl_stats) {
     
-      def fullProcessedData = []
+        def fullProcessedData = []
         rows = file(params.csvFile).readLines().drop(1) // Skip header
         rows.each { row ->
             def core = row
@@ -151,8 +149,8 @@ workflow STATISTICS{
         data1.each{ d-> d.view()}
 /*
 data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
-                 .splitCsv( header:true)
-                 .map { row -> [gca:'gca', taxon_id:'taxon_id', core:row.get('core')]}        
+                .splitCsv( header:true)
+                .map { row -> [gca:'gca', taxon_id:'taxon_id', core:row.get('core')]}        
 */
         if (params.run_busco_core) {
         RUN_BUSCO(full_data, busco_mode, params.copyToFtp)

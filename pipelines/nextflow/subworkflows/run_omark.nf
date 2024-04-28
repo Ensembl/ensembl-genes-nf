@@ -48,7 +48,7 @@ workflow RUN_OMARK{
 
     main:
         def db_meta1=db_meta
-    db_meta1.flatten().view { d -> "GCA1: ${d.gca},  Core name: ${d.core}"}
+        db_meta1.flatten().view { d -> "GCA: ${d.gca},  Core name: ${d.core}"}
         //
         // MODULE: Get canonical protein from db
         // 
