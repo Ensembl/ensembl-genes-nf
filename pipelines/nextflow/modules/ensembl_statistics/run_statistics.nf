@@ -21,15 +21,15 @@ include { getMetaValue } from '../utils.nf'
 process RUN_STATISTICS {
     label 'fetch_file'
     tag "core_statistics:$gca"
-    publishDir "${params.outDir}/$publish_dir/statistics", mode: 'copy'
-    //storeDir "${params.cacheDir}/$gca/statistics"
+    publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
+    //storeDir "${params.cacheDir}/$gca/core_statistics"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     
     input:
     tuple val(gca), val(core)
 
     output:
-    tuple val(gca), val(core), path("*.sql")
+    tuple val(gca), val(core), path("core_statistics/*.sql")
 
     script:
     scientific_name = getMetaValue(core, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
@@ -41,9 +41,10 @@ process RUN_STATISTICS {
         -host ${params.host} \
         -port ${params.port} \
         -production_name ${production_name.trim()} \
-        -output_dir ${publish_dir}/statistic
+        -output_dir core_statistics
+    """
     // re write the output to  have a json    
     //gb1-w amphiduros_pacificus_gca949316495v1_core_110_1 <stats_amphiduros_pacificus_gca949316495v1_core_110_1.sql
     
-    """
+
 }

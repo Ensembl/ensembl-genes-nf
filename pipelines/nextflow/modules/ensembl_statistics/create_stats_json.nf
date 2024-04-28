@@ -17,11 +17,14 @@ limitations under the License.
 */
 
 include { generateMetadataJson } from '../utils.nf'
+include { getMetaValue } from '../utils.nf'
 
 process CREATE_STATS_JSON {
     label 'default'
     tag "stats_json:$gca"
-    storeDir "${params.outDir}/$publish_dir/statistics"
+    storeDir "${params.outDir}/$publish_dir/core_statistics", mode: 'copy'
+    //storeDir "${params.cacheDir}/$gca/core_statistics"
+    //storeDir "${params.outDir}/$publish_dir/statistics"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
@@ -29,6 +32,7 @@ process CREATE_STATS_JSON {
 
     output:
     tuple val(publish_dir), path(statistics_sql)
+    path("*.json"), emit: json_files  
 
     script:
     scientific_name = getMetaValue(core, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
@@ -36,11 +40,13 @@ process CREATE_STATS_JSON {
     publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(core, "species.annotation_source")[0].meta_value.toString()
     gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
     json_file_name = [species, gca_string, "core_stats.json"].join("_")
-    
+    statistic_file=publish_dir+'/core_statistics/'+statistics_sql.toString()
     //json_file = generateMetadataJson(statistics_sql)
-    """
-    generateMetadataJson(statistics_sql) > json_file_name
-    """
+    //output_file= generateMetadataJson(statistic_file, json_file_name)
+    // Generate JSON file
+    json_files = generateMetadataJson(statistic_file, json_file_name, params.outDir + "/" + publish_dir + "/core_statistics") // Pass outputDir
+
+    
 }
 
 

@@ -21,8 +21,6 @@ include { getMetaValue } from '../utils.nf'
 process ADD_STATS_ON_CORE {
     label 'default'
     tag "load_stats: $core"
-    storeDir "${params.cacheDir}/$gca/statistics"
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
     tuple val(gca), val(core), path(statistics_file)

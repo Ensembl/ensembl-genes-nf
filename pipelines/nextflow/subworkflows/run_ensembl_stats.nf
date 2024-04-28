@@ -18,8 +18,6 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-//includeConfig '../../../workflows/nextflow.config'
-
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -28,12 +26,8 @@ nextflow.enable.dsl=2
 */
 
 include { RUN_STATISTICS } from '../modules/ensembl_statistics/run_statistics.nf'
-include { UPLOAD_STATISTICS_ON_CORE  } from '../modules/ensembl_statistics/upload_statistics_on_core.nf'
-
-
-
-include { CLEANING } from '../modules/cleaning.nf'
-
+include { CREATE_STATS_JSON } from '../modules/ensembl_statistics/create_stats_json.nf'
+include { ADD_STATS_ON_CORE  } from '../modules/ensembl_statistics/add_stats_on_core.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,14 +37,15 @@ include { CLEANING } from '../modules/cleaning.nf'
 
 workflow RUN_ENSEMBL_STATS{
     take:                 
-    dbname
     db_meta
 
     main:
-
-        statisticsFile = RUN_STATISTICS (dbname)
+    def db_meta1=db_meta
+    db_meta1.flatten().view { d -> "GCA1: ${d.gca}, Core name: ${d.core}"}
+        def statisticsFile = RUN_STATISTICS (db_meta.flatten())
+        //def(statistics_output,json_file) = CREATE_STATS_JSON(statisticsFile)
         if(params.apply_stats){
-        UPLOAD_STATISTICS_ON_CORE(statisticsFile, db_meta)
+        ADD_STATS_ON_CORE(statisticsFile)
         }
 
 }
