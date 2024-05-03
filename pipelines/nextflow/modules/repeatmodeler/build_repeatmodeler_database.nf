@@ -22,14 +22,14 @@ process BUILD_REPEATMODELER_DATABASE {
     tag 'build_database'
 
     input:
-    path(genome_fasta)
+    path(genomeFasta)
 
     output:
     path(rm_database)
     
     script:
     """
-    BuildDatabase -name repeatmodeler_db -engine ncbi "${fastaFile}"
+    BuildDatabase -name repeatmodeler_db -engine ncbi "${genomeFasta}"
     """
     
 }
