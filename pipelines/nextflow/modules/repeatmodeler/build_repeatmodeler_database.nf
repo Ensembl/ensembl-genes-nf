@@ -20,12 +20,13 @@ process BUILD_REPEATMODELER_DATABASE {
 
     label 'repeatmodeler'
     tag 'build_database'
+    publishDir "${params.outDir}/database", mode: 'copy'
 
     input:
     path(genomeFasta)
 
     output:
-    path(rm_database)
+    tuple path(genomeFasta), path("repeatmodeler_db*")
     
     script:
     """

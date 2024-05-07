@@ -42,7 +42,7 @@ workflow RUN_REPEATMODELER{
 
     main:
     // Build the RepeatModeler Database
-    def genome_database = BUILD_REPEATMODELER_DATABASE(genome_fasta)
+    def repeatmodeler_database = BUILD_REPEATMODELER_DATABASE(genome_fasta)
 
     // Run RepeatModeler
     REPEATMODELER
