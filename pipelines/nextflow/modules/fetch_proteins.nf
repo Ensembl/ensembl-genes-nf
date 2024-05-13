@@ -23,6 +23,7 @@ process FETCH_PROTEINS {
     label 'fetch_file'
     storeDir "${params.cacheDir}/$gca/fasta/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    maxForks 20
 
     input:
     tuple val(gca), val(dbname)

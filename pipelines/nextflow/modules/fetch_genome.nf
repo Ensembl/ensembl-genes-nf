@@ -22,6 +22,7 @@ process FETCH_GENOME {
   label 'fetch_file'
   storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
+  maxForks 10
   input:
   tuple val(gca), val(dbname)
 
