@@ -20,6 +20,8 @@ process BUSCO_PROTEIN_LINEAGE {
     tag "$gca"
     storeDir "${params.cacheDir}/$gca/busco_protein/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    maxForks 10
+
     input:
     val(busco_dataset)
     tuple val(gca), val(dbname), path(translation_file)
