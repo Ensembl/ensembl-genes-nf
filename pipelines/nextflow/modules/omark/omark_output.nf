@@ -37,6 +37,9 @@ process OMARK_OUTPUT {
     gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
 
     summary_name = [species, gca_string, "omark", "proteins_detailed_summary.txt"].join("_")
-    summary_file= summary_name
-
+//    summary_file= summary_name
+    """
+    cat  $summary_file >  $summary_name
+    
+    """
 }

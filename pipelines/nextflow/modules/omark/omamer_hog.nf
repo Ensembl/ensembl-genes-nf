@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 process OMAMER_HOG {
-
+    maxForks 15
     label 'omamer'
     storeDir "${params.cacheDir}/$gca/omamer/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
