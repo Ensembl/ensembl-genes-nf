@@ -40,8 +40,8 @@ workflow RUN_ENSEMBL_STATS{
     db_meta
 
     main:
-    def db_meta1=db_meta
-    db_meta1.flatten().view { d -> "GCA1: ${d.gca}, Core name: ${d.core}"}
+//    def db_meta1=db_meta
+  //  db_meta1.flatten().view { d -> "GCA1: ${d.gca}, Core name: ${d.core}"}
         def statisticsFile = RUN_STATISTICS (db_meta.flatten())
         //def(statistics_output,json_file) = CREATE_STATS_JSON(statisticsFile)
         if(params.apply_stats){
