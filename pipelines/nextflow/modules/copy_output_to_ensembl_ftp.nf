@@ -37,8 +37,8 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
     sudo -u genebuild mkdir -p $ftp_stats; \
     sudo -u genebuild cp ${params.readme} $ftp_stats; 
     sudo -u genebuild cp $statistics_files  $ftp_stats; \
-    sudo -u genebuild chmod 775 $ftp_path/* -R;
-    sudo -u genebuild chgrp ensemblftp $ftp_path/* -R;
+    sudo -u genebuild chmod 775 $ftp_stats/* -R;
+    sudo -u genebuild chgrp ensemblftp $ftp_stats/* -R;
     """
     //sudo -u genebuild rsync -ahvW $summary_file $ftp_stats && rsync -avhc $summary_file $ftp_stats; \
 }
