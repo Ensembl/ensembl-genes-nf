@@ -65,7 +65,7 @@ if (params.help) {
     log.info 'Usage: '
     log.info 'nextflow -C ensembl-genes-nf/pipelines/nextflow/workflows/nextflow.config \
                 run ensembl-genes-nf/pipelines/nextflow/workflows/main.nf \
-                --enscode --csvFile --outDir --host --port --user --bioperl --project \
+                -entry STATISTICS --enscode --csvFile --outDir --host --port --user --bioperl --project \
                 --run_busco_core --run_busco_ncbi --run_omark --run_ensembl_stats \
                 --apply_stats --copyToFtp --busco_mode'
     log.info ''
@@ -75,7 +75,7 @@ if (params.help) {
     log.info '  --user STR                   Db user'
     log.info '  --user_r STR                 Db user read_only'
     log.info '  --enscode STR                Enscode path'
-    log.info '  --outDir STR                 Output directory. Default is workDir'
+    log.info '  --outDir STR                 Output directory.'
     log.info '  --csvFile STR                Path for the csv containing the db name' 
     log.info '  --bioperl STR                BioPerl path (optional)'
     log.info '  --project STR                Project, for the formatting of the output ("ensembl" or "brc")'
@@ -145,8 +145,8 @@ workflow STATISTICS{
         }
 
     minimal_data = Channel.from(minimalProcessedData)
-    data1=minimal_data
-        data1.each{ d-> d.view()}
+    //data1=minimal_data
+    //data1.each{ d-> d.view()}
 /*
 data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
                 .splitCsv( header:true)
