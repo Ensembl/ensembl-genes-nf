@@ -166,7 +166,7 @@ These are the Ensembl repositories required by this pipeline:
 | ensembl | default | https://github.com/Ensembl/ensembl.git |
 | ensembl-analysis | main | https://github.com/Ensembl/ensembl-analysis.git |
 | ensembl-io | default | https://github.com/Ensembl/ensembl-io.git |
-|core_meta_updates
+|core_meta_updates | default | https://github.com/Ensembl/core_meta_updates.git |
 
 It is recommended that all the repositories are cloned into the same folder.
 
