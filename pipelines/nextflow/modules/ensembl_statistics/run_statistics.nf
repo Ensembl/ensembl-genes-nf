@@ -23,7 +23,7 @@ process RUN_STATISTICS {
     tag "core_statistics:$gca"
     publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    
+    maxForks 20    
     input:
     tuple val(gca), val(core)
 
