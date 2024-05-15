@@ -112,11 +112,11 @@ nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes
 The structure of the file can cahnge according to the running options
 | Running mode | csv file format |
 |-----------------|--------|
-| --run_busco_core |  core    | 
+| --run_busco_core |  core (header)   | 
 |                  |  <db_name>  |
-| --run_omark |  core    | 
+| --run_omark |  core  (header)  | 
 |                  |  <db_name>  |
-| --run_busco_ncbi |  gca,taxon_id    | 
+| --run_busco_ncbi |  gca,taxon_id (header)   | 
 |                  |  <gca>,<taxon_id>  |
 
 #### `--enscode`
