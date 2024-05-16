@@ -32,11 +32,16 @@ process BUSCO_GENOME_LINEAGE {
     tuple val(gca), val(dbname), path("genome_output/*.txt") 
 
     script:
+    if (!params.busco_dataset.isEmpty()) {
+        buscoDataset = params.busco_dataset
+    } else {
+        buscoDataset=busco_dataset
+    }
     """
     busco -f \
     -i ${genome_file} \
     --mode genome \
-    -l ${busco_dataset.trim()} \
+    -l ${buscoDataset.trim()} \
     -c ${task.cpus} \
     --out genome_output \
     --offline \

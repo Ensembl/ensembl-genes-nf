@@ -30,11 +30,16 @@ process BUSCO_PROTEIN_LINEAGE {
     tuple val(gca), val(dbname), path("protein_output/*.txt")
 
     script:
+    if (!params.busco_dataset.isEmpty()) {
+        buscoDataset = params.busco_dataset
+    } else {
+        buscoDataset=busco_dataset
+    }
     """
     busco -f \
         -i ${translation_file} \
         --mode proteins \
-        -l ${busco_dataset.trim()} \
+        -l ${buscoDataset.trim()} \
         -c ${task.cpus} \
         --out protein_output \
         --offline \

@@ -86,6 +86,7 @@ if (params.help) {
     log.info '  --apply_stats bool           Upload Ensembl statistics in a mysql db, default false'
     log.info '  --copyToFtp bool             Copy output in Ensembl ftp, default false'
     log.info '  --busco_mode STR             Busco mode: genome or protein, default is to run both'
+    log.info '  --busco_dataset STR          Busco dataset: optional'
 
     exit 1
 }

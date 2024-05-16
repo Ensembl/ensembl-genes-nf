@@ -13,9 +13,11 @@ Busco is a measure of completeness of genome assembly and annotation of the gene
 
 Docker image available in https://hub.docker.com/r/ezlabgva/busco
 
-#### `--mode`
+#### `--busco_mode`
 Select Busco mode, i.e. genome mode (assess a genome assembly), protein mode (assess a gene set) or both. By default, run both modes.
---busco_mode STR             Busco mode: genome or protein, default is to run both'
+
+#### `--busco_dataset`
+Select Busco dataset; if not specified the pipeline will choose  the closest lineage according to the ncbi taxonomy classification.
 
 #### `--copyToFtp`
 Boolean option to copy output in Ensembl ftp, default false
