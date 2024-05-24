@@ -19,7 +19,7 @@ limitations under the License.
 nextflow.enable.dsl=2
 
 //includeConfig '../../nextflow/nextflow.config'
-//includeConfig '../conf/repeatmodeler.config'
+//includeConfig '../conf/repeatmasker.config'
 
 
 /*
@@ -28,23 +28,17 @@ nextflow.enable.dsl=2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { BUILD_REPEATMODELER_DATABASE } from '../modules/repeatmodeler/build_repeatmodeler_database.nf'
-include { REPEATMODELER } from '../modules/repeatmodeler/repeatmodeler.nf'
+include { REPEATMASKER } from '../modules/repeatmodeler/repeatmasker.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-workflow RUN_REPEATMODELER{
+workflow RUN_REPEATMASKER{
     take:
-    gca
+
 
     main:
-    // Build the RepeatModeler Database
-    def genome_fasta = FETCH_GENOME(gca)
-    def repeatmodeler_database = BUILD_REPEATMODELER_DATABASE(genome_fasta)
-
-    // Run RepeatModeler
-    REPEATMODELER(repeatmodeler_database)
+    REPEATMASKER()
 }

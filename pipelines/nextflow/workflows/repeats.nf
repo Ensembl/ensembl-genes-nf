@@ -28,8 +28,10 @@ if (!params.outDir) {
     exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
 }
 
-if (!params.genomeFasta) {
-    exit 1, "Undefined --genomeFasta parameter. Please provide path to the genome Fasta file"
+if (params.csvFile) {
+    csvFile = file(params.csvFile, checkIfExists: true)
+} else {
+    exit 1, 'CSV file not specified!'
 }
 
 /*
@@ -63,6 +65,17 @@ include { RUN_REPEATMODELER } from '../subworkflows/run_repeatmodeler.nf'
 */
 
 workflow REPEATS{
-    data = Channel.fromPath(params.genomeFasta, type: 'file', checkIfExists: true)
-    RUN_REPEATMODELER(data)
+        // Read data from the CSV file, split it, and map each row to extract GCA and species name values
+	data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)  
+	       .splitCsv(sep:',', header:true)
+	       .map { row -> [gca:row.get('gca'), species_name:row.get('species_name')]
+
+	def url = "${params.repeats_ftp_base}/${species_name}/${gca}.families.stk.gz"
+	def exists = CHECK_FILE_EXISTS(url)	
+
+//if files exists downdload, unzip, run repeatmasker
+//if file does not exist, run repeatmodeler, run repeatmasker
+
+	RUN_REPEATMODELER(data)
+        RUN_REPEATMASKER(data)  
 }

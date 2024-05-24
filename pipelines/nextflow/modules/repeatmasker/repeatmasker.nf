@@ -16,18 +16,18 @@ limitations under the License.
 */
 
 process REPEATMODELER {
-    label 'repeatmodeler' 
-    tag 'repeatmodeler'
-    publishDir "${params.outDir}/repeatmodeler/"
+    label 'repeatmasker' 
+    tag 'repeatmasker'
+    publishDir "${params.outDir}/repeatmasker/"
 
     input:
-    tuple path(genomeFasta), path("repeatmodeler_db*")
+
 
     output:
-    tuple path(genomeFasta), path("repeatmodeler_db-families.fa")
+
 
     script:
     """
-    RepeatModeler -engine ncbi -pa 10 -database ${params.outDir}/database/repeatmodeler_db
+    RepeatMasker -nolow -lib "${repeatmodeler_library}" "${genome_fasta}" engine "${engine}" -dir . -gff
     """
 }

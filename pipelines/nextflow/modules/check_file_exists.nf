@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -15,19 +16,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process REPEATMODELER {
-    label 'repeatmodeler' 
-    tag 'repeatmodeler'
-    publishDir "${params.outDir}/repeatmodeler/"
 
-    input:
-    tuple path(genomeFasta), path("repeatmodeler_db*")
+process CHECK_FILE_EXISTS {
+  tag "$gca:genome"
+  label 'check_file'
+  
+  input:
+    val url
 
-    output:
-    tuple path(genomeFasta), path("repeatmodeler_db-families.fa")
+  output:
+    tuple val(url), path("exists") optional true into file_check_ch
 
-    script:
-    """
-    RepeatModeler -engine ncbi -pa 10 -database ${params.outDir}/database/repeatmodeler_db
-    """
+  script:
+  """
+    wget --spider -S $url 2>&1 | grep 'HTTP/1.1 200 OK' > exists
+  """ 
 }

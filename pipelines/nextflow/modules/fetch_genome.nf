@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -15,19 +16,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process REPEATMODELER {
-    label 'repeatmodeler' 
-    tag 'repeatmodeler'
-    publishDir "${params.outDir}/repeatmodeler/"
 
-    input:
-    tuple path(genomeFasta), path("repeatmodeler_db*")
+process FETCH_GENOME {
+  tag "$gca:genome"
+  label 'fetch_file'
+  storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
+  afterScript "sleep $params.files_latency"  // Needed because of file system latency
+  maxForks 10
+  
+  input:
+    tuple val(gca), val(dbname)
 
-    output:
-    tuple path(genomeFasta), path("repeatmodeler_db-families.fa")
+  output:
+    tuple val(gca), val(dbname), path("*.fna")
 
-    script:
-    """
-    RepeatModeler -engine ncbi -pa 10 -database ${params.outDir}/database/repeatmodeler_db
-    """
+  script:
+  """
+  curl -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"  -H "Accept: application/zip" --output genome_file.zip
+  unzip -j genome_file.zip
+
+  """
+ 
 }
