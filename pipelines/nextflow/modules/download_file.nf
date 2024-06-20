@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -15,19 +16,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process RUN_REPEATMASKER {
-    label 'run_repeatmasker'
-    tag "$gca:genome"
-    publishDir "${params.outDir}/repeatmasker/"
 
-    input:
-     tuple val(row), path("${row.gca}.families.stk")
+process DOWNLOAD_FILE {
+  tag "$gca:genome"
+  label 'download_file'
 
-    output:
-     tuple val(row), path("${row.gca}.families.stk.out.gff")
+  input:
+    tuple val(url), val(row)
 
-    script:
-    """
-    RepeatMasker -nolow -lib ${row.gca}.families.stk -species "${row.species_name}" "${genome_fasta}" engine "${engine}" -dir . -gff
-    """
+  output:
+    tuple val(row), path("${row.gca}.repeatmodeler.fa") into downloaded_files_ch
+
+  script:
+  """
+    wget -O ${row.gca}.repeatmodeler.fa $url
+  """
 }

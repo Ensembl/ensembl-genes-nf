@@ -56,8 +56,7 @@ if (params.help) {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { RUN_REPEATMODELER } from '../subworkflows/run_repeatmodeler.nf'
-
+inlcude { RUN_REPEATMASKER  } from '../subworkflows/run_repeatmasker.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -66,16 +65,36 @@ include { RUN_REPEATMODELER } from '../subworkflows/run_repeatmodeler.nf'
 
 workflow REPEATS{
         // Read data from the CSV file, split it, and map each row to extract GCA and species name values
-	data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)  
+	data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
 	       .splitCsv(sep:',', header:true)
 	       .map { row -> [gca:row.get('gca'), species_name:row.get('species_name')]
-
-	def url = "${params.repeats_ftp_base}/${species_name}/${gca}.families.stk.gz"
-	def exists = CHECK_FILE_EXISTS(url)	
+           .map { row ->
+               def url = "${params.repeats_ftp_base}/${row.species_name}/${row.gca}.families.stk.gz"
+               return [row, url]
+               }
+               .set { data_with_url }
+	def exists = CHECK_FILE_EXISTS(url)
 
 //if files exists downdload, unzip, run repeatmasker
 //if file does not exist, run repeatmodeler, run repeatmasker
+    data_with_url.flatMap { row, url ->
+        CHECK_FILE_EXISTS(url).map { exists ->
+            def exists_file = exists.toFile().text.trim()
+            if (exists_file == 'true') {
+                return [url, row]
+            }
+            return null
+        }
+    }.filter { it != null }
+    .set { existing_files }
 
-	RUN_REPEATMODELER(data)
-        RUN_REPEATMASKER(data)  
+    existing_files | DOWNLOAD_FILE | UNZIP_FILE | RUN_REPEATMASKER
+
+    RUN_REPEATMASKER.out.view { result ->
+        println("RepeatMasker output for ${result.row.gca}: ${result}")
+    }
+}
+
+//	RUN_REPEATMODELER(data)
+//        RUN_REPEATMASKER(data)
 }

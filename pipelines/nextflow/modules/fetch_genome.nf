@@ -20,15 +20,14 @@ limitations under the License.
 process FETCH_GENOME {
   tag "$gca:genome"
   label 'fetch_file'
-  storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
+  storeDir "${params.outDir}/$gca/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
-  maxForks 10
-  
+
   input:
-    tuple val(gca), val(dbname)
+    tuple val(gca)
 
   output:
-    tuple val(gca), val(dbname), path("*.fna")
+    tuple val(gca), path("*.fna")
 
   script:
   """
@@ -36,5 +35,5 @@ process FETCH_GENOME {
   unzip -j genome_file.zip
 
   """
- 
+
 }
