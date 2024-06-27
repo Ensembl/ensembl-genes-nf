@@ -55,12 +55,12 @@ workflow RUN_BUSCO{
     def db_meta1=db_meta
     db_meta1.flatten().view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.core}"}
     
-    def (dataset, db) = BUSCO_DATASET(db_meta.flatten()) 
+    def (dataset_db) = BUSCO_DATASET(db_meta.flatten()) 
     // Run Busco in genome mode
     if (busco_mode.contains('genome')) {
         def output_typeG = "genome"
-        def genomeData = FETCH_GENOME(db)
-        def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(dataset, genomeData)
+        def genomeData = FETCH_GENOME(dataset_db)
+        def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(genomeData)
         def buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(output_typeG,buscoGenomeOutput)
         if (params.copyToFtp) {
             COPY_GENOME_OUTPUT(buscoGenomeSummaryOutput)
@@ -70,8 +70,8 @@ workflow RUN_BUSCO{
     // Run Busco in protein mode
     if (busco_mode.contains('protein')) {
         def output_typeP = "protein"
-        def proteinData = FETCH_PROTEINS (db)
-        def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(dataset,proteinData)
+        def proteinData = FETCH_PROTEINS (dataset_db)
+        def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(proteinData)
         def (buscoProteinSummaryOutput) = BUSCO_PROTEIN_OUTPUT(output_typeP, buscoProteinOutput)
         if (copyToFtp) {
             COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)

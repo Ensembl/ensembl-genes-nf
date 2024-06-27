@@ -25,8 +25,8 @@ process BUSCO_DATASET {
     tuple val(gca), val(taxon_id), val(dbname)
 
     output:
-    stdout emit: dataset
-    tuple val(gca), val(dbname)
+    //stdout emit: dataset
+    tuple val(gca), val(dbname), stdout
     
     script:
     """
