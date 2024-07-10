@@ -69,13 +69,13 @@ workflow REPEATS{
 	       .splitCsv(sep:',', header:true)
 	       .map { row -> [gca:row.get('gca'), species_name:row.get('species_name')]
            .map { row ->
-               def url = "${params.repeats_ftp_base}/${row.species_name}/${row.gca}.families.stk.gz"
+               def url = "${params.repeats_ftp_base}/${row.species_name}/${row.gca}.repeatmodeler.fa"
                return [row, url]
                }
                .set { data_with_url }
 	def exists = CHECK_FILE_EXISTS(url)
 
-//if files exists downdload, unzip, run repeatmasker
+//if files exists downdload, run repeatmasker
 //if file does not exist, run repeatmodeler, run repeatmasker
     data_with_url.flatMap { row, url ->
         CHECK_FILE_EXISTS(url).map { exists ->
