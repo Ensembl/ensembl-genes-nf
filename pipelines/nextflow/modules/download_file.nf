@@ -19,7 +19,7 @@ limitations under the License.
 
 process DOWNLOAD_FILE {
   tag "$gca:genome"
-  label 'download_file'
+  label 'default'
 
   input:
     tuple val(url), val(row)

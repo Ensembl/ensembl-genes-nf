@@ -19,8 +19,8 @@ limitations under the License.
 
 process CHECK_FILE_EXISTS {
   tag "$gca:genome"
-  label 'check_file'
-  
+  label 'default'
+
   input:
     val url
 
@@ -30,5 +30,5 @@ process CHECK_FILE_EXISTS {
   script:
   """
     wget --spider -S $url 2>&1 | grep 'HTTP/1.1 200 OK' > exists
-  """ 
+  """
 }

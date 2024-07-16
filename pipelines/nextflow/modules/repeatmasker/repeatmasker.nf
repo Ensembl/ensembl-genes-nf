@@ -18,16 +18,16 @@ limitations under the License.
 process RUN_REPEATMASKER {
     label 'run_repeatmasker'
     tag "$gca:genome"
-    publishDir "${params.outDir}/repeatmasker/"
+    publishDir "${params.outDir}/repeatmasker/", mode: 'copy'
 
     input:
-     tuple val(row), path("${row.gca}.families.stk")
+     tuple val(row), path("${row.gca}.repeatmodeler.fa")
 
     output:
-     tuple val(row), path("${row.gca}.families.stk.out.gff")
+     tuple val(row), path("${row.gca}.*")
 
     script:
     """
-    RepeatMasker -nolow -lib ${row.gca}.families.stk -species "${row.species_name}" "${genome_fasta}" engine "${engine}" -dir . -gff
+    RepeatMasker -nolow -lib ${row.gca}.repeatmodeler.fa -engine "${engine}" -dir . -gff "${genome_fasta}"
     """
 }

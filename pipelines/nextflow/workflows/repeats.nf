@@ -56,7 +56,8 @@ if (params.help) {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-inlcude { RUN_REPEATMASKER  } from '../subworkflows/run_repeatmasker.nf'
+inlcude { RUN_REPEATMASKER  } from '../modules/repeatmasker/repeatmasker.nf'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -65,6 +66,7 @@ inlcude { RUN_REPEATMASKER  } from '../subworkflows/run_repeatmasker.nf'
 
 workflow REPEATS{
         // Read data from the CSV file, split it, and map each row to extract GCA and species name values
+        // fetch the genome from ncbi for the GCA
 	data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
 	       .splitCsv(sep:',', header:true)
 	       .map { row -> [gca:row.get('gca'), species_name:row.get('species_name')]
@@ -75,8 +77,7 @@ workflow REPEATS{
                .set { data_with_url }
 	def exists = CHECK_FILE_EXISTS(url)
 
-//if files exists downdload, run repeatmasker
-//if file does not exist, run repeatmodeler, run repeatmasker
+//if the file repeatmodeler.fa exists downdload, run repeatmasker
     data_with_url.flatMap { row, url ->
         CHECK_FILE_EXISTS(url).map { exists ->
             def exists_file = exists.toFile().text.trim()
@@ -88,13 +89,10 @@ workflow REPEATS{
     }.filter { it != null }
     .set { existing_files }
 
-    existing_files | DOWNLOAD_FILE | UNZIP_FILE | RUN_REPEATMASKER
+    existing_files | FETCH_GENOME| DOWNLOAD_FILE | RUN_REPEATMASKER
 
     RUN_REPEATMASKER.out.view { result ->
         println("RepeatMasker output for ${result.row.gca}: ${result}")
     }
 }
-
-//	RUN_REPEATMODELER(data)
-//        RUN_REPEATMASKER(data)
 }
