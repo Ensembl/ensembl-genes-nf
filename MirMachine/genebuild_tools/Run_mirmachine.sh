@@ -1,4 +1,4 @@
-# The Mirmachine pipeline is designed to run on a single species at a time.
+ # The Mirmachine pipeline is designed to run on a single species at a time.
 # This is how to run the pipeline on codon for all species in the csv downloaded from rapid
 
 # First set up the config file to ensure outputs are to the correct location
@@ -16,8 +16,7 @@ else
     tr ',' '\t' < $1 > $1.tab
     INPUT_FILE=$1.tab
 fi
-fi
 
 while IFS=$'\t' read -r -a entryArray; do 
-        bsub -Is -M 4096 nextflow run ${MAIN_NF} -profile lsf --species "${entryArray[0]}" --accession "${entryArray[5]}" &
+    sbatch run_mirmachine_species.sh ${MAIN_NF} ${entryArray[0]} ${entryArray[5]}
 done < $INPUT_FILE

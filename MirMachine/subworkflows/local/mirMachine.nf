@@ -14,9 +14,12 @@ workflow mirMachine {
         clades_ch               =   LIST_MIRMACHINE_CLADES()
         formatted_clades_ch     =   FORMAT_CLADES(clades_ch)
         match_ch                =   MATCH_CLADE(species, accession, formatted_clades_ch)
-        match_ch.view()
+        //match_ch.view()
         clean_species = species.replaceAll(~/\s/,"")
-        MIRMACHINE(clean_species, match_ch, fasta_ch)
+        clean_nodes = match_ch.map { it ->
+            it.toString().tokenize().last()
+        }
+        MIRMACHINE(clean_species, clean_nodes, fasta_ch)
     
     emit:
         fasta_ch

@@ -1,6 +1,7 @@
 
 process LIST_MIRMACHINE_CLADES {
-    container "${params.container}"
+
+    label 'mirMachine'
     
     output:
         path "*txt"
@@ -23,22 +24,15 @@ process FORMAT_CLADES {
 
     shell:
         """ 
-#!/usr/bin/env python
-with open("formatted_clades.txt", "w") as outfile:
-
-    with open("${clades}", "r") as f:
-        clades = f.readlines()
-        clades_list = []
-        for line in clades[1:]:
-            for clade in line.split(" "):
-                outfile.write(f"{clade.strip()}")
-                outfile.write("\\n")
+        awk 'NR>1 {for (i=1; i<=NF; i++) print \$i}' ${clades} > formatted_clades.txt
         """
 
 }
 
 process MATCH_CLADE {
-    container "${params.container}"
+
+    //label 'mirMachine'
+
     input:
         val(species)
         val(accession)
@@ -49,7 +43,7 @@ process MATCH_CLADE {
 
     script:
         """
-        python3 $projectDir/scripts/match_clade.py -s "${species}" -c $clade_file --output stdout
+        python $projectDir/scripts/match_clade.py -s "${species}" -c $clade_file --output stdout
         """
 
 }
