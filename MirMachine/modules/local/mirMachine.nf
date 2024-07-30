@@ -8,6 +8,7 @@ process MIRMACHINE {
     input:
         val(species)
         val(node)
+        val(model)
         file fasta
 
     output:
@@ -16,7 +17,7 @@ process MIRMACHINE {
     script:
         """
         singularity exec ${params.container} /bin/bash -c "
-            MirMachine.py --cpu ${task.cpus} --node ${node} --species  ${species} --genome ${fasta} > log_file 2>> err_file
+            MirMachine.py --cpu ${task.cpus} --node ${node} --model ${model} --species  ${species} --genome ${fasta} > log_file 2>> err_file
         "
         """
 }
