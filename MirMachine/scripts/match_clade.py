@@ -16,6 +16,7 @@ Example:
 import argparse
 import ete3
 from ete3 import NCBITaxa
+
 try:
     import taxoniq
 except ImportError:
@@ -81,7 +82,9 @@ def taxoniq_match(species: str, taxid: int, tool_lineage: list) -> str:
     return matches
 
 
-def ete3_match(ncbi: ete3.ncbi_taxonomy.ncbiquery.NCBITaxa, species: str, tool_lineage: list) -> str:
+def ete3_match(
+    ncbi: ete3.ncbi_taxonomy.ncbiquery.NCBITaxa, species: str, tool_lineage: list
+) -> str:
     """
     Check for a suitable match using ete3
 
@@ -117,6 +120,7 @@ def ete3_match(ncbi: ete3.ncbi_taxonomy.ncbiquery.NCBITaxa, species: str, tool_l
 
     return match
 
+
 def get_ncbi(update: bool = False) -> ete3.ncbi_taxonomy.ncbiquery.NCBITaxa:
     """
     Get an instance of ete3.ncbi_taxonomy.ncbiquery.NCBITaxa
@@ -135,6 +139,7 @@ def get_ncbi(update: bool = False) -> ete3.ncbi_taxonomy.ncbiquery.NCBITaxa:
     if update:
         ncbi.update_taxonomy_database()
     return ncbi
+
 
 def get_taxid(ncbi: ete3.ncbi_taxonomy.ncbiquery.NCBITaxa, species_name: str) -> int:
     """
@@ -162,9 +167,10 @@ def get_taxid(ncbi: ete3.ncbi_taxonomy.ncbiquery.NCBITaxa, species_name: str) ->
     except:
         raise ValueError("Species name not found")
 
-    
 
-def get_clade_match(ncbi: ete3.ncbi_taxonomy.ncbiquery.NCBITaxa, clades: list, species_name: str) -> str:
+def get_clade_match(
+    ncbi: ete3.ncbi_taxonomy.ncbiquery.NCBITaxa, clades: list, species_name: str
+) -> str:
     """
     Given a list of clades and a species name, return the closest match
 
@@ -180,10 +186,41 @@ def get_clade_match(ncbi: ete3.ncbi_taxonomy.ncbiquery.NCBITaxa, clades: list, s
     str
         Closest match
     """
-    species_name = ' '.join(species_name.split(" ")[:2])
+    species_name = " ".join(species_name.split(" ")[:2])
     if not check_lineage_order(species_name, clades):
         clades = clades[::-1]
     return ete3_match(ncbi, species_name, clades)
+
+
+def is_deuterostome(
+    ncbi: ete3.ncbi_taxonomy.ncbiquery.NCBITaxa, species_name: str
+) -> str:
+    """
+    Determine if a species is a deuterostome or protostome.
+
+    Parameters
+    ----------
+    ncbi : ete3.ncbi_taxonomy.ncbiquery.NCBITaxa
+        Instance of ete3.ncbi_taxonomy.ncbiquery.NCBITaxa
+    species_name : str
+        Species name
+
+    Returns
+    -------
+    str
+        'Deuterostomia' or 'Protostomia'
+    """
+    taxid = get_taxid(ncbi, species_name)
+    lineage = ncbi.get_lineage(taxid)
+    names = ncbi.get_taxid_translator(lineage)
+    lineage_names = [names[taxid] for taxid in lineage]
+
+    if "Deuterostomia" in lineage_names:
+        return "deutero"
+    elif "Protostomia" in lineage_names:
+        return "proto"
+    else:
+        return "combined" # this is the default option
 
 
 def main(args: argparse.Namespace) -> None:
@@ -196,27 +233,26 @@ def main(args: argparse.Namespace) -> None:
         Arguments from argparse
     """
     with open(args.clades, "r") as file:
-        clades = [line[:max(line.find(' '), 0) or None] for line in file]
-        
+        clades = [line[: max(line.find(" "), 0) or None] for line in file]
+
     ncbi = get_ncbi()
     clade_match = get_clade_match(ncbi, clades, args.species)
+    deutero_proto = is_deuterostome(ncbi, args.species)
 
     if clade_match == []:
         raise ValueError("No match found")
-    
+
     if args.output == "stdout":
         if clade_match[0] == args.species:
-            print(clade_match[1].strip('\n'), end='')
-            return None
+            print(f"{clade_match[1].strip()};{deutero_proto}", end="")
         else:
-            print(clade_match[0].strip('\n'), end='')
-            return None
+            print(f"{clade_match[0].strip()};{deutero_proto}", end="")
     else:
         with open(args.output, "w+") as output:
             if clade_match[0] == args.species:
-                output.write(clade_match[1])
+                output.write(f"{clade_match[1]};{deutero_proto}")
             else:
-                output.write(clade_match[0])
+                output.write(f"{clade_match[0]};{deutero_proto}")
 
     return None
 
