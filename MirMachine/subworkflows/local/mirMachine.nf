@@ -15,7 +15,7 @@ workflow mirMachine {
         formatted_clades_ch     =   FORMAT_CLADES(clades_ch)
         match_ch                =   MATCH_CLADE(species, accession, formatted_clades_ch)
         //match_ch.view()
-        
+
         clean_species = species.replaceAll(~/\s/,"")
         //output contains several lines of the script processing, to remove all unwanted info:
         clean_nodes = match_ch.map { it ->
@@ -28,7 +28,7 @@ workflow mirMachine {
         model = split_nodes.map { it[1].trim() }
 
         MIRMACHINE(clean_species, closer_clade, model, fasta_ch)
-    
+
     emit:
         fasta_ch
 }
