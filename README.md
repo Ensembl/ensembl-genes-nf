@@ -3,7 +3,7 @@
 The pipeline provides Busco, Omark completeness scores, calculates statistics for Ensembl website when the core database is available. 
 If only the assembly accession and the taxon id are available the pipeline provide Busco score (mode=genome) for the assembly.
 
-![plot](./plot.png)
+![plot](./plot.jpeg)
 
 ## Running options  
 
