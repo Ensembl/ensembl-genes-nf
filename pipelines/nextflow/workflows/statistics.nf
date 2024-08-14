@@ -146,13 +146,7 @@ workflow STATISTICS{
         }
 
     minimal_data = Channel.from(minimalProcessedData)
-    //data1=minimal_data
-    //data1.each{ d-> d.view()}
-/*
-data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
-                .splitCsv( header:true)
-                .map { row -> [gca:'gca', taxon_id:'taxon_id', core:row.get('core')]}        
-*/
+
         if (params.run_busco_core) {
         RUN_BUSCO(full_data, busco_mode, params.copyToFtp)
         }

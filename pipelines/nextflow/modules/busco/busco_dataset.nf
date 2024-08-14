@@ -25,14 +25,13 @@ process BUSCO_DATASET {
     tuple val(gca), val(taxon_id), val(dbname)
 
     output:
-    //stdout emit: dataset
     tuple val(gca), val(dbname), stdout
     
     script:
     """
     clade_selector.py -d ${params.busco_datasets_file} -t ${taxon_id}
     """
-    // the script needs to be stored in the bin dir in the workflow dir
+
     
 }
 

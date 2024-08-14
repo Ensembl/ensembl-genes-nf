@@ -19,7 +19,6 @@ limitations under the License.
 nextflow.enable.dsl=2
 
 
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
@@ -33,9 +32,6 @@ include { OMARK_OUTPUT } from '../modules/omark/omark_output.nf'
 include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_OMARK_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 
 
-
-
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -47,9 +43,6 @@ workflow RUN_OMARK{
     db_meta
 
     main:
-        //def db_meta1=db_meta
-        //db_meta1.flatten().view { d -> "GCA: ${d.gca},  Core name: ${d.core}"}
-        //
         // MODULE: Get canonical protein from db
         // 
         def proteinData = FETCH_PROTEINS (db_meta.flatten())
