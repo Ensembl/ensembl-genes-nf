@@ -18,7 +18,8 @@ workflow bam_processing {
         // Define file paths
         genome_file = file("${params.parent_dir}/${params.species}/${params.assembly}/genome_dumps/${params.species}_softmasked_toplevel.fa")
         reads_dir = "${params.parent_dir}/${params.species}/${params.assembly}/rnaseq/input/"
-        genome_dir = genome_file.getParent()
+        //genome_dir = genome_file.getParent()
+        //println "genome_dir: $genome_dir"
         output_dir = "${params.parent_dir}/${params.species}/${params.assembly}/rnaseq/merged/"
 
         // Validate paths
@@ -27,11 +28,17 @@ workflow bam_processing {
 
         // Create a channel for read pairs
         read_pairs = Channel
-            .fromFilePairs("${reads_dir}/*_{1,2}.fastq.gz", checkIfExists: true)
-            .ifEmpty { error "No read pairs found in ${reads_dir}" }
+            .fromFilePairs("${reads_dir}/*_{1,2}.fastq", checkIfExists: true)
+            //.ifEmpty { error "No read pairs found in ${reads_dir}" }
+
+        // log.info"""\
+        //     Genome directory:
+        //     file(genome_file)
+        //     "Contents of read directory:
+        //     file(reads_dir).list()
 
         // Build STAR index
-        star_index = buildSTARIndex(genome_file, genome_dir)
+        star_index = buildSTARIndex(genome_file)
 
         // Align reads
         aligned_bams = alignReads(read_pairs, star_index, output_dir)
