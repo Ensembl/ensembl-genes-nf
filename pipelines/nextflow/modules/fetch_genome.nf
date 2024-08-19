@@ -16,24 +16,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 process FETCH_GENOME {
-  tag "$gca:genome"
-  label 'fetch_file'
-  storeDir "${params.outDir}/$gca/"
-  afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    tag "$gca:genome"
+    label 'fetch_file'
+    publishDir "${params.cacheDir}/${gca}/ncbi_dataset", mode: 'copy'
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    maxForks 10
 
-  input:
-    tuple val(gca)
+    input:
+    val(gca)
 
-  output:
+    output:
     tuple val(gca), path("*.fna")
 
-  script:
-  """
-  curl -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"  -H "Accept: application/zip" --output genome_file.zip
-  unzip -j genome_file.zip
-
-  """
-
+    script:
+    """
+    set -e
+    curl -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
+    unzip -j genome_file.zip
+    """
 }

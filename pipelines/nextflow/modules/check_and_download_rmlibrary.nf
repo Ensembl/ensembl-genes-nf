@@ -16,19 +16,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+process CHECK_AND_DOWNLOAD_REPEATMODELER {
+    tag "$gca:repeatmodeler"
+    label 'default'
+    publishDir "${params.cacheDir}/${gca}/rm_library", mode: 'move'
+    afterScript "sleep $params.files_latency"
 
-process DOWNLOAD_FILE {
-  tag "$gca:genome"
-  label 'default'
+    input:
+    tuple val(url), val(gca)
 
-  input:
-    tuple val(url), val(row)
+    output:
+    tuple val(gca), path("${gca}.repeatmodeler.fa")
 
-  output:
-    tuple val(row), path("${row.gca}.repeatmodeler.fa") into downloaded_files_ch
-
-  script:
-  """
-    wget -O ${row.gca}.repeatmodeler.fa $url
-  """
+    script:
+    """
+    set -e
+    if wget --spider $url 2>/dev/null; then
+        wget -O ${gca}.repeatmodeler.fa $url
+    else
+        echo "File not found: $url" >&2
+        exit 1
+    fi
+    """
 }

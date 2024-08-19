@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -15,19 +16,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process RUN_REPEATMASKER {
-    label 'run_repeatmasker'
+process GENERATE_REPEATMODELER_LIBRARY {
     tag "$gca:genome"
-    publishDir "${params.outDir}/repeatmasker/", mode: 'copy'
+    label ''
+    publishDir "${params.cacheDir}/${gca}/rm_library", mode: 'copy'
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    maxForks 10
 
     input:
-     tuple val(row), path("${row.gca}.repeatmodeler.fa")
+    val(gca)
 
     output:
-     tuple val(row), path("${row.gca}.*")
+    tuple val(gca), path("*.fna")
 
     script:
-    """
-    RepeatMasker -nolow -lib ${row.gca}.repeatmodeler.fa -engine "${engine}" -dir . -gff "${genome_fasta}"
-    """
 }
