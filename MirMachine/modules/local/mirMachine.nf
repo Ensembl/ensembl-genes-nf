@@ -1,10 +1,11 @@
 
 process MIRMACHINE {
     //container "${params.container}"
-    publishDir "${params.outdir}/mirmachine/${params.species}_${params.accession}", mode: 'copy'
-    
+    def formatted_species_name = params.species.replace(" ","_")
+    publishDir "${params.outdir}/mirmachine/${formatted_species_name}_${params.accession}", mode: 'copy'
+
     //label 'mirMachine'
-    
+
     input:
         val(species)
         val(node)
