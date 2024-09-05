@@ -1,8 +1,25 @@
+/*
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+nextflow.enable.dsl=2
 // main.nf
-include {FETCH_GENOME} from "../modules/fetch_genome.nf"
-include {CHECK_AND_DOWNLOAD_REPEATMODELER} from "../modules/check_and_download_rmlibrary.nf"
-include {GENERATE_REPEATMODELER_LIBRARY} from "../modules/generate_repeatmodeler_library.nf"
-inlcude {RUN_REPEATMASKER} from "../modules/run_repeatmasker.nf"
+include {FETCH_GENOME} from '../modules/fetch_genome.nf'
+include {CHECK_AND_DOWNLOAD_REPEATMODELER} from '../modules/check_and_download_rmlibrary.nf'
+include {GENERATE_REPEATMODELER_LIBRARY} from '../modules/generate_repeatmodeler_library.nf'
+include {RUN_REPEATMASKER} from '../modules/run_repeatmasker.nf'
 
 workflow {
     // Check if outDir parameter is defined

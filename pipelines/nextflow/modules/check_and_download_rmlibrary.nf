@@ -17,9 +17,9 @@ limitations under the License.
 */
 
 process CHECK_AND_DOWNLOAD_REPEATMODELER {
-    tag "$gca:repeatmodeler"
+    tag "$gca:fetch_file_repeatmodeler"
     label 'default'
-    publishDir "${params.cacheDir}/${gca}/rm_library", mode: 'move'
+    publishDir "${params.outDir}/${gca}/rm_library", mode: 'move'
     afterScript "sleep $params.files_latency"
 
     input:

@@ -19,7 +19,7 @@ limitations under the License.
 process FETCH_GENOME {
     tag "$gca:genome"
     label 'fetch_file'
-    publishDir "${params.cacheDir}/${gca}/ncbi_dataset", mode: 'copy'
+    publishDir "${params.outDir}/${gca}/ncbi_dataset", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 10
 
