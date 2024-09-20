@@ -35,8 +35,8 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
     ftp_path = "${params.production_ftp_dir}/$scientific_name"
     """
     sudo -u genebuild mkdir -p $ftp_stats; \
-    sudo -u genebuild cp ${params.readme} $ftp_stats; 
-    sudo -u genebuild cp $statistics_files  $ftp_stats; \
+    sudo -u genebuild cp -f ${params.readme} $ftp_stats; 
+    sudo -u genebuild cp -f $statistics_files  $ftp_stats; \
     sudo -u genebuild chmod 775 $ftp_stats/* -R;
     sudo -u genebuild chgrp ensemblftp $ftp_stats/* -R;
     """
