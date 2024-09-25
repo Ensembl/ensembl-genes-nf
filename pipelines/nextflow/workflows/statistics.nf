@@ -67,7 +67,7 @@ if (params.help) {
                 run ensembl-genes-nf/pipelines/nextflow/workflows/main.nf \
                 -entry STATISTICS --enscode --csvFile --outDir --host --port --user --bioperl --project \
                 --run_busco_core --run_busco_ncbi --run_omark --run_ensembl_stats \
-                --apply_stats --copyToFtp --busco_mode'
+                --apply_stats --copyToFtp --busco_mode --apply_busco_metakeys'
     log.info ''
     log.info 'Options:'
     log.info '  --host STR                   Db host server'
@@ -87,6 +87,7 @@ if (params.help) {
     log.info '  --copyToFtp bool             Copy output in Ensembl ftp, default false'
     log.info '  --busco_mode STR             Busco mode: genome or protein, default is to run both'
     log.info '  --busco_dataset STR          Busco dataset: optional'
+    log.info '  --apply_busco_metakeys bool  Create JSON file with Busco metakeys and load it into the db, default false'
 
     exit 1
 }

@@ -1,9 +1,24 @@
-#!/usr/bin/env python3
+# pylint: disable=missing-module-docstring
+# See the NOTICE file distributed with this work for additional information
+# regarding copyright ownership.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import argparse
 import json
 import re
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Optional, Union
+
 
 def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, float]]:
     """
@@ -17,7 +32,6 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, float]]:
         Dict[str, str]: A dictionary containing parsed BUSCO data, including the dataset,
                         completeness values, and mode (proteins or genome).
     """
-    
 
     # Declare the dictionary to accept str as keys and str or float as values
     data: Dict[str, Union[str, float]] = {}
@@ -37,19 +51,27 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, float]]:
         data["genebuild.busco_dataset"] = dataset_match.group(1)
 
     # Extract the BUSCO mode
-    mode_match = re.search(r"BUSCO was run in mode: ([\w_]+)", content).group(1)
+    # Perform the regex search, which returns an Optional[Match[str]]
+    match: Optional[re.Match[str]] = re.search(r"BUSCO was run in mode: ([\w_]+)", content)
+
+    # Initialize mode_match as None or str
+    mode_match: Optional[str] = None
+
+    # If match is not None, extract the group and assign it to mode_match
+    if match is not None:
+        mode_match = match.group(1)
     if mode_match in ("genome", "euk_genome_met", "euk_genome_min"):
         data["genebuild.busco_mode"] = "genome"
     elif mode_match == "proteins":
         data["genebuild.busco_mode"] = "protein"
     else:
-        mode_match = None    
+        mode_match = None
 
     # Extract the BUSCO summary line with completeness values
     if mode_match == "euk_genome_min":
         result_match = re.search(
-            r"C:(\d+\.\d+)%\[S:(\d+\.\d+)%.*,D:(\d+\.\d+)%\],F:(\d+\.\d+)%.*,M:(\d+\.\d+)%,n:(\d+),E:(\d+\.\d+)%",
-            content,
+            r"C:(\d+\.\d+)%\[S:(\d+\.\d+)%.*,D:(\d+\.\d+)%\],F:(\d+\.\d+)%.*,M:(\d+\.\d+)%,n:(\d+),E:(\d+\.\d+)%",  # pylint: disable=line-too-long
+            content,  # pylint: disable=line-too-long
         )
     else:
         result_match = re.search(
@@ -67,12 +89,12 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, float]]:
             # Store the BUSCO completeness summary with erroneous
             data[
                 f'genebuild.busco_{data["genebuild.busco_mode"]}'
-            ] = f"C:{completeness}%[S:{single_copy}%,D:{duplicated}%],F:{fragmented}%,M:{missing}%,n:{total_buscos},E:{erroneus}%"
+            ] = f"C:{completeness}%[S:{single_copy}%,D:{duplicated}%],F:{fragmented}%,M:{missing}%,n:{total_buscos},E:{erroneus}%"  # pylint: disable=line-too-long
         else:
             # Store the BUSCO completeness summary
             data[
                 f'genebuild.busco_{data["genebuild.busco_mode"]}'
-            ] = f"C:{completeness}%[S:{single_copy}%,D:{duplicated}%],F:{fragmented}%,M:{missing}%,n:{total_buscos}"
+            ] = f"C:{completeness}%[S:{single_copy}%,D:{duplicated}%],F:{fragmented}%,M:{missing}%,n:{total_buscos}"  # pylint: disable=line-too-long
 
         # Unpack the BUSCO values into individual fields
         data[f'genebuild.busco_{data["genebuild.busco_mode"]}_completeness'] = float(completeness)
@@ -87,7 +109,20 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, float]]:
 
 
 # Function to generate SQL patches
-def generate_sql_patches(db_name: str, json_data: Dict[str, Union[str, float]], species_id: int = 1, table_name: str = "meta"):
+def generate_sql_patches(
+    db_name: str, json_data: Dict[str, Union[str, float]], species_id: int = 1, table_name: str = "meta"
+) -> str:  # pylint: disable=line-too-long
+    """Creat Sql patch for database
+
+    Args:
+        db_name (str): db name
+        json_data (Dict[str, Union[str, float]]): Dict of metakeys
+        species_id (int, optional): species_id Defaults to 1.
+        table_name (str, optional): Table name where to store data Defaults to "meta".
+
+    Returns:
+        str: list of Mysql patches
+    """
     sql_statements = []
     sql_statements.append(f"USE {db_name};\n")  # Replace with your actual DB name
 
@@ -100,7 +135,7 @@ def generate_sql_patches(db_name: str, json_data: Dict[str, Union[str, float]], 
         value_str = str(value).replace("'", "''")
         # Create the SQL INSERT statement
         sql_statements.append(
-            f"INSERT INTO {table_name} (species_id, meta_key, meta_value) VALUES ({species_id}, '{key}', '{value_str}');\n"
+            f"INSERT INTO {table_name} (species_id, meta_key, meta_value) VALUES ({species_id}, '{key}', '{value_str}');\n"  # pylint: disable=line-too-long
         )
 
     return "".join(sql_statements)
