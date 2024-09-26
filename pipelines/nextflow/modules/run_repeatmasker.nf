@@ -13,18 +13,18 @@ process RUN_REPEATMASKER {
     publishDir "${params.outDir}/repeatmasker/", pattern: "*.gtf", mode: "move"
 
     input:
-    tuple val(gca), path "${params.outDir}/${gca}/ncbi_dataset/${gca}*.fna"  // Input genome file path
+    tuple val(gca), path ("${params.outDir}/${gca}/ncbi_dataset/${gca}*.fna")  // Input genome file path
 
     output:
     tuple val(gca),
-    path "*.fa", emit: slice_fasta,
-    path "*.fa.cat", emit: slice_fasta_cat,
-    path "*.fa.masked", emit: slice_fasta_masked,
-    path "*.fa.ori.out", emit: slice_fasta_ori_out,
-    path "*.fa.out", emit: slice_fa_out,
-    path "*.fa.tbl", emit: slice_fa_tbl,
-    path "*.fa.rm.gtf", emit: slice_fa_rm_gtf,
-    path "*.gtf", emit: slice_gtf
+    path ("*.fa", emit: slice_fasta),
+    path ("*.fa.cat", emit: slice_fasta_cat),
+    path ("*.fa.masked", emit: slice_fasta_masked),
+    path ("*.fa.ori.out", emit: slice_fasta_ori_out),
+    path ("*.fa.out", emit: slice_fa_out),
+    path ("*.fa.tbl", emit: slice_fa_tbl),
+    path ("*.fa.rm.gtf", emit: slice_fa_rm_gtf),
+    path ("*.gtf", emit: slice_gtf)
 
     script:
     """

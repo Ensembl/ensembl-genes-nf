@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process CHECK_AND_DOWNLOAD_REPEATMODELER {
+process CHECK_AND_DOWNLOAD_RMLIBRARY {
     tag "$gca:fetch_file_repeatmodeler"
     label 'default'
     publishDir "${params.outDir}/${gca}/rm_library", mode: 'move'
