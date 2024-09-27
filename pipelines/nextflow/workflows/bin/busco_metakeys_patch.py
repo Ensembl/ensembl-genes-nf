@@ -181,7 +181,6 @@ def process_busco_file(busco_file, db, output_dir):
 
     output_file_name = f"{db}_busco_{busco_mode}_metakey.json"
     busco_data_json =busco_data.copy()
-    print(busco_data)
     busco_data_json['core_db']=db
     # Convert the dictionary to a JSON object
     busco_json = json.dumps(busco_data_json, indent=4)
@@ -193,7 +192,6 @@ def process_busco_file(busco_file, db, output_dir):
 
     # Output the JSON
     print(busco_json)
-    print(busco_data)
 
     # Generate SQL patches from the JSON
     sql_patches = generate_sql_patches(db, busco_data)
@@ -220,7 +218,6 @@ def execute_sql_patches(
         port (int, optional): MySQL port.
 
     """
-    print("SOMO QUI")
     sql_statements = sql_statements.strip().split(';\n')
     connection = None  # Initialize connection variable
     # Connect to the database and execute the SQL statements
