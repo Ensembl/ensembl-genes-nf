@@ -28,7 +28,8 @@ process BUSCO_CORE_METAKEYS {
     
     script:
     """
-    busco_metakeys_patch.py -db ${dbname} -file ${summary_file}
+    busco_metakeys_patch.py -db ${dbname} -file ${summary_file} -output_dir "${params.cacheDir}/$gca/"
+    ${params.host}-w ${dbname} < ${dbname}.sql
     """
 
     
