@@ -24,6 +24,9 @@ Select Busco dataset; if not specified the pipeline will choose  the closest lin
 #### `--copyToFtp`
 Boolean option to copy output in Ensembl ftp, default false
 
+#### `--apply_busco_metakeys`
+Boolean option to load Busco metakey into db
+
 #### `--host`
 The host name for the databases 
 
