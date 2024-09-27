@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Dict, Optional, Union
 
 
-def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, float]]:
+def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
     """
     Parses a BUSCO result file and extracts relevant data into a dictionary.
 
@@ -34,77 +34,99 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, float]]:
     """
 
     # Declare the dictionary to accept str as keys and str or float as values
-    data: Dict[str, Union[str, float]] = {}
+    data: Dict[str, Union[str, int]] = {}
     data["core_db"] = db
     # Open and read the file
     with open(file_path, "r") as file:
         content = file.read()
 
-    # Extract the BUSCO version
-    version_match = re.search(r"BUSCO version is: ((\d+\.\d+.\d+))", content)
-    if version_match:
-        data["genebuild.busco_version"] = version_match.group(1)
-
-    # Extract the BUSCO dataset
-    dataset_match = re.search(r"The lineage dataset is: ([\w_]+)", content)
-    if dataset_match:
-        data["genebuild.busco_dataset"] = dataset_match.group(1)
-
-    # Extract the BUSCO mode
-    # Perform the regex search, which returns an Optional[Match[str]]
-    match: Optional[re.Match[str]] = re.search(r"BUSCO was run in mode: ([\w_]+)", content)
+    # Define regular expressions to match the relevant numbers
+    version_pattern : Optional[re.Match[str]] = re.search(r"BUSCO version is: ((\d+\.\d+.\d+))", content)
+    dataset_pattern : Optional[re.Match[str]] = re.search(r"The lineage dataset is: ([\w_]+)", content)
+    mode_pattern: Optional[re.Match[str]] = re.search(r"BUSCO was run in mode: ([\w_]+)", content)
+    completeness_pattern: Optional[re.Match[str]] = re.search(r"(\d+)\s+Complete BUSCOs \(C\)", content)
+    single_copy_pattern: Optional[re.Match[str]] = re.search(
+        r"(\d+)\s+Complete and single-copy BUSCOs \(S\)", content
+    )
+    duplicates_pattern: Optional[re.Match[str]] = re.search(
+        r"(\d+)\s+Complete and duplicated BUSCOs \(D\)", content
+    )
+    fragmented_pattern: Optional[re.Match[str]] = re.search(r"(\d+)\s+Fragmented BUSCOs \(F\)", content)
+    missing_pattern: Optional[re.Match[str]] = re.search(r"(\d+)\s+Missing BUSCOs \(M\)", content)
 
     # Initialize mode_match as None or str
     mode_match: Optional[str] = None
 
     # If match is not None, extract the group and assign it to mode_match
-    if match is not None:
-        mode_match = match.group(1)
+    if mode_pattern is not None:
+        mode_match = mode_pattern.group(1)
     if mode_match in ("genome", "euk_genome_met", "euk_genome_min"):
-        data["genebuild.busco_mode"] = "genome"
+        busco_mode = "genome"
     elif mode_match == "proteins":
-        data["genebuild.busco_mode"] = "protein"
+        busco_mode = "protein"
     else:
         mode_match = None
 
+    version = str(version_pattern.group(1)) if version_pattern else None
+    dataset = str(dataset_pattern.group(1)) if dataset_pattern else None
+    completeness = int(completeness_pattern.group(1)) if completeness_pattern else None
+    single_copy = int(single_copy_pattern.group(1)) if single_copy_pattern else None
+    duplicated = int(duplicates_pattern.group(1)) if duplicates_pattern else None
+    fragmented = int(fragmented_pattern.group(1)) if fragmented_pattern else None
+    missing = int(missing_pattern.group(1)) if missing_pattern else None
+
     # Extract the BUSCO summary line with completeness values
     if mode_match == "euk_genome_min":
-        result_match = re.search(
+        score_match = re.search(
             r"C:(\d+\.\d+)%\[S:(\d+\.\d+)%.*,D:(\d+\.\d+)%\],F:(\d+\.\d+)%.*,M:(\d+\.\d+)%,n:(\d+),E:(\d+\.\d+)%",  # pylint: disable=line-too-long
             content,  # pylint: disable=line-too-long
         )
     else:
-        result_match = re.search(
+        score_match = re.search(
             r"C:(\d+\.\d+)%\[S:(\d+\.\d+)%.*,D:(\d+\.\d+)%\],F:(\d+\.\d+)%.*,M:(\d+\.\d+)%,n:(\d+)", content
         )
-    if result_match:
-        completeness = result_match.group(1)
-        single_copy = result_match.group(2)
-        duplicated = result_match.group(3)
-        fragmented = result_match.group(4)
-        missing = result_match.group(5)
-        total_buscos = result_match.group(6)
-        if mode_match == "euk_genome_min":
-            erroneus = result_match.group(7)
-            # Store the BUSCO completeness summary with erroneous
-            data[
-                f'genebuild.busco_{data["genebuild.busco_mode"]}'
-            ] = f"C:{completeness}%[S:{single_copy}%,D:{duplicated}%],F:{fragmented}%,M:{missing}%,n:{total_buscos},E:{erroneus}%"  # pylint: disable=line-too-long
-        else:
-            # Store the BUSCO completeness summary
-            data[
-                f'genebuild.busco_{data["genebuild.busco_mode"]}'
-            ] = f"C:{completeness}%[S:{single_copy}%,D:{duplicated}%],F:{fragmented}%,M:{missing}%,n:{total_buscos}"  # pylint: disable=line-too-long
 
-        # Unpack the BUSCO values into individual fields
-        data[f'genebuild.busco_{data["genebuild.busco_mode"]}_completeness'] = float(completeness)
-        data[f'genebuild.busco_{data["genebuild.busco_mode"]}_single_copy'] = float(single_copy)
-        data[f'genebuild.busco_{data["genebuild.busco_mode"]}_duplicated'] = float(duplicated)
-        data[f'genebuild.busco_{data["genebuild.busco_mode"]}_fragmented'] = float(fragmented)
-        data[f'genebuild.busco_{data["genebuild.busco_mode"]}_missing'] = float(missing)
-        data[f'genebuild.busco_{data["genebuild.busco_mode"]}_total'] = int(total_buscos)
+    if score_match:
+        score = score_match.group(1)
+        total_buscos = score_match.group(6)
         if mode_match == "euk_genome_min":
-            data[f'genebuild.busco_{data["genebuild.busco_mode"]}_erroneus'] = float(erroneus)
+            erroneus = score_match.group(7)
+
+        if mode_match in ("genome", "euk_genome_met", "euk_genome_min"):
+            # Extract the BUSCO version
+            data["assembly.busco_version"] = str(version)
+            # Extract the BUSCO dataset
+            data["assembly.busco_dataset"] = str(dataset)
+            # Store the BUSCO completeness summary with erroneous
+            data["assembly.busco"] = str(score)
+            data["assembly.busco_mode"] = busco_mode
+            # Store the BUSCO values into individual fields
+            data["assembly.busco_completeness"] = str(completeness)
+            data["assembly.busco_single_copy"] = str(single_copy)
+            data["assembly.busco_duplicated"] = str(duplicated)
+            data["assembly.busco_fragmented"] = str(fragmented)
+            data["assembly.busco_missing"] = str(missing)
+            data["assembly.busco_total"] = int(total_buscos)
+            if mode_match == "euk_genome_min":
+                data["assembly.busco_erroneus"] = str(erroneus)
+
+            data["assembly.busco"] = str(score)  # pylint: disable=line-too-long
+
+        else:
+            # Extract the BUSCO version
+            data["genebuild.busco_version"] = str(version)
+            # Extract the BUSCO dataset
+            data["genebuild.busco_dataset"] = str(dataset)
+            # Store the BUSCO completeness summary
+            data["genebuild.busco"] = str(score)
+            data["genebuild.busco_mode"] = busco_mode
+            # Store the BUSCO values into individual fields
+            data["genebuild.busco_completeness"] = str(completeness)
+            data["genebuild.busco_single_copy"] = str(single_copy)
+            data["genebuild.busco_duplicated"] = str(duplicated)
+            data["genebuild.busco_fragmented"] = str(fragmented)
+            data["genebuild.busco_missing"] = str(missing)
+            data["genebuild.busco_total"] = int(total_buscos)
     return data
 
 
@@ -135,10 +157,44 @@ def generate_sql_patches(
         value_str = str(value).replace("'", "''")
         # Create the SQL INSERT statement
         sql_statements.append(
-            f"INSERT INTO {table_name} (species_id, meta_key, meta_value) VALUES ({species_id}, '{key}', '{value_str}');\n"  # pylint: disable=line-too-long
+            f"INSERT IGNORE INTO {table_name} (species_id, meta_key, meta_value) VALUES ({species_id}, '{key}', '{value_str}');\n"  # pylint: disable=line-too-long
         )
 
     return "".join(sql_statements)
+
+
+def process_busco_file(busco_file, db, output_dir):
+    """
+    Parses the BUSCO file, generates a JSON, writes it to an output file,
+    and generates SQL patches.
+    """
+    # Parse the BUSCO file and generate the JSON
+    busco_data = parse_busco_file(busco_file, db)
+
+    # Determine the file name based on the mode (protein or genome)
+    for key, value in busco_data.items():
+        if key.endswith(".busco_mode"):
+            busco_mode = value
+            break  # Exit the loop once we find the first match
+
+    output_file_name = f"{db}_busco_{busco_mode}_metakey.json"
+
+    # Convert the dictionary to a JSON object
+    busco_json = json.dumps(busco_data, indent=4)
+
+    # Write the JSON output to the dynamically named file
+    output_path = Path(output_dir) / output_file_name
+    with open(output_path, "w") as outfile:
+        outfile.write(busco_json)
+
+    # Output the JSON
+    print(busco_json)
+
+    # Generate SQL patches from the JSON
+    sql_patches = generate_sql_patches(db, busco_data)
+
+    # Return SQL patches to write them to an SQL file later
+    return sql_patches
 
 
 def main():
@@ -157,45 +213,19 @@ def main():
     # Parse arguments
     args = parser.parse_args()
     if args.file:
-        # Parse the BUSCO file and generate the JSON
-        busco_data = parse_busco_file(args.file, args.db)
-        # Determine the file name based on the mode (protein or genome)
-        busco_mode = busco_data.get("genebuild.busco_mode", "unknown")
-        output_file_name = f"{args.db}_busco_{busco_mode}_metakey.json"
+        # Process the single file and write to JSON and SQL
+        sql_patches = process_busco_file(args.file, args.db, args.output_dir)
+        with open(Path(args.output_dir) / f"{args.db}.sql", "a") as f:
+            f.write(sql_patches)
 
-        # Convert the dictionary to a JSON object
-        busco_json = json.dumps(busco_data, indent=4)
-
-        # Write the JSON output to the dynamically nasmed file
-        with open(Path(args.output_dir) / output_file_name, "w") as outfile:
-            outfile.write(busco_json)
-
-        # Output the JSON
-        print(busco_json)
     elif args.input_dir:
-        # Find all files that end with 'busco_short_summary'
+        # Process all files that end with 'busco_short_summary'
         busco_files = list(Path(args.input_dir).rglob("*busco_short_summary.txt"))
+
         with open(Path(args.output_dir) / f"{args.db}.sql", "a") as f:
             for file in busco_files:
-                print(file)
-                busco_data = parse_busco_file(file, args.db)
-                # Determine the file name based on the mode (protein or genome)
-                busco_mode = busco_data.get("genebuild.busco_mode", "unknown")
-                output_file_name = f"{args.db}_busco_{busco_mode}_metakey.json"
-
-                # Convert the dictionary to a JSON object
-                busco_json = json.dumps(busco_data, indent=4)
-
-                # Write the JSON output to the dynamically named file
-                with open(output_file_name, "w") as outfile:
-                    outfile.write(busco_json)
-
-                # Output the JSON
-                print(busco_json)
-
-                # Generate SQL patches from the JSON
-                sql_patches = generate_sql_patches(args.db, busco_data)
-
+                print(f"Processing file: {file}")
+                sql_patches = process_busco_file(file, args.db, args.output_dir)
                 f.write(sql_patches)
 
 
