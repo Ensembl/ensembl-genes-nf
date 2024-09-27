@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # pylint: disable=missing-module-docstring
 # See the NOTICE file distributed with this work for additional information
 # regarding copyright ownership.
@@ -15,6 +16,7 @@
 # limitations under the License.
 import argparse
 import json
+import pymysql
 import re
 from pathlib import Path
 from typing import Dict, Optional, Union
@@ -35,7 +37,7 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
 
     # Declare the dictionary to accept str as keys and str or float as values
     data: Dict[str, Union[str, int]] = {}
-    data["core_db"] = db
+    #data["core_db"] = db
     # Open and read the file
     with open(file_path, "r") as file:
         content = file.read()
@@ -87,7 +89,7 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
         )
 
     if score_match:
-        score = score_match.group(1)
+        score = score_match.group(0)
         total_buscos = score_match.group(6)
         if mode_match == "euk_genome_min":
             erroneus = score_match.group(7)
@@ -132,7 +134,7 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
 
 # Function to generate SQL patches
 def generate_sql_patches(
-    db_name: str, json_data: Dict[str, Union[str, float]], species_id: int = 1, table_name: str = "meta"
+        db_name: str, json_data: Dict[str, Union[str, float]], species_id: int = 1, table_name: str = "meta"
 ) -> str:  # pylint: disable=line-too-long
     """Creat Sql patch for database
 
@@ -157,10 +159,10 @@ def generate_sql_patches(
         value_str = str(value).replace("'", "''")
         # Create the SQL INSERT statement
         sql_statements.append(
-            f"INSERT IGNORE INTO {table_name} (species_id, meta_key, meta_value) VALUES ({species_id}, '{key}', '{value_str}');\n"  # pylint: disable=line-too-long
+            f"INSERT IGNORE INTO {table_name} (species_id, meta_key, meta_value) VALUES ({species_id}, '{key}', '{value_str}');"  # pylint: disable=line-too-long
         )
 
-    return "".join(sql_statements)
+    return "\n".join(sql_statements)
 
 
 def process_busco_file(busco_file, db, output_dir):
@@ -178,9 +180,11 @@ def process_busco_file(busco_file, db, output_dir):
             break  # Exit the loop once we find the first match
 
     output_file_name = f"{db}_busco_{busco_mode}_metakey.json"
-
+    busco_data_json =busco_data.copy()
+    print(busco_data)
+    busco_data_json['core_db']=db
     # Convert the dictionary to a JSON object
-    busco_json = json.dumps(busco_data, indent=4)
+    busco_json = json.dumps(busco_data_json, indent=4)
 
     # Write the JSON output to the dynamically named file
     output_path = Path(output_dir) / output_file_name
@@ -189,12 +193,56 @@ def process_busco_file(busco_file, db, output_dir):
 
     # Output the JSON
     print(busco_json)
+    print(busco_data)
 
     # Generate SQL patches from the JSON
     sql_patches = generate_sql_patches(db, busco_data)
 
     # Return SQL patches to write them to an SQL file later
     return sql_patches
+
+def execute_sql_patches(
+    db_name: str,
+    sql_statements: Dict[str, Union[str, float]],
+    host: str,
+    user: str,
+    password: str,
+    port: int
+) -> str:  # pylint: disable=line-too-long
+    """Create SQL patch for database and execute it
+
+    Args:
+        db_name (str): Database name
+        sql_statements (Dict[str, Union[str, float]]): List of queryes
+        host (str, optional): MySQL server host.
+        user (str, optional): MySQL user.
+        password (str, optional): MySQL password.
+        port (int, optional): MySQL port.
+
+    """
+    print("SOMO QUI")
+    sql_statements = sql_statements.strip().split(';\n')
+    connection = None  # Initialize connection variable
+    # Connect to the database and execute the SQL statements
+    try:
+        connection = pymysql.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=db_name,
+            port=int(port)
+        )
+        with connection.cursor() as cursor:
+            for statement in sql_statements:
+                print(statement.strip())
+                statement=statement.strip()
+                cursor.execute(statement)  # Execute each SQL statement
+            connection.commit()  # Commit the changes
+    except pymysql.MySQLError as e:
+        print(f"Error while executing SQL: {e}")
+    finally:
+        connection.close()  # Close the database connection
+
 
 
 def main():
@@ -210,6 +258,11 @@ def main():
     parser.add_argument("-db", type=str, help="Core db")
     parser.add_argument("-input_dir", type=str, help="Path for directory containing the busco output files")
     parser.add_argument("-output_dir", type=str, help="Path for output directory")
+    parser.add_argument("-run_query", type=str, choices=['true', 'false'], help="Add busco metakeys to the db")
+    parser.add_argument("-host", type=str, help="Server host")
+    parser.add_argument("-port", type=str, help="Server port")
+    parser.add_argument("-user", type=str, help="Db user with writable permission")
+    parser.add_argument("-password", type=str, help="Server password")
     # Parse arguments
     args = parser.parse_args()
     if args.file:
@@ -227,6 +280,8 @@ def main():
                 print(f"Processing file: {file}")
                 sql_patches = process_busco_file(file, args.db, args.output_dir)
                 f.write(sql_patches)
+    if args.run_query == 'true':
+        execute_sql_patches(args.db, sql_patches, args.host, args.user, args.password, int(args.port))
 
 
 if __name__ == "__main__":

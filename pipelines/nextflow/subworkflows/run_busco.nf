@@ -60,11 +60,12 @@ workflow RUN_BUSCO{
         def genomeData = FETCH_GENOME(dataset_db)
         def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(genomeData)
         def buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(output_typeG,buscoGenomeOutput)
+        def buscoGenomeSummaryOutput1 = buscoGenomeSummaryOutput
         if (params.copyToFtp) {
             COPY_GENOME_OUTPUT(buscoGenomeSummaryOutput)
         }
         if(params.apply_busco_metakeys){
-            BUSCO_CORE_METAKEYS(buscoProteinSummaryOutput)
+            BUSCO_CORE_METAKEYS_GENOME(buscoGenomeSummaryOutput1)
         }
     }
     
@@ -77,8 +78,9 @@ workflow RUN_BUSCO{
         if (copyToFtp) {
             COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)
         }
+        def buscoProteinSummaryOutput1=buscoProteinSummaryOutput
         if(params.apply_busco_metakeys){
-            BUSCO_CORE_METAKEYS(buscoProteinSummaryOutput)
+            BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinSummaryOutput1)
         }
 
     }

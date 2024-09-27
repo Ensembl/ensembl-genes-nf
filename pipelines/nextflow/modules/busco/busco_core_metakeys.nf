@@ -28,9 +28,22 @@ process BUSCO_CORE_METAKEYS {
     
     script:
     """
-    busco_metakeys_patch.py -db ${dbname} -file ${summary_file} -output_dir "${params.cacheDir}/$gca/"
-    ${params.host}-w ${dbname} < ${dbname}.sql
+    # Check if Python dependencies are installed
+    # Read each line in the requirements file
+    while read -r package; do \\
+    if ! pip show -q "\$package" &>/dev/null; then 
+        echo "\$package is not installed" 
+        pip install "\$package"
+    else
+        echo "\$package is already installed"
+    fi
+    done < ${projectDir}/bin/requirements.txt
+
+    chmod +x $projectDir/bin/busco_metakeys_patch.py
+    busco_metakeys_patch.py -db ${dbname} -file ${summary_file} -output_dir "${params.cacheDir}/$gca/" -host ${params.host} -port ${params.port} -user ${params.user}  -password ${params.password} -run_query true
     """
+    //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} < ${params.cacheDir}/$gca/${dbname}.sql
+    
 
     
 }
