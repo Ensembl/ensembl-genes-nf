@@ -127,7 +127,7 @@ The structure of the file can cahnge according to the running options
 |                  |  <gca>,<taxon_id>  |
 
 #### `--enscode`
-Path to the root directory containing the Perl repositories
+Path to the root directory containing the Perl repositories (ensembl-analysis)
 
 #### `--outDir`
 Path to the directory where to store the results of the pipeline
