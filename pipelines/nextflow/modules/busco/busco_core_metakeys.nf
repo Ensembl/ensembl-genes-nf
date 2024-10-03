@@ -30,8 +30,8 @@ process BUSCO_CORE_METAKEYS {
     tuple val(gca), val(dbname),path(summary_file)
     
     script:
-    scientific_name = getMetaValue(core, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(core, "species.annotation_source")[0].meta_value.toString()
+    scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
+    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
 
     """
     # Check if Python dependencies are installed
