@@ -27,7 +27,6 @@ nextflow.enable.dsl=2
 
 include { RUN_STATISTICS } from '../modules/ensembl_statistics/run_statistics.nf'
 include { RUN_ENSEMBL_META as RUN_BETA_METAKEYS } from '../modules/ensembl_statistics/run_ensembl_meta.nf'
-include { CREATE_STATS_JSON } from '../modules/ensembl_statistics/create_stats_json.nf'
 include { POPULATE_DB as ADD_STATS_ON_CORE  } from '../modules/ensembl_statistics/populate_db.nf'
 include { POPULATE_DB as ADD_BETA_UPDATES_ON_CORE  } from '../modules/ensembl_statistics/populate_db.nf'
 
