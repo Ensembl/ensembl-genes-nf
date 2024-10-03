@@ -79,15 +79,18 @@ if (params.help) {
     log.info '  --csvFile STR                Path for the csv containing the db name' 
     log.info '  --bioperl STR                BioPerl path (optional)'
     log.info '  --project STR                Project, for the formatting of the output ("ensembl" or "brc")'
-    log.info '  --run_busco_core bool        Run BUSCO (protein or genome mode see --busco_mode) given a mysql db, default false'
     log.info '  --run_busco_ncbi bool        Run BUSCO given a assembly_accession and taxonomy id in genome mode only, default false'
     log.info '  --run_omark bool             Run OMARK given a mysql db, default false'
-    log.info '  --run_ensembl_stats bool     Run Ensembl statistics given a mysql db, default false'
-    log.info '  --apply_stats bool           Upload Ensembl statistics in a mysql db, default false'
-    log.info '  --copyToFtp bool             Copy output in Ensembl ftp, default false'
+    log.info '  --run_busco_core bool        Run BUSCO (protein or genome mode see --busco_mode) given a mysql db, default false'
     log.info '  --busco_mode STR             Busco mode: genome or protein, default is to run both'
     log.info '  --busco_dataset STR          Busco dataset: optional'
     log.info '  --apply_busco_metakeys bool  Create JSON file with Busco metakeys and load it into the db, default false'
+    log.info '  --copyToFtp bool             Copy output in Ensembl ftp, default false'
+    log.info '  --run_ensembl_stats bool     Run Ensembl statistics given a mysql db, default false'
+    log.info '  --apply_ensembl_stats bool   Insert Ensembl statistics into a mysql db, default false'
+    log.info '  --run_ensembl_beta_metakeys bool     Run Ensembl beta metakeys given a mysql db, default false'
+    log.info '  --apply_ensembl_beta_metakeys bool   Insert Ensembl beta metakeys into a mysql db, default false'
+    log.info '  --team STR                   Required by Ensembl metakey script if run_ensembl_beta_metakeys is enabled'
 
     exit 1
 }
