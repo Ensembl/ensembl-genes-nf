@@ -43,7 +43,7 @@ The read only username for the host.
 The database password. 
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password> --mode <busco_mode> --run_busco_core true -profile slurm
+nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password> --mode <busco_mode> --run_busco_core true --apply_busco_metakeys true  -profile slurm
 ```
 
 ## OMArk pipeline `--run_omark`
@@ -73,15 +73,21 @@ The database password.
 nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password> --run_omark true -profile slurm
 ```
 
-## Ensembl statistics pipeline `--run_ensembl_stats`
+## Ensembl statistics and Beta Metakeys pipeline `--run_ensembl_stats, --run_ensembl_beta_metakeys`
 
 The pipeline calculate core statistics for Ensembl browser.
 
-### `--apply_stats`
-Boolean option to upload Ensembl statistics in a mysql db, default false
+### `--run_ensembl_stats`
+Boolean option to run Ensembl statistics in a mysql db, default false
 
-#### `--copyToFtp`
-Boolean option to copy output in Ensembl ftp, default false
+#### `--apply_ensembl_stats`
+Boolean option to load Ensembl statistics in a mysql db, default false
+
+### `--run_ensembl_beta_metakeys`
+Boolean option to run Ensembl beta metakeys in a mysql db, default false
+
+#### `--apply_ensembl_beta_metakeys`
+Boolean option to load Ensembl beta metakeys in a mysql db, default false
 
 #### `--host`
 The host name for the databases 
@@ -98,8 +104,11 @@ The read only username for the host.
 #### `--password`
 The database password. 
 
+#### `--team`
+Required by Ensembl metakey script if run_ensembl_beta_metakeys is enabled. 
+
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password>  --run_ensembl_stats true -profile slurm
+nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password>  --run_ensembl_stats true --apply_ensembl_stats true  --run_ensembl_beta_metakeys true --apply_ensembl_beta_metakeys true --team <team> -profile slurm
 ```
 
 ## Busco NCBI genome pipeline `--run_busco_ncbi`
