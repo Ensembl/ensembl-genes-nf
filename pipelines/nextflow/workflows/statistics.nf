@@ -156,7 +156,7 @@ workflow STATISTICS{
         RUN_OMARK(minimal_data)
         }
 
-        if (params.run_ensembl_stats) {
+        if (params.run_ensembl_stats || params.run_ensembl_beta_metakeys) {
         RUN_ENSEMBL_STATS(minimal_data)
         }
     }    

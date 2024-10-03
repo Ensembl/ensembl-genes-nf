@@ -35,7 +35,7 @@ process RUN_STATISTICS {
     publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(core, "species.annotation_source")[0].meta_value.toString()
     production_name = getMetaValue(core, "species.production_name")[0].meta_value.toString()
     """
-    perl ${params.enscode}/core_meta_updates/scripts/stats/generate_species_homepage_stats.pl \
+    perl ${params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl \
         -dbname ${core} \
         -host ${params.host} \
         -port ${params.port} \

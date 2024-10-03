@@ -18,17 +18,18 @@ limitations under the License.
 
 include { getMetaValue } from '../utils.nf'
 
-process ADD_STATS_ON_CORE {
+process POPULATE_DB {
     label 'default'
     tag "load_stats: $core"
 
     input:
-    tuple val(gca), val(core), path(statistics_file)
+    tuple val(gca), val(core), path(sql_file)
 
-    output:
-    path(json_file)
     script:
+    
+    //${params.host} -w ${core} < ${statistics_file}
+    // /hps/software/users/ensembl/ensw/mysql-cmds/ensembl/ensadmin/mysql-ens-genebuild-prod-6 ftricomi_gca035666275v1_core_110 </hps/nobackup/flicek/ensembl/genebuild/ftricomi/aves/chukar_partridge_annotation/alectoris_chukar/GCA_035666275.1//stats_ftricomi_gca035666275v1_core_110.sql
     """
-    ${params.host}-w ${core} < statistics_file
+    ${params.mysql_ensadmin}/${params.host} ${core} < ${sql_file}
     """
 }
