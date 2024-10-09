@@ -5,6 +5,8 @@ If only the assembly accession and the taxon id are available the pipeline provi
 
 ![plot](./plot.jpeg)
 
+Nextflow version nextflow  21.10.5.5658 (currently available on Slurm)
+
 ## Running options  
 
 The following options require a list of mandatory arguments (see `Mandatory arguments`).
