@@ -5,7 +5,7 @@ If only the assembly accession and the taxon id are available the pipeline provi
 
 ![plot](./plot.jpeg)
 
-Nextflow version nextflow  21.10.5.5658 (currently available on Slurm)
+Nextflow version nextflow  <= 22.10.1. (21.10.5.5658 currently available on Slurm) 
 
 ## Running options  
 
