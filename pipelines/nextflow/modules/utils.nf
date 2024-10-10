@@ -49,7 +49,7 @@ def getMetaValue(String dbname, String metaKey) {
     return result
 }
 
-
+/*
 def generateMetadataJson(sqlFilePath, jsonName, outputDir) {
     def metadata = []
     println(sqlFilePath.toString())
@@ -72,7 +72,6 @@ def generateMetadataJson(sqlFilePath, jsonName, outputDir) {
 
     // Construct JSON object
     def json = [meta: metadata]
-    println("sono qui") 
     // Write JSON object to file
     def outputFile = new File(outputDir, jsonName)
     outputFile.withWriter { writer ->
@@ -81,4 +80,4 @@ def generateMetadataJson(sqlFilePath, jsonName, outputDir) {
     println(outputFile)
     return outputFile.absolutePath
 }
-
+*/

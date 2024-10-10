@@ -64,7 +64,7 @@ if (params.help) {
     log.info ''
     log.info 'Usage: '
     log.info 'nextflow -C ensembl-genes-nf/pipelines/nextflow/workflows/nextflow.config \
-                run ensembl-genes-nf/pipelines/nextflow/workflows/main.nf \
+                run ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf \
                 -entry STATISTICS --enscode --csvFile --outDir --host --port --user --bioperl --project \
                 --run_busco_core --run_busco_ncbi --run_omark --run_ensembl_stats \
                 --apply_stats --copyToFtp --busco_mode --apply_busco_metakeys'
