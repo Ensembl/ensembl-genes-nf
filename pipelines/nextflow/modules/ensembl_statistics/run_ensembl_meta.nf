@@ -34,7 +34,7 @@ process RUN_ENSEMBL_META {
     
     shell:
         scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-        publish_dir = scientific_name +'/'+gca+'/'+getMetaValue(dbname, "genebuild.annotation_source")[0].meta_value.toString()
+        publish_dir = scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
 
         """
         python !{params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir !{params.outDir}/$publish_dir/ --db_name !{dbname} --host !{params.host} --port !{params.port}  --team !{params.team}

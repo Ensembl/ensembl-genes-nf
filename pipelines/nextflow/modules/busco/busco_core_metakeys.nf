@@ -32,7 +32,7 @@ process BUSCO_CORE_METAKEYS {
     
     shell:
         scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-        publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "genebuild.annotation_source")[0].meta_value.toString()
+        publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
 
         '''
         chmod +x !{projectDir}/bin/busco_metakeys_patch.py

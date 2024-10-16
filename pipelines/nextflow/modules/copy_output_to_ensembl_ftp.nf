@@ -29,7 +29,7 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
     scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
     species=scientific_name.toLowerCase()
     gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
-    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "genebuild.annotation_source")[0].meta_value.toString() 
+    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
     statistics_files = "${params.outDir}/$publish_dir/statistics/*summary.txt"
     ftp_stats = "${params.production_ftp_dir}/$publish_dir/statistics" 
     ftp_path = "${params.production_ftp_dir}/$scientific_name"
