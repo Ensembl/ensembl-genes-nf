@@ -19,6 +19,51 @@ limitations under the License.
 nextflow.enable.dsl=2
 
 /*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    HELP
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+if (params.help) {
+    log.info ''
+    log.info 'Pipeline to run BUSCO (protein and/or genome mode) and/or Omark.'
+    log.info '-------------------------------------------------------'
+    log.info ''
+    log.info 'Usage: '
+    log.info 'nextflow -C ensembl-genes-nf/pipelines/nextflow/workflows/nextflow.config\
+    run ensembl-genes-nf/pipelines/nextflow/workflows/main.nf\
+    -entry STATISTICS --enscode --csvFile --outDir --host --port --user --bioperl --project\
+    --run_busco_core --run_busco_ncbi --run_omark --run_ensembl_stats\
+    --apply_stats --copyToFtp --busco_mode --apply_busco_metakeys'
+    log.info ''
+    log.info 'Options:'
+    log.info '  --host STR                   DB host server'
+    log.info '  --port INT                   DB port'
+    log.info '  --user_r STR                 DB read_only user'
+    log.info '  --user_w STR                 DB write user'
+    log.info '  --server_set STR             \'ensadmin\'(Default) | \'ensrw\''
+    log.info '  --enscode STR                Enscode path'
+    log.info '  --outDir STR                 Output directory.'
+    log.info '  --csvFile STR                Path for the csv containing the db name' 
+    log.info '  --bioperl STR                BioPerl path (optional)'
+    log.info '  --project STR                Project, for the formatting of the output ("ensembl" or "brc")'
+    log.info '  --run_busco_ncbi bool        Run BUSCO given a assembly_accession and taxonomy id in genome mode only, default false'
+    log.info '  --run_omark bool             Run OMARK given a mysql db, default false'
+    log.info '  --run_busco_core bool        Run BUSCO (protein or genome mode see --busco_mode) given a mysql db, default false'
+    log.info '  --busco_mode STR             Busco mode: genome or protein, default is to run both'
+    log.info '  --busco_dataset STR          Busco dataset: optional'
+    log.info '  --apply_busco_metakeys bool  Create JSON file with Busco metakeys and load it into the db, default false'
+    log.info '  --copyToFtp bool             Copy output in Ensembl ftp, default false'
+    log.info '  --run_ensembl_stats bool     Run Ensembl statistics given a mysql db, default false'
+    log.info '  --apply_ensembl_stats bool   Insert Ensembl statistics into a mysql db, default false'
+    log.info '  --run_ensembl_beta_metakeys bool     Run Ensembl beta metakeys given a mysql db, default false'
+    log.info '  --apply_ensembl_beta_metakeys bool   Insert Ensembl beta metakeys into a mysql db, default false'
+    log.info '  --team STR                   Required by Ensembl metakey script if run_ensembl_beta_metakeys is enabled'
+
+    exit 1
+}
+
+/*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 VALIDATE INPUTS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -30,6 +75,11 @@ if (!params.enscode) {
 }
 if (!params.outDir) {
     exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
+}
+if (!params.server_set){
+    params.mysql_ensadmin = "ensadmin"
+}else{
+   params.mysql_ensadmin = params.server_set
 }
 
 if (params.csvFile) {
@@ -51,50 +101,7 @@ if (!acceptable_projects.contains(params.project)) {
     exit 1, 'Invalid project name'
 }
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    HELP
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
 
-if (params.help) {
-    log.info ''
-    log.info 'Pipeline to run Busco score in protein and/or genome mode'
-    log.info '-------------------------------------------------------'
-    log.info ''
-    log.info 'Usage: '
-    log.info 'nextflow -C ensembl-genes-nf/pipelines/nextflow/workflows/nextflow.config \
-                run ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf \
-                -entry STATISTICS --enscode --csvFile --outDir --host --port --user --bioperl --project \
-                --run_busco_core --run_busco_ncbi --run_omark --run_ensembl_stats true \
-                --apply_ensembl_stats  --copyToFtp --busco_mode --apply_busco_metakeys \
-                --run_ensembl_beta_metakeys --apply_ensembl_beta_metakeys --team'
-    log.info ''
-    log.info 'Options:'
-    log.info '  --host STR                   Db host server'
-    log.info '  --port INT                   Db port'
-    log.info '  --user STR                   Db user'
-    log.info '  --user_r STR                 Db user read_only'
-    log.info '  --enscode STR                Enscode path'
-    log.info '  --outDir STR                 Output directory.'
-    log.info '  --csvFile STR                Path for the csv containing the db name' 
-    log.info '  --bioperl STR                BioPerl path (optional)'
-    log.info '  --project STR                Project, for the formatting of the output ("ensembl" or "brc")'
-    log.info '  --run_busco_ncbi bool        Run BUSCO given a assembly_accession and taxonomy id in genome mode only, default false'
-    log.info '  --run_omark bool             Run OMARK given a mysql db, default false'
-    log.info '  --run_busco_core bool        Run BUSCO (protein or genome mode see --busco_mode) given a mysql db, default false'
-    log.info '  --busco_mode STR             Busco mode: genome or protein, default is to run both'
-    log.info '  --busco_dataset STR          Busco dataset: optional'
-    log.info '  --apply_busco_metakeys bool  Create JSON file with Busco metakeys and load it into the db, default false'
-    log.info '  --copyToFtp bool             Copy output in Ensembl ftp, default false'
-    log.info '  --run_ensembl_stats bool     Run Ensembl statistics given a mysql db, default false'
-    log.info '  --apply_ensembl_stats bool   Insert Ensembl statistics into a mysql db, default false'
-    log.info '  --run_ensembl_beta_metakeys bool     Run Ensembl beta metakeys given a mysql db, default false'
-    log.info '  --apply_ensembl_beta_metakeys bool   Insert Ensembl beta metakeys into a mysql db, default false'
-    log.info '  --team STR                   Required by Ensembl metakey script if run_ensembl_beta_metakeys is enabled'
-
-    exit 1
-}
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

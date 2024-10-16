@@ -103,11 +103,11 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
             data["assembly.busco"] = str(score)
             data["assembly.busco_mode"] = busco_mode
             # Store the BUSCO values into individual fields
-            data["assembly.busco_completeness"] = str(completeness)
-            data["assembly.busco_single_copy"] = str(single_copy)
-            data["assembly.busco_duplicated"] = str(duplicated)
-            data["assembly.busco_fragmented"] = str(fragmented)
-            data["assembly.busco_missing"] = str(missing)
+            data["assembly.busco_completeness"] = int(completeness)
+            data["assembly.busco_single_copy"] = int(single_copy)
+            data["assembly.busco_duplicated"] = int(duplicated)
+            data["assembly.busco_fragmented"] = int(fragmented)
+            data["assembly.busco_missing"] = int(missing)
             data["assembly.busco_total"] = int(total_buscos)
             if mode_match == "euk_genome_min":
                 data["assembly.busco_erroneus"] = str(erroneus)
@@ -123,11 +123,11 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
             data["genebuild.busco"] = str(score)
             data["genebuild.busco_mode"] = busco_mode
             # Store the BUSCO values into individual fields
-            data["genebuild.busco_completeness"] = str(completeness)
-            data["genebuild.busco_single_copy"] = str(single_copy)
-            data["genebuild.busco_duplicated"] = str(duplicated)
-            data["genebuild.busco_fragmented"] = str(fragmented)
-            data["genebuild.busco_missing"] = str(missing)
+            data["genebuild.busco_completeness"] = int(completeness)
+            data["genebuild.busco_single_copy"] = int(single_copy)
+            data["genebuild.busco_duplicated"] = int(duplicated)
+            data["genebuild.busco_fragmented"] = int(fragmented)
+            data["genebuild.busco_missing"] = int(missing)
             data["genebuild.busco_total"] = int(total_buscos)
     return data
 

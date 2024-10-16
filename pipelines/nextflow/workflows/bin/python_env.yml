@@ -1,0 +1,11 @@
+name: python_env
+channels:
+  - conda-forge
+dependencies:
+  - pip
+  - pip:
+    - pathlib
+    - typing
+    - pymysql
+    - requests
+    - xmltodict
