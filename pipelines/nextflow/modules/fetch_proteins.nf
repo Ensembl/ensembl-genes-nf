@@ -26,21 +26,23 @@ process FETCH_PROTEINS {
     maxForks 20
 
     input:
-    tuple val(gca), val(dbname), val(busco_dataset)
+        tuple val(gca), val(dbname), val(busco_dataset)
 
     output:
-    tuple val(gca), val(dbname), path("*_translations.fa"),val(busco_dataset) 
+        tuple val(gca), val(dbname), path("*_translations.fa"),val(busco_dataset) 
 
-    script:
-    scientific_name = getMetaValue(dbname, "species.production_name")[0].meta_value.toString().toLowerCase()
-    translations_file = scientific_name +"_translations.fa"
-    """
-    perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
-        -host ${params.host} \
-        -port ${params.port} \
-        -dbname ${dbname} \
-        -user ${params.user_r} \
-        -file $translations_file \
-        ${params.dump_params}
-    """
+    shell:
+        scientific_name = getMetaValue(dbname, "organism.production_name")[0].meta_value.toString().toLowerCase()
+        translations_file = scientific_name +"_translations.fa"
+    // """
+    '''
+    perl !{params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
+        -host !{params.host} \
+        -port !{params.port} \
+        -dbname !{dbname} \
+        -user !{params.user_r} \
+        -file !{translations_file} \
+        !{params.dump_params}
+    '''
+    // """
 }

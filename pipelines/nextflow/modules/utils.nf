@@ -41,7 +41,7 @@ def getMetaValue(String dbname, String metaKey) {
     def driver = 'com.mysql.cj.jdbc.Driver'
     // 'mysql-connector-j-8.0.31' //'org.hsqldb.jdbc.JDBCDriver' //'mysql-connector-j-8.0.31' //'com.mysql.jdbc.Driver' // 'com.mysql.cj.jdbc.Driver'
     def jdbcUrl = "jdbc:mysql://${params.host}:${params.port}/${dbname}"
-    sql = Sql.newInstance(jdbcUrl, params.user,params.password,driver)
+    sql = Sql.newInstance(jdbcUrl, params.user_w,params.password,driver)
     def query = "SELECT meta_value FROM meta WHERE meta_key = ?"
     def result = sql.rows(query, [metaKey])
 

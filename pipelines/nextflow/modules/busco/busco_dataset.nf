@@ -19,18 +19,19 @@ limitations under the License.
 process BUSCO_DATASET {
 
     label 'python'
+    conda '../../workflows/bin/python_env.yml'
     tag "$taxon_id:$dbname"
 
     input:
-    tuple val(gca), val(taxon_id), val(dbname)
+        tuple val(gca), val(taxon_id), val(dbname)
 
     output:
-    tuple val(gca), val(dbname), stdout
+        tuple val(gca), val(dbname), stdout
     
-    script:
-    """
-    clade_selector.py -d ${params.busco_datasets_file} -t ${taxon_id}
-    """
+    shell:
+        '''
+        clade_selector.py -d !{params.busco_datasets_file} -t !{taxon_id}
+        '''
 
     
 }
