@@ -45,7 +45,7 @@ The read only username for the host.
 The database password. 
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password> --mode <busco_mode> --run_busco_core true --apply_busco_metakeys true --run_ensembl_stats true --apply_ensembl_stats true --run_ensembl_beta_metakeys  true --apply_ensembl_beta_metakeys true --team -profile slurm
+nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password> --busco_mode <busco_mode> --run_busco_core true --apply_busco_metakeys true --run_ensembl_stats true --apply_ensembl_stats true --run_ensembl_beta_metakeys  true --apply_ensembl_beta_metakeys true --team -profile slurm
 ```
 
 ## OMArk pipeline `--run_omark`
