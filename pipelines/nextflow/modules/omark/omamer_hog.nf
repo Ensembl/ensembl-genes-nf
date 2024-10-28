@@ -17,18 +17,23 @@ limitations under the License.
 */
 
 process OMAMER_HOG {
-    maxForks 15
     label 'omamer'
-    storeDir "${params.cacheDir}/$gca/omamer/"
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    input:
-    tuple val(gca), val(dbname), path(translation_file)
+    tag "${organism_name}:${insdc_acc}"
+    storeDir "${params.cacheDir}/${insdc_acc}/omamer/"
+    container = "${params.omark_singularity_path}"
+    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     
-    output:
-    tuple val(gca), val(dbname), path("proteins.omamer")
+    input:
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source)
+        path (aa_or_genome_seqs)
 
-    script:
-    """
-    omamer search --db ${params.omamer_database} --query ${translation_file} --score sensitive --out proteins.omamer 
-    """
+    output:
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), path("proteins.omamer")
+
+    shell:
+        '''
+        omamer search --db !{params.omamer_database} --query !{aa_or_genome_seqs} --score sensitive --out proteins.omamer 
+        '''
 }
