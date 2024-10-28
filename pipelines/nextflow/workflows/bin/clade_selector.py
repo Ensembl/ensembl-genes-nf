@@ -118,7 +118,7 @@ def main():
 
     if args.output == "stdout":  # pylint:disable=no-else-return
         #print(clade_match[0].strip("\n"))
-        print(clade_match)
+        print(f"{clade_match.strip()}")
     else:
         with open(args.output, "w+") as output:
             if clade_match[0] == args.species:
