@@ -16,45 +16,47 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from '../utils.nf'
-
 process BUSCO_OUTPUT {
     label 'default'
-    tag "busco_output:$gca"
-    publishDir "${params.outDir}/$publish_dir/statistics", mode: 'copy'
+    tag "${organism_name}:${insdc_acc}"
+    publishDir "${params.outDir}/${publish_dir_name}/statistics", mode: 'copy'
     
     input:
-    val(datatype)
-    tuple val(gca), val(dbname), path(summary_file) 
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source)
+        val(datatype)
+        path(summary_file) 
 
 
     output:
-    tuple val(gca), val(dbname), path("*_short_summary.txt")
+        tuple val(insdc_acc), val(dbname), val(formated_sci_name), 
+            val(publish_dir_name), path("*_short_summary.txt")
     
-    script:
-    if (dbname=='core'){
-        publish_dir =gca 
-        species="species"
-    }else{
-        scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-        species=scientific_name.toLowerCase()
-        publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
-    }
-    
-    def name = ""
-    if (datatype == "genome") {
-        name = "genome_busco"
-    } else if (datatype == "protein") {
-            name = "protein_busco"
-    }
-    if (params.project == 'brc') {
-        summary_name = [name, "short_summary.txt"].join("_")
-    }
-    else {
-        gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
-        summary_name = [species, gca_string, name, "short_summary.txt"].join("_")
-    } 
-    """
-    sed '/Summarized benchmarking in BUSCO notation for file/d' $summary_file > $summary_name
-    """
+    shell:
+        if (dbname=='core') {
+            publish_dir = insdc_acc 
+            species='species=NA'
+        }
+        else {
+            formated_sci_name = organism_name.replaceAll("\\s", "_")
+            species_lc = formated_sci_name.toLowerCase()
+            publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        }
+
+        if (datatype == "genome") {
+            busco_sum = "genome_busco"
+        }
+        else if (datatype == "protein") {
+            busco_sum = "protein_busco"
+        }
+        if (params.project == 'brc') { // brc mode can go once pipeline is fully refactored
+            summary_name = [name, "short_summary.txt"].join("_")
+        }
+        else {
+            gca_string = insdc_acc.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
+            summary_name = [species_lc, gca_string, busco_sum, "short_summary.txt"].join("_")
+        } 
+        '''
+        sed '/Summarized benchmarking in BUSCO notation for file/d' !{summary_file} > !{summary_name}
+        '''
 }

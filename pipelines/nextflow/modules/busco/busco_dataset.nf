@@ -17,21 +17,25 @@ limitations under the License.
 */
 
 process BUSCO_DATASET {
-
     label 'python'
-    tag "$taxon_id:$dbname"
+    conda '../../workflows/bin/python_env.yml'
+    tag "${organism_name} [tax_id:${taxonomy_id}]"
+    // storeDir "${params.cacheDir}/${dbname}/meta_data/"
 
     input:
-    tuple val(gca), val(taxon_id), val(dbname)
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source)
 
     output:
-    tuple val(gca), val(dbname), stdout
+        path("orthodb_set.txt")
+        env(orthodb), emit: clade_dataset
     
-    script:
-    """
-    clade_selector.py -d ${params.busco_datasets_file} -t ${taxon_id}
-    """
-
+    shell:
+        output = "orthodb_set.txt"
+        '''
+        clade_selector.py -d !{params.busco_datasets_file} -t !{taxonomy_id} > !{output}
+        orthodb=$(cat !{output})
+        '''
     
 }
 
