@@ -18,19 +18,17 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
-include { OMAMER_HOG } from '../modules/omark/omamer_hog.nf'
-include { OMARK } from '../modules/omark/omark.nf'
-include { OMARK_OUTPUT } from '../modules/omark/omark_output.nf'
 include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_OMARK_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
-
+include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
+include { OMARK } from '../modules/omark/omark.nf'
+include { OMAMER_HOG } from '../modules/omark/omamer_hog.nf'
+include { OMARK_OUTPUT } from '../modules/omark/omark_output.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,23 +38,23 @@ include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_OMARK_OUTPUT } from '../modules/cop
 
 workflow RUN_OMARK{
     take:                 
-    db_meta
+        db_meta
 
     main:
         // MODULE: Get canonical protein from db
-        // 
-        def proteinData = FETCH_PROTEINS (db_meta.flatten())
-        //
-        // MODULE: Get orthologous groups from Omamer db 
-        //
-        def omamerData = OMAMER_HOG(proteinData)
-        //
-        // MODULE: Run Omark
-        //        
-        def omarkOutput = OMARK (omamerData)
+        proteinData = FETCH_PROTEINS (db_meta)
 
-        def (omarkSummaryOutput) = OMARK_OUTPUT(omarkOutput)
-        if (params.copyToFtp) {
+        // MODULE: Get orthologous groups from Omamer db 
+        omamerData = OMAMER_HOG(proteinData)
+
+        // MODULE: Run Omark
+        omarkOutput = OMARK(omamerData)
+
+        // Output Omark results
+        omarkSummaryOutput = OMARK_OUTPUT(omarkOutput)
+
+        // Copy Omark output to ensembl FTP
+        if ( params.copyToFtp ) {
             COPY_OMARK_OUTPUT(omarkSummaryOutput)
         }
 
