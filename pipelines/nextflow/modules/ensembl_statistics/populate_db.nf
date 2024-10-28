@@ -16,20 +16,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from '../utils.nf'
-
 process POPULATE_DB {
     label 'default'
-    tag "load_stats: $core"
+    tag "Load_stats:${dbname}"
 
     input:
-    tuple val(gca), val(core), path(sql_file)
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), path(sql_file)
 
-    script:
-    
-    //${params.host} -w ${core} < ${statistics_file}
-    // /hps/software/users/ensembl/ensw/mysql-cmds/ensembl/ensadmin/mysql-ens-genebuild-prod-6 ftricomi_gca035666275v1_core_110 </hps/nobackup/flicek/ensembl/genebuild/ftricomi/aves/chukar_partridge_annotation/alectoris_chukar/GCA_035666275.1//stats_ftricomi_gca035666275v1_core_110.sql
-    """
-    ${params.mysql_ensadmin}/${params.host} ${core} < ${sql_file}
-    """
+    shell:
+        '''
+        !{params.mysql_cmds}/!{params.mysql_ensadmin}/!{params.host} !{dbname} < !{sql_file}
+        '''
 }

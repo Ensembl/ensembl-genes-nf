@@ -16,40 +16,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from '../utils.nf'
-
 process RUN_ENSEMBL_META {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
-//    storeDir "${params.cacheDir}/$gca/" 
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    conda '../../workflows/bin/python_env.yml'
+    tag "${insdc_acc}"
+    publishDir "${params.outDir}/${publish_dir_name}", mode: 'copy'
+    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
+//    storeDir "${params.cacheDir}/$insdc_acc/" 
 
     input:
-    tuple val(gca), val(dbname)
-    output:
-    tuple val(gca), val(dbname), path("*.sql")
-    script:
-    scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source)
 
-    """
-    # Check if Python dependencies are installed
-    # Read each line in the requirements file
-    pip install --upgrade pip
-    while read -r package; do \\
-    if ! pip show -q "\$package" &>/dev/null; then 
-        echo "\$package is not installed" 
-        pip install "\$package"
-    else
-        echo "\$package is already installed"
-    fi
-    done < ${projectDir}/bin/requirements.txt
-    python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir ${params.outDir}/$publish_dir/ --db_name ${dbname} --host ${params.host} --port ${params.port}  --team ${params.team}
-    ln -s ${params.outDir}/$publish_dir/*.sql 
-    """
-    //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} < ${params.cacheDir}/$gca/${dbname}.sql
+    output:
+                tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), path("*.sql")
+    
+    shell:
+        formated_sci_name = organism_name.replaceAll("\\s", "_")
+        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+
+        '''
+        python !{params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir !{params.outDir}/!{publish_dir_name}/ --db_name !{dbname} --host !{params.host} --port !{params.port}  --team !{params.team}
+        ln -s !{params.outDir}/!{publish_dir_name}/*.sql 
+        '''
+        //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} < ${params.cacheDir}/$gca/${dbname}.sql
     
 
     

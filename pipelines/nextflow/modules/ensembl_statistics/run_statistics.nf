@@ -16,34 +16,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from '../utils.nf'
-
 process RUN_STATISTICS {
     label 'fetch_file'
-    tag "core_statistics:$gca"
-    publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    tag "core_statistics:${insdc_acc}"
+    publishDir "${params.outDir}/${publish_dir_name}/", mode: 'copy'
+    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     maxForks 20    
+    
     input:
-    tuple val(gca), val(core)
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source)
 
     output:
-    tuple val(gca), val(core), path("core_statistics/*.sql")
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), path("core_statistics/*.sql")
 
-    script:
-    scientific_name = getMetaValue(core, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(core, "species.annotation_source")[0].meta_value.toString()
-    production_name = getMetaValue(core, "species.production_name")[0].meta_value.toString()
-    """
-    perl ${params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl \
-        -dbname ${core} \
-        -host ${params.host} \
-        -port ${params.port} \
-        -production_name ${production_name.trim()} \
-        -output_dir core_statistics
-    """
-    // re write the output to  have a json    
-    //gb1-w amphiduros_pacificus_gca949316495v1_core_110_1 <stats_amphiduros_pacificus_gca949316495v1_core_110_1.sql
-    
+    shell:
+        formated_sci_name = organism_name.replaceAll("\\s", "_")
+        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        corestats_outDir = "core_statistics"
 
+        '''
+        perl !{params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl \
+            -dbname !{dbname} \
+            -host !{params.host} \
+            -port !{params.port} \
+            -production_name !{production_name} \
+            -output_dir !{corestats_outDir}
+        '''
 }

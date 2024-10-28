@@ -16,31 +16,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from './utils.nf'
-
 process FETCH_PROTEINS {
-    tag "$gca:protein"
+    tag "${organism_name}:${insdc_acc}"
     label 'fetch_file'
-    storeDir "${params.cacheDir}/$gca/fasta/"
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    storeDir "${params.cacheDir}/${insdc_acc}/fasta/"
+    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     maxForks 20
 
     input:
-    tuple val(gca), val(dbname), val(busco_dataset)
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source)
 
     output:
-    tuple val(gca), val(dbname), path("*_translations.fa"),val(busco_dataset) 
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source)
+        path("*_translations.fa"), emit: translation_seqs
 
-    script:
-    scientific_name = getMetaValue(dbname, "species.production_name")[0].meta_value.toString().toLowerCase()
-    translations_file = scientific_name +"_translations.fa"
-    """
-    perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
-        -host ${params.host} \
-        -port ${params.port} \
-        -dbname ${dbname} \
-        -user ${params.user_r} \
-        -file $translations_file \
-        ${params.dump_params}
-    """
+    shell:
+        translations_file = production_name +"_translations.fa"
+        '''
+        perl !{params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
+            -host !{params.host} \
+            -port !{params.port} \
+            -dbname !{dbname} \
+            -user !{params.user_r} \
+            -file !{translations_file} \
+            !{params.canonical_only}
+        '''
 }
