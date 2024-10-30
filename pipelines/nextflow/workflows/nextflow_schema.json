@@ -10,20 +10,8 @@
       "type": "object",
       "fa_icon": "fas fa-terminal",
       "description": "Define key params the pipeline requires before initializing.",
-      "required": ["host", "port", "password", "enscode", "bioperl", "outDir", "csvFile", "team"],
+      "required": ["enscode", "bioperl", "outDir", "csvFile", "team"],
       "properties": {
-        "host": {
-          "type": "string",
-          "description": "Full mysql host database name."
-        },
-        "port": {
-          "type": "integer",
-          "description": "Four digit port number for specified mysql DB host."
-        },
-        "password": {
-          "type": "string",
-          "description": "Password for MYSQL write-enabled host connection."
-        },
         "enscode": {
           "type": "string",
           "format": "directory-path",
@@ -115,10 +103,29 @@
           "description": "Insert Ensembl beta metakeys into a mysql db.",
           "default": false,
           "fa_icon": "fas fa-question-circle"
+        },
+        "host": {
+          "type": "string",
+          "description": "Full mysql host database name."
+        },
+        "port": {
+          "type": "integer",
+          "description": "Four digit port number for specified mysql DB host."
+        },
+        "password": {
+          "type": "string",
+          "description": "Password for MYSQL write-enabled host connection."
+        },
+        "server_set": {
+          "type": "string",
+          "description": "Specific MYSQL write user.",
+          "help_text": "Related to host server specified: param '--host'."
         }
       },
       "dependentRequired": {
-        "run_ensembl_beta_metakeys": ["team"]   
+        "run_ensembl_beta_metakeys": ["team"],
+        "run_busco_core": ["host","port","password","server_set"],
+        "run_omark": ["host","port","password","server_set"]
       }
     },
     "optional_parameters": {
@@ -142,11 +149,6 @@
           "type": "string",
           "default": "ensro",
           "description": "DB read_only user."
-        },
-        "server_set": {
-          "type": "string",
-          "description": "Specific MYSQL write user.",
-          "help_text": "Related to host server specified: param '--host'."
         },
         "project": {
           "type": "string",
