@@ -28,7 +28,7 @@ process OMARK {
             val(production_name), val(organism_name), val(annotation_source), path(omamer_file)
 
     output:
-        tuple val(insdc_acc), val(dbname), val(formated_sci_name), val(publish_dir_name), path("omark_output/*.txt"), path("omark_output/*")
+        tuple val(insdc_acc), val(dbname), val(formated_sci_name), val(publish_dir_name), path("omark_output/*_summary.txt"), path("omark_output/*")
 
     shell:
         formated_sci_name = organism_name.replaceAll("\\s", "_")

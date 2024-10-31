@@ -27,20 +27,18 @@ process BUSCO_OUTPUT {
         val(datatype)
         path(summary_file) 
 
-
     output:
         tuple val(insdc_acc), val(dbname), val(formated_sci_name), 
             val(publish_dir_name), path("*_short_summary.txt")
     
     shell:
-        if (dbname=='core') {
-            publish_dir = insdc_acc 
-            species='species=NA'
-        }
-        else {
-            formated_sci_name = organism_name.replaceAll("\\s", "_")
-            species_lc = formated_sci_name.toLowerCase()
-            publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        formated_sci_name = organism_name.replaceAll("\\s", "_")
+        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        species_lc = formated_sci_name.toLowerCase()
+
+        if (dbname=='dummycore') {
+            publish_dir_name = insdc_acc
+            species_lc = 'species=NA'
         }
 
         if (datatype == "genome") {
@@ -49,6 +47,7 @@ process BUSCO_OUTPUT {
         else if (datatype == "protein") {
             busco_sum = "protein_busco"
         }
+
         if (params.project == 'brc') { // brc mode can go once pipeline is fully refactored
             summary_name = [name, "short_summary.txt"].join("_")
         }

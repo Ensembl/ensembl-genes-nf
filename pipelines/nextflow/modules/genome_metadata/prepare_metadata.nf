@@ -20,25 +20,23 @@ workflow PREPARE_COREDB_METADATA {
     // Generate a meta value from a db metadata file and an ncbi datasets file
 
     take:
-        input_core  
+        input_cores
         core_metakeys // path -> input meta keys TXT
 
     emit:
         core_metadata
     
     main:
-        _QUERY_CORE_META(input_core, core_metakeys)
-            .map{ meta_json_file -> meta_from_coredb(input_core, meta_json_file) }
+        _QUERY_CORE_META(input_cores, core_metakeys)
+            .map{ meta_json_file -> meta_from_coredb(meta_json_file) }
             .set { core_metadata }
-        
-        log.info("Processed Core Meta on db: ${input_core}")
 }
 
 
 process _QUERY_CORE_META {
     label 'default'
     tag "${core}"
-    storeDir "${params.cacheDir}/${core}/meta_data/"
+    // storeDir "${params.cacheDir}/${core}/meta_data/"
 
     input:
         val(core)
@@ -46,34 +44,27 @@ process _QUERY_CORE_META {
 
     output:
         path("coredb_meta.json"), emit: metadata_json
+    
 
     shell:
         '''
         chmod +x !{projectDir}/bin/meta_data_getter.py
-        meta_data_getter.py $(me2 details script) --database_name !{core} --meta_keys_list !{meta_keys}
-        accession=$(jq -r '.["assembly.accession"]' coredb_meta.json)
+        meta_data_getter.py $(!{params.host} details script) --database_name !{core} --meta_keys_list !{meta_keys}
         '''
 }
 
-
-def meta_from_coredb(core_db, json_path) {
+def meta_from_coredb(json_path) {
     
     //Import meta JSON info from coredb 
     metadata = read_json(json_path)
 
-    accession = metadata."assembly.accession"
-    prod_name = metadata."species.production_name"
-    sp_name = metadata."species.scientific_name"
-    taxon_id = metadata."species.taxonomy_id"
-    source = metadata."species.annotation_source"
-
     // define core_metadata + export for pipeline meta propogation
     return [
-        insdc_acc: accession,
-        taxonomy_id: taxon_id,
-        dbname: core_db,
-        production_name: prod_name,
-        organism_name: sp_name,
-        annotation_source: source,
+        insdc_acc: metadata."assembly.accession",
+        taxonomy_id: metadata."species.taxonomy_id",
+        dbname: metadata."database_name",
+        production_name: metadata."species.production_name",
+        organism_name: metadata."species.scientific_name",
+        annotation_source: metadata."species.annotation_source",
     ]
 }
