@@ -70,6 +70,7 @@ def get_multi_meta_values (server_url: URL, db_name: str, query_meta_keys: Path)
                 query_meta_values[f"{meta_key}"] = meta_value
     
     if ( len(query_meta_values.items()) > 0 ):
+        query_meta_values["database_name"]=(f"{db_name}")
         print_json("coredb_meta.json", query_meta_values)
     else:
         logging.warning("No meta values found, nothing to dump to JSON")
