@@ -134,11 +134,6 @@
       "fa_icon": "fas fa-terminal",
       "description": "Optional parameters defined with defaults but can be altered.",
       "properties": {
-        "run_test": {
-          "type": "boolean",
-          "default": false,
-          "description": "FOR TESTING!!."
-        },
         "user_w": {
           "type": "string",
           "default": "ensadmin",
