@@ -10,7 +10,7 @@
       "type": "object",
       "fa_icon": "fas fa-terminal",
       "description": "Define key params the pipeline requires before initializing.",
-      "required": ["enscode", "bioperl", "outDir", "csvFile", "team"],
+      "required": ["enscode", "bioperl", "outDir", "csvFile"],
       "properties": {
         "enscode": {
           "type": "string",
@@ -38,11 +38,6 @@
           "mimetype": "text/csv",
           "description": "Path for the input csv file containing the db name(s).",
           "fa_icon": "fas fa-file-csv"
-        },
-        "team": {
-          "type": "string",
-          "description": "Required CoreDB 'meta_key' for data team responsible.",
-          "help_text": "When 'run_ensembl_beta_metakeys' is enabled this key must be set."
         }
       },
       "dependentRequired": {
@@ -119,7 +114,13 @@
         "server_set": {
           "type": "string",
           "description": "Specific MYSQL write user.",
+          "enum": ["ensadmin","ensrw"],
           "help_text": "Related to host server specified: param '--host'."
+        },
+        "team": {
+          "type": "string",
+          "description": "Required CoreDB meta_key for data team responsible.",
+          "help_text": "When 'run_ensembl_beta_metakeys' is enabled this key must be set."
         }
       },
       "dependentRequired": {

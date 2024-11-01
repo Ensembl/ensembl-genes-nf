@@ -5,7 +5,7 @@ If only the assembly accession and the taxon id are available the pipeline provi
 
 ![plot](./plot.jpeg)
 
-Nextflow version nextflow  <= 22.10.1. (21.10.5.5658 currently available on Slurm) 
+Nextflow version nextflow  >= 23.10.0
 
 ## Running options  
 
@@ -13,12 +13,12 @@ The following options require a list of mandatory arguments (see `Mandatory argu
 
 ## Busco pipeline `--run_busco_core`
 
-Busco is a measure of completeness of genome assembly and annotation of the gene set. See the documentation for further details [Busco userguide](https://busco.ezlab.org/busco_userguide.html)
+Busco is a measure of completeness of genome assembly and annotation of the gene set. See the documentation for further details [BUSCO userguide](https://busco.ezlab.org/busco_userguide.html)
 
 Docker image available in https://hub.docker.com/r/ezlabgva/busco
 
 #### `--busco_mode`
-Select Busco mode, i.e. genome mode (assess a genome assembly), protein mode (assess a gene set) or both. By default, run both modes.
+Select Busco mode, i.e. genome mode (assess a genome assembly), protein mode (assess a gene set) or both. By default both modes ran if not specified.
 
 #### `--busco_dataset`
 Select Busco dataset; if not specified the pipeline will choose  the closest lineage according to the ncbi taxonomy classification.
@@ -30,22 +30,25 @@ Boolean option to copy output in Ensembl ftp, default false
 Boolean option to load Busco metakey into db
 
 #### `--host`
-The host name for the databases 
+The host name for the databases. Required with --run_busco_core, --run_omark
 
 #### `--port`
-The port number of the host 
+The port number of the host. Required with --run_busco_core, --run_omark
 
-#### `--user`
-The read/wrote username for the host. 
+#### `--user_w`
+The read/write username for the host.
 
 #### `--user_r`
 The read only username for the host. 
 
 #### `--password`
-The database password. 
+The database password.  Required with --run_busco_core
+
+#### `--server_set`
+Related to host server specified. param '--host'.
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password> --busco_mode <busco_mode> --run_busco_core true --apply_busco_metakeys true --run_ensembl_stats true --apply_ensembl_stats true --run_ensembl_beta_metakeys  true --apply_ensembl_beta_metakeys true --team -profile slurm
+nextflow run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/main.nf --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user_w <write user> --user_r <read_user>  --password <mysql_password> --busco_mode <busco_mode> --run_busco_core true --apply_busco_metakeys true --run_ensembl_stats true --apply_ensembl_stats true --run_ensembl_beta_metakeys  true --apply_ensembl_beta_metakeys true --team -profile slurm
 ```
 
 ## OMArk pipeline `--run_omark`
@@ -62,17 +65,20 @@ The host name for the databases
 #### `--port`
 The port number of the host 
 
-#### `--user`
-The read/wrote username for the host. 
+#### `--user_w`
+The read/write username for the host.
 
 #### `--user_r`
 The read only username for the host. 
 
 #### `--password`
-The database password. 
+The database password. Required with --run_omark
+
+#### `--server_set`
+Related to host server specified. param '--host'.
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password> --run_omark true -profile slurm
+nextflow run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/main.nf --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user_w <write user> --user_r <read_user>  --password <mysql_password> --run_omark true -profile slurm
 ```
 
 ## Ensembl statistics and Beta Metakeys pipeline `--run_ensembl_stats, --run_ensembl_beta_metakeys`
@@ -92,33 +98,33 @@ Boolean option to run Ensembl beta metakeys in a mysql db, default false
 Boolean option to load Ensembl beta metakeys in a mysql db, default false
 
 #### `--host`
-The host name for the databases 
+The host name for the databases. Required with --run_busco_core, --run_omark
 
 #### `--port`
-The port number of the host 
+The port number of the host. Required with --run_busco_core, --run_omark
 
-#### `--user`
-The read/wrote username for the host. 
+#### `--user_w`
+The read/write username for the host.
 
 #### `--user_r`
 The read only username for the host. 
 
 #### `--password`
-The database password. 
+The database password.
 
 #### `--team`
-Required by Ensembl metakey script if run_ensembl_beta_metakeys is enabled. 
+Required by Ensembl metakey script if run_ensembl_beta_metakeys is enabled.
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password>  --run_ensembl_stats true --apply_ensembl_stats true  --run_ensembl_beta_metakeys true --apply_ensembl_beta_metakeys true --team <team> -profile slurm
+nextflow run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/main.nf --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user_w <write user> --user_r <read_user>  --password <mysql_password>  --run_ensembl_stats true --apply_ensembl_stats true  --run_ensembl_beta_metakeys true --apply_ensembl_beta_metakeys true --team <team> -profile slurm
 ```
 
 ## Busco NCBI genome pipeline `--run_busco_ncbi`
 
-Option available to check the quality of the genome by running Busco in genome mode.
+Option available to check the quality of the genome (accession dependent,core database independent) by running Busco in genome mode.
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path>  --run_busco_ncbi true -profile slurm
+nextflow run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/main.nf --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path>  --run_busco_ncbi true -profile slurm
 ```
 
 
@@ -154,7 +160,7 @@ Path to the directory where to store the results of the pipeline
 Path to the directory containing the BioPerl 1.6.924 library. If not provided, the value passed to `--enscode` will be used as root, i.e. `<enscode>/bioperl-1.6.924`.
 
 #### `--cacheDir`
-Path to the directory to use as cache for the intermediate files. If not provided, the value passed to `--outDir` will be used as root, i.e. `<outDir>/cache`.
+Path to the directory to use as cache for the intermediate files. If not provided, $NXF_WORK/cache or `<outDir>/cache`.
 
 #### `--files_latency`
 Sleep time (in seconds) after the genome and proteins have been fetched. Needed by several file systems due to their internal latency. By default, 60 seconds.
@@ -172,12 +178,12 @@ We are using profiles to be able to run the pipeline on different HPC clusters. 
 You can use a local config with `-c` to finely configure your pipeline. All parameters can be configured, we recommend setting these ones as well:
 
 * `process.scratch`: The patch to the scratch directory to use
-* `workDir`: The directory where nextflow stores any file
+* `workDir`: The directory where nextflow stores any file. Default is nextflow env variable NXF_WORK if defined or '$PWD/work'
 
 ### Information about all the parameters
 
 ```bash
-nextflow run ./ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf --help
+nextflow run ./ensembl-genes-nf/pipelines/nextflow/workflows/main.nf (--help,--helpFull,--help --showHidden)
 ```
 
 
