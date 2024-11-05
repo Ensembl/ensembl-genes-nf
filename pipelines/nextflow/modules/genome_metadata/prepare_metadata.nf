@@ -49,7 +49,7 @@ process _QUERY_CORE_META {
     shell:
         '''
         chmod +x !{projectDir}/bin/meta_data_getter.py
-        meta_data_getter.py $(!{params.host} details script) --database_name !{core} --meta_keys_list !{meta_keys}
+        meta_data_getter.py $(!{params.host} details script) --database_name !{core} --meta_keys_list !{meta_keys} --verbose
         '''
 }
 
