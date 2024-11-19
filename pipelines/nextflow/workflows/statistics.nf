@@ -126,7 +126,7 @@ workflow STATISTICS{
         data1.each{ d-> d.view()}
         RUN_BUSCO(data, busco_mode, copyToFtp)
     }
-    if (params.run_busco_core || params.run_omark || params.run_ensembl_stats) {
+    if (params.run_busco_core || params.run_omark || params.run_ensembl_stats || params.run_ensembl_beta_metakeys) {
     
         def fullProcessedData = []
         rows = file(params.csvFile).readLines().drop(1) // Skip header
