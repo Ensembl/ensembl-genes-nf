@@ -36,6 +36,7 @@
           "format": "file-path",
           "exists": true,
           "mimetype": "text/csv",
+          "schema": "input_csv_schmea.json",
           "description": "Path for the input csv file containing the db name(s).",
           "fa_icon": "fas fa-file-csv"
         }

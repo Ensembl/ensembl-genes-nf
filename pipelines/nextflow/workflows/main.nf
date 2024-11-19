@@ -20,7 +20,8 @@ nextflow.enable.dsl=2
 // VALIDATE INPUTS
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-include { validateParameters; paramsSummaryLog } from 'plugin/nf-schema'
+include { validateParameters; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
+
 
 // Validate input parameters
 validateParameters()
@@ -77,11 +78,11 @@ workflow {
 
     if (params.run_busco_core || params.run_omark || params.run_ensembl_stats) {
         
-        Channel
-            .fromPath(params.csvFile)
-            .splitCsv( header: true )
-            .map { row -> row.core }
+        Channel.fromList(samplesheetToList(params.csvFile, "${projectDir}/input_csv_schmea.json"))
+            .map { row -> row.database_name }
+            .flatten()
             .set { core_db_list }
+            // .view()
 
         genome_metadata = PREPARE_COREDB_METADATA(core_db_list, params.metatable_keys).core_metadata
         
