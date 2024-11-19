@@ -22,8 +22,8 @@ process RUN_ENSEMBL_META {
     conda '../../workflows/bin/python_env.yml'
     tag "${insdc_acc}"
     publishDir "${params.outDir}/${publish_dir_name}", mode: 'copy'
-    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
-//    storeDir "${params.cacheDir}/$insdc_acc/" 
+    // afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
+    // storeDir "${params.cacheDir}/$insdc_acc/" 
 
     input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 

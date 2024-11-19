@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 process BUSCO_OUTPUT {
-    label 'default'
+    label 'local'
     tag "${organism_name}:${insdc_acc}"
     publishDir "${params.outDir}/${publish_dir_name}/statistics", mode: 'copy'
     

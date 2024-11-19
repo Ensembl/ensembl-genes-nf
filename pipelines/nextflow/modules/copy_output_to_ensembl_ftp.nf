@@ -18,7 +18,7 @@ limitations under the License.
 
 process COPY_OUTPUT_TO_ENSEMBL_FTP {
     tag "${formated_sci_name}:${insdc_acc}"
-    label 'default'
+    label 'local'
 
     input:
         tuple val(insdc_acc), val(dbname), val(formated_sci_name), 

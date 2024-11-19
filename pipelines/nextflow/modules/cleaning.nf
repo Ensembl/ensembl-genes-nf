@@ -17,7 +17,7 @@ limitations under the License.
 
 process CLEANING {
     scratch false
-    label 'default'
+    label 'local'
     tag "cleaning"
 
     input:

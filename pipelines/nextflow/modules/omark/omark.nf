@@ -21,7 +21,6 @@ process OMARK {
     tag "${organism_name}:${insdc_acc}"
     container = "${params.omark_singularity_path}"
     publishDir "${params.outDir}/${publish_dir_name}/", mode: 'copy'
-    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
 
     input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 

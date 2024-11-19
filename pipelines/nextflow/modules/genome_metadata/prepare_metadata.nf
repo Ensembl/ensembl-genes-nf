@@ -34,7 +34,7 @@ workflow PREPARE_COREDB_METADATA {
 
 
 process _QUERY_CORE_META {
-    label 'default'
+    label 'local'
     tag "${core}"
     // storeDir "${params.cacheDir}/${core}/meta_data/"
 

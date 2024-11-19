@@ -19,7 +19,7 @@ limitations under the License.
 
 process OMARK_OUTPUT {
     tag "omark_output:${insdc_acc}"
-    label 'default'
+    label 'local'
     publishDir "${params.outDir}/${publish_dir_name}/statistics", mode: 'copy'
 
 

@@ -21,7 +21,6 @@ process OMAMER_HOG {
     tag "${organism_name}:${insdc_acc}"
     storeDir "${params.cacheDir}/${insdc_acc}/omamer/"
     container = "${params.omark_singularity_path}"
-    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     
     input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
