@@ -36,7 +36,7 @@
           "format": "file-path",
           "exists": true,
           "mimetype": "text/csv",
-          "schema": "input_csv_schmea.json",
+          "schema": "input_csv_schema.json",
           "description": "Path for the input csv file containing the db name(s).",
           "fa_icon": "fas fa-file-csv"
         }
@@ -124,6 +124,18 @@
           "help_text": "When 'run_ensembl_beta_metakeys' is enabled this key must be set."
         }
       },
+      "if": {
+        "anyOf": [
+          {"required": ["run_busco_core"]
+          }
+        ]
+      },
+      "then": {
+        "required": ["run_busco_core"],
+        "not": {
+          "required": ["run_busco_ncbi"]
+        }
+      },
       "dependentRequired": {
         "run_ensembl_beta_metakeys": ["team"],
         "run_busco_core": ["host","port","password","server_set"],
@@ -209,6 +221,12 @@
           "description": "Rest API for NCBI datasets v2alpha.",
           "fa_icon": "fas fa-cog",
           "hidden": true
+        },
+        "genomio_version":{
+          "type": "string",
+          "default": "latest",
+          "description": "Ensembl-genomio Python library container.",
+          "fa_icon": "fas fa-cog"
         },
         "production_ftp_dir": {
           "type": "string",

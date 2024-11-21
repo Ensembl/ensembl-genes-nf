@@ -1,5 +1,0 @@
-species.annotation_source
-species.scientific_name
-species.production_name
-assembly.accession
-species.taxonomy_id

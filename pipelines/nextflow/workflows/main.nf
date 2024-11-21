@@ -60,29 +60,30 @@ include { RUN_ENSEMBL_STATS } from '../subworkflows/run_ensembl_stats.nf'
 */
 
 workflow {
-
     if(params.run_busco_ncbi && !params.run_busco_core){
             // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
-            data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
-                    .splitCsv(sep:',', header:true)
-                    .map { row -> [insdc_acc:row.get('gca'), taxonomy_id:row.get('taxon_id'), core:'dummy_coredb', \
+            Channel.fromList(samplesheetToList(params.csvFile, "${projectDir}/input_csv_schema.json"))
+                    .flatten()
+                    .map { row -> [insdc_acc:row.accession, taxonomy_id:row.taxon_id, core:'dummy_coredb', \
                     production_name:'dummy_prodname', organism_name:'DummyGenus dummyspecies', annotation_source:'dummy_anno_source']}
+                    .set { genome_metadata }
+
             def busco_mode = 'genome'
             def copyToFtp = false
-            data1=data
-            data1.each{ d-> d.view()}
+            data=genome_metadata
+            data.each{ d-> d.view()}
 
             // Now run BUSCO on genme mode without database as input
-            RUN_BUSCO(data, busco_mode, copyToFtp)
+            RUN_BUSCO(genome_metadata, busco_mode, copyToFtp)
         }
 
     if (params.run_busco_core || params.run_omark || params.run_ensembl_stats) {
         
-        Channel.fromList(samplesheetToList(params.csvFile, "${projectDir}/input_csv_schmea.json"))
+        Channel.fromList(samplesheetToList(params.csvFile, "${projectDir}/input_csv_schema.json"))
             .map { row -> row.database_name }
             .flatten()
             .set { core_db_list }
-            // .view()
+        // core_db_list.view()
 
         genome_metadata = PREPARE_COREDB_METADATA(core_db_list, params.metatable_keys).core_metadata
         

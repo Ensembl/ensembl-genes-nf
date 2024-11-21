@@ -140,8 +140,8 @@ The structure of the file can cahnge according to the running options
 |                  |  <db_name>  |
 | --run_omark |  core  (header)  | 
 |                  |  <db_name>  |
-| --run_busco_ncbi |  gca,taxon_id (header)   | 
-|                  |  <gca>,<taxon_id>  |
+| --run_busco_ncbi |  accession,taxon_id (header)   |
+|                  |  <GCA_|GCF_>,<taxon_id>  |
 
 For example tu run busco on a list of core dbs the file should be
 |core |

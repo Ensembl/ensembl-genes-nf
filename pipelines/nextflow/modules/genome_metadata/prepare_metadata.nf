@@ -17,7 +17,7 @@
 include { read_json } from '../utils.nf'
 
 workflow PREPARE_COREDB_METADATA {
-    // Generate a meta value from a db metadata file and an ncbi datasets file
+    // Generate a meta object from a database meta table and dump in JSON format
 
     take:
         input_cores
@@ -34,9 +34,9 @@ workflow PREPARE_COREDB_METADATA {
 
 
 process _QUERY_CORE_META {
-    label 'local'
     tag "${core}"
-    // storeDir "${params.cacheDir}/${core}/meta_data/"
+    label 'genomio'
+    storeDir "${params.cacheDir}/${core}/meta_data/"
 
     input:
         val(core)
@@ -45,11 +45,9 @@ process _QUERY_CORE_META {
     output:
         path("coredb_meta.json"), emit: metadata_json
     
-
     shell:
         '''
-        chmod +x !{projectDir}/bin/meta_data_getter.py
-        meta_data_getter.py $(!{params.host} details script) --database_name !{core} --meta_keys_list !{meta_keys} --verbose
+        genome_metadata_dump --host !{params.host} --port !{params.port} --user !{params.user_r} --database !{core} --metafilter !{meta_keys} --append_db > coredb_meta.json
         '''
 }
 
@@ -60,11 +58,11 @@ def meta_from_coredb(json_path) {
 
     // define core_metadata + export for pipeline meta propogation
     return [
-        insdc_acc: metadata."assembly.accession",
-        taxonomy_id: metadata."species.taxonomy_id",
-        dbname: metadata."database_name",
-        production_name: metadata."species.production_name",
-        organism_name: metadata."species.scientific_name",
-        annotation_source: metadata."species.annotation_source",
+        insdc_acc: metadata.get("assembly").get("accession"),
+        taxonomy_id: metadata.get("species").get("taxonomy_id"),
+        dbname: metadata.get("database").get("name"),
+        production_name: metadata.get("species").get("production_name"),
+        organism_name: metadata.get("species").get("scientific_name"),
+        annotation_source: metadata.get("species").get("annotation_source"),
     ]
 }
