@@ -95,7 +95,6 @@ workflow RUN_BUSCO{
 
             // Make and apply busco summary meta_keys patch directly to core:
             if(params.apply_busco_metakeys){
-
                 BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinSummaryOutput)
             }
 
