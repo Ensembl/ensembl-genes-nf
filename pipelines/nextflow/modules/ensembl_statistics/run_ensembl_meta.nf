@@ -31,8 +31,12 @@ process RUN_ENSEMBL_META {
     output:
     tuple val(gca), val(dbname), path("*.sql")
     script:
-    scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(dbname, "species.annotation_source")[0].meta_value.toString()
+    scientific_name_query = getMetaValue(dbname, "species.scientific_name")[0]
+    scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
+    species=scientific_name.toLowerCase()
+    annotation_source_query=getMetaValue(dbname, "species.annotation_source")[0]
+    annotation_source = annotation_source_query ? annotation_source_query.meta_value.toString() : "ensembl"
+    publish_dir =scientific_name +'/'+gca+'/'+annotation_source
 
     """
     # Check if Python dependencies are installed

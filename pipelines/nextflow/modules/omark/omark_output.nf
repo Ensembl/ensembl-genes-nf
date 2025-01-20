@@ -31,10 +31,10 @@ process OMARK_OUTPUT {
     tuple val(gca), val(dbname), path("*.txt")
 
     script:
-    println(summary_file)
-    scientific_name = getMetaValue(dbname, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
+    scientific_name_query = getMetaValue(dbname, "species.scientific_name")[0]
+    scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
     species=scientific_name.toLowerCase()
-    gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
+    gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")   
 
     summary_name = [species, gca_string, "omark", "proteins_detailed_summary.txt"].join("_")
 //    summary_file= summary_name

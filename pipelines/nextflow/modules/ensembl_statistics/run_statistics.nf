@@ -28,15 +28,20 @@ process RUN_STATISTICS {
     tuple val(gca), val(core)
 
     output:
-    tuple val(gca), val(core), path("core_statistics/*.sql")
+    tuple val(gca), val(dbname), path("core_statistics/*.sql")
 
     script:
-    scientific_name = getMetaValue(core, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(core, "species.annotation_source")[0].meta_value.toString()
-    production_name = getMetaValue(core, "species.production_name")[0].meta_value.toString()
+    production_name_query = getMetaValue(dbname, "species.production_name")[0]
+    production_name = production_name_query ? production_name_query.meta_value.toString() : dbname
+    scientific_name_query = getMetaValue(dbname, "species.scientific_name")[0]
+    scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
+    species=scientific_name.toLowerCase()
+    annotation_source_query=getMetaValue(dbname, "species.annotation_source")[0]
+    annotation_source = annotation_source_query ? annotation_source_query.meta_value.toString() : "ensembl"
+    publish_dir =scientific_name +'/'+gca+'/'+annotation_source
     """
     perl ${params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl \
-        -dbname ${core} \
+        -dbname ${dbname} \
         -host ${params.host} \
         -port ${params.port} \
         -production_name ${production_name.trim()} \
