@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-@Grab('org.codehaus.groovy:groovy-all:2.2.2')
+@Grab('org.codehaus.groovy:groovy-all:2.4.21')
 //@Grab(group='org.xerial', module='sqlite-jdbc', version='3.36.0.3')
 import groovy.sql.Sql
 import groovy.json.JsonOutput
@@ -49,35 +49,4 @@ def getMetaValue(String dbname, String metaKey) {
     return result
 }
 
-/*
-def generateMetadataJson(sqlFilePath, jsonName, outputDir) {
-    def metadata = []
-    println(sqlFilePath.toString())
-    new File(sqlFilePath).eachLine { line ->
-        // Skip lines that do not contain INSERT INTO statements
-        if (line.startsWith("INSERT INTO meta")) {
-            // Extract values from the INSERT INTO statement
-            def matcher = line =~ /\((\d+), '([^']*)', '([^']*)'\);/
-            if (matcher.matches()) {
-                def speciesId = matcher[0][1].toInteger()
-                def metaKey = matcher[0][2]
-                def metaValue = matcher[0][3]
 
-                // Construct metadata entry
-                def entry = [species_id: speciesId, meta_key: metaKey, meta_value: metaValue]
-                metadata << entry
-            }
-        }
-    }
-
-    // Construct JSON object
-    def json = [meta: metadata]
-    // Write JSON object to file
-    def outputFile = new File(outputDir, jsonName)
-    outputFile.withWriter { writer ->
-        writer << groovy.json.JsonOutput.toJson(json)
-    }
-    println(outputFile)
-    return outputFile.absolutePath
-}
-*/
