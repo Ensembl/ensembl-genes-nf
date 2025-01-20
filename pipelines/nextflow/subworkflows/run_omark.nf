@@ -29,7 +29,7 @@ include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 include { OMAMER_HOG } from '../modules/omark/omamer_hog.nf'
 include { OMARK } from '../modules/omark/omark.nf'
 include { OMARK_OUTPUT } from '../modules/omark/omark_output.nf'
-include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_OMARK_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
+//include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_OMARK_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 
 
 /*
@@ -56,9 +56,9 @@ workflow RUN_OMARK{
         def omarkOutput = OMARK (omamerData)
 
         def (omarkSummaryOutput) = OMARK_OUTPUT(omarkOutput)
-        if (params.copyToFtp) {
-            COPY_OMARK_OUTPUT(omarkSummaryOutput)
-        }
+        //if (params.copyToFtp) {
+        //    COPY_OMARK_OUTPUT(omarkSummaryOutput)
+        //}
 
 }
 

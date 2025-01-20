@@ -86,7 +86,7 @@ if (params.help) {
     log.info '  --busco_mode STR             Busco mode: genome or protein, default is to run both'
     log.info '  --busco_dataset STR          Busco dataset: optional'
     log.info '  --apply_busco_metakeys bool  Create JSON file with Busco metakeys and load it into the db, default false'
-    log.info '  --copyToFtp bool             Copy output in Ensembl ftp, default false'
+    //log.info '  --copyToFtp bool             Copy output in Ensembl ftp, default false'
     log.info '  --run_ensembl_stats bool     Run Ensembl statistics given a mysql db, default false'
     log.info '  --apply_ensembl_stats bool   Insert Ensembl statistics into a mysql db, default false'
     log.info '  --run_ensembl_beta_metakeys bool     Run Ensembl beta metakeys given a mysql db, default false'

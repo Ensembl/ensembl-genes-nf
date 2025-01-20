@@ -32,10 +32,10 @@ include { BUSCO_GENOME_LINEAGE } from '../modules/busco/busco_genome_lineage.nf'
 include { BUSCO_PROTEIN_LINEAGE } from '../modules/busco/busco_protein_lineage.nf'
 include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco/busco_output.nf'
 include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco/busco_output.nf'
-include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
-include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_PROTEIN } from '../modules/busco/busco_core_metakeys.nf'
 include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_GENOME } from '../modules/busco/busco_core_metakeys.nf'
+//include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
+//include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,9 +61,9 @@ workflow RUN_BUSCO{
         def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(genomeData)
         def buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(output_typeG,buscoGenomeOutput)
         def buscoGenomeSummaryOutput1 = buscoGenomeSummaryOutput
-        if (params.copyToFtp) {
-            COPY_GENOME_OUTPUT(buscoGenomeSummaryOutput)
-        }
+        //if (params.copyToFtp) {
+        //    COPY_GENOME_OUTPUT(buscoGenomeSummaryOutput)
+        //}
         if(params.apply_busco_metakeys){
             BUSCO_CORE_METAKEYS_GENOME(buscoGenomeSummaryOutput1)
         }
@@ -75,12 +75,12 @@ workflow RUN_BUSCO{
         def proteinData = FETCH_PROTEINS (dataset_db)
         def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(proteinData)
         def (buscoProteinSummaryOutput) = BUSCO_PROTEIN_OUTPUT(output_typeP, buscoProteinOutput)
-        if (copyToFtp) {
-            COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)
-        }
-        def buscoProteinSummaryOutput1=buscoProteinSummaryOutput
+        //if (copyToFtp) {
+        //    COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)
+        //}
+        //def buscoProteinSummaryOutput1=buscoProteinSummaryOutput
         if(params.apply_busco_metakeys){
-            BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinSummaryOutput1)
+            BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinSummaryOutput)
         }
 
     }
