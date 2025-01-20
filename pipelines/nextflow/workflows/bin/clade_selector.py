@@ -58,21 +58,7 @@ def get_dataset_match(ncbi_url: str, dataset: list) -> List[Any]:
                 parent_id_str = str(parent_id)
                 if parent_id_str in dataset:
                     matched_value = dataset[parent_id_str]
-                    break    
-            """
-            #classification = json_data["reports"][0]["taxonomy"]["classification"]
-            classification_names = [value["name"] for key, value in classification.items()]
-            match = []
-            #print(classification_names)
-            for i in reversed(classification_names):
-                for l in dataset:
-                    if len(i)>5 and l.strip().lower() == i.strip().lower():
-                        match.append(l.strip())
-                        break  # Break out of the loop once an exact match is found
-                    if len(i)>5 and l.strip().startswith(str(i[: len(i) - 2].lower())):
-                        match.append(l)
-                        break  # Break out of the loop once a partial match is found
-            """     
+                    break       
     except urllib.error.URLError as url_err:
         print(f"URL error occurred: {url_err}")
     except json.JSONDecodeError as json_err:
