@@ -51,7 +51,7 @@ process RUN_ENSEMBL_META {
     fi
     done < ${projectDir}/bin/requirements.txt
     python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir ${params.outDir}/$publish_dir/ --db_name ${dbname} --host ${params.host} --port ${params.port}  --team ${params.team}
-    ln -s ${params.outDir}/$publish_dir/*.sql 
+    ln -sf ${params.outDir}/$publish_dir/*.sql 
     """
     //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} < ${params.cacheDir}/$gca/${dbname}.sql
     
