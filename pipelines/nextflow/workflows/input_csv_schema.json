@@ -16,7 +16,7 @@
                 "accession": {
                     "type": "string",
                     "pattern": "^GC[AF]_[0-9]+.[0-9]$",
-                    "errorMessage": "Please provide a valid INSDC accession.",
+                    "errorMessage": "Please provide a valid INSDC accession",
                     "meta": "accession"
                 },
                 "taxon_id": {

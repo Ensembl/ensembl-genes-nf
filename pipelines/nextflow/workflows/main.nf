@@ -68,8 +68,8 @@ workflow {
                     production_name:'dummy_prodname', organism_name:'DummyGenus dummyspecies', annotation_source:'dummy_anno_source']}
                     .set { genome_metadata }
 
-            def busco_mode = 'genome'
-            def copyToFtp = false
+            busco_mode = 'genome'
+            copyToFtp = false
             data=genome_metadata
             data.each{ d-> d.view()}
 
@@ -83,7 +83,6 @@ workflow {
             .map { row -> row.database_name }
             .flatten()
             .set { core_db_list }
-        // core_db_list.view()
 
         genome_metadata = PREPARE_COREDB_METADATA(core_db_list, params.metatable_keys).core_metadata
         

@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -25,8 +24,7 @@ process BUSCO_CORE_METAKEYS {
     // afterScript "sleep $params.files_latency" // Needed because of file system latency
 
     input:
-        tuple val(insdc_acc), val(dbname), val(formated_sci_name), 
-            val(publish_dir_name), path(summary_file)
+        tuple val(insdc_acc), val(dbname), val(formatted_sci_name), val(publish_dir_name), path(summary_file)
 
     shell:
         '''
@@ -35,6 +33,4 @@ process BUSCO_CORE_METAKEYS {
         '''
         // bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} < ${params.cacheDir}/$gca/${dbname}.sql 
 }
-
-
 

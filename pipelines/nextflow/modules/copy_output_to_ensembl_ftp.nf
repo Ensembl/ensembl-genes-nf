@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -29,7 +28,6 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
         statistics_files = "${params.outDir}/${publish_dir_name}/statistics/*summary.txt"
         read_me = "${projectDir}/../data/README.txt"
         ftp_stats = "${params.production_ftp_dir}/${publish_dir_name}/statistics" 
-        // ftp_path = "${params.production_ftp_dir}/${formated_sci_name}"
 
         '''
         sudo -u genebuild mkdir -p !{ftp_stats}; \
@@ -38,5 +36,4 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
         sudo -u genebuild chmod 775 !{ftp_stats}/* -R;
         sudo -u genebuild chgrp ensemblftp !{ftp_stats}/* -R;
         '''
-        //sudo -u genebuild rsync -ahvW $summary_file $ftp_stats && rsync -avhc $summary_file $ftp_stats;
 }

@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -41,11 +40,5 @@ process RUN_ENSEMBL_META {
         python !{params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir !{params.outDir}/!{publish_dir_name}/ --db_name !{dbname} --host !{params.host} --port !{params.port}  --team !{params.team}
         ln -s !{params.outDir}/!{publish_dir_name}/*.sql 
         '''
-        //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} < ${params.cacheDir}/$gca/${dbname}.sql
-    
-
-    
 }
-
-
 

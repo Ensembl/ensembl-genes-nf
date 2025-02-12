@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -51,9 +50,9 @@ workflow RUN_BUSCO{
         // Get the closest Busco dataset from the taxonomy classification stored in db meta table
         orthdb_clade_set = BUSCO_DATASET(db_meta).clade_dataset
 
-        // // // Run Busco in genome mode
+        // Run Busco in genome mode
         if (busco_mode.contains('genome')) {
-            def output_typeG = "genome"
+            output_typeG = "genome"
 
             // Download genome via ncbi dataset API 
             FETCH_GENOME (db_meta)
@@ -75,7 +74,7 @@ workflow RUN_BUSCO{
             }
         }
 
-        // // Run Busco in protein mode
+        // Run Busco in protein mode
         if (busco_mode.contains('protein')) {
 
             output_typeP = "protein"
@@ -100,31 +99,3 @@ workflow RUN_BUSCO{
 
         }
 }
-
-
-
-        // // // // Run Busco in genome mode
-        // if (busco_mode.contains('genome')) {
-        //     def output_typeG = "genome"
-
-        //     // Download genome via ncbi dataset API 
-        //     FETCH_GENOME(db_meta, orthdb_clade_set)
-        //     expanded_genome_meta = FETCH_GENOME.out.meta
-        //     genome_fasta = FETCH_GENOME.out.genome_fasta
-
-        //     buscoGenomeOutput = BUSCO_GENOME_LINEAGE(expanded_genome_meta, output_typeG, genome_fasta)\
-        //         .busco_report_output
-
-        //     buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(output_typeG, expanded_genome_meta, buscoGenomeOutput)
-
-        //     // Copy BUSCO summary stats to ensembl FTP
-        //     if (params.copyToFtp) {
-        //         COPY_GENOME_OUTPUT(buscoGenomeSummaryOutput)
-        //     }
-
-        //     // Make and apply busco summary meta_keys patch directly to core:
-        //     if(params.apply_busco_metakeys){
-        //         BUSCO_CORE_METAKEYS_GENOME(buscoGenomeSummaryOutput)
-
-        //     }
-        // }

@@ -15,12 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import urllib.request
 import argparse
+import json
 from pathlib import Path
 from typing import Any, List
-#import requests
-import json
+import urllib.request
 
 def get_dataset_match(ncbi_url: str, dataset: list) -> List[Any]:
     """
@@ -59,25 +58,10 @@ def get_dataset_match(ncbi_url: str, dataset: list) -> List[Any]:
                 if parent_id_str in dataset:
                     matched_value = dataset[parent_id_str]
                     break    
-            """
-            #classification = json_data["reports"][0]["taxonomy"]["classification"]
-            classification_names = [value["name"] for key, value in classification.items()]
-            match = []
-            #print(classification_names)
-            for i in reversed(classification_names):
-                for l in dataset:
-                    if len(i)>5 and l.strip().lower() == i.strip().lower():
-                        match.append(l.strip())
-                        break  # Break out of the loop once an exact match is found
-                    if len(i)>5 and l.strip().startswith(str(i[: len(i) - 2].lower())):
-                        match.append(l)
-                        break  # Break out of the loop once a partial match is found
-            """     
     except urllib.error.URLError as url_err:
         print(f"URL error occurred: {url_err}")
     except json.JSONDecodeError as json_err:
         print(f"Error decoding JSON: {json_err}")
-    #print (matched_value)    
     return matched_value
 
 
@@ -109,7 +93,6 @@ def main():
     ncbi_url = f"{args.ncbi_url}/{args.taxon_id}/dataset_report"
 
     with open(Path(args.datasets), "r") as file:
-        #datasets = [line[: max(line.find(" "), 0) or None] for line in file]
         datasets = json.load(file)
     clade_match = get_dataset_match(ncbi_url, datasets)
 
@@ -117,7 +100,6 @@ def main():
         raise ValueError("No match found")
 
     if args.output == "stdout":  # pylint:disable=no-else-return
-        #print(clade_match[0].strip("\n"))
         print(f"{clade_match.strip()}")
     else:
         with open(args.output, "w+") as output:

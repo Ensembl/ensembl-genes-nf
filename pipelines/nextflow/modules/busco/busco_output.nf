@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -48,13 +47,8 @@ process BUSCO_OUTPUT {
             busco_sum = "protein_busco"
         }
 
-        if (params.project == 'brc') { // brc mode can go once pipeline is fully refactored
-            summary_name = [name, "short_summary.txt"].join("_")
-        }
-        else {
-            gca_string = insdc_acc.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
-            summary_name = [species_lc, gca_string, busco_sum, "short_summary.txt"].join("_")
-        } 
+        gca_string = insdc_acc.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
+        summary_name = [species_lc, gca_string, busco_sum, "short_summary.txt"].join("_")
         '''
         sed '/Summarized benchmarking in BUSCO notation for file/d' !{summary_file} > !{summary_name}
         '''

@@ -14,12 +14,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import argparse
 import json
-import pymysql
-import re
 from pathlib import Path
+import re
 from typing import Dict, Optional, Union
+
+import pymysql
 
 
 def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
@@ -37,7 +39,6 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
 
     # Declare the dictionary to accept str as keys and str or float as values
     data: Dict[str, Union[str, int]] = {}
-    #data["core_db"] = db
     # Open and read the file
     with open(file_path, "r") as file:
         content = file.read()
@@ -78,21 +79,12 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
     missing = int(missing_pattern.group(1)) if missing_pattern else None
 
     # Extract the BUSCO summary line with completeness values
-    if mode_match == "euk_genome_min":
-        score_match = re.search(
-            r"C:(\d+\.\d+)%\[S:(\d+\.\d+)%.*,D:(\d+\.\d+)%\],F:(\d+\.\d+)%.*,M:(\d+\.\d+)%,n:(\d+),E:(\d+\.\d+)%",  # pylint: disable=line-too-long
-            content,  # pylint: disable=line-too-long
-        )
-    else:
-        score_match = re.search(
-            r"C:(\d+\.\d+)%\[S:(\d+\.\d+)%.*,D:(\d+\.\d+)%\],F:(\d+\.\d+)%.*,M:(\d+\.\d+)%,n:(\d+)", content
-        )
-
+    score_match = re.findall(r"(\d+\.\d+)", content)
     if score_match:
-        score = score_match.group(0)
-        total_buscos = score_match.group(6)
+        score = score_match[0]
+        total_buscos = score_match[6]
         if mode_match == "euk_genome_min":
-            erroneus = score_match.group(7)
+            erroneus = score_match[7]
 
         if mode_match in ("genome", "euk_genome_met", "euk_genome_min"):
             # Extract the BUSCO version
@@ -134,8 +126,11 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
 
 # Function to generate SQL patches
 def generate_sql_patches(
-        db_name: str, json_data: Dict[str, Union[str, float]], species_id: int = 1, table_name: str = "meta"
-) -> str:  # pylint: disable=line-too-long
+        db_name: str,
+        json_data: Dict[str, Union[str, float]],
+        species_id: int = 1,
+        table_name: str = "meta",
+) -> str:
     """Creat Sql patch for database
 
     Args:
@@ -159,7 +154,8 @@ def generate_sql_patches(
         value_str = str(value).replace("'", "''")
         # Create the SQL INSERT statement
         sql_statements.append(
-            f"INSERT IGNORE INTO {table_name} (species_id, meta_key, meta_value) VALUES ({species_id}, '{key}', '{value_str}');"  # pylint: disable=line-too-long
+            f"INSERT IGNORE INTO {table_name} (species_id, meta_key, meta_value)"
+            f"VALUES ({species_id}, '{key}', '{value_str}');"
         )
 
     return "\n".join(sql_statements)
@@ -206,7 +202,7 @@ def execute_sql_patches(
     user: str,
     password: str,
     port: int
-) -> str:  # pylint: disable=line-too-long
+) -> str:
     """Create SQL patch for database and execute it
 
     Args:
@@ -239,7 +235,6 @@ def execute_sql_patches(
         print(f"Error while executing SQL: {e}")
     finally:
         connection.close()  # Close the database connection
-
 
 
 def main():

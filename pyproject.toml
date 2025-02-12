@@ -22,11 +22,12 @@ authors = [
     {name = "Ensembl", email = "dev@ensembl.org"},
 ]
 license = {text = "Apache License 2.0"}
-keywords = ["ensembl", 
-"annotation", 
-"genetics",
-"bioinformatics",
-"setuptools"
+keywords = [
+    "ensembl", 
+    "annotation", 
+    "genetics",
+    "bioinformatics",
+    "setuptools"
 ]  
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -59,52 +60,4 @@ doc = [
 [project.urls]
 homepage = "https://www.ensembl.org"
 repository = "https://github.com/Ensembl/ensembl-genes-nf"
-
-#[project.scripts]
-#run_fastqc = "ensembl.genes.metadata.qc.run_fastqc:main"
-
-#[tool.setuptools]
-#package-dir = {"" = "src"}
-
-#[build-system]
-#build-backend = "setuptools.build_meta"
-#requires = [ 
-#    "setuptools",
-#    "setuptools-scm",
-#    "wheel"
-#]
-
-#[tool.setuptools.packages.find]
-#where = ["src/python"]
-
-#[tool.black]
-#line-length = 110
-
-#[tool.pylint.main]
-#max-line-length = 110
-#disable = [
-#    "invalid-name",
-#    "similarities",
-#    "too-few-public-methods",
-#    "too-many-arguments",
-#    "too-many-locals",
-#    "too-many-statements",
-#    "unspecified-encoding",
-#    "wildcard-import",
-#]
-
-#[tool.mypy]
-#mypy_path = "src"
-#explicit_package_bases = true
-#ignore_missing_imports = true
-#show_error_codes = true
-#warn_unused_configs = true
-
-#[tool.pytest.ini_options]
-#addopts = "-v --tb=native"
-#norecursedirs = [
-#    "docs",
-#    "*.egg_info",
-#]
-#testpaths = ["tests"]
 

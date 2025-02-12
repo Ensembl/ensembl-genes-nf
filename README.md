@@ -1,7 +1,7 @@
 # Genebuild statistics pipeline
 
 The pipeline provides Busco, Omark completeness scores, calculates statistics for Ensembl website when the core database is available. 
-If only the assembly accession and the taxon id are available the pipeline provide Busco score (mode=genome) for the assembly.
+If only the assembly accession and the taxon id are available the pipeline provides Busco score (mode=genome) for the assembly.
 
 ![plot](./plot.jpeg)
 
@@ -121,7 +121,7 @@ nextflow run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/main.nf --bi
 
 ## Busco NCBI genome pipeline `--run_busco_ncbi`
 
-Option available to check the quality of the genome (accession dependent,core database independent) by running Busco in genome mode.
+Option available to check the quality of the genome (accession dependent, core database independent) by running Busco in genome mode.
 
 ```bash
 nextflow run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/main.nf --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path>  --run_busco_ncbi true -profile slurm
