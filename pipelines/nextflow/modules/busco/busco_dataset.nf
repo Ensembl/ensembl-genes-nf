@@ -22,21 +22,20 @@ process BUSCO_DATASET {
     // storeDir "${params.cacheDir}/${dbname}/meta_data/"
 
     input:
-        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname),
             val(production_name), val(organism_name), val(annotation_source)
 
     output:
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname),
+            val(production_name), val(organism_name), val(annotation_source),
+            env(orthodb), emit: clade_dataset
         path("orthodb_set.txt")
-        env(orthodb), emit: clade_dataset
     
     shell:
-        output = "orthodb_set.txt"
+        output = 'orthodb_set.txt'
+        orthodb = ''
         '''
         clade_selector.py -d !{params.busco_datasets_file} -t !{taxonomy_id} > !{output}
         orthodb=$(cat !{output})
         '''
-    
 }
-
-
-

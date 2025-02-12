@@ -16,7 +16,7 @@
 // Utilities
 include { read_json } from '../utils.nf'
 
-workflow PREPARE_COREDB_METADATA {
+workflow PREPARE_METADATA {
     // Generate a meta object from a database meta table and dump in JSON format
 
     take:

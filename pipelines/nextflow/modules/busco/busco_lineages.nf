@@ -24,8 +24,7 @@ process BUSCO_LINEAGES {
 
     input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source)
-        val (busco_dataset)
+            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
         val (input_busco_mode)
         path (aa_or_genome_seqs)
 
@@ -51,7 +50,7 @@ process BUSCO_LINEAGES {
         busco -f \
             -i ${aa_or_genome_seqs} \
             --mode ${busco_mode} \
-            -l ${busco_dataset} \
+            -l ${ortho_db} \
             -c ${task.cpus} \
             --out ${outdir} \
             --offline \

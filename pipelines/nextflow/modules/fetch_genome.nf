@@ -25,11 +25,11 @@ process FETCH_GENOME {
 
     input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source)
+            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
 
     output:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source)
+            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
         path("*.fna"), emit: genome_fasta
     
     shell:

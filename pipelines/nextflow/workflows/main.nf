@@ -48,7 +48,7 @@ else {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { PREPARE_COREDB_METADATA } from '../modules/genome_metadata/prepare_metadata.nf'
+include { PREPARE_METADATA } from '../modules/genome_metadata/prepare_metadata.nf'
 include { RUN_BUSCO } from '../subworkflows/run_busco.nf'
 include { RUN_OMARK } from '../subworkflows/run_omark.nf'
 include { RUN_ENSEMBL_STATS } from '../subworkflows/run_ensembl_stats.nf'
@@ -84,7 +84,7 @@ workflow {
             .flatten()
             .set { core_db_list }
 
-        genome_metadata = PREPARE_COREDB_METADATA(core_db_list, params.metatable_keys).core_metadata
+        genome_metadata = PREPARE_METADATA(core_db_list, params.metatable_keys).core_metadata
         
         if (params.run_busco_core) {
             RUN_BUSCO(genome_metadata, params.busco_mode, params.copyToFtp)
@@ -100,6 +100,6 @@ workflow {
 
     if (params.cleanCache) {
         // Clean cache directories
-        exec "rm -rf ${params.cacheDir}/*"
+        "rm -rf ${params.cacheDir}/*"
     }
 }

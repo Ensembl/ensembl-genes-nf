@@ -47,20 +47,23 @@ workflow RUN_BUSCO{
         copyToFtp
 
     main:
-        // Get the closest Busco dataset from the taxonomy classification stored in db meta table
-        orthdb_clade_set = BUSCO_DATASET(db_meta).clade_dataset
+        // Get the closest BUSCO dataset from the taxonomy classification stored in db meta table
+        BUSCO_DATASET(db_meta).clade_dataset
+            .map { row -> [insdc_acc:row[0], taxonomy_id:row[1], core:row[2],production_name:row[3],
+            organism_name:row[4], annotation_source:row[5], ortho_db: row[6]]}
+            .set{ orthodb_amended_meta }
 
         // Run Busco in genome mode
         if (busco_mode.contains('genome')) {
             output_typeG = "genome"
 
-            // Download genome via ncbi dataset API 
-            FETCH_GENOME (db_meta)
+            // Download genome via ncbi dataset API
+            FETCH_GENOME (orthodb_amended_meta)
             genome_fasta = FETCH_GENOME.out.genome_fasta
 
-            buscoGenomeOutput = BUSCO_GENOME_LINEAGE(db_meta, orthdb_clade_set, output_typeG, genome_fasta)
+            buscoGenomeOutput = BUSCO_GENOME_LINEAGE(orthodb_amended_meta, output_typeG, genome_fasta)
 
-            buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(db_meta, output_typeG, buscoGenomeOutput)
+            buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(orthodb_amended_meta, output_typeG, buscoGenomeOutput)
 
             // Copy BUSCO summary stats to ensembl FTP
             if (params.copyToFtp) {
@@ -80,12 +83,12 @@ workflow RUN_BUSCO{
             output_typeP = "protein"
 
             // Dump protein translations
-            FETCH_PROTEINS (db_meta)
+            FETCH_PROTEINS (orthodb_amended_meta)
             protein_translations = FETCH_PROTEINS.out.translation_seqs
 
-            buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(db_meta, orthdb_clade_set, output_typeP, protein_translations)\
+            buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(orthodb_amended_meta, output_typeP, protein_translations)\
 
-            buscoProteinSummaryOutput = BUSCO_PROTEIN_OUTPUT(db_meta, output_typeP, buscoProteinOutput)
+            buscoProteinSummaryOutput = BUSCO_PROTEIN_OUTPUT(orthodb_amended_meta, output_typeP, buscoProteinOutput)
 
             // Copy BUSCO summary stats to ensembl FTP
             if (params.copyToFtp) {

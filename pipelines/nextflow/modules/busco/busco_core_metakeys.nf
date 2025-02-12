@@ -24,7 +24,8 @@ process BUSCO_CORE_METAKEYS {
     // afterScript "sleep $params.files_latency" // Needed because of file system latency
 
     input:
-        tuple val(insdc_acc), val(dbname), val(formatted_sci_name), val(publish_dir_name), path(summary_file)
+        tuple val(insdc_acc), val(dbname), val(formated_sci_name),
+            val(publish_dir_name), path(summary_file)
 
     shell:
         '''
