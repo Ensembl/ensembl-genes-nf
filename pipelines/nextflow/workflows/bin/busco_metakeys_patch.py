@@ -79,7 +79,7 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
     missing = int(missing_pattern.group(1)) if missing_pattern else None
 
     # Extract the BUSCO summary line with completeness values
-    score_match = re.findall(r"(\d+\.\d+)", content)
+    score_match = re.findall(r"(\d+\.\d+|\d+)", content)
     if score_match:
         score = score_match[0]
         total_buscos = score_match[6]
