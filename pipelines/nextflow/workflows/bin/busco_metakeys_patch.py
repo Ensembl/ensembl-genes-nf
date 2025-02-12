@@ -236,7 +236,6 @@ def execute_sql_patches(
     finally:
         connection.close()  # Close the database connection
 
-
 def main():
     """
     Main function to parse a BUSCO result file and output the parsed data in JSON format.
