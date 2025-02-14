@@ -53,17 +53,23 @@ workflow RUN_BUSCO{
             organism_name:row[4], annotation_source:row[5], ortho_db: row[6]]}
             .set{ orthodb_amended_meta }
 
-        // Run Busco in genome mode
+        // Run BUSCO in genome mode
         if (busco_mode.contains('genome')) {
+
             output_typeG = "genome"
 
             // Download genome via ncbi dataset API
-            FETCH_GENOME (orthodb_amended_meta)
-            genome_fasta = FETCH_GENOME.out.genome_fasta
+            FETCH_GENOME (orthodb_amended_meta).genome_fasta
+                .map { row -> [insdc_acc:row[0], taxonomy_id:row[1], core:row[2],production_name:row[3],
+                organism_name:row[4], annotation_source:row[5], ortho_db: row[6], genome:row[7]]}
+                .set{ metadata_genome_fna }
 
-            buscoGenomeOutput = BUSCO_GENOME_LINEAGE(orthodb_amended_meta, output_typeG, genome_fasta)
+            BUSCO_GENOME_LINEAGE(metadata_genome_fna, output_typeG).busco_report_output
+                .map { row -> [insdc_acc:row[0], taxonomy_id:row[1], core:row[2],production_name:row[3],
+                organism_name:row[4], annotation_source:row[5], report:row[6]]}
+                .set{ buscoGenomeOutput }
 
-            buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(orthodb_amended_meta, output_typeG, buscoGenomeOutput)
+            buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(buscoGenomeOutput, output_typeG)
 
             // Copy BUSCO summary stats to ensembl FTP
             if (params.copyToFtp) {
@@ -73,7 +79,6 @@ workflow RUN_BUSCO{
             // Make and apply busco summary meta_keys patch directly to core:
             if(params.apply_busco_metakeys){
                 BUSCO_CORE_METAKEYS_GENOME(buscoGenomeSummaryOutput)
-
             }
         }
 
@@ -83,12 +88,17 @@ workflow RUN_BUSCO{
             output_typeP = "protein"
 
             // Dump protein translations
-            FETCH_PROTEINS (orthodb_amended_meta)
-            protein_translations = FETCH_PROTEINS.out.translation_seqs
+            FETCH_PROTEINS (orthodb_amended_meta).translations
+                .map { row -> [insdc_acc:row[0], taxonomy_id:row[1], core:row[2],production_name:row[3],
+                organism_name:row[4], annotation_source:row[5], ortho_db: row[6], translations:row[7]]}
+                .set{ metadata_prot_trans }
 
-            buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(orthodb_amended_meta, output_typeP, protein_translations)\
+            BUSCO_PROTEIN_LINEAGE(metadata_prot_trans, output_typeP).busco_report_output
+                .map { row -> [insdc_acc:row[0], taxonomy_id:row[1], core:row[2],production_name:row[3],
+                organism_name:row[4], annotation_source:row[5], report:row[6]]}
+                .set{ buscoProteinOutput }
 
-            buscoProteinSummaryOutput = BUSCO_PROTEIN_OUTPUT(orthodb_amended_meta, output_typeP, buscoProteinOutput)
+            buscoProteinSummaryOutput = BUSCO_PROTEIN_OUTPUT(buscoProteinOutput, output_typeP)
 
             // Copy BUSCO summary stats to ensembl FTP
             if (params.copyToFtp) {

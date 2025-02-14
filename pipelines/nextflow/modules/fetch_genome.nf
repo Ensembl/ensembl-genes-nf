@@ -29,12 +29,11 @@ process FETCH_GENOME {
 
     output:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
-        path("*.fna"), emit: genome_fasta
+            val(production_name), val(organism_name), val(annotation_source),
+            val(ortho_db), path("*.fna"), emit: genome_fasta
     
     shell:
         outfile="genome_file.zip"
-
         '''
         curl -X GET "!{params.ncbiBaseUrl}/!{insdc_acc}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"  -H "Accept: application/zip" --output !{outfile}
         unzip -j genome_file.zip

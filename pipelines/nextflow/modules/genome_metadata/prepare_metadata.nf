@@ -37,6 +37,7 @@ process _QUERY_CORE_META {
     tag "${core}"
     label 'genomio'
     storeDir "${params.cacheDir}/${core}/meta_data/"
+    afterScript "sleep ${params.files_latency}"
 
     input:
         val(core)

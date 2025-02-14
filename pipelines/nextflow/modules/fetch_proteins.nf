@@ -28,8 +28,8 @@ process FETCH_PROTEINS {
 
     output:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
-        path("*_translations.fa"), emit: translation_seqs
+            val(production_name), val(organism_name), val(annotation_source),
+            val(ortho_db), path("*_translations.fa"), emit: translations
 
     shell:
         translations_file = production_name +"_translations.fa"

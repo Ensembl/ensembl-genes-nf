@@ -24,13 +24,14 @@ process BUSCO_LINEAGES {
 
     input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
+            val(production_name), val(organism_name), val(annotation_source), 
+            val(ortho_db), path (aa_or_genome_seqs)
         val (input_busco_mode)
-        path (aa_or_genome_seqs)
 
     output:
-        path("${outdir}/*.txt"), emit: busco_report_output
-
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source),
+            path("${outdir}/*.txt"), emit: busco_report_output
 
     script:
         if ( input_busco_mode == 'protein' ) {

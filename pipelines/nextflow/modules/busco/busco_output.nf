@@ -22,9 +22,9 @@ process BUSCO_OUTPUT {
     
 input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
+            val(production_name), val(organism_name), val(annotation_source),
+            path(summary_file)
         val(datatype)
-        path(summary_file) 
 
     output:
         tuple val(insdc_acc), val(dbname), val(formated_sci_name), 
