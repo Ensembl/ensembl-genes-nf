@@ -269,10 +269,10 @@
       "description": "Regulated/Hidden parameters not shown (show with --validationShowHiddenParams).",
       "properties": {
         "busco_mode": {
-          "type": "array",
+          "type": "string",
           "uniqueItems": true,
           "items": {
-            "enum": ["protein", "genome"]
+            "enum": ["protein", "genome", "genome,protein", "protein,genome"]
           },
           "default": ["protein", "genome"],
           "description": "The mode in which to run BUSCO.",

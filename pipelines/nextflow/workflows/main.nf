@@ -34,9 +34,8 @@ else{
     params.mysql_ensadmin = params.server_set
 }
 
-busco_mode = []
 if (params.busco_mode instanceof java.lang.String) {
-    busco_mode = [params.busco_mode]
+    busco_mode = params.busco_mode.split(/,/).collect().unique()
 }
 else {
     busco_mode = params.busco_mode
@@ -100,6 +99,6 @@ workflow {
 
     if (params.cleanCache) {
         // Clean cache directories
-        "rm -rf ${params.cacheDir}/*"
+        exec "rm -rf ${params.cacheDir}/*"
     }
 }
