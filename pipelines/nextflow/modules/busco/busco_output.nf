@@ -20,7 +20,7 @@ process BUSCO_OUTPUT {
     tag "${organism_name}:${insdc_acc}"
     publishDir "${params.outDir}/${publish_dir_name}/statistics", mode: 'copy'
     
-input:
+    input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
             val(production_name), val(organism_name), val(annotation_source),
             path(summary_file)
