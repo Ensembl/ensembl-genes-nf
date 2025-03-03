@@ -32,6 +32,8 @@ process FORMAT_CLADES {
 process MATCH_CLADE {
 
     //label 'mirMachine'
+    errorStrategy 'retry'
+    maxRetries 3
 
     input:
         val(species)

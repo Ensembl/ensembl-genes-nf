@@ -27,7 +27,7 @@ while IFS=$'\t' read -r line; do
     assembly=$(echo "$line" | cut -f7 | tr -d '"')
     if [ -n "$species" ] && [ -n "$assembly" ]; then
         echo "Processing: $species with assembly $assembly"
-        sbatch --job-name="mirMachine_${assembly}" --output="logs/output_${assembly}.log" --mail-user="${USER}@ebi.ac.uk" "$SCRIPT_PATH" "${PIPELINE_PATH}/main.nf" "$species" "$assembly" 
+        echo ' sbatch --job-name="mirMachine_${assembly}" --output="logs/output_${assembly}.log" --mail-user="${USER}@ebi.ac.uk" "$SCRIPT_PATH" "${PIPELINE_PATH}/main.nf" "$species" "$assembly"' 
     fi
 done < "$INPUT_FILE"
 

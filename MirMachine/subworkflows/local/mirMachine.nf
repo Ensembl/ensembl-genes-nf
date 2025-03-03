@@ -16,14 +16,15 @@ workflow mirMachine {
         match_ch                =   MATCH_CLADE(species, accession, formatted_clades_ch)
         //match_ch.view()
 
-        clean_species = species.replaceAll(~/\s/,"")
+        clean_species = species.map { it.replaceAll(/\s/, "") }
+        
         //output contains several lines of the script processing, to remove all unwanted info:
         clean_nodes = match_ch.map { it ->
             it.toString().tokenize().last()
         }
         //That will give us something on the lines of: ClosestClade;Deuterostomia/Protostomia, so we need to split it:
         split_nodes = clean_nodes.map { it.split(';') }
-        //and assing to each
+        //and assign to each
         closer_clade = split_nodes.map { it[0].trim() }
         model = split_nodes.map { it[1].trim() }
 

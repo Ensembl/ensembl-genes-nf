@@ -2,6 +2,9 @@
 
 process RAPID {
 
+    errorStrategy 'retry'
+    maxRetries 3
+
     input:
         val(species)
         val(accession)

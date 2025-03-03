@@ -6,13 +6,25 @@ log.info """\
 
     m i R N A    N F    P I P E L I N E
     =========================================
-    species: ${params.species}
-    accession: ${params.accession}
+    input: ${params.input}
     =========================================
 """
 
 workflow {
-    mirMachine(params.species, params.accession)
+    Channel
+        .fromPath(params.input)
+        .splitCsv(header:true, sep:'\t')
+        .map { row -> 
+            def scientific_name = row.Scientific_name ?: row.'Scientific name'
+            def accession = row.Accession
+            tuple(scientific_name, accession)
+        }
+        .set { input_ch }
+
+    species_ch = input_ch.map { it[0] }
+    accession_ch = input_ch.map { it[1] }
+
+    mirMachine(species_ch, accession_ch)
 }
 
 workflow.onComplete {
