@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 '''
 Fetch assembly FASTA file from ensembl Rapid release
 

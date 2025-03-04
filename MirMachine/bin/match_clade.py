@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Script that given a list of clades (e.g. from the NCBI taxonomy) and a species name (e.g. from the Ensembl API) will return the closest match
 
@@ -409,7 +410,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("-s", "--species", type=str, help="Species name", required=True)
     parser.add_argument(
-        "--output", type=str, help="Output file", default="./clade_match.txt"
+        "-o", "--output", type=str, help="Output file", default="./clade_match.txt"
     )
     args = parser.parse_args()
     main(args)

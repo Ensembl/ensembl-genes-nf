@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Python script to score microRNA sequences. Based on ./microRNA_scoring.rmd By: Vanessa Paynter
 

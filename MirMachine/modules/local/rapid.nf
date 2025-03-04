@@ -1,21 +1,20 @@
-
-
 process RAPID {
-
+    tag "${meta.id}"
     errorStrategy 'retry'
-    maxRetries 3
+    maxRetries 0
+    publishDir params.fasta_dir, mode: 'copy'
 
     input:
-        val(species)
-        val(accession)
+    tuple val(meta), val(species), val(accession)
 
     output:
-        file "*.fa"
+    tuple val(meta), path("${meta.id}.fa"), emit: fasta
 
     script:
-        """
-        python $projectDir/scripts/rapid_fetch.py -s '${species}' -a '${accession}'
-        gzip -d *.gz
-        """
-
+    """
+    rapid_fetch.py -s '${species}' -a '${accession}' -o '.'
+    if [ -f "${meta.id}.fa.gz" ]; then
+        gzip -d "${meta.id}.fa.gz"
+    fi
+    """
 }

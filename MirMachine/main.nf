@@ -17,14 +17,12 @@ workflow {
         .map { row -> 
             def scientific_name = row.Scientific_name ?: row.'Scientific name'
             def accession = row.Accession
-            tuple(scientific_name, accession)
+            def meta = [id: accession, species: scientific_name]
+            tuple(meta, scientific_name, accession)
         }
         .set { input_ch }
 
-    species_ch = input_ch.map { it[0] }
-    accession_ch = input_ch.map { it[1] }
-
-    mirMachine(species_ch, accession_ch)
+    mirMachine(input_ch, params.fasta_dir)
 }
 
 workflow.onComplete {
