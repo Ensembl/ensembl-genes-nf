@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -16,30 +15,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from '../utils.nf'
 
 process OMARK_OUTPUT {
-    tag "omark_output:$gca"
-    label 'default'
-    publishDir "${params.outDir}/$publish_dir/statistics", mode: 'copy'
-    //storeDir "${params.outDir}/$publish_dir/statistics/"
+    tag "omark_output:${insdc_acc}"
+    label 'local'
+    publishDir "${params.outDir}/${publish_dir_name}/statistics", mode: 'copy'
 
     input:
-    tuple val(gca), val(dbname), val(publish_dir), path(summary_file), val(omark_dir)
+        tuple val(insdc_acc), val(dbname), val(formated_sci_name), val(publish_dir_name), path(summary_file), val(omark_dir)
 
     output:
-    tuple val(gca), val(dbname), path("*.txt")
+        tuple val(insdc_acc), val(dbname), path("*.txt")
 
     script:
-    scientific_name_query = getMetaValue(dbname, "species.scientific_name")[0]
-    scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
-    species=scientific_name.toLowerCase()
-    gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")   
+        accession_formatted = insdc_acc.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
+        summary_name = [formated_sci_name.toLowerCase(), accession_formatted, "omark", "proteins_detailed_summary.txt"].join("_")
 
-    summary_name = [species, gca_string, "omark", "proteins_detailed_summary.txt"].join("_")
-//    summary_file= summary_name
-    """
-    cat  $summary_file >  $summary_name
-    
-    """
+        """
+        cat ${summary_file} > ${summary_name}
+        """
 }

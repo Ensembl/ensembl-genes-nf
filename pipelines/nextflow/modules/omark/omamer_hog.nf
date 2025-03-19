@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -17,18 +16,22 @@ limitations under the License.
 */
 
 process OMAMER_HOG {
-    maxForks 15
     label 'omamer'
-    storeDir "${params.cacheDir}/$gca/omamer/"
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    input:
-    tuple val(gca), val(dbname), path(translation_file)
+    tag "${organism_name}:${insdc_acc}"
+    storeDir "${params.cacheDir}/${insdc_acc}/omamer/"
+    container "${params.omark_singularity_path}"
     
+    input:
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source),
+            val(ortho_db), path (aa_or_genome_seqs)
+
     output:
-    tuple val(gca), val(dbname), path("proteins.omamer")
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), path("proteins.omamer")
 
     script:
-    """
-    omamer search --db ${params.omamer_database} --query ${translation_file} --score sensitive --out proteins.omamer 
-    """
+        """
+        omamer search --db ${params.omamer_database} --query ${aa_or_genome_seqs} --score sensitive --out proteins.omamer 
+        """
 }

@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -16,28 +15,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from '../utils.nf'
-
 process OMARK {
     label 'omamer'
-    tag "$gca"
-    
-    publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    maxForks 15
+    tag "${organism_name}:${insdc_acc}"
+    container "${params.omark_singularity_path}"
+    publishDir "${params.outDir}/${publish_dir_name}/", mode: 'copy'
 
     input:
-    tuple val(gca), val(db), path(omamer_file)
-    
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), path(omamer_file)
+
     output:
-    tuple val(gca), val(db), val(publish_dir), path("omark_output/*.txt"), path("omark_output/*")
+        tuple val(insdc_acc), val(dbname), val(formated_sci_name), val(publish_dir_name), path("omark_output/*_summary.txt"), path("omark_output/*")
 
     script:
-    scientific_name = getMetaValue(db, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
-    species=scientific_name.toLowerCase()
-    publish_dir =scientific_name +'/'+gca+'/'+getMetaValue(db, "species.annotation_source")[0].meta_value.toString()
+        formated_sci_name = organism_name.replaceAll("\\s", "_")
+        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
     
-    """
-    omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output
-    """
+        """
+        omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output
+        """
 }
