@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -18,17 +17,16 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { RUN_STATISTICS } from '../modules/ensembl_statistics/run_statistics.nf'
-include { RUN_ENSEMBL_META as RUN_BETA_METAKEYS } from '../modules/ensembl_statistics/run_ensembl_meta.nf'
-include { POPULATE_DB as ADD_STATS_ON_CORE  } from '../modules/ensembl_statistics/populate_db.nf'
 include { POPULATE_DB as ADD_BETA_UPDATES_ON_CORE  } from '../modules/ensembl_statistics/populate_db.nf'
+include { POPULATE_DB as ADD_STATS_ON_CORE  } from '../modules/ensembl_statistics/populate_db.nf'
+include { RUN_ENSEMBL_META as RUN_BETA_METAKEYS } from '../modules/ensembl_statistics/run_ensembl_meta.nf'
+include { RUN_STATISTICS } from '../modules/ensembl_statistics/run_statistics.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -38,21 +36,23 @@ include { POPULATE_DB as ADD_BETA_UPDATES_ON_CORE  } from '../modules/ensembl_st
 
 workflow RUN_ENSEMBL_STATS{
     take:                 
-    db_meta
+        db_meta
 
     main:
-        if(params.run_ensembl_stats){
-        def statisticsFile = RUN_STATISTICS (db_meta.flatten())
-        if(params.apply_ensembl_stats){
-            ADD_STATS_ON_CORE(statisticsFile)
+        if( params.run_ensembl_stats ) {
+            statisticsFile = RUN_STATISTICS(db_meta)
+
+            if( params.apply_ensembl_stats ) {
+                ADD_STATS_ON_CORE(statisticsFile)
+                }
             }
-        }    
-        def db_meta1=db_meta
+
         if(params.run_ensembl_beta_metakeys){
-        def betaMetakeys = RUN_BETA_METAKEYS (db_meta1.flatten())
-        if(params.apply_ensembl_beta_metakeys){
-            ADD_BETA_UPDATES_ON_CORE(betaMetakeys)
-            }
+            betaMetakeys = RUN_BETA_METAKEYS (db_meta)
+
+            if(params.apply_ensembl_beta_metakeys){
+                ADD_BETA_UPDATES_ON_CORE(betaMetakeys)
+                }
         }
 }
 

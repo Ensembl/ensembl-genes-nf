@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -18,19 +17,17 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_OMARK_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
-include { OMAMER_HOG } from '../modules/omark/omamer_hog.nf'
 include { OMARK } from '../modules/omark/omark.nf'
+include { OMAMER_HOG } from '../modules/omark/omamer_hog.nf'
 include { OMARK_OUTPUT } from '../modules/omark/omark_output.nf'
-//include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_OMARK_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
-
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,25 +37,33 @@ include { OMARK_OUTPUT } from '../modules/omark/omark_output.nf'
 
 workflow RUN_OMARK{
     take:                 
-    db_meta
+        db_meta
 
     main:
-        // MODULE: Get canonical protein from db
-        // 
-        def proteinData = FETCH_PROTEINS (db_meta.flatten())
-        //
-        // MODULE: Get orthologous groups from Omamer db 
-        //
-        def omamerData = OMAMER_HOG(proteinData)
-        //
-        // MODULE: Run Omark
-        //        
-        def omarkOutput = OMARK (omamerData)
+        // Need to alter hashmap to add dummy variable to fetch proteins module
+        db_meta
+            .map{ it -> [
+                insdc_acc: it['insdc_acc'], taxonomy_id: it['taxonomy_id'], dbname: it['dbname'], production_name: it['production_name'],
+                organism_name: it['organism_name'], annotation_source: it['annotation_source'], ortho_db: "NoOrthoDB"
+            ]}
+            .set{ amended_db_meta }
 
-        def (omarkSummaryOutput) = OMARK_OUTPUT(omarkOutput)
-        //if (params.copyToFtp) {
-        //    COPY_OMARK_OUTPUT(omarkSummaryOutput)
-        //}
+        // MODULE: Get canonical protein from db
+        proteinData = FETCH_PROTEINS (amended_db_meta)
+
+        // MODULE: Get orthologous groups from Omamer db 
+        omamerData = OMAMER_HOG(proteinData)
+
+        // MODULE: Run Omark
+        omarkOutput = OMARK(omamerData)
+
+        // Output Omark results
+        omarkSummaryOutput = OMARK_OUTPUT(omarkOutput)
+
+        // Copy Omark output to ensembl FTP
+        // if ( params.copyToFtp ) {
+        //     COPY_OMARK_OUTPUT(omarkSummaryOutput)
+        // }
 
 }
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -18,24 +17,23 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { BUSCO_DATASET } from '../modules/busco/busco_dataset.nf'
-include { FETCH_GENOME } from '../modules/fetch_genome.nf'
-include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
-include { BUSCO_GENOME_LINEAGE } from '../modules/busco/busco_genome_lineage.nf'
-include { BUSCO_PROTEIN_LINEAGE } from '../modules/busco/busco_protein_lineage.nf'
-include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco/busco_output.nf'
-include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco/busco_output.nf'
 include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_PROTEIN } from '../modules/busco/busco_core_metakeys.nf'
 include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_GENOME } from '../modules/busco/busco_core_metakeys.nf'
-//include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
-//include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
+include { BUSCO_DATASET } from '../modules/busco/busco_dataset.nf'
+include { BUSCO_LINEAGES as BUSCO_GENOME_LINEAGE } from '../modules/busco/busco_lineages.nf'
+include { BUSCO_LINEAGES as BUSCO_PROTEIN_LINEAGE } from '../modules/busco/busco_lineages.nf'
+include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco/busco_output.nf'
+include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco/busco_output.nf'
+include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
+include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
+include { FETCH_GENOME } from '../modules/fetch_genome.nf'
+include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,49 +42,83 @@ include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_GENOME } from '../modules/b
 */
 workflow RUN_BUSCO{
     take:                 
-    db_meta
-    busco_mode
-    copyToFtp
+        db_meta
+        busco_mode
+        copyToFtp
 
     main:
-    // Get the closest Busco dataset from the taxonomy classification stored in db meta table
-    def db_meta1=db_meta
-    db_meta1.flatten().view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.core}"}
-    
-    def (dataset_db) = BUSCO_DATASET(db_meta.flatten()) 
-    // Run Busco in genome mode
-    if (busco_mode.contains('genome')) {
-        def output_typeG = "genome"
-        def genomeData = FETCH_GENOME(dataset_db)
-        def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(genomeData)
-        def buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(output_typeG,buscoGenomeOutput)
-        def buscoGenomeSummaryOutput1 = buscoGenomeSummaryOutput
-        //if (params.copyToFtp) {
-        //    COPY_GENOME_OUTPUT(buscoGenomeSummaryOutput)
-        //}
-        if(params.apply_busco_metakeys){
-            BUSCO_CORE_METAKEYS_GENOME(buscoGenomeSummaryOutput1)
-        }
-    }
-    
-    // Run Busco in protein mode
-    if (busco_mode.contains('protein')) {
-        def output_typeP = "protein"
-        def proteinData = FETCH_PROTEINS (dataset_db)
-        def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(proteinData)
-        def (buscoProteinSummaryOutput) = BUSCO_PROTEIN_OUTPUT(output_typeP, buscoProteinOutput)
-        //if (copyToFtp) {
-        //    COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)
-        //}
-        //def buscoProteinSummaryOutput1=buscoProteinSummaryOutput
-        if(params.apply_busco_metakeys){
-            BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinSummaryOutput)
+        // Get the closest BUSCO dataset from the taxonomy classification stored in db meta table
+        BUSCO_DATASET(db_meta).clade_dataset
+            .map { row -> [
+                insdc_acc: row[0], taxonomy_id: row[1], core: row[2], production_name: row[3],
+                organism_name: row[4], annotation_source: row[5], ortho_db: row[6]
+            ]}
+            .set{ orthodb_amended_meta }
+
+        // Run BUSCO in genome mode
+        if (busco_mode.contains('genome')) {
+
+            output_typeG = "genome"
+
+            // Download genome via ncbi dataset API
+            FETCH_GENOME (orthodb_amended_meta).genome_fasta
+                .map { row -> [
+                    insdc_acc: row[0], taxonomy_id: row[1], core: row[2], production_name: row[3],
+                    organism_name: row[4], annotation_source: row[5], ortho_db: row[6], genome: row[7]
+                ]}
+                .set{ metadata_genome_fna }
+
+            BUSCO_GENOME_LINEAGE(metadata_genome_fna, output_typeG).busco_report_output
+                .map { row -> [
+                    insdc_acc: row[0], taxonomy_id: row[1], core: row[2],production_name: row[3],
+                    organism_name: row[4], annotation_source: row[5], report: row[6]
+                ]}
+                .set{ buscoGenomeOutput }
+
+            buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(buscoGenomeOutput, output_typeG)
+
+            // Copy BUSCO summary stats to ensembl FTP
+            // if (copyToFtp) {
+            //     COPY_GENOME_OUTPUT(buscoGenomeSummaryOutput)
+            // }
+
+            // Make and apply busco summary meta_keys patch directly to core:
+            if(params.apply_busco_metakeys){
+                BUSCO_CORE_METAKEYS_GENOME(buscoGenomeSummaryOutput)
+            }
         }
 
-    }
+        // Run Busco in protein mode
+        if (busco_mode.contains('protein')) {
+
+            output_typeP = "protein"
+
+            // Dump protein translations
+            FETCH_PROTEINS (orthodb_amended_meta).translations
+                .map { row -> [
+                    insdc_acc: row[0], taxonomy_id: row[1], core: row[2], production_name: row[3],
+                    organism_name: row[4], annotation_source: row[5], ortho_db: row[6], translations: row[7]
+                ]}
+                .set{ metadata_prot_trans }
+
+            BUSCO_PROTEIN_LINEAGE(metadata_prot_trans, output_typeP).busco_report_output
+                .map { row -> [
+                    insdc_acc: row[0], taxonomy_id: row[1], core: row[2], production_name: row[3],
+                    organism_name: row[4], annotation_source: row[5], report: row[6]
+                ]}
+                .set{ buscoProteinOutput }
+
+            buscoProteinSummaryOutput = BUSCO_PROTEIN_OUTPUT(buscoProteinOutput, output_typeP)
+
+            // Copy BUSCO summary stats to ensembl FTP
+            // if (copyToFtp) {
+            //     COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)
+            // }
+
+            // Make and apply busco summary meta_keys patch directly to core:
+            if(params.apply_busco_metakeys){
+                BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinSummaryOutput)
+            }
+
+        }
 }
-
-
-
-
-
