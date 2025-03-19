@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -16,39 +15,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from '../utils.nf'
-
 process RUN_STATISTICS {
     label 'fetch_file'
-    tag "core_statistics:$gca"
-    publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    tag "core_statistics:${insdc_acc}"
+    publishDir "${params.outDir}/${publish_dir_name}/", mode: 'copy'
+    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     maxForks 20    
+
     input:
-    tuple val(gca), val(dbname)
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source)
 
     output:
-    tuple val(gca), val(dbname), path("core_statistics/*.sql")
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), path("core_statistics/*.sql")
 
     script:
-    production_name_query = getMetaValue(dbname, "species.production_name")[0]
-    production_name = production_name_query ? production_name_query.meta_value.toString() : dbname
-    scientific_name_query = getMetaValue(dbname, "species.scientific_name")[0]
-    scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
-    species=scientific_name.toLowerCase()
-    annotation_source_query=getMetaValue(dbname, "species.annotation_source")[0]
-    annotation_source = annotation_source_query ? annotation_source_query.meta_value.toString() : "ensembl"
-    publish_dir =scientific_name +'/'+gca+'/'+annotation_source
-    """
-    perl ${params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl \
-        -dbname ${dbname} \
-        -host ${params.host} \
-        -port ${params.port} \
-        -production_name ${production_name.trim()} \
-        -output_dir core_statistics
-    """
-    // re write the output to  have a json    
-    //gb1-w amphiduros_pacificus_gca949316495v1_core_110_1 <stats_amphiduros_pacificus_gca949316495v1_core_110_1.sql
-    
-
+        formated_sci_name = organism_name.replaceAll("\\s", "_")
+        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        corestats_outdir = "core_statistics"
+        stats_script = file("${params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl")
+        """
+        perl ${stats_script} \
+            -dbname ${dbname} \
+            -host ${params.host} \
+            -port ${params.port} \
+            -production_name ${production_name} \
+            -output_dir ${corestats_outdir}
+        """
 }

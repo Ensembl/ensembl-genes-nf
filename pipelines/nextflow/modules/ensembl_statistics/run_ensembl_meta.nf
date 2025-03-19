@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -16,48 +15,36 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from '../utils.nf'
-
 process RUN_ENSEMBL_META {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
-//    storeDir "${params.cacheDir}/$gca/" 
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    conda '../../workflows/bin/environment.yml'
+    tag "${insdc_acc}"
+    publishDir "${params.outDir}/${publish_dir_name}", mode: 'copy'
+    // afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
+    // storeDir "${params.cacheDir}/$insdc_acc/" 
 
     input:
-    tuple val(gca), val(dbname)
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source)
+
     output:
-    tuple val(gca), val(dbname), path("*.sql")
+                tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), path("*.sql")
+    
     script:
-    scientific_name_query = getMetaValue(dbname, "species.scientific_name")[0]
-    scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
-    species=scientific_name.toLowerCase()
-    annotation_source_query=getMetaValue(dbname, "species.annotation_source")[0]
-    annotation_source = annotation_source_query ? annotation_source_query.meta_value.toString() : "ensembl"
-    publish_dir =scientific_name +'/'+gca+'/'+annotation_source
-
-    """
-    # Check if Python dependencies are installed
-    # Read each line in the requirements file
-    pip install --upgrade pip
-    while read -r package; do \\
-    if ! pip show -q "\$package" &>/dev/null; then 
-        echo "\$package is not installed" 
-        pip install "\$package"
-    else
-        echo "\$package is already installed"
-    fi
-    done < ${projectDir}/bin/requirements.txt
-    python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir ${params.outDir}/$publish_dir/ --db_name ${dbname} --host ${params.host} --port ${params.port}  --team ${params.team}
-    ln -sf ${params.outDir}/$publish_dir/*.sql 
-    """
-    //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} < ${params.cacheDir}/$gca/${dbname}.sql
-    
-
-    
+        formated_sci_name = organism_name.replaceAll("\\s", "_")
+        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        core_meta_data_script = file("${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py")
+        output_dir = file("${params.outDir}/${publish_dir_name}/")
+        """
+        python ${core_meta_data_script} \
+            --output_dir ${output_dir} \
+            --db_name ${dbname} \
+            --host ${params.host} \
+            --port ${params.port} \
+            --team ${params.team}
+        ln -sf ${params.outDir}/${publish_dir_name}/*.sql
+        """
 }
-
-
 
