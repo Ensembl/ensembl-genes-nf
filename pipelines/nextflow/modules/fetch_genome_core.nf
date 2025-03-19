@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -16,7 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 process FETCH_GENOME {
   tag "$gca:genome"
   label 'fetch_file'
@@ -30,19 +28,18 @@ process FETCH_GENOME {
   tuple val(gca), val(dbname), path("*.fa"), val(busco_dataset)
   
   script:
-  """
-  def genome_fasta = "genome_toplevel.fa"
-  
-  perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl \
-    -dbhost ${params.host} \
-    -dbport ${params.port} \
-    -dbname ${dbname} \
-    -dbuser ${params.user_r} \
-    -coord_system_name toplevel \
-    -toplevel \
-    -onefile \
-    -nonref \
-    -filename $genome_fasta
- 
- """
+    genome_fasta = "genome_toplevel.fa"
+    """
+
+    perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl \
+      -dbhost ${params.host} \
+      -dbport ${params.port} \
+      -dbname ${dbname} \
+      -dbuser ${params.user_r} \
+      -coord_system_name toplevel \
+      -toplevel \
+      -onefile \
+      -nonref \
+      -filename $genome_fasta
+    """
 }

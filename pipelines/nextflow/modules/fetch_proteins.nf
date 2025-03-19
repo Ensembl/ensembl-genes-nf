@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -16,31 +15,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getMetaValue } from './utils.nf'
-
 process FETCH_PROTEINS {
-    tag "$gca:protein"
+    tag "${organism_name}:${insdc_acc}"
     label 'fetch_file'
-    storeDir "${params.cacheDir}/$gca/fasta/"
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    storeDir "${params.cacheDir}/${insdc_acc}/fasta/"
+    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     maxForks 20
 
     input:
-    tuple val(gca), val(dbname), val(busco_dataset)
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
 
     output:
-    tuple val(gca), val(dbname), path("*_translations.fa"),val(busco_dataset) 
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source),
+            val(ortho_db), path("*_translations.fa"), emit: translations
 
     script:
-    scientific_name = getMetaValue(dbname, "species.production_name")[0].meta_value.toString().toLowerCase()
-    translations_file = scientific_name +"_translations.fa"
-    """
-    perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
-        -host ${params.host} \
-        -port ${params.port} \
-        -dbname ${dbname} \
-        -user ${params.user_r} \
-        -file $translations_file \
-        ${params.dump_params}
-    """
+        translations_file = production_name +"_translations.fa"
+        dump_translations_script = file("${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl")
+        """
+        perl ${dump_translations_script} \
+            -host ${params.host} \
+            -port ${params.port} \
+            -dbname ${dbname} \
+            -user ${params.user_r} \
+            -file ${translations_file} \
+            ${params.canonical_only}
+        """
 }

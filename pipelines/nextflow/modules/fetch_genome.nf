@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -18,23 +17,25 @@ limitations under the License.
 
 
 process FETCH_GENOME {
-  tag "$gca:genome"
-  label 'fetch_file'
-  storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
-  afterScript "sleep $params.files_latency"  // Needed because of file system latency
-  maxForks 10
-  input:
-  tuple val(gca), val(dbname), val(busco_dataset)
+    tag "${organism_name}:${insdc_acc}"
+    label 'fetch_file'
+    storeDir "${params.cacheDir}/${insdc_acc}/ncbi_dataset/" // update on protein busco side
+    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
+    maxForks 10
 
-  output:
-  tuple val(gca), val(dbname), path("*.fna"), val(busco_dataset)
-  
-  script:
-  """
-  curl -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"  -H "Accept: application/zip" --output genome_file.zip
-  unzip -j genome_file.zip
+    input:
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
 
-  """
-  //ncbi_dataset/data/GCA_963576655.1/GCA_963576655.1_icGasPoly1.1_genomic.fna 
-
+    output:
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source),
+            val(ortho_db), path("*.fna"), emit: genome_fasta
+    
+    script:
+        outfile = "genome_file.zip"
+        """
+        curl -X GET "${params.ncbiBaseUrl}/${insdc_acc}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"  -H "Accept: application/zip" --output ${outfile}
+        unzip -j $outfile
+        """
 }
