@@ -17,16 +17,16 @@ limitations under the License.
 
 process CLEANING {
     scratch false
-    label 'default'
+    label 'local'
     tag "cleaning"
 
     input:
-    val taxon_id
-    val run_accession
+        val taxon_id
+        val run_accession
 
     script:
-    """
-    rm -rf joinPath(params.outDir, "${taxon_id}", "${run_accession}")
-    """
+        """
+        rm -rf joinPath(params.outDir, "${taxon_id}", "${run_accession}")
+        """
 }
 
