@@ -1,4 +1,3 @@
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -17,23 +16,26 @@ limitations under the License.
 */
 
 process BUSCO_DATASET {
-
     label 'python'
-    tag "$taxon_id:$dbname"
+    conda '../../workflows/bin/environment.yml'
+    tag "${organism_name} [tax_id:${taxonomy_id}]"
+    // storeDir "${params.cacheDir}/${dbname}/meta_data/"
 
     input:
-    tuple val(gca), val(taxon_id), val(dbname)
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname),
+            val(production_name), val(organism_name), val(annotation_source)
 
     output:
-    tuple val(gca), val(dbname), stdout
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname),
+            val(production_name), val(organism_name), val(annotation_source),
+            env(orthodb), emit: clade_dataset
+        path("orthodb_set.txt")
     
     script:
-    """
-    clade_selector.py -d ${params.busco_datasets_file} -t ${taxon_id}
-    """
-
-    
+        output = 'orthodb_set.txt'
+        orthodb = ''
+        """
+        clade_selector.py -d $params.busco_datasets_file -t $taxonomy_id > $output
+        orthodb=`cat ${output}`
+        """
 }
-
-
-

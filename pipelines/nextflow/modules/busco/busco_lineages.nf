@@ -15,35 +15,46 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// run Busco in genome mode 
-
-process BUSCO_GENOME_LINEAGE {
-    label "busco"
-    tag "$gca"
-    storeDir "${params.cacheDir}/$gca/busco_genome/" 
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+process BUSCO_LINEAGES {
+    label 'busco'
+    tag "${organism_name}:${insdc_acc}"
+    storeDir "${params.cacheDir}/${insdc_acc}/busco_${busco_mode}/"
+    // afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     maxForks 10
 
     input:
-    //val(busco_dataset)
-    tuple val(gca), val(dbname), path(genome_file), val(busco_dataset)
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source), 
+            val(ortho_db), path (aa_or_genome_seqs)
+        val (input_busco_mode)
 
     output:
-    tuple val(gca), val(dbname), path("genome_output/*.txt")
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+            val(production_name), val(organism_name), val(annotation_source),
+            path("${outdir}/*.txt"), emit: busco_report_output
 
     script:
-    def buscoDataset = params.busco_dataset ? params.busco_dataset.trim() : busco_dataset.trim()
+        if ( input_busco_mode == 'protein' ) {
+            outdir = 'protein_output'
+            busco_mode = 'proteins'
+        }
+        else if( input_busco_mode == 'genome' ) {
+            outdir = 'genome_output'
+            busco_mode = input_busco_mode
+        }
+        else{
+            error "Invalid alignment mode: ${input_busco_mode}"
+        }
 
-    log.info("Selected BUSCO dataset: $buscoDataset")
-
-    """
-    busco -f \
-    -i ${genome_file} \
-    --mode genome \
-    -l ${buscoDataset} \
-    -c ${task.cpus} \
-    --out genome_output \
-    --offline \
-    --download_path ${params.download_path}
-    """
+        """
+        mkdir ${outdir}
+        busco -f \
+            -i ${aa_or_genome_seqs} \
+            --mode ${busco_mode} \
+            -l ${ortho_db} \
+            -c ${task.cpus} \
+            --out ${outdir} \
+            --offline \
+            --download_path ${params.download_path}
+        """
 }
