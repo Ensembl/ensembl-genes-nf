@@ -82,16 +82,16 @@ SERVER_SET=""
 PASSWORD=""
 TEAM=$TEAM_NAME
 
+if [[ $SERVER_SET == "" ]]; then
+    echo "Critical... 'Server set' is not defined in this setup! Hint: Server set usually == writable host user !! Initialise setup script variable: 'SERVER_SET' (line 81) and rerun."
+    exit 0
+fi
 if [[ $PASSWORD == "" ]]; then
-    echo "Critical... Writable host server password is not defined! Initialise setup script variable: 'PASSWORD' and rerun."
+    echo "Critical... Writable host server password is not defined! Initialise setup script variable: 'PASSWORD' (line 82) and rerun."
     exit 0
 fi
 if [[ $TEAM_NAME == "" ]]; then
     echo "Warning... Team responsible name is not defined! Suggest to define setup script variable 'TEAM' and rerun."
-    exit 0
-fi
-if [[ $SERVER_SET == "" ]]; then
-    echo "Critical... 'Server set' is not defined in this setup! Hint: Server set usually == writable host user !! Initialise setup script variable: 'SERVER_SET' and rerun."
     exit 0
 fi
 
