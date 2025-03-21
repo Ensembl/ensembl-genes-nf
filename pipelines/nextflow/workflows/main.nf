@@ -90,6 +90,8 @@ workflow {
 
     if (params.cleanCache) {
         // Clean cache directories
-        exec "rm -rf ${params.cacheDir}/*"
+        """
+        rm -rf ${params.cacheDir}/*
+        """
     }
 }
