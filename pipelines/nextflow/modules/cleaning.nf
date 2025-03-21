@@ -21,8 +21,8 @@ process CLEANING {
     tag "cleaning"
 
     input:
-        val taxon_id
-        val run_accession
+        val(taxon_id)
+        val(run_accession)
 
     script:
         """

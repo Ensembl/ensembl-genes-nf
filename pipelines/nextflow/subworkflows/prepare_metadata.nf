@@ -48,4 +48,3 @@ workflow PREPARE_METADATA{
     emit:
         core_metadata
 }
-

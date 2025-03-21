@@ -18,10 +18,10 @@ limitations under the License.
 process BUSCO_CORE_METAKEYS {
 
     label 'python'
-    conda '../../workflows/bin/environment.yml'
+    conda "${projectDir}/bin/environment.yml"
     tag "${formated_sci_name}:${insdc_acc}"
     publishDir "${params.outDir}/${publish_dir_name}/", mode: 'copy'
-    // afterScript "sleep $params.files_latency" // Needed because of file system latency
+    afterScript "sleep $params.files_latency" // Needed because of file system latency
 
     input:
         tuple val(insdc_acc), val(dbname), val(formated_sci_name),

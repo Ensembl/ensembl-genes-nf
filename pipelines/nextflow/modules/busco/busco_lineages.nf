@@ -19,7 +19,7 @@ process BUSCO_LINEAGES {
     label 'busco'
     tag "${organism_name}:${insdc_acc}"
     storeDir "${params.cacheDir}/${insdc_acc}/busco_${busco_mode}/"
-    // afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
+    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     maxForks 10
 
     input:

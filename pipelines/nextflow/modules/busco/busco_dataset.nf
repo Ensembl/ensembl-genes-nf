@@ -17,7 +17,7 @@ limitations under the License.
 
 process BUSCO_DATASET {
     label 'python'
-    conda '../../workflows/bin/environment.yml'
+    conda "${projectDir}/bin/environment.yml"
     tag "${organism_name} [tax_id:${taxonomy_id}]"
     // storeDir "${params.cacheDir}/${dbname}/meta_data/"
 

@@ -21,17 +21,19 @@ process FETCH_GENOME {
   storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
   maxForks 10
+
   input:
-  tuple val(gca), val(dbname), val(busco_dataset)
+    tuple val(gca), val(dbname), val(busco_dataset)
 
   output:
-  tuple val(gca), val(dbname), path("*.fa"), val(busco_dataset)
+    tuple val(gca), val(dbname), path("*.fa"), val(busco_dataset)
   
   script:
     genome_fasta = "genome_toplevel.fa"
-    """
+    sequence_dumping_script = file("${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl")
 
-    perl ${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl \
+    """
+    perl ${sequence_dumping_script} \
       -dbhost ${params.host} \
       -dbport ${params.port} \
       -dbname ${dbname} \

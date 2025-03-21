@@ -30,8 +30,8 @@ include { BUSCO_LINEAGES as BUSCO_GENOME_LINEAGE } from '../modules/busco/busco_
 include { BUSCO_LINEAGES as BUSCO_PROTEIN_LINEAGE } from '../modules/busco/busco_lineages.nf'
 include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco/busco_output.nf'
 include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco/busco_output.nf'
-include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
-include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
+// include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
+// include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 

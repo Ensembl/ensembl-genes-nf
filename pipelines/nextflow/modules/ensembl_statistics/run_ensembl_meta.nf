@@ -18,10 +18,10 @@ limitations under the License.
 process RUN_ENSEMBL_META {
 
     label 'python'
-    conda '../../workflows/bin/environment.yml'
+    conda "${projectDir}/bin/environment.yml"
     tag "${insdc_acc}"
     publishDir "${params.outDir}/${publish_dir_name}", mode: 'copy'
-    // afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
+    afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     // storeDir "${params.cacheDir}/$insdc_acc/" 
 
     input:
@@ -29,7 +29,7 @@ process RUN_ENSEMBL_META {
             val(production_name), val(organism_name), val(annotation_source)
 
     output:
-                tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
+        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
             val(production_name), val(organism_name), val(annotation_source), path("*.sql")
     
     script:
