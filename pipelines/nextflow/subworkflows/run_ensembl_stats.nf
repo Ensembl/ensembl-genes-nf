@@ -43,7 +43,7 @@ workflow RUN_ENSEMBL_STATS{
 
             statisticsFile = RUN_STATISTICS(db_meta)
 
-            if( params.apply_ensembl_stats ) {
+            if ( params.apply_ensembl_stats ) {
                 ADD_STATS_ON_CORE(statisticsFile)
                 }
             }
@@ -52,9 +52,9 @@ workflow RUN_ENSEMBL_STATS{
 
             betaMetakeys = RUN_BETA_METAKEYS (db_meta)
 
-            if(params.apply_ensembl_beta_metakeys){
+            if (params.apply_ensembl_beta_metakeys) {
                 ADD_BETA_UPDATES_ON_CORE(betaMetakeys)
-                }
+            }
         }
 }
 

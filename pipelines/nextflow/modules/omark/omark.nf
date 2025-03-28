@@ -29,8 +29,8 @@ process OMARK {
         tuple val(insdc_acc), val(dbname), val(formated_sci_name), val(publish_dir_name), path("omark_output/*_summary.txt"), path("omark_output/*")
 
     script:
-        formated_sci_name = organism_name.replaceAll("\\s", "_")
-        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        def formated_sci_name = organism_name.replaceAll("\\s", "_")
+        def publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
     
         """
         omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output

@@ -31,10 +31,10 @@ process RUN_STATISTICS {
             val(production_name), val(organism_name), val(annotation_source), path("core_statistics/*.sql")
 
     script:
-        formated_sci_name = organism_name.replaceAll("\\s", "_")
-        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
-        corestats_outdir = "core_statistics"
-        stats_script = file("${params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl")
+        def formated_sci_name = organism_name.replaceAll("\\s", "_")
+        def publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        def corestats_outdir = "core_statistics"
+        def stats_script = file("${params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl")
         """
         perl ${stats_script} \
             -dbname ${dbname} \

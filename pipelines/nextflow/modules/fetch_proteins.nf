@@ -32,8 +32,8 @@ process FETCH_PROTEINS {
             val(ortho_db), path("*_translations.fa"), emit: translations
 
     script:
-        translations_file = production_name +"_translations.fa"
-        dump_translations_script = file("${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl")
+        def translations_file = production_name +"_translations.fa"
+        def dump_translations_script = file("${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl")
         """
         perl ${dump_translations_script} \
             -host ${params.host} \

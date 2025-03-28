@@ -32,8 +32,8 @@ process BUSCO_DATASET {
         path("orthodb_set.txt")
     
     script:
-        output = 'orthodb_set.txt'
-        orthodb = ''
+        def output = 'orthodb_set.txt'
+        def orthodb = ''
         """
         clade_selector.py -d $params.busco_datasets_file -t $taxonomy_id > $output
         orthodb=`cat ${output}`

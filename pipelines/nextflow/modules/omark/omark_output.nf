@@ -28,8 +28,8 @@ process OMARK_OUTPUT {
         tuple val(insdc_acc), val(dbname), path("*.txt")
 
     script:
-        accession_formatted = insdc_acc.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
-        summary_name = [formated_sci_name.toLowerCase(), accession_formatted, "omark", "proteins_detailed_summary.txt"].join("_")
+        def accession_formatted = insdc_acc.toLowerCase().replaceAll(/\./, 'v').replaceAll(/_/, '')
+        def summary_name = [formated_sci_name.toLowerCase(), accession_formatted, 'omark', 'proteins_detailed_summary.txt'].join('_')
 
         """
         cat ${summary_file} > ${summary_name}

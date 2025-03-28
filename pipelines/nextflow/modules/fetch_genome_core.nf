@@ -29,8 +29,8 @@ process FETCH_GENOME {
     tuple val(gca), val(dbname), path("*.fa"), val(busco_dataset)
   
   script:
-    genome_fasta = "genome_toplevel.fa"
-    sequence_dumping_script = file("${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl")
+    def genome_fasta = "genome_toplevel.fa"
+    def sequence_dumping_script = file("${params.enscode}/ensembl-analysis/scripts/sequence_dump.pl")
 
     """
     perl ${sequence_dumping_script} \

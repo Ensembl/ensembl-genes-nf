@@ -30,8 +30,6 @@ include { BUSCO_LINEAGES as BUSCO_GENOME_LINEAGE } from '../modules/busco/busco_
 include { BUSCO_LINEAGES as BUSCO_PROTEIN_LINEAGE } from '../modules/busco/busco_lineages.nf'
 include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco/busco_output.nf'
 include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco/busco_output.nf'
-// include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
-// include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 
@@ -58,7 +56,7 @@ workflow RUN_BUSCO{
         // Run BUSCO in genome mode
         if (busco_mode.contains('genome')) {
 
-            output_typeG = "genome"
+            def output_typeG = 'genome'
 
             // Download genome via ncbi dataset API
             FETCH_GENOME (orthodb_amended_meta).genome_fasta
@@ -77,13 +75,9 @@ workflow RUN_BUSCO{
 
             buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(buscoGenomeOutput, output_typeG)
 
-            // Copy BUSCO summary stats to ensembl FTP
-            // if (copyToFtp) {
-            //     COPY_GENOME_OUTPUT(buscoGenomeSummaryOutput)
-            // }
 
             // Make and apply busco summary meta_keys patch directly to core:
-            if(params.apply_busco_metakeys){
+            if (params.apply_busco_metakeys) {
                 BUSCO_CORE_METAKEYS_GENOME(buscoGenomeSummaryOutput)
             }
         }
@@ -91,7 +85,7 @@ workflow RUN_BUSCO{
         // Run Busco in protein mode
         if (busco_mode.contains('protein')) {
 
-            output_typeP = "protein"
+            def output_typeP = 'protein'
 
             // Dump protein translations
             FETCH_PROTEINS (orthodb_amended_meta).translations
@@ -110,13 +104,9 @@ workflow RUN_BUSCO{
 
             buscoProteinSummaryOutput = BUSCO_PROTEIN_OUTPUT(buscoProteinOutput, output_typeP)
 
-            // Copy BUSCO summary stats to ensembl FTP
-            // if (copyToFtp) {
-            //     COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)
-            // }
 
             // Make and apply busco summary meta_keys patch directly to core:
-            if(params.apply_busco_metakeys){
+            if (params.apply_busco_metakeys) {
                 BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinSummaryOutput)
             }
 

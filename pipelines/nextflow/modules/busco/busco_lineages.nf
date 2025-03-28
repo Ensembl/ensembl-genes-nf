@@ -35,12 +35,12 @@ process BUSCO_LINEAGES {
 
     script:
         if ( input_busco_mode == 'protein' ) {
-            outdir = 'protein_output'
-            busco_mode = 'proteins'
+            def outdir = 'protein_output'
+            def busco_mode = 'proteins'
         }
         else if( input_busco_mode == 'genome' ) {
-            outdir = 'genome_output'
-            busco_mode = input_busco_mode
+            def outdir = 'genome_output'
+            def busco_mode = input_busco_mode
         }
         else{
             error "Invalid alignment mode: ${input_busco_mode}"

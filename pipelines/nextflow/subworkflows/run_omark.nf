@@ -60,10 +60,6 @@ workflow RUN_OMARK{
         // Output Omark results
         omarkSummaryOutput = OMARK_OUTPUT(omarkOutput)
 
-        // Copy Omark output to ensembl FTP
-        // if ( params.copyToFtp ) {
-        //     COPY_OMARK_OUTPUT(omarkSummaryOutput)
-        // }
 
 }
 

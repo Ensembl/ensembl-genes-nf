@@ -25,10 +25,10 @@ process POPULATE_DB {
 
     script:
         if (params.server_set){
-            host_admin = params.server_set
+            def host_admin = params.server_set
         }
-        else{
-            host_admin = params.mysql_ensadmin
+        else {
+            def host_admin = params.mysql_ensadmin
         }
         """
         ${params.mysql_cmds}/${host_admin}/${params.host} ${dbname} < ${sql_file}

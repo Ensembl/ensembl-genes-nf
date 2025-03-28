@@ -41,10 +41,10 @@ include { RUN_OMARK } from '../subworkflows/run_omark.nf'
 
 // Some initialisation of default params
 if (params.busco_mode instanceof java.lang.String) {
-    busco_mode = params.busco_mode.split(/,/).collect().unique()
+    def busco_mode = params.busco_mode.split(/,/).collect().unique()
 }
 else {
-    busco_mode = params.busco_mode
+    def busco_mode = params.busco_mode
 }
 
 workflow {
@@ -53,7 +53,7 @@ workflow {
     validateParameters()
     log.info paramsSummaryLog(workflow)
 
-    if(params.run_busco_ncbi && !params.run_busco_core){
+    if (params.run_busco_ncbi && !params.run_busco_core) {
             // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
             Channel.fromList(samplesheetToList(params.csvFile, file("${projectDir}/input_csv_schema.json")))
                     .flatten()
@@ -61,8 +61,8 @@ workflow {
                     production_name:'dummy_prodname', organism_name:'DummyGenus dummyspecies', annotation_source:'dummy_anno_source']}
                     .set { genome_metadata }
 
-            busco_mode = 'genome'
-            copyToFtp = false
+            def busco_mode = 'genome'
+            def copyToFtp = false
 
             // Now run BUSCO on genme mode without database as input
             RUN_BUSCO(genome_metadata, busco_mode, copyToFtp)
@@ -81,10 +81,10 @@ workflow {
             RUN_BUSCO(genome_metadata, params.busco_mode, params.copyToFtp)
         }
         if (params.run_omark) {
-        RUN_OMARK(genome_metadata)
+            RUN_OMARK(genome_metadata)
         }
         if (params.run_ensembl_stats || params.run_ensembl_beta_metakeys) {
-                RUN_ENSEMBL_STATS(genome_metadata)
+            RUN_ENSEMBL_STATS(genome_metadata)
         }        
     }
 

@@ -19,7 +19,7 @@ limitations under the License.
 process FETCH_GENOME {
     tag "${organism_name}:${insdc_acc}"
     label 'fetch_file'
-    storeDir "${params.cacheDir}/${insdc_acc}/ncbi_dataset/" // update on protein busco side
+    storeDir "${params.cacheDir}/${insdc_acc}/ncbi_dataset/"  // update on protein busco side
     afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     maxForks 10
 
@@ -33,7 +33,7 @@ process FETCH_GENOME {
             val(ortho_db), path("*.fna"), emit: genome_fasta
     
     script:
-        outfile = "genome_file.zip"
+        def outfile = "genome_file.zip"
         """
         curl -X GET "${params.ncbiBaseUrl}/${insdc_acc}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"  -H "Accept: application/zip" --output ${outfile}
         unzip -j $outfile

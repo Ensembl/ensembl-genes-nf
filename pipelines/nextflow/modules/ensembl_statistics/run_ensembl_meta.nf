@@ -33,10 +33,10 @@ process RUN_ENSEMBL_META {
             val(production_name), val(organism_name), val(annotation_source), path("*.sql")
     
     script:
-        formated_sci_name = organism_name.replaceAll("\\s", "_")
-        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
-        core_meta_data_script = file("${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py")
-        output_dir = file("${params.outDir}/${publish_dir_name}/")
+        def formated_sci_name = organism_name.replaceAll("\\s", "_")
+        def publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        def core_meta_data_script = file("${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py")
+        def output_dir = file("${params.outDir}/${publish_dir_name}/")
         """
         python ${core_meta_data_script} \
             --output_dir ${output_dir} \

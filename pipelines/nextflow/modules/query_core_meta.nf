@@ -21,11 +21,11 @@ process QUERY_CORE_META {
     storeDir "${params.cacheDir}/${core}/meta_data/"
 
     input:
-        val(core)
-        path(meta_keys)
+        val core
+        path meta_keys
 
     output:
-        path("coredb_meta.json"), emit: metadata_json
+        path 'coredb_meta.json', emit: metadata_json
     
     script:
         """

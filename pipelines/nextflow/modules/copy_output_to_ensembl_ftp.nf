@@ -24,10 +24,9 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
             val(publish_dir_name), path(summary_file)
 
     script:
-        statistics_files = file("${params.outDir}/${publish_dir_name}/statistics/*summary.txt")
-        read_me = file("${workflow.projectDir}/../data/README.txt")
-        ftp_stats = "${params.production_ftp_dir}/${publish_dir_name}/statistics"
-        // ftp_path = "${params.production_ftp_dir}/$formated_sci_name"
+        def statistics_files = file("${params.outDir}/${publish_dir_name}/statistics/*summary.txt")
+        def read_me = file("${workflow.projectDir}/../data/README.txt")
+        def ftp_stats = "${params.production_ftp_dir}/${publish_dir_name}/statistics"
         """
         sudo -u genebuild mkdir -p ${ftp_stats}; \
         sudo -u genebuild cp -f ${read_me} ${ftp_stats};
@@ -35,5 +34,4 @@ process COPY_OUTPUT_TO_ENSEMBL_FTP {
         sudo -u genebuild chmod 775 ${ftp_stats}/* -R;
         sudo -u genebuild chgrp ensemblftp ${ftp_stats}/* -R;
         """
-        //sudo -u genebuild rsync -ahvW $summary_file $ftp_stats && rsync -avhc $summary_file $ftp_stats; \
 }

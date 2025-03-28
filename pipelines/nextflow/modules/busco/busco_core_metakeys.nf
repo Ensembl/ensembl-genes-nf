@@ -28,7 +28,7 @@ process BUSCO_CORE_METAKEYS {
             val(publish_dir_name), path(summary_file)
 
     script:
-        busco_metakeys_script = file("${workflow.projectDir}/bin/busco_metakeys_patch.py")
+        def busco_metakeys_script = file("${workflow.projectDir}/bin/busco_metakeys_patch.py")
         """
         chmod +x ${busco_metakeys_script}
         busco_metakeys_patch.py -db $dbname -file $summary_file -output_dir "$params.outDir/$publish_dir_name/" -host $params.host -port $params.port -user $params.user_w  -password $params.password -run_query true
