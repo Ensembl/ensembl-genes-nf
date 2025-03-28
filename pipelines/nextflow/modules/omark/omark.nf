@@ -18,8 +18,9 @@ limitations under the License.
 process OMARK {
     label 'omamer'
     tag "${organism_name}:${insdc_acc}"
-    container "${params.omark_singularity_path}"
     publishDir "${params.outDir}/${publish_dir_name}/", mode: 'copy'
+
+    container "${params.omark_singularity_path}"
 
     input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
