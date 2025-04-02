@@ -63,10 +63,6 @@ repository = "https://github.com/Ensembl/ensembl-genes-nf"
 [project.scripts]
 #run_fastqc = "ensembl.genes.metadata.qc.run_fastqc:main"
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [ 
@@ -74,8 +70,6 @@ requires = [
     "setuptools-scm",
     "wheel"
 ]
-[tool.setuptools.packages.find]
-where = ["src/python"]
 
 [tool.black]
 line-length = 110
@@ -94,7 +88,6 @@ disable = [
 ]
 
 [tool.mypy]
-mypy_path = "src"
 explicit_package_bases = true
 ignore_missing_imports = true
 show_error_codes = true
