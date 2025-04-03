@@ -3,10 +3,13 @@ include { LIST_MIRMACHINE_CLADES } from '../../modules/local/list_mirmachine_cla
 include { FORMAT_CLADES } from '../../modules/local/format_clades'
 include { MATCH_CLADE } from '../../modules/local/match_clade'
 include { MIRMACHINE } from '../../modules/local/mirmachine'
+include { COLLATE_RESULTS } from '../../modules/local/collate_results'
+include { GENERATE_SCORES } from '../../modules/local/generate_scores'
 
 workflow mirMachine {
     take:
         input_ch
+        previously_run
         fasta_dir
 
     main:
@@ -44,14 +47,30 @@ workflow mirMachine {
             .map { meta, fasta, clade_info_file ->
                 def clade_info = clade_info_file.text.trim()
                 def (closer_clade, model) = clade_info.tokenize(';')
-                tuple(meta, fasta, closer_clade.trim(), model.trim())
+                tuple(meta.id, meta, fasta, closer_clade.trim(), model.trim())
             }
 
-        // Run MIRMACHINE
-        MIRMACHINE(mirmachine_input)
+        mirmachine_to_run = mirmachine_input
+            .join(previously_run, by: [0], remainder:true)
+            .filter { it[1] != null }
+            .map { id, meta, fasta, closer_clade, model, prev_run ->
+                tuple(meta, fasta, closer_clade, model)
+            }
+
+        MIRMACHINE(mirmachine_to_run)
+
+        all_heatmaps = MIRMACHINE.out.csv
+                        .mix(previously_run)
+                        .map { it[1] }
+                        .collect()
+
+        COLLATE_RESULTS(all_heatmaps)
+
+        GENERATE_SCORES(COLLATE_RESULTS.out.heatmap, COLLATE_RESULTS.out.metadata)
 
     emit:
         fasta = fasta_ch
         results = MIRMACHINE.out.predictions
         logs = MIRMACHINE.out.log
+        scores = GENERATE_SCORES.out.scores
 }

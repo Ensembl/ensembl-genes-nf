@@ -22,7 +22,16 @@ workflow {
         }
         .set { input_ch }
 
-    mirMachine(input_ch, params.fasta_dir)
+    Channel
+        .fromPath("${params.outdir}/mirmachine/*/results/predictions/heatmap/*.heatmap1.csv", glob: true)
+        .map { file -> 
+            def sampleId = file.getParent().getParent().getParent().getParent().getName()
+            [ sampleId, file ]
+        }
+        .unique { it[1] }
+        .set { previously_run }
+
+    mirMachine(input_ch, previously_run, params.fasta_dir)
 }
 
 workflow.onComplete {

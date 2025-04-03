@@ -66,7 +66,7 @@ def check_url_validity(url: str) -> bool:
         return False
 
 
-def build_url(species: str, assembly: str, annotation_types=['ensembl', 'refseq', 'braker', 'community', 'genbank', 'flybase', 'wormbase', 'noninsdc']) -> str:
+def build_url_rapid(species: str, assembly: str, annotation_types=['ensembl', 'refseq', 'braker', 'community', 'genbank', 'flybase', 'wormbase', 'noninsdc']) -> str:
     '''
     Build ensembl Rapid release URL from species name and assembly GCA
     
@@ -91,6 +91,30 @@ def build_url(species: str, assembly: str, annotation_types=['ensembl', 'refseq'
             return f"{base_url}/{annotation_type}/genome/{species}-{assembly}-softmasked.fa.gz"
     else:
         raise ValueError(f"Could not find assembly {assembly} for species {species} in ensembl Rapid release. Tested {tested_urls}")
+
+
+def build_url(species: str, assembly: str) -> str:
+    '''
+    Build ensembl Rapid release URL from species name and assembly GCA
+    
+    Parameters
+    ----------
+    species : str
+        Species name
+    assembly : str
+        Assembly GCA
+    
+    Returns
+    -------
+    str
+        Ensembl Rapid release URL
+    '''
+    base_url = f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{species}/{assembly}"
+
+    if check_url_validity(f"{base_url}/genome/softmasked.fa.gz"):
+            return f"{base_url}/genome/softmasked.fa.gz"
+    else:
+        return build_url_rapid(species, assembly)
 
 
 def fetch_fasta(url: str, output: str):
