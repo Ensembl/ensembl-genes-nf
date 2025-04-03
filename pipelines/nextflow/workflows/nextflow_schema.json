@@ -140,7 +140,7 @@
         "project": {
           "type": "string",
           "description": "Project for the formatting of the output.",
-          "enum": ["ensembl","brc"]
+          "enum": ["ensembl"]
         },
         "metatable_keys": {
           "type": "string",
