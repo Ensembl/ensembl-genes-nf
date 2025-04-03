@@ -42,14 +42,18 @@ workflow RUN_BUSCO{
     take:                 
         db_meta
         busco_mode
-        copyToFtp
 
     main:
         // Get the closest BUSCO dataset from the taxonomy classification stored in db meta table
         BUSCO_DATASET(db_meta).clade_dataset
             .map { row -> [
-                insdc_acc: row[0], taxonomy_id: row[1], core: row[2], production_name: row[3],
-                organism_name: row[4], annotation_source: row[5], ortho_db: row[6]
+                insdc_acc: row[0],
+				taxonomy_id: row[1],
+				core: row[2],
+				production_name: row[3],
+                organism_name: row[4],
+				annotation_source: row[5],
+				ortho_db: row[6]
             ]}
             .set{ orthodb_amended_meta }
 
@@ -61,19 +65,30 @@ workflow RUN_BUSCO{
             // Download genome via ncbi dataset API
             FETCH_GENOME (orthodb_amended_meta).genome_fasta
                 .map { row -> [
-                    insdc_acc: row[0], taxonomy_id: row[1], core: row[2], production_name: row[3],
-                    organism_name: row[4], annotation_source: row[5], ortho_db: row[6], genome: row[7]
+                    insdc_acc: row[0],
+					taxonomy_id: row[1],
+					core: row[2],
+					production_name: row[3],
+                    organism_name: row[4],
+					annotation_source: row[5],
+					ortho_db: row[6],
+					genome: row[7]
                 ]}
                 .set{ metadata_genome_fna }
 
             BUSCO_GENOME_LINEAGE(metadata_genome_fna, output_typeG).busco_report_output
                 .map { row -> [
-                    insdc_acc: row[0], taxonomy_id: row[1], core: row[2],production_name: row[3],
-                    organism_name: row[4], annotation_source: row[5], report: row[6]
+                    insdc_acc: row[0],
+					taxonomy_id: row[1],
+					core: row[2],
+                    production_name: row[3],
+                    organism_name: row[4],
+					annotation_source: row[5],
+					report: row[6]
                 ]}
                 .set{ buscoGenomeOutput }
 
-            buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(buscoGenomeOutput, output_typeG)
+            def buscoGenomeSummaryOutput = BUSCO_GENOME_OUTPUT(buscoGenomeOutput, output_typeG)
 
 
             // Make and apply busco summary meta_keys patch directly to core:
@@ -90,19 +105,30 @@ workflow RUN_BUSCO{
             // Dump protein translations
             FETCH_PROTEINS (orthodb_amended_meta).translations
                 .map { row -> [
-                    insdc_acc: row[0], taxonomy_id: row[1], core: row[2], production_name: row[3],
-                    organism_name: row[4], annotation_source: row[5], ortho_db: row[6], translations: row[7]
+                    insdc_acc: row[0],
+					taxonomy_id: row[1],
+					core: row[2],
+					production_name: row[3],
+                    organism_name: row[4],
+					annotation_source: row[5],
+					ortho_db: row[6],
+					translations: row[7]
                 ]}
                 .set{ metadata_prot_trans }
 
             BUSCO_PROTEIN_LINEAGE(metadata_prot_trans, output_typeP).busco_report_output
                 .map { row -> [
-                    insdc_acc: row[0], taxonomy_id: row[1], core: row[2], production_name: row[3],
-                    organism_name: row[4], annotation_source: row[5], report: row[6]
+                    insdc_acc: row[0],
+					taxonomy_id: row[1],
+					core: row[2],
+					production_name: row[3],
+                    organism_name: row[4],
+					annotation_source: row[5],
+					report: row[6]
                 ]}
                 .set{ buscoProteinOutput }
 
-            buscoProteinSummaryOutput = BUSCO_PROTEIN_OUTPUT(buscoProteinOutput, output_typeP)
+            def buscoProteinSummaryOutput = BUSCO_PROTEIN_OUTPUT(buscoProteinOutput, output_typeP)
 
 
             // Make and apply busco summary meta_keys patch directly to core:

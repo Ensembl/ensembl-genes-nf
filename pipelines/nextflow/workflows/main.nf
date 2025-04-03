@@ -39,14 +39,6 @@ include { RUN_OMARK } from '../subworkflows/run_omark.nf'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-// Some initialisation of default params
-if (params.busco_mode instanceof java.lang.String) {
-    def busco_mode = params.busco_mode.split(/,/).collect().unique()
-}
-else {
-    def busco_mode = params.busco_mode
-}
-
 workflow {
 
     // Validate input parameters
@@ -64,8 +56,8 @@ workflow {
             def busco_mode = 'genome'
             def copyToFtp = false
 
-            // Now run BUSCO on genme mode without database as input
-            RUN_BUSCO(genome_metadata, busco_mode, copyToFtp)
+            // Now run BUSCO on genome mode without database as input
+            RUN_BUSCO(genome_metadata, busco_mode)
         }
 
     if (params.run_busco_core || params.run_omark || params.run_ensembl_stats) {
@@ -78,7 +70,7 @@ workflow {
         genome_metadata = PREPARE_METADATA(core_db_list, params.metatable_keys).core_metadata
 
         if (params.run_busco_core) {
-            RUN_BUSCO(genome_metadata, params.busco_mode, params.copyToFtp)
+            RUN_BUSCO(genome_metadata, params.busco_mode)
         }
         if (params.run_omark) {
             RUN_OMARK(genome_metadata)

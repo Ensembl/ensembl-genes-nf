@@ -31,24 +31,24 @@ process BUSCO_OUTPUT {
             val(publish_dir_name), path("*_short_summary.txt")
     
     script:
-        def formated_sci_name = organism_name.replaceAll("\\s", "_")
-        def publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
-        def species_lc = formated_sci_name.toLowerCase()
+        formated_sci_name = organism_name.replaceAll("\\s", "_")
+        publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
+        species_lc = formated_sci_name.toLowerCase()
 
         if (dbname =='dummycore') {
-            def publish_dir_name = insdc_acc
-            def species_lc = 'species=NA'
+            publish_dir_name = insdc_acc
+            species_lc = 'species=NA'
         }
 
         if (datatype == "genome") {
-            def busco_sum = "genome_busco"
+            busco_sum = "genome_busco"
         }
         else if (datatype == "protein") {
-            def busco_sum = "protein_busco"
+            busco_sum = "protein_busco"
         }
 
-        def gca_string = insdc_acc.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
-        def summary_name = [species_lc, gca_string, busco_sum, "short_summary.txt"].join("_")
+        gca_string = insdc_acc.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")
+        summary_name = [species_lc, gca_string, busco_sum, "short_summary.txt"].join("_")
         """
         sed '/Summarized benchmarking in BUSCO notation for file/d' $summary_file > $summary_name
         """

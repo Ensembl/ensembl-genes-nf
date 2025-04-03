@@ -24,7 +24,7 @@ process OMAMER_HOG {
     input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
             val(production_name), val(organism_name), val(annotation_source),
-            val(ortho_db), path (aa_or_genome_seqs)
+            val(ortho_db), path (translation_seqs)
 
     output:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
@@ -32,6 +32,6 @@ process OMAMER_HOG {
 
     script:
         """
-        omamer search --db ${params.omamer_database} --query ${aa_or_genome_seqs} --score sensitive --out proteins.omamer 
+        omamer search --db ${params.omamer_database} --query ${translation_seqs} --score sensitive --out proteins.omamer
         """
 }

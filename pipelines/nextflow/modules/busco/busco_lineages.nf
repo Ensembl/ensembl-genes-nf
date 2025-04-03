@@ -34,13 +34,15 @@ process BUSCO_LINEAGES {
             path("${outdir}/*.txt"), emit: busco_report_output
 
     script:
+        busco_mode = ''
+        outdir = ''
         if ( input_busco_mode == 'protein' ) {
-            def outdir = 'protein_output'
-            def busco_mode = 'proteins'
+            outdir = 'protein_output'
+            busco_mode = 'proteins'
         }
         else if( input_busco_mode == 'genome' ) {
-            def outdir = 'genome_output'
-            def busco_mode = input_busco_mode
+            outdir = 'genome_output'
+            busco_mode = input_busco_mode
         }
         else{
             error "Invalid alignment mode: ${input_busco_mode}"

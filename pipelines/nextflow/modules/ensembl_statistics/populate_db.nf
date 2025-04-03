@@ -24,11 +24,12 @@ process POPULATE_DB {
             val(production_name), val(organism_name), val(annotation_source), path(sql_file)
 
     script:
+        def host_admin = ''
         if (params.server_set){
-            def host_admin = params.server_set
+            host_admin = params.server_set
         }
         else {
-            def host_admin = params.mysql_ensadmin
+            host_admin = params.mysql_ensadmin
         }
         """
         ${params.mysql_cmds}/${host_admin}/${params.host} ${dbname} < ${sql_file}

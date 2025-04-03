@@ -49,16 +49,16 @@ workflow RUN_OMARK{
             .set{ amended_db_meta }
 
         // MODULE: Get canonical protein from db
-        proteinData = FETCH_PROTEINS (amended_db_meta)
+        def proteinData = FETCH_PROTEINS(amended_db_meta)
 
         // MODULE: Get orthologous groups from Omamer db 
-        omamerData = OMAMER_HOG(proteinData)
+        def omamerData = OMAMER_HOG(proteinData)
 
         // MODULE: Run Omark
-        omarkOutput = OMARK(omamerData)
+        def omarkOutput = OMARK(omamerData)
 
         // Output Omark results
-        omarkSummaryOutput = OMARK_OUTPUT(omarkOutput)
+        def omarkSummaryOutput = OMARK_OUTPUT(omarkOutput)
 
 
 }

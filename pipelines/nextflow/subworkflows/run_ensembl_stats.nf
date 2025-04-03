@@ -41,7 +41,7 @@ workflow RUN_ENSEMBL_STATS{
     main:
         if( params.run_ensembl_stats ) {
 
-            statisticsFile = RUN_STATISTICS(db_meta)
+            def statisticsFile = RUN_STATISTICS(db_meta)
 
             if ( params.apply_ensembl_stats ) {
                 ADD_STATS_ON_CORE(statisticsFile)
@@ -50,7 +50,7 @@ workflow RUN_ENSEMBL_STATS{
 
         if(params.run_ensembl_beta_metakeys){
 
-            betaMetakeys = RUN_BETA_METAKEYS (db_meta)
+            def betaMetakeys = RUN_BETA_METAKEYS(db_meta)
 
             if (params.apply_ensembl_beta_metakeys) {
                 ADD_BETA_UPDATES_ON_CORE(betaMetakeys)
