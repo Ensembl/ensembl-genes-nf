@@ -21,7 +21,6 @@
         "bioperl": {
           "type": "string",
           "format": "directory-path",
-          "default": "${params.enscode}/bioperl-1.6.924",
           "description": "Path to the directory containing the BioPerl library.",
           "fa_icon": "fas fa-folder-open"
         },
@@ -54,50 +53,42 @@
         "run_busco_core": {
           "type": "boolean",
           "description": "Run BUSCO given a mysql db.",
-          "default": false,
           "help_text": "(protein or genome mode see '--busco_mode').",
           "fa_icon": "fas fa-question-circle"
         },
         "run_busco_ncbi": {
           "type": "boolean",
           "description": "Run BUSCO given a assembly_accession and taxonomy id in genome mode only.",
-          "default": false,
           "fa_icon": "fas fa-question-circle"
         },
         "run_omark": {
           "type": "boolean",
           "description": "Run OMARK given a mysql db, default false",
-          "default": false,
           "fa_icon": "fas fa-question-circle"
         },
         "run_ensembl_stats": {
           "type": "boolean",
           "description": "Run Ensembl statistics given a mysql db",
-          "default": false,
           "fa_icon": "fas fa-question-circle"
         },
         "apply_busco_metakeys": {
           "type": "boolean",
           "description": "Create JSON file with BUSCO metakeys and load it into the db.",
-          "default": false,
           "fa_icon": "fas fa-question-circle"
         },
         "apply_ensembl_stats": {
           "type": "boolean",
           "description": "Insert Ensembl statistics into a mysql db",
-          "default": false,
           "fa_icon": "fas fa-question-circle"
         },
         "run_ensembl_beta_metakeys": {
           "type": "boolean",
           "description": "Run Ensembl beta metakeys given a mysql db.",
-          "default": false,
           "fa_icon": "fas fa-question-circle"
         },
         "apply_ensembl_beta_metakeys": {
           "type": "boolean",
           "description": "Insert Ensembl beta metakeys into a mysql db.",
-          "default": false,
           "fa_icon": "fas fa-question-circle"
         },
         "host": {
@@ -121,19 +112,8 @@
         "team": {
           "type": "string",
           "description": "Required CoreDB meta_key for data team responsible.",
+          "enum": ["genebuild","metazoa","plants","microbes"],
           "help_text": "When 'run_ensembl_beta_metakeys' is enabled this key must be set."
-        }
-      },
-      "if": {
-        "anyOf": [
-          {"required": ["run_busco_core"]
-          }
-        ]
-      },
-      "then": {
-        "required": ["run_busco_core"],
-        "not": {
-          "required": ["run_busco_ncbi"]
         }
       },
       "dependentRequired": {
@@ -150,34 +130,24 @@
       "properties": {
         "user_w": {
           "type": "string",
-          "default": "ensadmin",
           "description": "DB write user name.",
           "enum": ["ensadmin","ensrw"]
         },
         "user_r": {
           "type": "string",
-          "default": "ensro",
           "description": "DB read_only user."
         },
         "project": {
           "type": "string",
-          "default": "ensembl",
           "description": "Project for the formatting of the output.",
           "enum": ["ensembl","brc"]
         },
         "metatable_keys": {
           "type": "string",
           "format": "file-path",
-          "default": "${projectDir}/../data/coredb_meta-keys.txt",
           "description": "Location of flat file (.txt) containing CoreDB meta table meta_keys.",
           "fa_icon": "fas fa-folder-open",
           "hidden": true
-        },
-        "copyToFtp": {
-          "type": "boolean",
-          "description": "Copy output in Ensembl ftp.",
-          "default": false,
-          "fa_icon": "fas fa-check-square"
         },
         "cacheDir": {
           "type": "string",
@@ -187,7 +157,6 @@
         },
         "cleanCache": {
           "type": "boolean",
-          "default": false,
           "description": "Purge cache_dir if it exists.",
           "fa_icon": "fas fa-folder-open",
           "hidden": true
@@ -200,46 +169,26 @@
       "fa_icon": "fas fa-terminal",
       "description": "Important configuration setup. Not to be changed unless confident on config changes.",
       "properties": {
-        "download_path": {
-          "type": "string",
-          "format": "directory-path",
-          "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data",
-          "description": "Location of pre-downloaded lineage datasets.",
-          "fa_icon": "fas fa-cog",
-          "hidden": true
-        },
         "canonical_only": {
           "type": "string",
-          "default": "--canonical_only 1",
           "description": "Enable 'canonical only' sequence dumps.",
           "fa_icon": "fas fa-cog"
         },
         "ncbiBaseUrl": {
           "type": "string",
           "format": "https://.+/",
-          "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/",
           "description": "Rest API for NCBI datasets v2alpha.",
           "fa_icon": "fas fa-cog",
           "hidden": true
         },
         "genomio_version":{
           "type": "string",
-          "default": "latest",
           "description": "Ensembl-genomio Python library container.",
           "fa_icon": "fas fa-cog"
-        },
-        "production_ftp_dir": {
-          "type": "string",
-          "format": "directory-path",
-          "default": "/nfs/production/flicek/ensembl/production/ensemblftp/rapid-release/species/",
-          "description": "Full path location for production FTP species dumps.",
-          "fa_icon": "fas fa-cog",
-          "hidden": true
         },
         "files_latency": {
           "type": "integer",
           "format": "[0-9]+",
-          "default": "60",
           "description": "Sleep time (seconds) after genome and proteins have been fetched.",
           "help_text": "Needed by several file systems due to their internal latency.",
           "fa_icon": "fas fa-folder-open",
@@ -248,14 +197,12 @@
         "mysql_cmds": {
           "type": "string",
           "format": "directory-path",
-          "default": "/hps/software/users/ensembl/ensw/mysql-cmds/ensembl/",
           "description": "Location of HPS user mysql-cmds.",
           "fa_icon": "fas fa-folder-open",
           "hidden": true
         },
         "mysql_ensadmin": {
           "type": "string",
-          "default": "ensadmin",
           "description": "Default user mysql user.",
           "fa_icon": "fas fa-folder-open",
           "hidden": true
@@ -274,7 +221,6 @@
           "items": {
             "enum": ["protein", "genome", "genome,protein", "protein,genome"]
           },
-          "default": ["protein", "genome"],
           "description": "The mode in which to run BUSCO.",
           "help_text": "If unspecified the pipeline runs in both genome and protein modes.",
           "fa_icon": "fas fa-users-cog"
@@ -290,7 +236,6 @@
         "busco_version": {
           "type": "string",
           "format": "v([0-9]+).([0-9]+).([0-9]+)_[a-z]+[0-9]+$",
-          "default": "v5.7.1_cv1",
           "description": "BUSCO version to use.",
           "help_text": "BUSCO version corresponding to docker container 'ezlabgva/busco:${params.busco_version}'",
           "fa_icon": "fas fa-cog",
@@ -299,7 +244,6 @@
         "download_path": {
           "type": "string",
           "format": "directory-path",
-          "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data",
           "description": "Location of pre-downloaded lineage datasets.",
           "fa_icon": "fas fa-cog",
           "hidden": true
@@ -308,7 +252,6 @@
           "type": "string",
           "format": "file-path",
           "exists": true,
-          "default": "${projectDir}/../data/busco_lineage.json",
           "description": "Location of pre-downloaded lineage datasets.",
           "fa_icon": "fas fa-cog",
           "hidden": true
@@ -324,7 +267,6 @@
         "omamer_database": {
           "type": "string",
           "format": "file-path",
-          "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/omamer_db/LUCA_MinFamSize6_OR_MinFamComp05_A21_k6.h5",
           "description": "Location of Omark omamer_db on production file system.",
           "fa_icon": "fas fa-cog",
           "hidden": true
@@ -333,7 +275,6 @@
           "type": "string",
           "format": "file-path",
           "exists": true,
-          "default": "/hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif",
           "description": "Location of Omark specific singularity SIF image.",
           "fa_icon": "fas fa-cog",
           "hidden": true
