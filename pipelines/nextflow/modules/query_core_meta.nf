@@ -15,23 +15,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process OMAMER_HOG {
-    label 'omamer'
-    tag "${organism_name}:${insdc_acc}"
-    storeDir "${params.cacheDir}/${insdc_acc}/omamer/"
-    container "${params.omark_singularity_path}"
-    
+process QUERY_CORE_META {
+    tag "${core}"
+    label 'genomio'
+    storeDir "${params.cacheDir}/${core}/meta_data/"
+
     input:
-        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source),
-            val(ortho_db), path (translation_seqs)
+        val core
+        path meta_keys
 
     output:
-        tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source), path("proteins.omamer")
-
+        path 'coredb_meta.json', emit: metadata_json
+    
     script:
         """
-        omamer search --db ${params.omamer_database} --query ${translation_seqs} --score sensitive --out proteins.omamer
+        genome_metadata_dump --host ${params.host} --port ${params.port} --user ${params.user_r} --database ${core} --metafilter ${meta_keys} --append_db > coredb_meta.json
         """
 }

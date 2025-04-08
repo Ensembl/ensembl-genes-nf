@@ -19,14 +19,14 @@ nextflow.enable.dsl=2
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    IMPORT LOCAL MODULES/SUBWORKFLOWS
+    IMPORT LOCAL MODULES/FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { POPULATE_DB as ADD_BETA_UPDATES_ON_CORE  } from '../modules/ensembl_statistics/populate_db.nf'
-include { POPULATE_DB as ADD_STATS_ON_CORE  } from '../modules/ensembl_statistics/populate_db.nf'
-include { RUN_ENSEMBL_META as RUN_BETA_METAKEYS } from '../modules/ensembl_statistics/run_ensembl_meta.nf'
-include { RUN_STATISTICS } from '../modules/ensembl_statistics/run_statistics.nf'
+// Utilities
+include { index_metadata } from '../modules/utils.nf'
+// Module
+include { QUERY_CORE_META } from '../modules/query_core_meta.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,28 +34,17 @@ include { RUN_STATISTICS } from '../modules/ensembl_statistics/run_statistics.nf
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow RUN_ENSEMBL_STATS{
-    take:                 
-        db_meta
+workflow PREPARE_METADATA{
+    // Generate a meta object from a database meta table and dump in JSON format
+    take:
+        input_cores
+        core_metakeys // input meta keys JSON
 
     main:
-        if( params.run_ensembl_stats ) {
-
-            def statisticsFile = RUN_STATISTICS(db_meta)
-
-            if ( params.apply_ensembl_stats ) {
-                ADD_STATS_ON_CORE(statisticsFile)
-                }
-            }
-
-        if(params.run_ensembl_beta_metakeys){
-
-            def betaMetakeys = RUN_BETA_METAKEYS(db_meta)
-
-            if (params.apply_ensembl_beta_metakeys) {
-                ADD_BETA_UPDATES_ON_CORE(betaMetakeys)
-            }
-        }
+        QUERY_CORE_META(input_cores, core_metakeys)
+            .map{ meta_json_file -> index_metadata(meta_json_file) }
+            .set { core_metadata }
+    
+    emit:
+        core_metadata
 }
-
-

@@ -15,27 +15,48 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
-process FETCH_GENOME {
+process BUSCO_LINEAGES {
+    label 'busco'
     tag "${organism_name}:${insdc_acc}"
-    label 'fetch_file'
-    storeDir "${params.cacheDir}/${insdc_acc}/ncbi_dataset/"  // update on protein busco side
+    storeDir "${params.cacheDir}/${insdc_acc}/busco_${busco_mode}/"
     afterScript "sleep ${params.files_latency}"  // Needed because of file system latency
     maxForks 10
 
     input:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
-            val(production_name), val(organism_name), val(annotation_source), val(ortho_db)
+            val(production_name), val(organism_name), val(annotation_source), 
+            val(ortho_db), path (aa_or_genome_seqs)
+        val (input_busco_mode)
 
     output:
         tuple val(insdc_acc), val(taxonomy_id), val(dbname), 
             val(production_name), val(organism_name), val(annotation_source),
-            val(ortho_db), path("*.fna"), emit: genome_fasta
-    
+            path("${outdir}/*.txt"), emit: busco_report_output
+
     script:
-        def outfile = "genome_file.zip"
+        busco_mode = ''
+        outdir = ''
+        if ( input_busco_mode == 'protein' ) {
+            outdir = 'protein_output'
+            busco_mode = 'proteins'
+        }
+        else if( input_busco_mode == 'genome' ) {
+            outdir = 'genome_output'
+            busco_mode = input_busco_mode
+        }
+        else{
+            error "Invalid alignment mode: ${input_busco_mode}"
+        }
+
         """
-        curl -X GET "${params.ncbiBaseUrl}/${insdc_acc}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"  -H "Accept: application/zip" --output ${outfile}
-        unzip -j $outfile
+        mkdir ${outdir}
+        busco -f \
+            -i ${aa_or_genome_seqs} \
+            --mode ${busco_mode} \
+            -l ${ortho_db} \
+            -c ${task.cpus} \
+            --out ${outdir} \
+            --offline \
+            --download_path ${params.download_path}
         """
 }
