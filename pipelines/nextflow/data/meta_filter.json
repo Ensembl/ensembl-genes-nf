@@ -1,0 +1,14 @@
+{
+    "database": {
+        "name": "str"
+    },
+    "assembly": {
+        "accession": "str"
+    },
+    "species": {
+        "annotation_source": "str",
+        "production_name": "str",
+        "scientific_name": "str",
+        "taxonomy_id": "int"
+    }
+}
