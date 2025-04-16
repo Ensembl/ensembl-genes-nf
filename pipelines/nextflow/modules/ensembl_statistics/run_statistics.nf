@@ -34,7 +34,7 @@ process RUN_STATISTICS {
         def formated_sci_name = organism_name.replaceAll("\\s", "_")
         publish_dir_name = formated_sci_name + '/' + insdc_acc + '/' + annotation_source
         def corestats_outdir = "core_statistics"
-        def stats_script = file("${params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl")
+        def stats_script = file("${params.enscode}/ensembl-genes/src/perl/ensembl/genes/generate_species_homepage_stats.pl")
         """
         perl ${stats_script} \
             -dbname ${dbname} \
