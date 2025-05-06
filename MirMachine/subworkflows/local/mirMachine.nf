@@ -59,18 +59,8 @@ workflow mirMachine {
 
         MIRMACHINE(mirmachine_to_run)
 
-        all_heatmaps = MIRMACHINE.out.csv
-                        .mix(previously_run)
-                        .map { it[1] }
-                        .collect()
-
-        COLLATE_RESULTS(all_heatmaps)
-
-        GENERATE_SCORES(COLLATE_RESULTS.out.heatmap, COLLATE_RESULTS.out.metadata)
-
     emit:
         fasta = fasta_ch
         results = MIRMACHINE.out.predictions
         logs = MIRMACHINE.out.log
-        scores = GENERATE_SCORES.out.scores
 }
