@@ -1,17 +1,17 @@
 nextflow.enable.dsl = 2
 
 include { COLLATE_RESULTS } from './modules/local/collate_results.nf'
-include { GENERATE_SCORES } from './modules/local/generate_scores.nf'
+include { GENERATE_SINGLE_SCORES } from './modules/local/score_single_heatmap.nf'
 
 
 workflow {
     Channel
         .fromPath("${params.outdir}/mirmachine/*/*.heatmap.csv", glob: true)
-        .view()
-        .unique { it }
-        .collect()
         .set { heatmaps }
 
-    COLLATE_RESULTS(heatmaps)
-    GENERATE_SCORES(COLLATE_RESULTS.out.heatmap, COLLATE_RESULTS.out.metadata)
+    GENERATE_SINGLE_SCORES(heatmaps)
+
+    all_scores = GENERATE_SINGLE_SCORES.out.collect()
+    
+
 }

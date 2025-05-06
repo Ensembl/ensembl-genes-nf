@@ -110,6 +110,7 @@ def build_url(species: str, assembly: str) -> str:
         Ensembl Rapid release URL
     '''
     base_url = f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{species}/{assembly}"
+    print(base_url)
 
     if check_url_validity(f"{base_url}/genome/softmasked.fa.gz"):
             return f"{base_url}/genome/softmasked.fa.gz"

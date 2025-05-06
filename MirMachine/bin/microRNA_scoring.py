@@ -1,290 +1,186 @@
 #!/usr/bin/env python
-'''
-Python script to score microRNA sequences. Based on ./microRNA_scoring.rmd By: Vanessa Paynter
-
-Input file:
-    - mirMachine Heatmap file
-    - mirMachine metadata file
-
-Output file:
-    - species score file
-
-    
-Usage:
-    python microRNA_scoring.py -i <input file> -m <metadata file> -o <output file> 
-
-'''
-
-import argparse
 import pandas as pd
-import numpy as np
-import sys
+import argparse
+import re
 
-
-def parse_heatmap(headmapt_csv_path: str) -> pd.DataFrame:
-    '''
-    Read in the mirMachine heatmap file and return a pandas dataframe. Convert the species column to uppercase.
-
-    Input:
-        headmapt_csv_path: str
-            Path to the mirMachine heatmap file
-
-    Output:
-        heatmap: pd.DataFrame
-            Pandas dataframe of the mirMachine heatmap file
-    '''
-    heatmap = pd.read_csv(headmapt_csv_path, sep=",", comment='#', header=None)
-    heatmap.columns = ['species', 'mode' , 'family', 'node', 'tgff', 'filtered']
-    # heatmap['species'] = heatmap['species'].str.upper()
-    return heatmap
-
-def parse_metadata(metadata_csv_path: str) -> pd.DataFrame:
-    '''
-    Read in the mirMachine metadata file and return a pandas dataframe
-
-    Input:  
-        metadata_csv_path: str  
-            Path to the mirMachine metadata file    
-
-    Output:
-        metadata: pd.DataFrame
-            Pandas dataframe of the mirMachine metadata file
-    '''
-    metadata = pd.read_csv(metadata_csv_path, sep=",", header=None)
-    return metadata
-
-def get_mirmachine_total_families_searched(heatmap_path: str) -> int:
-    '''
-    Get the total number of microRNA families searched for in mirMachine
-
-    Input:
-        heatmap_path: str
-            Path to the mirMachine heatmap file
-
-    Output:
-        mirmachine_total_families_searched: int
-            Total number of microRNA families searched for in mirMachine
-    '''
-    with open(heatmap_path) as f:
-        for line in f.readlines():
-            if line.startswith('# Total families searched'):
-                mirmachine_total_families_searched = int(line.split(': ')[1].strip())
-                break
-    return mirmachine_total_families_searched
-
-
-def create_filtered_score_df(heatmap: pd.DataFrame, mirmachine_total_families_searched) -> pd.DataFrame:
-    '''
-    Create a pandas dataframe with the species and the number of microRNA families that have been detected that met the bitscore threshold in mirMachine
-
-    Input:
-        heatmap: pd.DataFrame
-            Pandas dataframe of the mirMachine heatmap file
-
-    Output:
-        filtered_score_df: pd.DataFrame
-            Pandas dataframe with the species and the number of microRNA families that have been detected that met the bitscore threshold in mirMachine
-    '''
-    # Drop the 'tgff' column from the heatmap dataframe and remove any rows where the 'filtered' column is missing.
-    filtered = heatmap.drop(columns=['tgff']).dropna(subset=['filtered'])
-
-    # Group the dataframe by the 'species' column and count the number of non-missing values in the 'filtered' column for each group.
-    filtered = filtered.groupby('species')['filtered'].count()
-
-    # Divide the series by the total number of microRNA families searched for in mirMachine and multiply the result by 100.
-    filtered_score = (filtered / mirmachine_total_families_searched) * 100
-
-    # Convert the  series to a dataframe
-    filtered_df = filtered.to_frame()
-
-    # Add a new column to the 'unfiltered_df' dataframe with the 'filtered_score' series as its values.
-    filtered_score_df = filtered_df.assign(filtered_microRNA_score=filtered_score)
-
-    # Rename the 'filtered' column to 'filtered_total_count'
-    filtered_score_df = filtered_score_df.rename(columns={'filtered': 'filtered_total_count'})
-
-    return filtered_score_df
-
-def calculate_unfiltered_score(heatmap: pd.DataFrame, mirmachine_total_families_searched) -> pd.DataFrame:
-    '''
-    Create a pandas dataframe with the species and the number of microRNA families that have been detected that met the bitscore threshold in mirMachine
-
-    Input:
-        heatmap: pd.DataFrame
-            Pandas dataframe of the mirMachine heatmap file
-
-    Output:
-        filtered_score_df: pd.DataFrame
-            Pandas dataframe with the species and the number of microRNA families that have been detected that met the bitscore threshold in mirMachine
-    '''
-    # Drop the 'filtered' column from the heatmap dataframe and remove any rows where the 'tgff' column is missing.
-    unfiltered = heatmap.drop(columns=['filtered']).dropna(subset=['tgff'])
-
-    # Group the 'unfiltered' dataframe by the 'species' column and count the number of non-missing values in the 'tgff' column for each group.
-    unfiltered = unfiltered.groupby('species')['tgff'].count()
-
-    # Divide the 'unfiltered' series by the total number of microRNA families searched for in mirMachine and multiply the result by 100.
-    unfiltered_score = (unfiltered / mirmachine_total_families_searched) * 100
-
-    # Convert the 'unfiltered' series to a dataframe and rename the column to 'unfiltered_total_count'.
-    unfiltered_df = unfiltered.to_frame()
-
-    # Add a new column to the 'unfiltered_df' dataframe with the 'unfiltered_score' series as its values.
-    unfiltered_df = unfiltered_df.assign(unfiltered_microRNA_score=unfiltered_score)
-
-    # Rename the 'filtered' column to 'filtered_total_count'
-    unfiltered_df = unfiltered_df.rename(columns={'tgff': 'unfiltered_total_count'})
-
-    return unfiltered_df
-
-
-def get_filtered_out_families(mammals_heatmap: pd.DataFrame):
-    '''
-    Get the microRNA families that were filtered out of the mirMachine analysis
-
-    Input:
-        mammals_heatmap: pd.DataFrame
-
-    Output:
-        filtered_out_families: pd.DataFrame
-
-    '''
-    # Filter the DataFrame to only include rows where the 'filtered' column is NaN
-    filtered_rows = mammals_heatmap.loc[pd.isna(mammals_heatmap['filtered']), ['species', 'family', 'tgff']]
+def convert_heatmap_to_flat_tsv(input_path, output_path):
+    """Convert the alternating format heatmap to a flat TSV with one entry per line"""
+    flat_data = []
+    current_species = None
     
-    # Drop any rows with NaN values in the 'tgff' column
-    filtered_rows = filtered_rows.dropna(subset=['tgff'])
+    with open(input_path, 'r') as infile:
+        # Read header
+        header = next(infile).strip().split(',')
+        
+        for line in infile:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Species lines have few or no commas
+            if line.count(',') <= 1:
+                current_species = line
+                continue
+            
+            # Data lines have multiple fields
+            parts = line.split(',')
+            
+            # Create a flat entry with species as first column
+            row = [current_species] + parts
+            flat_data.append(row)
     
-    # Group the remaining rows by 'species', and concatenate the 'family' values into a comma-separated string
-    filtered_out_families = filtered_rows.groupby('species')['family'].apply(lambda x: ', '.join(x))
+    # Write the flat TSV
+    with open(output_path, 'w') as outfile:
+        # Add species to the header
+        outfile.write("full_species\t" + "\t".join(header) + "\n")
+        
+        # Write all rows
+        for row in flat_data:
+            outfile.write("\t".join(row) + "\n")
     
-    # Convert the resulting Series into a DataFrame with a column name of 'filtered_out_families'
-    filtered_out_families = filtered_out_families.reset_index(name='filtered_out_families')
+    print(f"Converted {len(flat_data)} entries to flat TSV format: {output_path}")
+    return len(flat_data)
+
+def parse_metadata(metadata_path):
+    """Extract total families searched for each species from metadata file"""
+    species_to_families = {}
     
-    return filtered_out_families
+    with open(metadata_path, 'r') as f:
+        for line in f:
+            # Extract total families searched and species
+            match = re.search(r'#,Total,families,searched:,(\d+),#,Species:,(.+)', line.strip())
+            if match:
+                families = int(match.group(1))
+                species = match.group(2)
+                species_to_families[species] = families
+    print(f"Number of species in metadata: {len(species_to_families)}")
+    return species_to_families
 
-def get_filtered_no_hits(mammals_heatmap: pd.DataFrame):
-    '''
-    Get the microRNA families that had no hits in the mirMachine analysis
-
-    Input:
-        mammals_heatmap: pd.DataFrame
-
-    Output:
-        filtered_no_hits: pd.DataFrame
-    '''
-    # Select rows where 'filtered' column is missing and 'tgff' column is missing.
-    missing_data = pd.isna(mammals_heatmap['filtered']) & mammals_heatmap[['tgff', 'filtered']].isna().all(axis=1)
-
-    # Select the columns 'species', 'family', and 'filtered' from the filtered dataframe.
-    selected_cols = ['species', 'family', 'filtered']
-    filtered_missing = mammals_heatmap.loc[missing_data, selected_cols]
-
-    # Group the resulting dataframe by 'species' and combine the 'family' values for each group into a comma-separated string.
-    mammals_filtered_missing = filtered_missing.groupby('species')['family'].apply(lambda x: ', '.join(x)).reset_index(name='filtered_no_hits')
-    return mammals_filtered_missing
-
-
-def merge_and_output(filtered_score_df: pd.DataFrame, 
-                     unfiltered_score_df: pd.DataFrame, 
-                     analysis_node: str, 
-                     family_ID: pd.DataFrame, 
-                     mammals_filtered_missing: pd.DataFrame,
-                     output_path: str,
-                     json: str
-                     ):
-    '''
-    Merge the filtered and unfiltered dataframes and output the final table
-
-    Input:
-        filtered_score_df: pd.DataFrame
-            Pandas dataframe with the species and the number of microRNA families that have been detected that met the bitscore threshold in mirMachine
-
-        unfiltered_score_df: pd.DataFrame
-            Pandas dataframe with the species and the number of microRNA families that have been detected that met the bitscore threshold in mirMachine
-
-        heatmap: pd.DataFrame
-            Pandas dataframe of the mirMachine heatmap file
-
-        mirmachine_total_families_searched: int
-            Total number of microRNA families searched for in mirMachine
-
-        output_path: str
-            Path to the output file
-    '''
-    # Merge the filtered and unfiltered score dataframes using an outer join on 'species'
-    mammals_score_df = pd.merge(filtered_score_df, unfiltered_score_df, how='outer', on='species')
+def parse_flat_tsv(flat_tsv_path, metadata_dict):
+    """Parse the flattened TSV file and calculate microRNA scores"""
+    # Read the flat TSV
+    df = pd.read_csv(flat_tsv_path, sep='\t')
     
-    # Add a new column to the merged dataframe with the analysis node identifier
-    mammals_score_df['analysis_node'] = analysis_node
+    # Extract species and assembly_accession
+    def extract_base_species(full_species):
+        if '_GCA_' in full_species:
+            return full_species.split('_GCA_')[0]
+        elif '_GCF_' in full_species:
+            return full_species.split('_GCF_')[0]
+        return full_species
     
-    # Merge the resulting dataframe with the 'family_ID' dataframe using a left join on 'species'
-    microRNA_score_table = pd.merge(mammals_score_df, family_ID, how='left', on='species')
+    def extract_accession(full_species):
+        if '_GCA_' in full_species:
+            return 'GCA_' + full_species.split('_GCA_')[1]
+        elif '_GCF_' in full_species:
+            return 'GCF_' + full_species.split('_GCF_')[1]
+        return None
     
-    # Merge the resulting dataframe with the 'mammals_filtered_missing' dataframe using a left join on 'species'
-    microRNA_score_table = pd.merge(microRNA_score_table, mammals_filtered_missing, how='left', on='species')
+    # Add columns for base species and accession
+    df['species'] = df['full_species'].apply(extract_base_species)
+    df['assembly_accession'] = df['full_species'].apply(extract_accession)
     
-    # Round the 'filtered_microRNA_score' and 'unfiltered_microRNA_score' columns to 2 decimal places
-    microRNA_score_table = microRNA_score_table.round({'filtered_microRNA_score': 2, 'unfiltered_microRNA_score': 2})
+    # Print statistics
+    print(f"Read {len(df)} entries from flat TSV")
+    print(f"Found {len(df['full_species'].unique())} unique full species")
+    print(f"Found {len(df['species'].unique())} unique base species")
+    print(f"Found {len(df['assembly_accession'].dropna().unique())} unique assembly accessions")
     
-    # Define the desired column order for the output table
-    column_order = ["species","analysis_node","filtered_total_count","filtered_microRNA_score","filtered_no_hits","unfiltered_total_count","unfiltered_microRNA_score","filtered_out_families"]
+    # Process the data by species and assembly
+    results = {}
     
-    # Reorder the columns in the dataframe based on the 'column_order' list
-    microRNA_score_table = microRNA_score_table.reindex(columns=column_order)
+    # Group by species and assembly accession
+    for (species, accession), group in df.groupby(['species', 'assembly_accession']):
+        # Skip entries with no accession
+        if pd.isna(accession):
+            continue
+            
+        # Get total families searched for this species
+        total_families = metadata_dict.get(species, 0)
+        if total_families == 0:
+            # Use the number of families in the data as a fallback
+            unique_families = group['family'].dropna().unique()
+            total_families = len(unique_families)
+            if total_families == 0:
+                total_families = 1  # Avoid division by zero
+            print(f"Warning: No total families found for {species}, using {total_families} from data")
+            
+        # Get mode/analysis node
+        analysis_node = group['mode'].iloc[0] if 'mode' in group.columns and not group['mode'].empty else "Unknown"
+        
+        # Filtered data (has filtered value)
+        filtered_df = group.dropna(subset=['filtered'])
+        filtered_count = len(filtered_df)
+        filtered_score = (filtered_count / total_families) * 100
+        
+        # Unfiltered data (has tgff value)
+        unfiltered_df = group.dropna(subset=['tgff'])
+        unfiltered_count = len(unfiltered_df)
+        unfiltered_score = (unfiltered_count / total_families) * 100
+        
+        # Families that were filtered out (has tgff but no filtered)
+        filtered_out = group[group['filtered'].isna() & group['tgff'].notna()]
+        filtered_out_families = ", ".join(filtered_out['family'].dropna())
+        
+        # Families with no hits (no tgff and no filtered)
+        no_hits = group[group['tgff'].isna() & group['filtered'].isna()]
+        filtered_no_hits = ", ".join(no_hits['family'].dropna())
+        
+        # Store results for this assembly
+        results[f"{species}_{accession}"] = {
+            'species': species,
+            'assembly_accession': accession,
+            'analysis_node': analysis_node,
+            'filtered_total_count': filtered_count,
+            'filtered_microRNA_score': round(filtered_score, 2),
+            'filtered_no_hits': filtered_no_hits,
+            'unfiltered_total_count': unfiltered_count,
+            'unfiltered_microRNA_score': round(unfiltered_score, 2),
+            'filtered_out_families': filtered_out_families
+        }
     
-    # Write the resulting dataframe to a tab-separated output file
-    microRNA_score_table.to_csv(output_path, index=False)
-
-    if json:
-        # Write the resulting dataframe to a yaml file
-        microRNA_score_table.to_json(output_path.split('.csv')[0] + '.json', orient='records', indent=4)
-
-def main(args):
-
-    # Read in the mirMachine heatmap file
-    mammals_heatmap = parse_heatmap(args.input)
-
-    # Read in the mirMachine metadata file
-    if args.metadata:
-        # This was the original code from Vanessa
-        # I believe this is not optimal as it assumes all accessions are the same clade
-        # new method should be run on each mirmachine output individually
-        mirmachine_output_metadata = parse_metadata(args.metadata)
-        # Extract tot families searched for
-        mirmachine_total_families_searched = mirmachine_output_metadata.iloc[0][4]
-    else:
-        mirmachine_total_families_searched = get_mirmachine_total_families_searched(args.input)
-
-    analysis_node = mammals_heatmap.iloc[1]['mode']
-
-    # From the heatmap csv file, extract the species and the number of microRNA families that have been detected that met the bitscore threshold in mirMachine
-    mammals_filtered_score = create_filtered_score_df(mammals_heatmap, mirmachine_total_families_searched)
-
-    # From the heatmap csv file, extract the species and the number of microRNA families that have been detected that did not meet the bitscore threshold in mirMachine
-    mammals_unfiltered_score = calculate_unfiltered_score(mammals_heatmap, mirmachine_total_families_searched)
-
-    # microRNA families that have been filtered out
-    family_ID = get_filtered_out_families(mammals_heatmap)
-
-    # filtered families with 0 hits 
-    mammals_filtered_missing = get_filtered_no_hits(mammals_heatmap)
-    # Output the final table
-    merge_and_output(mammals_filtered_score,
-                        mammals_unfiltered_score,
-                        analysis_node,
-                        family_ID,
-                        mammals_filtered_missing,
-                        args.output,
-                        args.json)
+    # Convert results to DataFrame
+    results_df = pd.DataFrame(list(results.values()))
     
+    # Reorder columns
+    column_order = ["species", "assembly_accession", "analysis_node", "filtered_total_count", 
+                   "filtered_microRNA_score", "filtered_no_hits", 
+                   "unfiltered_total_count", "unfiltered_microRNA_score",
+                   "filtered_out_families"]
+    
+    results_df = results_df.reindex(columns=column_order)
+    
+    print(f"Successfully processed {len(results_df)} assembly accessions")
+    return results_df
+
+def main():
+    parser = argparse.ArgumentParser(description='Score microRNA sequences')
+    parser.add_argument('-i', '--input', required=True, help='Path to the miRNA heatmap CSV file')
+    parser.add_argument('-m', '--metadata', required=True, help='Path to the miRNA metadata file')
+    parser.add_argument('-o', '--output', required=True, help='Path to output results CSV')
+    parser.add_argument('--json', action='store_true', help='Also output results as JSON')
+    args = parser.parse_args()
+    
+    # Parse input files
+    metadata_dict = parse_metadata(args.metadata)
+
+    # Convert heatmap to flat CSV if needed
+    if args.input.endswith('.csv'):
+        flat_tsv_path = args.input.replace('.csv', '_flat.tsv')
+        convert_heatmap_to_flat_tsv(args.input, flat_tsv_path)
+        args.input = flat_tsv_path
+    
+    results_df = parse_flat_tsv(args.input, metadata_dict)
+
+    print(results_df.head())
+    # Write output
+    results_df.to_csv(args.output, index=False, sep='\t' if args.output.endswith('.tsv') else ',')
+    
+    if args.json:
+        json_path = args.output.replace('.csv', '.json').replace('.tsv', '.json')
+        results_df.to_json(json_path, orient='records', indent=4)
+    
+    print(f"Successfully processed {len(results_df)} species")
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Score microRNA sequences')
-    parser.add_argument('-i', '--input', type=str, help='Path to the mirMachine heatmap file')
-    parser.add_argument('-m', '--metadata', required=False, type=str, help='DO NOT USE (should be removed soon): Path to the mirMachine metadata file')
-    parser.add_argument('-o', '--output', type=str, help='Path to the mirMachine metadata file')
-    parser.add_argument('--json', action='store_true', default=False, required=False, help='Ouput report as json file - Only works for single species input')
-    args = parser.parse_args()
-
-    main(args)
+    main()
