@@ -1,3 +1,22 @@
+'''
+Scoring Methodology
+
+Filtered microRNA Score: Percentage of microRNA families passing quality filters (filtered hits/total families × 100)
+Unfiltered microRNA Score: Percentage of families with any matches before filtering (unfiltered hits/total families × 100)
+
+Key Metrics
+
+Species: Organism analyzed
+Assembly Accession: Genome assembly ID (GCA/GCF format)
+Analysis Node: Computational node used
+Filtered Total Count: Number of families passing filters
+Filtered No Hits: Families with no matches
+Unfiltered Total Count: Families with any matches
+Filtered Out Families: Families detected but filtered out
+
+'''
+
+
 import pandas as pd
 import re
 import os
