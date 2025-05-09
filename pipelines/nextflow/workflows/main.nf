@@ -2,7 +2,7 @@ nextflow.enable.dsl=2
 import java.nio.file.Files
 
 include {FETCH_GENOME} from '../modules/fetch_genome.nf'
-include {FETCH_REPEAT_MODEL} from '../modules/check_and_download_rmlibrary.nf'
+include {FETCH_REPEAT_MODEL} from '../modules/fetch_repeat_model.nf'
 include {GENERATE_REPEATMODELER_LIBRARY} from '../modules/generate_repeatmodeler_library.nf'
 
 workflow {
