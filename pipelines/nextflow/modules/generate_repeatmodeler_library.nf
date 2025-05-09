@@ -19,22 +19,19 @@ limitations under the License.
 process GENERATE_REPEATMODELER_LIBRARY {
     tag "$gca:run_repeatmodeler"
     label 'repeatmodeler'
-    publishDir "${params.outDir}/${gca}/rm_database", mode: 'copy'
-    publishDir "${params.outDir}/${gca}/repeatmodeler_output", mode: 'copy'
+    publishDir "${params.outDir}/${gca}/", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    maxForks 10
 
     input:
-    tuple val(gca)
+    tuple val(species),val(gca),path(genome_file)
 
     output:
-    tuple val(gca), path("${gca}*.repeatmodeler_db"), path ("repeatmodeler_output/*")
+    tuple val(gca), val(species), path("*")
 
     script:
     """
-    ${params. builddatabase_path} -name ${gca}.repeatmodeler -engine  ${params.engine_repeatmodeler} ${params.outDir}/${gca}/ncbi_dataset/${gca}*.fna
-    ${params.repeatmodeler_path} -engine ${params.engine_repeatmodeler} -pa 10 -database ${params.outDir}/${gca}/rm_database/${gca}.repeatmodeler -dir ${params.outDir}/${gca}/repeatmodeler_output
-    mv ${params.outDir}/${gca}/repeatmodeler_output/${gca}.repeatmodeler-families.fa ${params.outDir}/${gca}/repeatmodeler_output/${gca}.repeatmodeler.fa
-    cp ${params.outDir}/${gca}/repeatmodeler_output/${gca}.repeatmodeler.fa ${params.outDir}/${gca}/rm_library
+    echo "Running RepeatModeler for ${gca} using genome file ${genome_file}"
+    ${params.builddatabase_path} -name ${gca}.repeatmodeler -dir ${params.outDir}/${gca}
+    ${params.repeatmodeler_path} -engine ${params.engine_repeatmodeler} -threads 20 -LTRStruct -database ${gca}.repeatmodeler
     """
 }

@@ -19,20 +19,23 @@ limitations under the License.
 process FETCH_GENOME {
     tag "$gca:genome"
     label 'fetch_file'
-    publishDir "${params.outDir}/${gca}/ncbi_dataset", mode: 'copy'
+    publishDir "${params.outDir}/${gca}", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 10
 
     input:
-    val(gca)
+    tuple val(species), val(gca)
 
     output:
-    tuple val(gca), path("*.fna")
+    tuple val(species),val(gca),path("*.fasta")
 
     script:
     """
     set -e
     curl -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
     unzip -j genome_file.zip
+    for file in *.fna; do
+        mv "\$file" "\${file%.fna}.fasta"
+    done
     """
 }
