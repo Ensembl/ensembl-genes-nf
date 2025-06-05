@@ -7,6 +7,7 @@ log.info """\
     m i R N A    N F    P I P E L I N E
     =========================================
     input: ${params.input}
+    outpdir: ${params.outdir}
     =========================================
 """
 

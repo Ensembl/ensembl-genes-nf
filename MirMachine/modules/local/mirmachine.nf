@@ -5,7 +5,7 @@ process MIRMACHINE {
     tag "${meta.id}"
     publishDir "${params.outdir}/mirmachine/${meta.id}", mode: 'copy'
 
-    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
+    // errorStrategy { task.attempt <= 0 ? 'retry' : 'ignore' }
     maxRetries 3
 
     maxForks 10
@@ -21,11 +21,14 @@ process MIRMACHINE {
     script:
     def species = meta.species.replace(" ", "_")
     """
+    # Set Snakemake cache directory to current working directory
+    export HOME=$PWD
+
     MirMachine.py --node ${node} \
                   --species ${species} \
                   --genome ${fasta} \
                   --model ${model} \
-                  --cpu ${task.cpus}  2> ${meta.id}_mirmachine.log
+                  --cpu ${task.cpus} 2> ${meta.id}_mirmachine.log
 
     cp results/predictions/heatmap/*.heatmap.csv  ./${meta.id}_${species}.heatmap.csv
     """

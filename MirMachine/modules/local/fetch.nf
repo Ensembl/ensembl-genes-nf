@@ -1,4 +1,4 @@
-process RAPID {
+process FETCH {
     tag "${meta.id}"
     errorStrategy { sleep(Math.pow(2, task.attempt) * 1000 as long); return (task.attempt <= 0 ? 'retry' : 'ignore') }
     maxRetries 3
