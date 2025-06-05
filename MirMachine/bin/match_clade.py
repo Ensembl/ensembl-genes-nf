@@ -276,7 +276,8 @@ def get_ncbi(update: bool = False) -> ete3.ncbi_taxonomy.ncbiquery.NCBITaxa:
     ete3.ncbi_taxonomy.ncbiquery.NCBITaxa
         Instance of ete3.ncbi_taxonomy.ncbiquery.NCBITaxa
     """
-    ncbi = NCBITaxa()
+    ncbi = NCBITaxa(dbfile="taxa.sqlite")
+
     if update:
         ncbi.update_taxonomy_database()
     return ncbi

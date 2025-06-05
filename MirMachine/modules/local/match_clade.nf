@@ -7,6 +7,7 @@ process MATCH_CLADE {
     input:
     tuple val(meta), path(fasta)
     path clade_file
+    path taxa_db
 
     output:
     tuple val(meta), path("${meta.id}_clade_match.txt"), emit: matched_clade

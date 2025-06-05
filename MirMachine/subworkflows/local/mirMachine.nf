@@ -1,4 +1,5 @@
-include { RAPID } from '../../modules/local/rapid'
+include { FETCH } from '../../modules/local/fetch'
+include { GET_NCBI_TAXONOMY } from '../../modules/local/get_ncbi_taxonomy'
 include { LIST_MIRMACHINE_CLADES } from '../../modules/local/list_mirmachine_clades'
 include { FORMAT_CLADES } from '../../modules/local/format_clades'
 include { MATCH_CLADE } from '../../modules/local/match_clade'
@@ -23,7 +24,7 @@ workflow mirMachine {
         }.filter { it != null }
 
         // Download missing FASTA files
-        rapid_ch = RAPID(genomes_to_process)
+        rapid_ch = FETCH(genomes_to_process)
 
         // Combine existing and newly downloaded FASTA files
         fasta_ch = input_ch.map { meta, species, accession ->
@@ -35,11 +36,19 @@ workflow mirMachine {
         }.filter { it != null }
         .mix(rapid_ch)
 
+        taxa_file = file("$params.outdir/taxa/taxa.sqlite")
+
+        if (taxa_file.exists()) {
+            taxa_ch = Channel.fromPath("$params.outdir/taxa/taxa.sqlite").first()
+        } else {
+            taxa_ch = GET_NCBI_TAXONOMY()
+        }
+
         clades_ch = LIST_MIRMACHINE_CLADES()
         formatted_clades_ch = FORMAT_CLADES(clades_ch.clades)
-
-        // Match clades
-        match_ch = MATCH_CLADE(fasta_ch, formatted_clades_ch.formatted_clades)
+        
+	    // Match clades
+        match_ch = MATCH_CLADE(fasta_ch, formatted_clades_ch.formatted_clades, taxa_ch)
 
         // Prepare input for MIRMACHINE
         mirmachine_input = fasta_ch
