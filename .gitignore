@@ -1,1 +1,11 @@
 mirmachine 
+*.csv
+*.log
+work/ 
+singularity
+.nextflow.*
+*.csv
+*.tsv
+fastas/
+.nextflow
+data/
