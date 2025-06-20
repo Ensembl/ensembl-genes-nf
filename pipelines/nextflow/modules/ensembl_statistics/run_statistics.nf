@@ -40,7 +40,7 @@ process RUN_STATISTICS {
     annotation_source = annotation_source_query ? annotation_source_query.meta_value.toString() : "ensembl"
     publish_dir =scientific_name +'/'+gca+'/'+annotation_source
     """
-    perl ${params.enscode}/ensembl-genes/src/python/ensembl/genes/stats/generate_species_homepage_stats.pl \
+    perl ${params.enscode}/ensembl-genes/src/perl/ensembl/genes/generate_species_homepage_stats.pl \
         -dbname ${dbname} \
         -host ${params.host} \
         -port ${params.port} \
