@@ -1,9 +1,9 @@
 nextflow.enable.dsl=2
 import java.nio.file.Files
 
-include {FETCH_GENOME} from '../modules/fetch_genome.nf'
-include {FETCH_REPEAT_MODEL} from '../modules/fetch_repeat_model.nf'
-include {GENERATE_REPEATMODELER_LIBRARY} from '../modules/generate_repeatmodeler_library.nf'
+include {FETCH_GENOME} from '../../modules/repeat_modeler/fetch_genome.nf'
+include {FETCH_REPEAT_MODEL} from '../../modules/repeat_modeler/fetch_repeat_model.nf'
+include {GENERATE_REPEATMODELER_LIBRARY} from '../../modules/repeat_modeler/generate_repeatmodeler_library.nf'
 
 workflow {
     // Check if outDir parameter is defined
