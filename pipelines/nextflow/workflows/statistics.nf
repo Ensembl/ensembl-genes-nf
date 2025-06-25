@@ -91,6 +91,7 @@ if (params.help) {
     log.info '  --apply_ensembl_stats bool   Insert Ensembl statistics into a mysql db, default false'
     log.info '  --run_ensembl_beta_metakeys bool     Run Ensembl beta metakeys given a mysql db, default false'
     log.info '  --apply_ensembl_beta_metakeys bool   Insert Ensembl beta metakeys into a mysql db, default false'
+    log.info '  --apply_busco_asmdb bool     Insert BUSCO genome (--run_busco_ncbi) metakeys into gb_assembly_metadata database'
     log.info '  --team STR                   Required by Ensembl metakey script if run_ensembl_beta_metakeys is enabled'
 
     exit 1

@@ -34,6 +34,7 @@ include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco/busco_out
 include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco/busco_output.nf'
 include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_PROTEIN } from '../modules/busco/busco_core_metakeys.nf'
 include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_GENOME } from '../modules/busco/busco_core_metakeys.nf'
+include { BUSCO_ASSEMBLY_DB as BUSCO_ASSEMBLY_DB } from '../modules/busco/busco_assembly_db.nf'
 //include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 //include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 
@@ -66,6 +67,9 @@ workflow RUN_BUSCO{
         //}
         if(params.apply_busco_metakeys){
             BUSCO_CORE_METAKEYS_GENOME(buscoGenomeSummaryOutput1)
+        }
+        if (params.apply_busco_asmdb){
+            BUSCO_ASSEMBLY_DB(buscoGenomeSummaryOutput1)
         }
     }
     
