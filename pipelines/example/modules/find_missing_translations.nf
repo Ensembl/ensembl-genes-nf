@@ -1,5 +1,13 @@
 
 
+/*
+ * Problem: Protein-coding transcripts exist without corresponding translation records, 
+ * indicating incomplete gene projection or missing protein annotation data.
+ *
+ * Solution: Query for protein_coding transcripts lacking translation entries and 
+ * report their stable_ids for manual review and potential translation creation.
+ */
+
 process FIND_MISSING_TRANSLATIONS {
 
     tag "${meta.id}"

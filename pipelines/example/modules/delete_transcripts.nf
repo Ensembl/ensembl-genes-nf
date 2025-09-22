@@ -1,10 +1,17 @@
 
+/*
+ * Problem: Specific transcripts identified as broken (missing translations, invalid 
+ * coordinates, or other structural issues) need to be removed from the database.
+ *
+ * Solution: Use Ensembl's delete_transcripts.pl script to safely remove problematic 
+ * transcripts while maintaining referential integrity and cascading deletions.
+ */
 
 process DELETE_TRANSCRIPTS {
 
     tag "${meta.id}"
 
-    errorStrategy 'ignore'
+    // errorStrategy 'ignore'
 
     publishDir "${params.outdir}/delete_transcripts",
         pattern: "*.{txt,log}"

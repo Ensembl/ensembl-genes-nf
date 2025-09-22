@@ -12,8 +12,9 @@ if (!params.db_pass) error "Please provide --db_pass <password>"
 
 // Includes
 include { BROKEN_TRANSLATIONS }      from './subworkflows/broken_translations.nf'
-include { METADATA }              from './subworkflows/metadata.nf'
+include { METADATA }                 from './subworkflows/metadata.nf'
 include { MISSING_TRANSLATIONS }     from './subworkflows/missing_features'
+include { FIX_GENE_DISPLAY_XREFS }   from './subworkflows/broken_xrefs.nf'
 
 
 
@@ -39,11 +40,14 @@ workflow {
             tuple(meta, core_db)
         }
     // Run broken translations
-    broken_results = BROKEN_TRANSLATIONS(core_info_ch)
+    // broken_results = BROKEN_TRANSLATIONS(core_info_ch, params.db_pass)
 
     // Run metadata steps
-    METADATA(core_info_ch)
+    // METADATA(core_info_ch, 
+    //          params.skip_dc) // Set to true to skip final verification datachecks
 
     // Run missing translations
-    missing_results = MISSING_TRANSLATIONS(core_info_ch)
+    // missing_results = MISSING_TRANSLATIONS(core_info_ch, params.db_pass)
+
+    FIX_GENE_DISPLAY_XREFS(core_info_ch)
 }

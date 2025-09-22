@@ -1,3 +1,12 @@
+
+/*
+ * Problem: Database metadata contains placeholder values (YYYY-MM, '0') and 
+ * incorrect/outdated entries from genome projection templates.
+ *
+ * Solution: Update metadata fields with correct dates, build IDs, provider 
+ * information, and remove obsolete strain/repeat analysis entries.
+ */
+
 process SET_MISSING_METADATA {
 
     tag "${meta.id}"
@@ -10,13 +19,13 @@ process SET_MISSING_METADATA {
     tuple val(meta), val(core_db)
 
     output:
-    tuple val(meta), path("${core_db}.txt"), emit: results
-    tuple val(meta), path("${core_db}.log"), emit: logs
+    tuple val(meta), path("${core_db}.metadata.txt"), emit: results
+    tuple val(meta), path("${core_db}.metadata.log"), emit: logs
 
     script:
     """
-    LOGFILE="${core_db}.log"
-    SUMMARY="${core_db}.txt"
+    LOGFILE="${core_db}.metadata.log"
+    SUMMARY="${core_db}.metadata.txt"
 
     echo "=== Updating metadata for ${meta.id} (${core_db}) ===" > "\$LOGFILE"
     echo "Server: ${meta.server}" >> "\$LOGFILE"
@@ -34,6 +43,9 @@ process SET_MISSING_METADATA {
     ${meta.server} ${core_db} -e "UPDATE meta SET meta_value = 'https://beta.ensembl.org/help/articles/human-genome-automated-annotation' WHERE meta_key = 'genebuild.provider_url';"  >> "\$LOGFILE" 2>&1
     ${meta.server} ${core_db} -e "UPDATE meta SET meta_value = '' WHERE meta_key = 'species.strain' AND meta_value = 'reference';"  >> "\$LOGFILE" 2>&1
     ${meta.server} ${core_db} -e "UPDATE meta SET meta_value = '' WHERE meta_key = 'strain.type' AND meta_value = 'strain';"  >> "\$LOGFILE" 2>&1
+    ${meta.server} ${core_db} -e "DELETE FROM meta WHERE meta_key = 'strain.type';"  >> "\$LOGFILE" 2>&1
+    ${meta.server} ${core_db} -e "DELETE FROM meta WHERE meta_key = 'species.strain';"  >> "\$LOGFILE" 2>&1
+    ${meta.server} ${core_db} -e "DELETE FROM meta WHERE meta_key = 'repeat.analysis' AND meta_value = 'repeatdetector';"  >> "\$LOGFILE" 2>&1
 
     # Short summary: just count successful updates
     grep "Query OK" "\$LOGFILE" > "\$SUMMARY" || echo "No successful updates" > "\$SUMMARY"
