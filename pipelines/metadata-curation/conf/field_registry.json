@@ -1,0 +1,78 @@
+{
+  "fields": {
+    "tissue": {
+      "description": "Anatomical tissue, organ, or body part", 
+      "ontology": "UBERON",
+      "search_patterns": [
+        "tissue", "organ", "source_tissue", "tissue_type",
+        "anatomical_site", "body_part", "sample_type",
+        "isolate", "isolation_source", "source"
+      ],
+      "enabled": true
+    },
+    "cell_type": {
+      "description": "Cell type, cell line, or cellular system",
+      "ontology": "CL", 
+      "search_patterns": [
+        "cell_type", "cell_line", "cell", "cells", "cellular_system",
+        "cell_strain", "cell_culture", "culture"
+      ],
+      "enabled": true
+    },
+    "treatment": {
+      "description": "Chemical treatment, drug, or compound intervention",
+      "ontology": "CHEBI",
+      "search_patterns": [
+        "treatment", "drug", "compound", "chemical", "reagent",
+        "inhibitor", "agonist", "antagonist", "stimulation",
+        "intervention", "therapy", "medication"
+      ],
+      "enabled": true
+    },
+    "timepoint": {
+      "description": "Time point of sample collection or treatment duration",
+      "ontology": null,
+      "search_patterns": [
+        "time", "timepoint", "time_point", "duration", "hours", "days",
+        "harvest_time", "collection_time", "treatment_time"
+      ],
+      "enabled": true
+    },
+    "genotype": {
+      "description": "Genetic background, strain, or genotype",
+      "ontology": null,
+      "search_patterns": [
+        "genotype", "strain", "background", "genetic_background",
+        "genetic_modification", "mutation", "knockout", "wildtype", "wt",
+        "breed", "variety", "cultivar", "line"
+      ],
+      "enabled": true
+    },
+    "replicate": {
+      "description": "Biological or technical replicate identifier",
+      "ontology": null,
+      "search_patterns": [
+        "replicate", "rep", "biological_replicate", "technical_replicate",
+        "repeat", "sample_id", "replicate_number"
+      ],
+      "enabled": true
+    },
+    "developmental_stage": {
+      "description": "Developmental stage or age of organism",
+      "ontology": "UBERON",
+      "search_patterns": [
+        "age", "developmental_stage", "stage", "development",
+        "embryonic_day", "postnatal_day", "weeks", "months"
+      ],
+      "enabled": false
+    },
+    "sex": {
+      "description": "Biological sex of organism",
+      "ontology": "PATO",
+      "search_patterns": [
+        "sex", "gender", "male", "female"
+      ],
+      "enabled": false
+    }
+  }
+}

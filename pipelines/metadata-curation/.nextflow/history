@@ -1,0 +1,43 @@
+2025-08-31 12:05:13	-	prickly_faggin	-	d2055f68c248477a55e9a623c323a347	2f2cb520-ca22-4c19-b4d0-f03665bd3f02	nextflow run main.nf -profile test,mamba --outdir test_results
+2025-08-31 12:05:34	-	gloomy_cori	-	f9833584d1edc9b996124b253fb75bb6	412d0c25-975c-4a35-8510-bcea66cd814e	nextflow run main.nf -profile test,mamba --outdir test_results
+2025-08-31 12:06:27	31.6s	scruffy_picasso	ERR	f9833584d1edc9b996124b253fb75bb6	7a0068aa-cb9b-46af-a850-8b030c7ab3b0	nextflow run main.nf -profile test,mamba --outdir test_results
+2025-08-31 12:07:54	1.4s	prickly_keller	ERR	f9833584d1edc9b996124b253fb75bb6	960e3116-5b57-46cc-95bb-92d7105b8909	nextflow run main.nf -profile test,mamba --outdir test_results
+2025-08-31 12:08:39	-	festering_brahmagupta	-	f9833584d1edc9b996124b253fb75bb6	5ee5b99d-17d4-46b6-b7d7-4d8d92c9e0a3	nextflow run main.nf -c conf/test_local.config --outdir test_results
+2025-08-31 12:10:58	1.5s	wise_lattes	ERR	f9833584d1edc9b996124b253fb75bb6	ab36423e-0be4-4bed-ba35-e1ad3dcc10f6	nextflow run main.nf -profile test,mamba
+2025-08-31 12:11:26	2.3s	mad_bassi	ERR	f9833584d1edc9b996124b253fb75bb6	94dfc9bb-a500-48fd-be88-6bfbccea09af	nextflow run main.nf -profile test,mamba
+2025-08-31 12:11:35	-	special_solvay	-	0f9d29bf0c1299a4f8bc336309015e1a	24c075b4-9dff-4e9e-afbd-573c5d462e2d	nextflow run workflows/metadata-curation-pipeline.nf -c conf/test_local.config --outdir test_simple
+2025-08-31 12:11:47	2s	lethal_hirsch	ERR	87ec3fb4abc2fdec38f5ea05e8d5e56e	9f720646-a98e-4d23-bcc5-e4e69f8eb9de	nextflow run workflows/metadata-curation-pipeline.nf -c conf/test_local.config --outdir test_simple
+2025-08-31 12:12:17	28.3s	romantic_keller	ERR	fd945b1eecb2d1d98c3172efc66f1941	bdfb2896-8891-4ae1-aabb-091061e4d57d	nextflow run test_simple.nf
+2025-08-31 12:12:58	2.1s	curious_woese	OK	fd945b1eecb2d1d98c3172efc66f1941	bdfb2896-8891-4ae1-aabb-091061e4d57d	nextflow run test_simple.nf -resume
+2025-08-31 12:14:08	1.4s	thirsty_jepsen	ERR	f9833584d1edc9b996124b253fb75bb6	5dec1ff0-edc4-4865-9f7a-3f606403f204	nextflow run main.nf -profile test,mamba
+2025-08-31 12:14:30	2s	drunk_morse	ERR	f9833584d1edc9b996124b253fb75bb6	e809e8f4-d210-44aa-94fa-bbdc6cff8197	nextflow run main.nf -profile test,mamba --outdir full_test_results
+2025-08-31 12:15:56	1.7s	reverent_visvesvaraya	ERR	f9833584d1edc9b996124b253fb75bb6	c79ec816-91ae-4513-a600-6e3006f7d37b	nextflow run main.nf -profile test,mamba --outdir full_test_results
+2025-08-31 12:16:11	1.8s	berserk_jepsen	ERR	f9833584d1edc9b996124b253fb75bb6	543c6369-5837-42cb-ab15-e28990bf0e04	nextflow run main.nf -profile test,mamba --outdir full_test_results_2
+2025-08-31 12:20:25	-	gigantic_moriondo	-	f9833584d1edc9b996124b253fb75bb6	4ac8ba51-cf31-4324-a52d-3dc3b5e90b25	nextflow run main.nf
+2025-08-31 12:20:55	1.6s	serene_fermi	ERR	f9833584d1edc9b996124b253fb75bb6	4a891d20-6442-4492-9c24-5c2c1f40d943	nextflow run main.nf --query Ribo-seq
+2025-08-31 12:22:18	1.3s	serene_ampere	ERR	f9833584d1edc9b996124b253fb75bb6	1371ec9e-a53a-43b4-adbb-3b069f869992	nextflow run main.nf --query Ribo-seq
+2025-08-31 12:25:43	2.3s	high_leavitt	ERR	f9833584d1edc9b996124b253fb75bb6	3093cdc2-c2cf-4b7d-951b-cfdc1b72f96f	nextflow run main.nf --query Ribo-seq
+2025-08-31 12:26:25	10.1s	boring_mcnulty	ERR	f9833584d1edc9b996124b253fb75bb6	17190a82-bc95-4641-87af-0fce0bc11fd0	nextflow run main.nf --query Ribo-seq
+2025-08-31 12:28:40	8s	focused_picasso	ERR	92722904d80a1237e581002594326d19	71a5dbf1-06ce-4fe6-8c53-b0f6b0b04081	nextflow run main.nf --query Ribo-seq
+2025-08-31 12:43:06	27m 49s	confident_keller	OK	04141c5d31212fa1047980bfe81c0dd7	c7cabeb2-8344-413d-bbb4-62a1c7e6a5bd	nextflow run main.nf --query Ribo-seq
+2025-08-31 17:35:06	13s	mad_dalembert	ERR	dbea7c0e4a29af26b16beb026b153e2b	6aa73154-ba26-4fe1-b202-21a3db56b77a	nextflow run main.nf --query 'ribosome profiling' --outdir cache_test --max_results 10 --ontology_cache_dir cache_test/ontology_cache
+2025-08-31 17:35:31	-	loving_turing	-	dbea7c0e4a29af26b16beb026b153e2b	6c3cd47b-abea-44a8-b023-dd83585589c5	nextflow run main.nf --query 'ribosome profiling' --outdir cache_test --max_results 5 --ontology_cache_dir cache_test/ontology_cache
+2025-08-31 17:37:47	-	determined_wiles	-	8dabe5c2b75be215705f0c58bd1621cc	b7b96952-e25a-4c3d-9551-f083f26b67d9	nextflow run main.nf --query 'ribosome profiling' --outdir cache_test --max_results 5 --ontology_cache_dir /Users/jackt/ensembl-genes-nf/pipelines/metadata-curation/cache_test/ontology_cache
+2025-08-31 18:44:47	13h 59m 45s	compassionate_venter	ERR	8dabe5c2b75be215705f0c58bd1621cc	091d0775-9223-4ac2-8aa9-060c62063915	nextflow run main.nf --query Ribo-seq
+2025-09-01 12:36:18	21m 16s	ecstatic_tuckerman	ERR	8dabe5c2b75be215705f0c58bd1621cc	192c54a4-fe03-4eb8-9d83-bc7187c45db1	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\'
+2025-09-01 12:57:39	2m 6s	disturbed_maxwell	ERR	8dabe5c2b75be215705f0c58bd1621cc	192c54a4-fe03-4eb8-9d83-bc7187c45db1	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 12:59:47	54m	peaceful_mcclintock	ERR	8dabe5c2b75be215705f0c58bd1621cc	192c54a4-fe03-4eb8-9d83-bc7187c45db1	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 14:46:52	-	distracted_swartz	-	8dabe5c2b75be215705f0c58bd1621cc	192c54a4-fe03-4eb8-9d83-bc7187c45db1	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 14:49:05	-	nostalgic_kay	-	8dabe5c2b75be215705f0c58bd1621cc	192c54a4-fe03-4eb8-9d83-bc7187c45db1	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 14:49:37	2.2s	mighty_allen	ERR	8dabe5c2b75be215705f0c58bd1621cc	192c54a4-fe03-4eb8-9d83-bc7187c45db1	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 14:50:41	2.1s	big_goldstine	ERR	8dabe5c2b75be215705f0c58bd1621cc	192c54a4-fe03-4eb8-9d83-bc7187c45db1	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 14:51:40	2.1s	suspicious_euler	ERR	e68f2c368a0f626574995933c241aaff	192c54a4-fe03-4eb8-9d83-bc7187c45db1	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 15:29:28	2.9s	voluminous_fourier	OK	e68f2c368a0f626574995933c241aaff	192c54a4-fe03-4eb8-9d83-bc7187c45db1	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 15:30:38	-	prickly_mcnulty	-	e68f2c368a0f626574995933c241aaff	868a309f-5697-4108-a97e-9847b9011b27	nextflow run main.nf --query test --max_results 1 --outdir warn_test -with-dag warn_test.html
+2025-09-01 15:31:06	8.2s	silly_tuckerman	ERR	e68f2c368a0f626574995933c241aaff	868a309f-5697-4108-a97e-9847b9011b27	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 15:35:06	-	magical_lamarck	-	e68f2c368a0f626574995933c241aaff	d15a38df-e3c0-4a1f-be42-72ce64ca70e5	nextflow run main.nf --query test --max_results 2 --outdir clean_test
+2025-09-01 15:42:35	-	clever_goldstine	-	e68f2c368a0f626574995933c241aaff	ec18d696-8e4c-417c-bf9c-a9bef9c33e5f	nextflow run main.nf --query test --max_results 1 --outdir test_split -with-dag test_split.html
+2025-09-01 15:44:13	52m 14s	dreamy_liskov	OK	e68f2c368a0f626574995933c241aaff	ec18d696-8e4c-417c-bf9c-a9bef9c33e5f	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume
+2025-09-01 16:50:09	-	admiring_monod	-	e68f2c368a0f626574995933c241aaff	0dcb9197-aada-4b48-a13a-768817a733aa	nextflow run main.nf --max_results 10 --outdir test_pipeline_output --input_query 'Ribo-seq AND cell'
+2025-09-01 16:50:13	1.9s	deadly_waddington	ERR	e68f2c368a0f626574995933c241aaff	54fbd778-801d-4788-99e1-fada36a9fc81	nextflow run main.nf --max_results 10 --outdir test_pipeline_output --query 'Ribo-seq AND cell'
+2025-09-02 08:49:38	39m 49s	spontaneous_avogadro	OK	f8ee9c879cc718fc4ed6a92fe27d456a	54fbd778-801d-4788-99e1-fada36a9fc81	nextflow run main.nf --query Ribo-seq\ OR\ \'Ribosome\ Profiling\'\ OR\ \'ribosome\ profiling\'\ OR\ \'ribo-seq\' -resume

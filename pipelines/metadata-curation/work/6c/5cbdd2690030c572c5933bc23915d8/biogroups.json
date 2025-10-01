@@ -1,0 +1,8 @@
+{
+  "biogroup_count": 0,
+  "total_samples": 0,
+  "cross_modal_biogroups": 0,
+  "cross_study_biogroups": 0,
+  "biogroups": [],
+  "sample_to_biogroup_map": {}
+}

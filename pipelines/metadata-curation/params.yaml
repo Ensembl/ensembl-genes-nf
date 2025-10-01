@@ -1,0 +1,37 @@
+# Multi-Source Metadata Curation Pipeline Parameters
+
+# Input options
+query: null                      # Search query for studies
+max_results: 1000               # Maximum number of studies to process  
+include_pmc: false              # Include PMC literature search
+email: null                     # Email for NCBI API requests
+
+# Output options
+outdir: "./results"             # Output directory
+output_format: "csv"            # Output format (csv or tsv)
+output_level: "sample"          # Output level (sample or biogroup)
+include_raw_metadata: true      # Include raw metadata and evidence details in outputs
+
+# Processing options
+ontology_cache_dir: "ontology_cache"  # Directory for ontology term cache
+
+# Pipeline execution options
+publish_dir_mode: "copy"        # How to publish results (copy, symlink, etc)
+email_on_fail: null            # Email address for failure notifications
+plaintext_email: false        # Use plaintext instead of HTML emails
+monochrome_logs: false         # Disable colored log output
+hook_url: null                 # Webhook URL for notifications
+help: false                    # Show help message
+version: false                 # Show pipeline version
+
+# Max resource options
+max_memory: "128.GB"           # Maximum memory per process
+max_cpus: 16                   # Maximum CPUs per process
+max_time: "240.h"              # Maximum time per process
+
+# Validation options
+validationFailUnrecognisedParams: false
+validationLenientMode: false
+validationSchemaIgnoreParams: "genomes,igenomes_base"
+validationShowHiddenParams: false
+validate_params: true

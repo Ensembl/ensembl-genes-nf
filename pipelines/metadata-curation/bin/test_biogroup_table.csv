@@ -1,0 +1,9 @@
+biogroup_id,sample_count,sequencing_types,study_sources,cell_type,treatment,timepoint,is_cross_modal,is_cross_study,fractionation_method,replicate,translation_inhibitor
+3c71cf07,10,RNA-seq,1303685,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,False,False,,unknown,
+5f8a1a5c,10,RNA-seq,1303685,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,False,False,,unknown,
+30a7585e,8,Ribo-seq,1294076,epithelial cell,unknown,unknown,False,False,unknown,,unknown
+4b398384,8,"Ribo-seq,RNA-seq",1288540,"T gondii: ME49, H sapiens: human foreskin fibroblast",unknown,unknown,True,False,unknown,,unknown
+07d4b81f,4,RNA-seq,1303685,Immortalized human embryonic cell line,CFTR_WT-Leu558_within_High-abc overexpression,unknown,False,False,,unknown,
+96bd8793,4,RNA-seq,1303685,Immortalized human embryonic cell line,CFTR_High-Leu558(UUA-to-CUC) overexpression,unknown,False,False,,unknown,
+7b10e2a4,2,RNA-seq,1288540,fibroblasts,unknown,unknown,False,False,,unknown,
+510e634f,1,RNA-seq,1303685,HEK293 cells,unknown,unknown,False,False,,unknown,

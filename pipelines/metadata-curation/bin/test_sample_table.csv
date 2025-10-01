@@ -1,0 +1,48 @@
+sample_id,experiment_id,study_id,sequencing_type,cell_type,treatment,timepoint,replicate,organism,platform,library_strategy,library_source,total_reads,total_bases,file_size,fractionation_method,instrument,translation_inhibitor
+SRR1849443,SRX905597,1303685,RNA-seq,HEK293 cells,unknown,unknown,unknown,soil metagenome,,AMPLICON,METAGENOMIC,6709,3538430,2199922,,454 GS Junior,
+SRR34929050,SRX30052629,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT-Leu558_within_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,40251372,1141355618,598788690,,NextSeq 500,
+SRR34929051,SRX30052628,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT-Leu558_within_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,40837888,1086924451,565728688,,NextSeq 500,
+SRR34929052,SRX30052627,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-Leu558(UUA-to-CUC) overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,99040020,2730874569,1447886766,,NextSeq 500,
+SRR34929053,SRX30052626,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-Leu558(UUA-to-CUC) overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,34762030,934055984,487058436,,NextSeq 500,
+SRR34929054,SRX30052625,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,53223414,1492532215,783597020,,NextSeq 500,
+SRR34929055,SRX30052624,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,26200016,696690702,365376621,,NextSeq 500,
+SRR34929056,SRX30052623,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,36860960,1150743612,599722828,,NextSeq 500,
+SRR34929057,SRX30052622,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,33601248,947246610,481319205,,NextSeq 500,
+SRR34929058,SRX30052621,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,34077837,953713781,485396925,,NextSeq 500,
+SRR34929059,SRX30052620,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,90219143,2406221189,1293835951,,NextSeq 500,
+SRR34929060,SRX30052619,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,26372869,677296964,359204110,,NextSeq 500,
+SRR34929061,SRX30052618,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,29645976,901418265,475888384,,NextSeq 500,
+SRR34929062,SRX30052617,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,62874997,1782943780,897551479,,NextSeq 500,
+SRR34929063,SRX30052616,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,50975147,1400409467,710373418,,NextSeq 500,
+SRR34929050,SRX30052629,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT-Leu558_within_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,40251372,1141355618,598788690,,NextSeq 500,
+SRR34929051,SRX30052628,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT-Leu558_within_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,40837888,1086924451,565728688,,NextSeq 500,
+SRR34929052,SRX30052627,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-Leu558(UUA-to-CUC) overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,99040020,2730874569,1447886766,,NextSeq 500,
+SRR34929053,SRX30052626,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-Leu558(UUA-to-CUC) overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,34762030,934055984,487058436,,NextSeq 500,
+SRR34929054,SRX30052625,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,53223414,1492532215,783597020,,NextSeq 500,
+SRR34929055,SRX30052624,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,26200016,696690702,365376621,,NextSeq 500,
+SRR34929056,SRX30052623,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,36860960,1150743612,599722828,,NextSeq 500,
+SRR34929057,SRX30052622,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,33601248,947246610,481319205,,NextSeq 500,
+SRR34929058,SRX30052621,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_High-abc overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,34077837,953713781,485396925,,NextSeq 500,
+SRR34929059,SRX30052620,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,90219143,2406221189,1293835951,,NextSeq 500,
+SRR34929060,SRX30052619,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,26372869,677296964,359204110,,NextSeq 500,
+SRR34929061,SRX30052618,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,29645976,901418265,475888384,,NextSeq 500,
+SRR34929062,SRX30052617,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,62874997,1782943780,897551479,,NextSeq 500,
+SRR34929063,SRX30052616,1303685,RNA-seq,Immortalized human embryonic cell line,CFTR_WT overexpression,unknown,unknown,Homo sapiens,,OTHER,TRANSCRIPTOMIC,50975147,1400409467,710373418,,NextSeq 500,
+ERR14244130,ERX13645192,1294076,Ribo-seq,epithelial cell,unknown,unknown,2,Homo sapiens,,ssRNA-seq,TRANSCRIPTOMIC,20764132,1432725108,525696271,unknown,NextSeq 500,unknown
+ERR14244127,ERX13645189,1294076,Ribo-seq,epithelial cell,unknown,unknown,1,Homo sapiens,,ssRNA-seq,TRANSCRIPTOMIC,17907735,1235633715,446161869,unknown,NextSeq 500,unknown
+ERR14244129,ERX13645191,1294076,Ribo-seq,epithelial cell,unknown,unknown,1,Homo sapiens,,ssRNA-seq,TRANSCRIPTOMIC,16109308,1111542252,403745462,unknown,NextSeq 500,unknown
+ERR14244128,ERX13645190,1294076,Ribo-seq,epithelial cell,unknown,unknown,2,Homo sapiens,,ssRNA-seq,TRANSCRIPTOMIC,30034536,2072382984,758517910,unknown,NextSeq 500,unknown
+ERR14244130,ERX13645192,1294076,Ribo-seq,epithelial cell,unknown,unknown,2,Homo sapiens,,ssRNA-seq,TRANSCRIPTOMIC,20764132,1432725108,525696271,unknown,NextSeq 500,unknown
+ERR14244127,ERX13645189,1294076,Ribo-seq,epithelial cell,unknown,unknown,1,Homo sapiens,,ssRNA-seq,TRANSCRIPTOMIC,17907735,1235633715,446161869,unknown,NextSeq 500,unknown
+ERR14244129,ERX13645191,1294076,Ribo-seq,epithelial cell,unknown,unknown,1,Homo sapiens,,ssRNA-seq,TRANSCRIPTOMIC,16109308,1111542252,403745462,unknown,NextSeq 500,unknown
+ERR14244128,ERX13645190,1294076,Ribo-seq,epithelial cell,unknown,unknown,2,Homo sapiens,,ssRNA-seq,TRANSCRIPTOMIC,30034536,2072382984,758517910,unknown,NextSeq 500,unknown
+SRR1825683,SRX897027,1288540,RNA-seq,fibroblasts,unknown,unknown,unknown,Homo sapiens,,WXS,GENOMIC,46721875,9344375000,6547641188,,Illumina HiSeq 2000,
+SRR1825685,SRX897027,1288540,RNA-seq,fibroblasts,unknown,unknown,unknown,Homo sapiens,,WXS,GENOMIC,44098158,8819631600,6204490665,,Illumina HiSeq 2000,
+SRR34432291,SRX29593515,1288540,Ribo-seq,"T gondii: ME49, H sapiens: human foreskin fibroblast",unknown,unknown,2,Toxoplasma gondii,,OTHER,OTHER,107624722,5381236100,2224651611,unknown,Illumina HiSeq 2500,unknown
+SRR34432292,SRX29593514,1288540,Ribo-seq,"T gondii: ME49, H sapiens: human foreskin fibroblast",unknown,unknown,1,Toxoplasma gondii,,OTHER,OTHER,54202896,6612753312,2008675582,unknown,Illumina NovaSeq 6000,unknown
+SRR34432293,SRX29593513,1288540,RNA-seq,"T gondii: ME49, H sapiens: human foreskin fibroblast",unknown,unknown,2,Toxoplasma gondii,,RNA-Seq,TRANSCRIPTOMIC,70204657,3510232850,1468199919,,Illumina HiSeq 2500,
+SRR34432294,SRX29593512,1288540,RNA-seq,"T gondii: ME49, H sapiens: human foreskin fibroblast",unknown,unknown,1,Toxoplasma gondii,,RNA-Seq,TRANSCRIPTOMIC,89930523,4496526150,1884047875,,Illumina HiSeq 2500,
+SRR34432291,SRX29593515,1288540,Ribo-seq,"T gondii: ME49, H sapiens: human foreskin fibroblast",unknown,unknown,2,Toxoplasma gondii,,OTHER,OTHER,107624722,5381236100,2224651611,unknown,Illumina HiSeq 2500,unknown
+SRR34432292,SRX29593514,1288540,Ribo-seq,"T gondii: ME49, H sapiens: human foreskin fibroblast",unknown,unknown,1,Toxoplasma gondii,,OTHER,OTHER,54202896,6612753312,2008675582,unknown,Illumina NovaSeq 6000,unknown
+SRR34432293,SRX29593513,1288540,RNA-seq,"T gondii: ME49, H sapiens: human foreskin fibroblast",unknown,unknown,2,Toxoplasma gondii,,RNA-Seq,TRANSCRIPTOMIC,70204657,3510232850,1468199919,,Illumina HiSeq 2500,
+SRR34432294,SRX29593512,1288540,RNA-seq,"T gondii: ME49, H sapiens: human foreskin fibroblast",unknown,unknown,1,Toxoplasma gondii,,RNA-Seq,TRANSCRIPTOMIC,89930523,4496526150,1884047875,,Illumina HiSeq 2500,

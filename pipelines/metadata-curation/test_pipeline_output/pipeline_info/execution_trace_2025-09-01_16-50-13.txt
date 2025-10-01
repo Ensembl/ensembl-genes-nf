@@ -1,0 +1,3 @@
+task_id	hash	native_id	name	status	exit	submit	duration	realtime	%cpu	peak_rss	peak_vmem	rchar	wchar
+2	e8/84ce45	41595	METADATA_CURATION:MULTI_SOURCE_INGESTION:EXTRACT_SRA_METADATA (Ribo-seq AND cell)	FAILED	127	2025-09-01 16:50:14.284	45ms	9ms	-	-	-	-	-
+1	82/ad56ac	41603	METADATA_CURATION:MULTI_SOURCE_INGESTION:EXTRACT_GEO_METADATA (Ribo-seq AND cell)	FAILED	127	2025-09-01 16:50:14.296	36ms	1ms	-	-	-	-	-

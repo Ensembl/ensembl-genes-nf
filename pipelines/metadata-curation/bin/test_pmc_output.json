@@ -1,0 +1,76 @@
+{
+  "query": "ribosome profiling",
+  "article_count": 3,
+  "articles": [
+    {
+      "pmc_id": "PMC12341276",
+      "title": "Common cell lysis procedures distort ribosome profiling analyses of gene expression",
+      "abstract": null,
+      "journal": "Genome Biology",
+      "publication_date": "2025-08-11",
+      "authors": [
+        "Aoife O\u2019Connell",
+        "Alla D. Fedorova",
+        "Patrick B. F. O\u2019Connor",
+        "Alexander V. Zhdanov",
+        "Pavel V. Baranov",
+        "Gary Loughran",
+        "Dmitry E. Andreev"
+      ],
+      "keywords": [
+        "Ribosome profiling",
+        "Polysome profiling",
+        "Gene expression",
+        "Riboseq",
+        "Cytoskeleton",
+        "Insoluble fraction",
+        "Lysis",
+        "Nascent peptide"
+      ],
+      "methods_section": null,
+      "full_text_available": true
+    },
+    {
+      "pmc_id": "PMC12224887",
+      "title": "Advances in ribosome profiling technologies",
+      "abstract": null,
+      "journal": "Biochemical Society Transactions",
+      "publication_date": "2025-05-16",
+      "authors": [
+        "Kotaro Tomuro",
+        "Shintaro Iwasaki"
+      ],
+      "keywords": [
+        "deep sequencing",
+        "ribo-seq",
+        "ribosome profiling",
+        "translational control"
+      ],
+      "methods_section": null,
+      "full_text_available": true
+    },
+    {
+      "pmc_id": "PMC12319295",
+      "title": "Optimised Ribosome Profiling Reveals New Insights Into Translational Regulation in Synchronised ",
+      "abstract": null,
+      "journal": "Plant, Cell & Environment",
+      "publication_date": "2025-09",
+      "authors": [
+        "Yen\u2010Ling Lin",
+        "Eva Yuhua Kuo",
+        "Shih\u2010Yi Wang",
+        "Chih\u2010Chi Lee",
+        "Su\u2010Chiung Fang"
+      ],
+      "keywords": [
+        "3\u2010nucleotide periodicity",
+        "cell cycle",
+        "ribosome footprint",
+        "translatome",
+        "upstream ORF"
+      ],
+      "methods_section": null,
+      "full_text_available": true
+    }
+  ]
+}

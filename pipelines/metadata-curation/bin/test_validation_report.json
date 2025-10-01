@@ -1,0 +1,573 @@
+{
+  "validation_summary": {
+    "total_issues": 76,
+    "errors": 30,
+    "warnings": 46,
+    "info": 0,
+    "samples_with_errors": 10
+  },
+  "issues_by_type": {
+    "invalid_value": [
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX905597",
+        "study_id": "1303685"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "ERX13645192",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "ERX13645192",
+        "study_id": "1294076"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "ERX13645189",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "ERX13645189",
+        "study_id": "1294076"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "ERX13645191",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "ERX13645191",
+        "study_id": "1294076"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "ERX13645190",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "ERX13645190",
+        "study_id": "1294076"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "ERX13645192",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "ERX13645192",
+        "study_id": "1294076"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "ERX13645189",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "ERX13645189",
+        "study_id": "1294076"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "ERX13645191",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "ERX13645191",
+        "study_id": "1294076"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "ERX13645190",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "ERX13645190",
+        "study_id": "1294076"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX897027",
+        "study_id": "1288540"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX29593515",
+        "study_id": "1288540"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "SRX29593515",
+        "study_id": "1288540"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX29593514",
+        "study_id": "1288540"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "SRX29593514",
+        "study_id": "1288540"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX29593513",
+        "study_id": "1288540"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX29593512",
+        "study_id": "1288540"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX29593515",
+        "study_id": "1288540"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "SRX29593515",
+        "study_id": "1288540"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX29593514",
+        "study_id": "1288540"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "error",
+        "message": "Required field 'translation_inhibitor' has invalid value: 'unknown'",
+        "sample_id": "SRX29593514",
+        "study_id": "1288540"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX29593513",
+        "study_id": "1288540"
+      },
+      {
+        "field": "treatment",
+        "severity": "error",
+        "message": "Required field 'treatment' has invalid value: 'unknown'",
+        "sample_id": "SRX29593512",
+        "study_id": "1288540"
+      }
+    ],
+    "missing_recommended": [
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX905597",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052629",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052628",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052627",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052626",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052625",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052624",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052623",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052622",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052621",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052620",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052619",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052618",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052617",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052616",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052629",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052628",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052627",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052626",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052625",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052624",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052623",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052622",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052621",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052620",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052619",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052618",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052617",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX30052616",
+        "study_id": "1303685"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX897027",
+        "study_id": "1288540"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX29593513",
+        "study_id": "1288540"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX29593512",
+        "study_id": "1288540"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX29593513",
+        "study_id": "1288540"
+      },
+      {
+        "field": "tissue",
+        "severity": "warning",
+        "message": "Recommended field 'tissue' missing for RNA-seq",
+        "sample_id": "SRX29593512",
+        "study_id": "1288540"
+      }
+    ],
+    "unknown_inhibitor": [
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "ERX13645192",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "ERX13645189",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "ERX13645191",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "ERX13645190",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "ERX13645192",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "ERX13645189",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "ERX13645191",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "ERX13645190",
+        "study_id": "1294076"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "SRX29593515",
+        "study_id": "1288540"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "SRX29593514",
+        "study_id": "1288540"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "SRX29593515",
+        "study_id": "1288540"
+      },
+      {
+        "field": "translation_inhibitor",
+        "severity": "warning",
+        "message": "Unknown translation inhibitor: 'unknown'. Common inhibitors: cycloheximide, harringtonine, puromycin, chloramphenicol",
+        "sample_id": "SRX29593514",
+        "study_id": "1288540"
+      }
+    ]
+  },
+  "field_completion_rates": {
+    "cell_type": 1.0,
+    "treatment": 0.6086956521739131,
+    "replicate": 0.34782608695652173
+  },
+  "data_quality_score": 0.0,
+  "biogroup_validation": [
+    {
+      "field": "biogroup_size",
+      "issue_type": "singleton_biogroup",
+      "severity": "info",
+      "message": "Biogroup 510e634f contains only 1 sample",
+      "sample_id": null,
+      "study_id": null
+    },
+    {
+      "field": "treatment",
+      "issue_type": "cross_modal_inconsistency",
+      "severity": "error",
+      "message": "Cross-modal biogroup 4b398384 missing consistent treatment across Ribo-seq, RNA-seq",
+      "sample_id": null,
+      "study_id": null
+    }
+  ]
+}

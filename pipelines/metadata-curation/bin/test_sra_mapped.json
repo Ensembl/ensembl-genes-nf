@@ -1,0 +1,2048 @@
+{
+  "query": "ribosome profiling",
+  "bioproject_count": 3,
+  "studies": [
+    {
+      "bioproject_metadata": {
+        "bioproject_id": "1303685",
+        "title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+        "description": "Protein folding in vivo is biologically tuned to minimize off-pathway events and optimize native folding outcomes. A key factor in this process is biased synonymous codon usage, in which synonymous codons modulate local translation rate while maintaining the native amino acid sequence. Here, we demonstrate that native codon usage within the first nucleotide-binding domain (NBD1) of the cystic fibrosis transmembrane conductance regulator (CFTR) induces a translational pause during a critical window of synthesis that is important for CFTR folding, processing, and function. Eliminating this pause by substituting synonymous codons increased the aggregation propensity of immature CFTR and induced conformational and functional changes that persisted during CFTR processing and plasma membrane expression. Interestingly, the resulting mature CFTR protein at the plasma membrane exhibited enhanced ATP-dependent chloride channel gating. Thus, during protein synthesis, cotranslational events dictated by codon usage can imprint persistent conformational and functional properties upon CFTR. Our findings suggest that CFTR codon usage has evolved and adapted to balance a compromise between protein aggregation and a modest loss of channel function. Overall design: Ribosome profiling of heterologously expressed CFTR variants with different synonymous codons in HEK293 cells",
+        "organism": "Homo sapiens",
+        "taxonomy_id": null,
+        "data_type": null,
+        "publication_pmid": null,
+        "submission_date": null,
+        "release_date": null
+      },
+      "experiments": [
+        {
+          "experiment_id": "SRX905597",
+          "experiment_title": "SSU of AM fungi under Panicum maximum",
+          "study_id": "SRP055982",
+          "study_title": "Arbuscular mycorrhizal fungi in two Panicum spp. Metagenome",
+          "sample_id": "SRS866316",
+          "sample_title": "Sample10_SSU",
+          "organism": "soil metagenome",
+          "library_strategy": "AMPLICON",
+          "library_source": "METAGENOMIC",
+          "library_selection": "PCR",
+          "platform": null,
+          "instrument": "454 GS Junior",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR1849443",
+              "total_spots": "6709",
+              "total_bases": "3538430",
+              "size": "2199922",
+              "published": "2015-07-17 00:01:42"
+            }
+          ],
+          "sample_attributes": {
+            "host": "environmental sample",
+            "isolation_source": "environmental sample",
+            "collection_date": "2013-05-20",
+            "geo_loc_name": "Czech Republic: Litomerice",
+            "lat_lon": "50.5322244 N 14.1109144 E",
+            "BioSampleModel": "Metagenome or environmental"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "soil metagenome",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052629",
+          "experiment_title": "GSM9160882: CFTR_WT-Leu558_within_High-abc_02; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120700",
+          "sample_title": "CFTR_WT-Leu558_within_High-abc_02",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929050",
+              "total_spots": "40251372",
+              "total_bases": "1141355618",
+              "size": "598788690",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT-Leu558_within_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052628",
+          "experiment_title": "GSM9160881: CFTR_WT-Leu558_within_High-abc_01; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120699",
+          "sample_title": "CFTR_WT-Leu558_within_High-abc_01",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929051",
+              "total_spots": "40837888",
+              "total_bases": "1086924451",
+              "size": "565728688",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT-Leu558_within_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052627",
+          "experiment_title": "GSM9160880: CFTR_High-Leu558(UUA-to-CUC)_02; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120698",
+          "sample_title": "CFTR_High-Leu558(UUA-to-CUC)_02",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929052",
+              "total_spots": "99040020",
+              "total_bases": "2730874569",
+              "size": "1447886766",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-Leu558(UUA-to-CUC) overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052626",
+          "experiment_title": "GSM9160879: CFTR_High-Leu558(UUA-to-CUC)_01; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120697",
+          "sample_title": "CFTR_High-Leu558(UUA-to-CUC)_01",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929053",
+              "total_spots": "34762030",
+              "total_bases": "934055984",
+              "size": "487058436",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-Leu558(UUA-to-CUC) overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052625",
+          "experiment_title": "GSM9160878: CFTR_High-abc_05; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120696",
+          "sample_title": "CFTR_High-abc_05",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929054",
+              "total_spots": "53223414",
+              "total_bases": "1492532215",
+              "size": "783597020",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052624",
+          "experiment_title": "GSM9160877: CFTR_High-abc_04; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120695",
+          "sample_title": "CFTR_High-abc_04",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929055",
+              "total_spots": "26200016",
+              "total_bases": "696690702",
+              "size": "365376621",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052623",
+          "experiment_title": "GSM9160876: CFTR_High-abc_03; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120694",
+          "sample_title": "CFTR_High-abc_03",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929056",
+              "total_spots": "36860960",
+              "total_bases": "1150743612",
+              "size": "599722828",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052622",
+          "experiment_title": "GSM9160875: CFTR_High-abc_02; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120693",
+          "sample_title": "CFTR_High-abc_02",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929057",
+              "total_spots": "33601248",
+              "total_bases": "947246610",
+              "size": "481319205",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052621",
+          "experiment_title": "GSM9160874: CFTR_High-abc_01; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120692",
+          "sample_title": "CFTR_High-abc_01",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929058",
+              "total_spots": "34077837",
+              "total_bases": "953713781",
+              "size": "485396925",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052620",
+          "experiment_title": "GSM9160873: CFTR_WT_05; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120691",
+          "sample_title": "CFTR_WT_05",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929059",
+              "total_spots": "90219143",
+              "total_bases": "2406221189",
+              "size": "1293835951",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052619",
+          "experiment_title": "GSM9160872: CFTR_WT_04; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120690",
+          "sample_title": "CFTR_WT_04",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929060",
+              "total_spots": "26372869",
+              "total_bases": "677296964",
+              "size": "359204110",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052618",
+          "experiment_title": "GSM9160871: CFTR_WT_03; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120689",
+          "sample_title": "CFTR_WT_03",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929061",
+              "total_spots": "29645976",
+              "total_bases": "901418265",
+              "size": "475888384",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052617",
+          "experiment_title": "GSM9160870: CFTR_WT_02; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120688",
+          "sample_title": "CFTR_WT_02",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929062",
+              "total_spots": "62874997",
+              "total_bases": "1782943780",
+              "size": "897551479",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052616",
+          "experiment_title": "GSM9160869: CFTR_WT_01; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120687",
+          "sample_title": "CFTR_WT_01",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929063",
+              "total_spots": "50975147",
+              "total_bases": "1400409467",
+              "size": "710373418",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052629",
+          "experiment_title": "GSM9160882: CFTR_WT-Leu558_within_High-abc_02; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120700",
+          "sample_title": "CFTR_WT-Leu558_within_High-abc_02",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929050",
+              "total_spots": "40251372",
+              "total_bases": "1141355618",
+              "size": "598788690",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT-Leu558_within_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052628",
+          "experiment_title": "GSM9160881: CFTR_WT-Leu558_within_High-abc_01; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120699",
+          "sample_title": "CFTR_WT-Leu558_within_High-abc_01",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929051",
+              "total_spots": "40837888",
+              "total_bases": "1086924451",
+              "size": "565728688",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT-Leu558_within_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052627",
+          "experiment_title": "GSM9160880: CFTR_High-Leu558(UUA-to-CUC)_02; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120698",
+          "sample_title": "CFTR_High-Leu558(UUA-to-CUC)_02",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929052",
+              "total_spots": "99040020",
+              "total_bases": "2730874569",
+              "size": "1447886766",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-Leu558(UUA-to-CUC) overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052626",
+          "experiment_title": "GSM9160879: CFTR_High-Leu558(UUA-to-CUC)_01; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120697",
+          "sample_title": "CFTR_High-Leu558(UUA-to-CUC)_01",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929053",
+              "total_spots": "34762030",
+              "total_bases": "934055984",
+              "size": "487058436",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-Leu558(UUA-to-CUC) overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052625",
+          "experiment_title": "GSM9160878: CFTR_High-abc_05; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120696",
+          "sample_title": "CFTR_High-abc_05",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929054",
+              "total_spots": "53223414",
+              "total_bases": "1492532215",
+              "size": "783597020",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052624",
+          "experiment_title": "GSM9160877: CFTR_High-abc_04; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120695",
+          "sample_title": "CFTR_High-abc_04",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929055",
+              "total_spots": "26200016",
+              "total_bases": "696690702",
+              "size": "365376621",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052623",
+          "experiment_title": "GSM9160876: CFTR_High-abc_03; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120694",
+          "sample_title": "CFTR_High-abc_03",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929056",
+              "total_spots": "36860960",
+              "total_bases": "1150743612",
+              "size": "599722828",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052622",
+          "experiment_title": "GSM9160875: CFTR_High-abc_02; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120693",
+          "sample_title": "CFTR_High-abc_02",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929057",
+              "total_spots": "33601248",
+              "total_bases": "947246610",
+              "size": "481319205",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052621",
+          "experiment_title": "GSM9160874: CFTR_High-abc_01; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120692",
+          "sample_title": "CFTR_High-abc_01",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929058",
+              "total_spots": "34077837",
+              "total_bases": "953713781",
+              "size": "485396925",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_High-abc overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052620",
+          "experiment_title": "GSM9160873: CFTR_WT_05; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120691",
+          "sample_title": "CFTR_WT_05",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929059",
+              "total_spots": "90219143",
+              "total_bases": "2406221189",
+              "size": "1293835951",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052619",
+          "experiment_title": "GSM9160872: CFTR_WT_04; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120690",
+          "sample_title": "CFTR_WT_04",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929060",
+              "total_spots": "26372869",
+              "total_bases": "677296964",
+              "size": "359204110",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052618",
+          "experiment_title": "GSM9160871: CFTR_WT_03; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120689",
+          "sample_title": "CFTR_WT_03",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929061",
+              "total_spots": "29645976",
+              "total_bases": "901418265",
+              "size": "475888384",
+              "published": "2025-08-30 01:03:29"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052617",
+          "experiment_title": "GSM9160870: CFTR_WT_02; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120688",
+          "sample_title": "CFTR_WT_02",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929062",
+              "total_spots": "62874997",
+              "total_bases": "1782943780",
+              "size": "897551479",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX30052616",
+          "experiment_title": "GSM9160869: CFTR_WT_01; Homo sapiens; OTHER",
+          "study_id": "SRP607731",
+          "study_title": "Native CFTR codon bias controls translation rate to balance off-pathway aggregation and channel function by conformational imprinting",
+          "sample_id": "SRS26120687",
+          "sample_title": "CFTR_WT_01",
+          "organism": "Homo sapiens",
+          "library_strategy": "OTHER",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34929063",
+              "total_spots": "50975147",
+              "total_bases": "1400409467",
+              "size": "710373418",
+              "published": "2025-08-30 01:03:28"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "HEK293",
+            "cell line": "HEK293",
+            "cell type": "Immortalized human embryonic cell line",
+            "treatment": "CFTR_WT overexpression",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        }
+      ],
+      "experiment_count": 29,
+      "total_runs": 29
+    },
+    {
+      "bioproject_metadata": {
+        "bioproject_id": "1294076",
+        "title": "The m6A demethylase FTO promotes C/EBP\u03b2-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+        "description": "Ribosome profiling (RP) results of MDA-MB-231 cells; two scrambled shRNA control (SCR) replicates and two FTO knockdown (shFTO) replicates.",
+        "organism": null,
+        "taxonomy_id": null,
+        "data_type": null,
+        "publication_pmid": null,
+        "submission_date": null,
+        "release_date": null
+      },
+      "experiments": [
+        {
+          "experiment_id": "ERX13645192",
+          "experiment_title": "The m6A demethylase FTO promotes C/EBP\u03b2-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "study_id": "ERP168924",
+          "study_title": "The m6A demethylase FTO promotes C/EBP\u00df-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "sample_id": "ERS23114355",
+          "sample_title": "MDA-MB-231 shFTO RP repl 2",
+          "organism": "Homo sapiens",
+          "library_strategy": "ssRNA-seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "Inverse rRNA",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "ERR14244130",
+              "total_spots": "20764132",
+              "total_bases": "1432725108",
+              "size": "525696271",
+              "published": "2025-07-19 01:10:32"
+            }
+          ],
+          "sample_attributes": {
+            "ENA first public": "2025-07-18",
+            "INSDC center name": "ERIBA",
+            "INSDC status": "public",
+            "Submitter Id": "E-MTAB-14809:MDA-MB-231 shFTO RP repl 2",
+            "broker name": "ArrayExpress",
+            "cell_line": "MDA-MB-231",
+            "cell_type": "epithelial cell",
+            "collection date": "not collected",
+            "common name": "human",
+            "developmental stage": "adult",
+            "disease": "breast adenocarcinoma",
+            "genotype": "FTO knockdown",
+            "geographic location (country and/or sea)": "not collected",
+            "isolate": "not applicable",
+            "metastatic site": "pleural effusion",
+            "organism part": "breast",
+            "replicate": "2",
+            "sample name": "E-MTAB-14809:MDA-MB-231 shFTO RP repl 2",
+            "scientific_name": "Homo sapiens"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "ERX13645189",
+          "experiment_title": "The m6A demethylase FTO promotes C/EBP\u03b2-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "study_id": "ERP168924",
+          "study_title": "The m6A demethylase FTO promotes C/EBP\u00df-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "sample_id": "ERS23114352",
+          "sample_title": "MDA-MB-231 SCR RP repl 1",
+          "organism": "Homo sapiens",
+          "library_strategy": "ssRNA-seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "Inverse rRNA",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "ERR14244127",
+              "total_spots": "17907735",
+              "total_bases": "1235633715",
+              "size": "446161869",
+              "published": "2025-07-19 00:56:30"
+            }
+          ],
+          "sample_attributes": {
+            "ENA first public": "2025-07-18",
+            "INSDC center name": "ERIBA",
+            "INSDC status": "public",
+            "Submitter Id": "E-MTAB-14809:MDA-MB-231 SCR RP repl 1",
+            "broker name": "ArrayExpress",
+            "cell_line": "MDA-MB-231",
+            "cell_type": "epithelial cell",
+            "collection date": "not collected",
+            "common name": "human",
+            "developmental stage": "adult",
+            "disease": "breast adenocarcinoma",
+            "genotype": "wild type genotype",
+            "geographic location (country and/or sea)": "not collected",
+            "isolate": "not applicable",
+            "metastatic site": "pleural effusion",
+            "organism part": "breast",
+            "replicate": "1",
+            "sample name": "E-MTAB-14809:MDA-MB-231 SCR RP repl 1",
+            "scientific_name": "Homo sapiens"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "ERX13645191",
+          "experiment_title": "The m6A demethylase FTO promotes C/EBP\u03b2-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "study_id": "ERP168924",
+          "study_title": "The m6A demethylase FTO promotes C/EBP\u00df-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "sample_id": "ERS23114354",
+          "sample_title": "MDA-MB-231 shFTO RP repl 1",
+          "organism": "Homo sapiens",
+          "library_strategy": "ssRNA-seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "Inverse rRNA",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "ERR14244129",
+              "total_spots": "16109308",
+              "total_bases": "1111542252",
+              "size": "403745462",
+              "published": "2025-07-19 01:10:32"
+            }
+          ],
+          "sample_attributes": {
+            "ENA first public": "2025-07-18",
+            "INSDC center name": "ERIBA",
+            "INSDC status": "public",
+            "Submitter Id": "E-MTAB-14809:MDA-MB-231 shFTO RP repl 1",
+            "broker name": "ArrayExpress",
+            "cell_line": "MDA-MB-231",
+            "cell_type": "epithelial cell",
+            "collection date": "not collected",
+            "common name": "human",
+            "developmental stage": "adult",
+            "disease": "breast adenocarcinoma",
+            "genotype": "FTO knockdown",
+            "geographic location (country and/or sea)": "not collected",
+            "isolate": "not applicable",
+            "metastatic site": "pleural effusion",
+            "organism part": "breast",
+            "replicate": "1",
+            "sample name": "E-MTAB-14809:MDA-MB-231 shFTO RP repl 1",
+            "scientific_name": "Homo sapiens"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "ERX13645190",
+          "experiment_title": "The m6A demethylase FTO promotes C/EBP\u03b2-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "study_id": "ERP168924",
+          "study_title": "The m6A demethylase FTO promotes C/EBP\u00df-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "sample_id": "ERS23114353",
+          "sample_title": "MDA-MB-231 SCR RP repl 2",
+          "organism": "Homo sapiens",
+          "library_strategy": "ssRNA-seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "Inverse rRNA",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "ERR14244128",
+              "total_spots": "30034536",
+              "total_bases": "2072382984",
+              "size": "758517910",
+              "published": "2025-07-18 22:26:43"
+            }
+          ],
+          "sample_attributes": {
+            "ENA first public": "2025-07-18",
+            "INSDC center name": "ERIBA",
+            "INSDC status": "public",
+            "Submitter Id": "E-MTAB-14809:MDA-MB-231 SCR RP repl 2",
+            "broker name": "ArrayExpress",
+            "cell_line": "MDA-MB-231",
+            "cell_type": "epithelial cell",
+            "collection date": "not collected",
+            "common name": "human",
+            "developmental stage": "adult",
+            "disease": "breast adenocarcinoma",
+            "genotype": "wild type genotype",
+            "geographic location (country and/or sea)": "not collected",
+            "isolate": "not applicable",
+            "metastatic site": "pleural effusion",
+            "organism part": "breast",
+            "replicate": "2",
+            "sample name": "E-MTAB-14809:MDA-MB-231 SCR RP repl 2",
+            "scientific_name": "Homo sapiens"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "ERX13645192",
+          "experiment_title": "The m6A demethylase FTO promotes C/EBP\u03b2-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "study_id": "ERP168924",
+          "study_title": "The m6A demethylase FTO promotes C/EBP\u00df-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "sample_id": "ERS23114355",
+          "sample_title": "MDA-MB-231 shFTO RP repl 2",
+          "organism": "Homo sapiens",
+          "library_strategy": "ssRNA-seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "Inverse rRNA",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "ERR14244130",
+              "total_spots": "20764132",
+              "total_bases": "1432725108",
+              "size": "525696271",
+              "published": "2025-07-19 01:10:32"
+            }
+          ],
+          "sample_attributes": {
+            "ENA first public": "2025-07-18",
+            "INSDC center name": "ERIBA",
+            "INSDC status": "public",
+            "Submitter Id": "E-MTAB-14809:MDA-MB-231 shFTO RP repl 2",
+            "broker name": "ArrayExpress",
+            "cell_line": "MDA-MB-231",
+            "cell_type": "epithelial cell",
+            "collection date": "not collected",
+            "common name": "human",
+            "developmental stage": "adult",
+            "disease": "breast adenocarcinoma",
+            "genotype": "FTO knockdown",
+            "geographic location (country and/or sea)": "not collected",
+            "isolate": "not applicable",
+            "metastatic site": "pleural effusion",
+            "organism part": "breast",
+            "replicate": "2",
+            "sample name": "E-MTAB-14809:MDA-MB-231 shFTO RP repl 2",
+            "scientific_name": "Homo sapiens"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "ERX13645189",
+          "experiment_title": "The m6A demethylase FTO promotes C/EBP\u03b2-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "study_id": "ERP168924",
+          "study_title": "The m6A demethylase FTO promotes C/EBP\u00df-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "sample_id": "ERS23114352",
+          "sample_title": "MDA-MB-231 SCR RP repl 1",
+          "organism": "Homo sapiens",
+          "library_strategy": "ssRNA-seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "Inverse rRNA",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "ERR14244127",
+              "total_spots": "17907735",
+              "total_bases": "1235633715",
+              "size": "446161869",
+              "published": "2025-07-19 00:56:30"
+            }
+          ],
+          "sample_attributes": {
+            "ENA first public": "2025-07-18",
+            "INSDC center name": "ERIBA",
+            "INSDC status": "public",
+            "Submitter Id": "E-MTAB-14809:MDA-MB-231 SCR RP repl 1",
+            "broker name": "ArrayExpress",
+            "cell_line": "MDA-MB-231",
+            "cell_type": "epithelial cell",
+            "collection date": "not collected",
+            "common name": "human",
+            "developmental stage": "adult",
+            "disease": "breast adenocarcinoma",
+            "genotype": "wild type genotype",
+            "geographic location (country and/or sea)": "not collected",
+            "isolate": "not applicable",
+            "metastatic site": "pleural effusion",
+            "organism part": "breast",
+            "replicate": "1",
+            "sample name": "E-MTAB-14809:MDA-MB-231 SCR RP repl 1",
+            "scientific_name": "Homo sapiens"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "ERX13645191",
+          "experiment_title": "The m6A demethylase FTO promotes C/EBP\u03b2-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "study_id": "ERP168924",
+          "study_title": "The m6A demethylase FTO promotes C/EBP\u00df-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "sample_id": "ERS23114354",
+          "sample_title": "MDA-MB-231 shFTO RP repl 1",
+          "organism": "Homo sapiens",
+          "library_strategy": "ssRNA-seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "Inverse rRNA",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "ERR14244129",
+              "total_spots": "16109308",
+              "total_bases": "1111542252",
+              "size": "403745462",
+              "published": "2025-07-19 01:10:32"
+            }
+          ],
+          "sample_attributes": {
+            "ENA first public": "2025-07-18",
+            "INSDC center name": "ERIBA",
+            "INSDC status": "public",
+            "Submitter Id": "E-MTAB-14809:MDA-MB-231 shFTO RP repl 1",
+            "broker name": "ArrayExpress",
+            "cell_line": "MDA-MB-231",
+            "cell_type": "epithelial cell",
+            "collection date": "not collected",
+            "common name": "human",
+            "developmental stage": "adult",
+            "disease": "breast adenocarcinoma",
+            "genotype": "FTO knockdown",
+            "geographic location (country and/or sea)": "not collected",
+            "isolate": "not applicable",
+            "metastatic site": "pleural effusion",
+            "organism part": "breast",
+            "replicate": "1",
+            "sample name": "E-MTAB-14809:MDA-MB-231 shFTO RP repl 1",
+            "scientific_name": "Homo sapiens"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "ERX13645190",
+          "experiment_title": "The m6A demethylase FTO promotes C/EBP\u03b2-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "study_id": "ERP168924",
+          "study_title": "The m6A demethylase FTO promotes C/EBP\u00df-LIP translation to perform oncogenic functions in breast cancer cells (Ribosome profiling)",
+          "sample_id": "ERS23114353",
+          "sample_title": "MDA-MB-231 SCR RP repl 2",
+          "organism": "Homo sapiens",
+          "library_strategy": "ssRNA-seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "Inverse rRNA",
+          "platform": null,
+          "instrument": "NextSeq 500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "ERR14244128",
+              "total_spots": "30034536",
+              "total_bases": "2072382984",
+              "size": "758517910",
+              "published": "2025-07-18 22:26:43"
+            }
+          ],
+          "sample_attributes": {
+            "ENA first public": "2025-07-18",
+            "INSDC center name": "ERIBA",
+            "INSDC status": "public",
+            "Submitter Id": "E-MTAB-14809:MDA-MB-231 SCR RP repl 2",
+            "broker name": "ArrayExpress",
+            "cell_line": "MDA-MB-231",
+            "cell_type": "epithelial cell",
+            "collection date": "not collected",
+            "common name": "human",
+            "developmental stage": "adult",
+            "disease": "breast adenocarcinoma",
+            "genotype": "wild type genotype",
+            "geographic location (country and/or sea)": "not collected",
+            "isolate": "not applicable",
+            "metastatic site": "pleural effusion",
+            "organism part": "breast",
+            "replicate": "2",
+            "sample name": "E-MTAB-14809:MDA-MB-231 SCR RP repl 2",
+            "scientific_name": "Homo sapiens"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        }
+      ],
+      "experiment_count": 8,
+      "total_runs": 8
+    },
+    {
+      "bioproject_metadata": {
+        "bioproject_id": "1288540",
+        "title": "5' Untranslated regions tune Toxoplasma translation [Ribosome Profiling]",
+        "description": "Some of the longest 5\u2032 untranslated regions (UTRs) documented in eukaryotes belong to parasites of the phylum Apicomplexa. Translational regulation plays prominent roles in the development of these parasites, including the agents of toxoplasmosis (Toxoplasma gondii) and malaria. To understand the function of 5\u2032 UTRs in apicomplexan translation, we performed high-resolution ribosome profiling of T. gondii in human fibroblasts. We show that parasite translation efficiency (TE) is largely controlled by 5\u2032 UTR features and tuned by the number of upstream AUGs (uAUGs). Examination of ribosome occupancy reveals that, despite widespread engagement of uAUGs, parasite ribosomes seldom translate uORFs. These features are reaffirmed in a massively parallel reporter assay examining the effect of more than 30,000 synthetic 5\u2032 UTRs in T. gondii. A model trained on these results accurately predicted the TE of newly designed 5\u2032 UTRs. Together, this work defines the regulatory language of T. gondii translation, providing a framework to understand the evolution of exceptionally long 5\u2032 UTRs in apicomplexans. Overall design: Paired ribosome footprinting and RNAseq of acute-stage ME49 Toxoplasma gondii and host human foreskin fibroblasts (HFF).",
+        "organism": null,
+        "taxonomy_id": null,
+        "data_type": null,
+        "publication_pmid": null,
+        "submission_date": null,
+        "release_date": null
+      },
+      "experiments": [
+        {
+          "experiment_id": "SRX897027",
+          "experiment_title": "Whole-exome sequencing of case 3 malignant sample",
+          "study_id": "SRP055730",
+          "study_title": "Genomic dynamics associated with malignant transformation in IDH1 mutated gliomas",
+          "sample_id": "SRS862557",
+          "sample_title": "Case 3 malignant sample",
+          "organism": "Homo sapiens",
+          "library_strategy": "WXS",
+          "library_source": "GENOMIC",
+          "library_selection": "Hybrid Selection",
+          "platform": null,
+          "instrument": "Illumina HiSeq 2000",
+          "library_layout": "paired",
+          "runs": [
+            {
+              "run_id": "SRR1825683",
+              "total_spots": "46721875",
+              "total_bases": "9344375000",
+              "size": "6547641188",
+              "published": "2015-10-26 00:00:00"
+            },
+            {
+              "run_id": "SRR1825685",
+              "total_spots": "44098158",
+              "total_bases": "8819631600",
+              "size": "6204490665",
+              "published": "2015-10-26 00:00:00"
+            }
+          ],
+          "sample_attributes": {
+            "isolate": "case 3 malignant sample",
+            "age": "66",
+            "biomaterial_provider": "Seoul National University Hospital",
+            "sex": "male",
+            "tissue": "brain tumor tissue",
+            "disease": "anaplastic oligodendroglioma",
+            "ethnicity": "Asian",
+            "BioSampleModel": "Human"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Homo sapiens",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX29593515",
+          "experiment_title": "GSM9096303: Toxoplasma and HFF, ribosome footprinting, replicate 2; Toxoplasma gondii; Homo sapiens; OTHER",
+          "study_id": "SRP599262",
+          "study_title": "5' Untranslated regions tune Toxoplasma translation [Ribosome Profiling]",
+          "sample_id": "SRS25715693",
+          "sample_title": "Toxoplasma and HFF, ribosome footprinting, replicate 2",
+          "organism": "Toxoplasma gondii",
+          "library_strategy": "OTHER",
+          "library_source": "OTHER",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "Illumina HiSeq 2500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34432291",
+              "total_spots": "107624722",
+              "total_bases": "5381236100",
+              "size": "2224651611",
+              "published": "2025-07-15 19:40:42"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "cell line": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "genotype": "T gondii: ME49/dKu80/dHXGPRT/TIR1",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Toxoplasma gondii",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX29593514",
+          "experiment_title": "GSM9096302: Toxoplasma and HFF, ribosome footprinting, replicate 1; Toxoplasma gondii; Homo sapiens; OTHER",
+          "study_id": "SRP599262",
+          "study_title": "5' Untranslated regions tune Toxoplasma translation [Ribosome Profiling]",
+          "sample_id": "SRS25715692",
+          "sample_title": "Toxoplasma and HFF, ribosome footprinting, replicate 1",
+          "organism": "Toxoplasma gondii",
+          "library_strategy": "OTHER",
+          "library_source": "OTHER",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "Illumina NovaSeq 6000",
+          "library_layout": "paired",
+          "runs": [
+            {
+              "run_id": "SRR34432292",
+              "total_spots": "54202896",
+              "total_bases": "6612753312",
+              "size": "2008675582",
+              "published": "2025-07-15 19:40:42"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "cell line": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "genotype": "T gondii: ME49/dKu80/dHXGPRT/TIR1",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Toxoplasma gondii",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX29593513",
+          "experiment_title": "GSM9096301: Toxoplasma and HFF, total RNA, replicate 2; Toxoplasma gondii; Homo sapiens; RNA-Seq",
+          "study_id": "SRP599262",
+          "study_title": "5' Untranslated regions tune Toxoplasma translation [Ribosome Profiling]",
+          "sample_id": "SRS25715691",
+          "sample_title": "Toxoplasma and HFF, total RNA, replicate 2",
+          "organism": "Toxoplasma gondii",
+          "library_strategy": "RNA-Seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "cDNA",
+          "platform": null,
+          "instrument": "Illumina HiSeq 2500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34432293",
+              "total_spots": "70204657",
+              "total_bases": "3510232850",
+              "size": "1468199919",
+              "published": "2025-07-15 19:40:42"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "cell line": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "genotype": "T gondii: ME49/dKu80/dHXGPRT/TIR1",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Toxoplasma gondii",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX29593512",
+          "experiment_title": "GSM9096300: Toxoplasma and HFF, total RNA, replicate 1; Toxoplasma gondii; Homo sapiens; RNA-Seq",
+          "study_id": "SRP599262",
+          "study_title": "5' Untranslated regions tune Toxoplasma translation [Ribosome Profiling]",
+          "sample_id": "SRS25715690",
+          "sample_title": "Toxoplasma and HFF, total RNA, replicate 1",
+          "organism": "Toxoplasma gondii",
+          "library_strategy": "RNA-Seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "cDNA",
+          "platform": null,
+          "instrument": "Illumina HiSeq 2500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34432294",
+              "total_spots": "89930523",
+              "total_bases": "4496526150",
+              "size": "1884047875",
+              "published": "2025-07-15 19:40:41"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "cell line": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "genotype": "T gondii: ME49/dKu80/dHXGPRT/TIR1",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Toxoplasma gondii",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX29593515",
+          "experiment_title": "GSM9096303: Toxoplasma and HFF, ribosome footprinting, replicate 2; Toxoplasma gondii; Homo sapiens; OTHER",
+          "study_id": "SRP599262",
+          "study_title": "5' Untranslated regions tune Toxoplasma translation [Ribosome Profiling]",
+          "sample_id": "SRS25715693",
+          "sample_title": "Toxoplasma and HFF, ribosome footprinting, replicate 2",
+          "organism": "Toxoplasma gondii",
+          "library_strategy": "OTHER",
+          "library_source": "OTHER",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "Illumina HiSeq 2500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34432291",
+              "total_spots": "107624722",
+              "total_bases": "5381236100",
+              "size": "2224651611",
+              "published": "2025-07-15 19:40:42"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "cell line": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "genotype": "T gondii: ME49/dKu80/dHXGPRT/TIR1",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Toxoplasma gondii",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX29593514",
+          "experiment_title": "GSM9096302: Toxoplasma and HFF, ribosome footprinting, replicate 1; Toxoplasma gondii; Homo sapiens; OTHER",
+          "study_id": "SRP599262",
+          "study_title": "5' Untranslated regions tune Toxoplasma translation [Ribosome Profiling]",
+          "sample_id": "SRS25715692",
+          "sample_title": "Toxoplasma and HFF, ribosome footprinting, replicate 1",
+          "organism": "Toxoplasma gondii",
+          "library_strategy": "OTHER",
+          "library_source": "OTHER",
+          "library_selection": "other",
+          "platform": null,
+          "instrument": "Illumina NovaSeq 6000",
+          "library_layout": "paired",
+          "runs": [
+            {
+              "run_id": "SRR34432292",
+              "total_spots": "54202896",
+              "total_bases": "6612753312",
+              "size": "2008675582",
+              "published": "2025-07-15 19:40:42"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "cell line": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "genotype": "T gondii: ME49/dKu80/dHXGPRT/TIR1",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Toxoplasma gondii",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX29593513",
+          "experiment_title": "GSM9096301: Toxoplasma and HFF, total RNA, replicate 2; Toxoplasma gondii; Homo sapiens; RNA-Seq",
+          "study_id": "SRP599262",
+          "study_title": "5' Untranslated regions tune Toxoplasma translation [Ribosome Profiling]",
+          "sample_id": "SRS25715691",
+          "sample_title": "Toxoplasma and HFF, total RNA, replicate 2",
+          "organism": "Toxoplasma gondii",
+          "library_strategy": "RNA-Seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "cDNA",
+          "platform": null,
+          "instrument": "Illumina HiSeq 2500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34432293",
+              "total_spots": "70204657",
+              "total_bases": "3510232850",
+              "size": "1468199919",
+              "published": "2025-07-15 19:40:42"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "cell line": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "genotype": "T gondii: ME49/dKu80/dHXGPRT/TIR1",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Toxoplasma gondii",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        },
+        {
+          "experiment_id": "SRX29593512",
+          "experiment_title": "GSM9096300: Toxoplasma and HFF, total RNA, replicate 1; Toxoplasma gondii; Homo sapiens; RNA-Seq",
+          "study_id": "SRP599262",
+          "study_title": "5' Untranslated regions tune Toxoplasma translation [Ribosome Profiling]",
+          "sample_id": "SRS25715690",
+          "sample_title": "Toxoplasma and HFF, total RNA, replicate 1",
+          "organism": "Toxoplasma gondii",
+          "library_strategy": "RNA-Seq",
+          "library_source": "TRANSCRIPTOMIC",
+          "library_selection": "cDNA",
+          "platform": null,
+          "instrument": "Illumina HiSeq 2500",
+          "library_layout": "single",
+          "runs": [
+            {
+              "run_id": "SRR34432294",
+              "total_spots": "89930523",
+              "total_bases": "4496526150",
+              "size": "1884047875",
+              "published": "2025-07-15 19:40:41"
+            }
+          ],
+          "sample_attributes": {
+            "source_name": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "cell line": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+            "genotype": "T gondii: ME49/dKu80/dHXGPRT/TIR1",
+            "geo_loc_name": "missing",
+            "collection_date": "missing"
+          },
+          "_mapping_results": {
+            "organism": {
+              "original": "Toxoplasma gondii",
+              "mapped_id": null,
+              "mapped_name": null,
+              "confidence": "unmapped",
+              "source_ontology": null
+            }
+          }
+        }
+      ],
+      "experiment_count": 9,
+      "total_runs": 10
+    }
+  ]
+}

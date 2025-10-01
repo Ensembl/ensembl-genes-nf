@@ -1,0 +1,245 @@
+{
+  "biogroup_count": 8,
+  "total_samples": 47,
+  "cross_modal_biogroups": 1,
+  "cross_study_biogroups": 0,
+  "biogroups": [
+    {
+      "biogroup_id": "3c71cf07",
+      "sample_count": 10,
+      "sample_ids": [
+        "SRR34929054",
+        "SRR34929055",
+        "SRR34929056",
+        "SRR34929057",
+        "SRR34929058",
+        "SRR34929054",
+        "SRR34929055",
+        "SRR34929056",
+        "SRR34929057",
+        "SRR34929058"
+      ],
+      "shared_metadata": {
+        "cell_type": "Immortalized human embryonic cell line",
+        "treatment": "CFTR_High-abc overexpression",
+        "timepoint": "unknown",
+        "replicate": "unknown"
+      },
+      "sequencing_types": [
+        "RNA-seq"
+      ],
+      "study_sources": [
+        "1303685"
+      ],
+      "is_cross_modal": false,
+      "is_cross_study": false
+    },
+    {
+      "biogroup_id": "5f8a1a5c",
+      "sample_count": 10,
+      "sample_ids": [
+        "SRR34929059",
+        "SRR34929060",
+        "SRR34929061",
+        "SRR34929062",
+        "SRR34929063",
+        "SRR34929059",
+        "SRR34929060",
+        "SRR34929061",
+        "SRR34929062",
+        "SRR34929063"
+      ],
+      "shared_metadata": {
+        "cell_type": "Immortalized human embryonic cell line",
+        "treatment": "CFTR_WT overexpression",
+        "timepoint": "unknown",
+        "replicate": "unknown"
+      },
+      "sequencing_types": [
+        "RNA-seq"
+      ],
+      "study_sources": [
+        "1303685"
+      ],
+      "is_cross_modal": false,
+      "is_cross_study": false
+    },
+    {
+      "biogroup_id": "30a7585e",
+      "sample_count": 8,
+      "sample_ids": [
+        "ERR14244130",
+        "ERR14244127",
+        "ERR14244129",
+        "ERR14244128",
+        "ERR14244130",
+        "ERR14244127",
+        "ERR14244129",
+        "ERR14244128"
+      ],
+      "shared_metadata": {
+        "cell_type": "epithelial cell",
+        "treatment": "unknown",
+        "timepoint": "unknown",
+        "translation_inhibitor": "unknown",
+        "fractionation_method": "unknown"
+      },
+      "sequencing_types": [
+        "Ribo-seq"
+      ],
+      "study_sources": [
+        "1294076"
+      ],
+      "is_cross_modal": false,
+      "is_cross_study": false
+    },
+    {
+      "biogroup_id": "4b398384",
+      "sample_count": 8,
+      "sample_ids": [
+        "SRR34432291",
+        "SRR34432292",
+        "SRR34432293",
+        "SRR34432294",
+        "SRR34432291",
+        "SRR34432292",
+        "SRR34432293",
+        "SRR34432294"
+      ],
+      "shared_metadata": {
+        "cell_type": "T gondii: ME49, H sapiens: human foreskin fibroblast",
+        "treatment": "unknown",
+        "timepoint": "unknown",
+        "translation_inhibitor": "unknown",
+        "fractionation_method": "unknown"
+      },
+      "sequencing_types": [
+        "Ribo-seq",
+        "RNA-seq"
+      ],
+      "study_sources": [
+        "1288540"
+      ],
+      "is_cross_modal": true,
+      "is_cross_study": false
+    },
+    {
+      "biogroup_id": "07d4b81f",
+      "sample_count": 4,
+      "sample_ids": [
+        "SRR34929050",
+        "SRR34929051",
+        "SRR34929050",
+        "SRR34929051"
+      ],
+      "shared_metadata": {
+        "cell_type": "Immortalized human embryonic cell line",
+        "treatment": "CFTR_WT-Leu558_within_High-abc overexpression",
+        "timepoint": "unknown",
+        "replicate": "unknown"
+      },
+      "sequencing_types": [
+        "RNA-seq"
+      ],
+      "study_sources": [
+        "1303685"
+      ],
+      "is_cross_modal": false,
+      "is_cross_study": false
+    },
+    {
+      "biogroup_id": "96bd8793",
+      "sample_count": 4,
+      "sample_ids": [
+        "SRR34929052",
+        "SRR34929053",
+        "SRR34929052",
+        "SRR34929053"
+      ],
+      "shared_metadata": {
+        "cell_type": "Immortalized human embryonic cell line",
+        "treatment": "CFTR_High-Leu558(UUA-to-CUC) overexpression",
+        "timepoint": "unknown",
+        "replicate": "unknown"
+      },
+      "sequencing_types": [
+        "RNA-seq"
+      ],
+      "study_sources": [
+        "1303685"
+      ],
+      "is_cross_modal": false,
+      "is_cross_study": false
+    },
+    {
+      "biogroup_id": "7b10e2a4",
+      "sample_count": 2,
+      "sample_ids": [
+        "SRR1825683",
+        "SRR1825685"
+      ],
+      "shared_metadata": {
+        "cell_type": "fibroblasts",
+        "treatment": "unknown",
+        "timepoint": "unknown",
+        "replicate": "unknown"
+      },
+      "sequencing_types": [
+        "RNA-seq"
+      ],
+      "study_sources": [
+        "1288540"
+      ],
+      "is_cross_modal": false,
+      "is_cross_study": false
+    },
+    {
+      "biogroup_id": "510e634f",
+      "sample_count": 1,
+      "sample_ids": [
+        "SRR1849443"
+      ],
+      "shared_metadata": {
+        "cell_type": "HEK293 cells",
+        "treatment": "unknown",
+        "timepoint": "unknown",
+        "replicate": "unknown"
+      },
+      "sequencing_types": [
+        "RNA-seq"
+      ],
+      "study_sources": [
+        "1303685"
+      ],
+      "is_cross_modal": false,
+      "is_cross_study": false
+    }
+  ],
+  "sample_to_biogroup_map": {
+    "SRR1849443": "510e634f",
+    "SRR34929050": "07d4b81f",
+    "SRR34929051": "07d4b81f",
+    "SRR34929052": "96bd8793",
+    "SRR34929053": "96bd8793",
+    "SRR34929054": "3c71cf07",
+    "SRR34929055": "3c71cf07",
+    "SRR34929056": "3c71cf07",
+    "SRR34929057": "3c71cf07",
+    "SRR34929058": "3c71cf07",
+    "SRR34929059": "5f8a1a5c",
+    "SRR34929060": "5f8a1a5c",
+    "SRR34929061": "5f8a1a5c",
+    "SRR34929062": "5f8a1a5c",
+    "SRR34929063": "5f8a1a5c",
+    "ERR14244130": "30a7585e",
+    "ERR14244127": "30a7585e",
+    "ERR14244129": "30a7585e",
+    "ERR14244128": "30a7585e",
+    "SRR1825683": "7b10e2a4",
+    "SRR1825685": "7b10e2a4",
+    "SRR34432291": "4b398384",
+    "SRR34432292": "4b398384",
+    "SRR34432293": "4b398384",
+    "SRR34432294": "4b398384"
+  }
+}
