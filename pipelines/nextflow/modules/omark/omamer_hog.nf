@@ -22,10 +22,10 @@ process OMAMER_HOG {
     storeDir "${params.cacheDir}/$gca/omamer/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     input:
-    tuple val(gca), val(dbname), path(translation_file)
+    tuple val(gca), val(dbname), path(translation_file), val(species_id)
     
     output:
-    tuple val(gca), val(dbname), path("proteins.omamer")
+    tuple val(gca), val(dbname), path("proteins.omamer"), val(species_id)
 
     script:
     """

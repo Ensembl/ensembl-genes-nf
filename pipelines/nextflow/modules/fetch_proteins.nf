@@ -26,10 +26,10 @@ process FETCH_PROTEINS {
     maxForks 20
 
     input:
-    tuple val(gca), val(dbname), val(busco_dataset)
+    tuple val(gca), val(dbname), val(species_id), val(busco_dataset)
 
     output:
-    tuple val(gca), val(dbname), path("*_translations.fa"),val(busco_dataset) 
+    tuple val(gca), val(dbname), path("*_translations.fa"),val(busco_dataset) , val(species_id)
 
     script:
     scientific_name = getMetaValue(dbname, "species.production_name")[0].meta_value.toString().toLowerCase()

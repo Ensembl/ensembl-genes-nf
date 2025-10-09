@@ -24,10 +24,10 @@ process FETCH_GENOME {
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
   maxForks 10
   input:
-  tuple val(gca), val(dbname), val(busco_dataset)
+  tuple val(gca), val(dbname), val(species_id), val(busco_dataset)
 
   output:
-  tuple val(gca), val(dbname), path("*.fna"), val(busco_dataset)
+  tuple val(gca), val(dbname), path("*.fna"), val(busco_dataset), val(species_id)
   
   script:
   """

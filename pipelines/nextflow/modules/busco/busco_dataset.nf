@@ -22,10 +22,10 @@ process BUSCO_DATASET {
     tag "$taxon_id:$dbname"
 
     input:
-    tuple val(gca), val(taxon_id), val(dbname)
+    tuple val(gca), val(taxon_id), val(dbname), val(species_id)
 
     output:
-    tuple val(gca), val(dbname), stdout
+    tuple val(gca), val(dbname), val(species_id), stdout
     
     script:
     """

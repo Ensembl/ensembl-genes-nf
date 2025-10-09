@@ -129,25 +129,31 @@ workflow STATISTICS{
     if (params.run_busco_core || params.run_omark || params.run_ensembl_stats || params.run_ensembl_beta_metakeys) {
     
         def fullProcessedData = []
-        rows = file(params.csvFile).readLines().drop(1) // Skip header
-        rows.each { row ->
-            def core = row
-            def gcaChannel = getMetaValue(core, "assembly.accession")
-            def taxonIdChannel = getMetaValue(core, "species.taxonomy_id")
+        //rows = file(params.csvFile).readLines().drop(1) // Skip header
+        rows = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
+                .splitCsv(sep:',', header:true)
+                .map { row -> [core:row.get('core'), species_id:row.get('species_id')]}
+
+        rows.map { row -> 
+            def core = row.core
+            def species_id = row.species_id
+            def gcaChannel = getMetaValue(core, "assembly.accession", species_id)
+            def taxonIdChannel = getMetaValue(core, "species.taxonomy_id", species_id)
             def gca = gcaChannel[0].meta_value.toString()
             def taxon_id = taxonIdChannel[0].meta_value.toString()
-            fullProcessedData.add([gca: gca, taxon_id: taxon_id, core: core])
+            fullProcessedData.add([gca: gca, taxon_id: taxon_id, core: core, species_id: species_id])
         }
 
     full_data = Channel.from(fullProcessedData)
     
     def minimalProcessedData = []
         rows = file(params.csvFile).readLines().drop(1) // Skip header
-        rows.each { row ->
-            def core = row
-            def gcaChannel = getMetaValue(core, "assembly.accession")
+        rows.map { row -> [core:row.get('core'), species_id:row.get('species_id')]
+            def core = row.core
+            def species_id = row.species_id
+            def gcaChannel = getMetaValue(core, "assembly.accession", species_id)
             def gca = gcaChannel[0].meta_value.toString()
-            minimalProcessedData.add([gca: gca, core: core])
+            minimalProcessedData.add([gca: gca, core: core, species_id: species_id])
         }
 
     minimal_data = Channel.from(minimalProcessedData)

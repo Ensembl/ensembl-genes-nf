@@ -35,14 +35,14 @@ def buildMetadata(gca, taxon_id) {
     return db_meta
 }
 
-def getMetaValue(String dbname, String metaKey) {
+def getMetaValue(String dbname, String metaKey, String species_id=1) {
     def sql
     println(dbname)
     def driver = 'com.mysql.cj.jdbc.Driver'
     // 'mysql-connector-j-8.0.31' //'org.hsqldb.jdbc.JDBCDriver' //'mysql-connector-j-8.0.31' //'com.mysql.jdbc.Driver' // 'com.mysql.cj.jdbc.Driver'
     def jdbcUrl = "jdbc:mysql://${params.host}:${params.port}/${dbname}"
     sql = Sql.newInstance(jdbcUrl, params.user,params.password,driver)
-    def query = "SELECT meta_value FROM meta WHERE meta_key = ?"
+    def query = "SELECT meta_value FROM meta WHERE meta_key = ? and species_id = ?"
     def result = sql.rows(query, [metaKey])
 
     //result= channel.sql.fromQuery(query, db: 'core_db')

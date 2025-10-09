@@ -27,13 +27,13 @@ process BUSCO_CORE_METAKEYS {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(gca), val(dbname),path(summary_file)
+    tuple val(gca), val(dbname),path(summary_file), val(species_id)
     
     script:
-    scientific_name_query = getMetaValue(dbname, "species.scientific_name")[0]
+    scientific_name_query = getMetaValue(dbname, "species.scientific_name", species_id)[0]
     scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
     species=scientific_name.toLowerCase()
-    annotation_source_query=getMetaValue(dbname, "species.annotation_source")[0]
+    annotation_source_query=getMetaValue(dbname, "species.annotation_source", species_id)[0]
     annotation_source = annotation_source_query ? annotation_source_query.meta_value.toString() : "ensembl"
     publish_dir =scientific_name +'/'+gca+'/'+annotation_source
 

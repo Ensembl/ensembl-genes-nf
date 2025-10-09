@@ -26,10 +26,10 @@ process BUSCO_GENOME_LINEAGE {
 
     input:
     //val(busco_dataset)
-    tuple val(gca), val(dbname), path(genome_file), val(busco_dataset)
+    tuple val(gca), val(dbname), path(genome_file), val(busco_dataset), val(species_id)
 
     output:
-    tuple val(gca), val(dbname), path("genome_output/*.txt")
+    tuple val(gca), val(dbname), path("genome_output/*.txt"), val(species_id)
 
     script:
     def buscoDataset = params.busco_dataset ? params.busco_dataset.trim() : busco_dataset.trim()

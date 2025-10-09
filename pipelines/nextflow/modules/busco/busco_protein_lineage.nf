@@ -23,10 +23,10 @@ process BUSCO_PROTEIN_LINEAGE {
     maxForks 10
 
     input:
-    tuple val(gca), val(dbname), path(translation_file), val(busco_dataset)
+    tuple val(gca), val(dbname), path(translation_file), val(busco_dataset), val(species_id)
 
     output:
-    tuple val(gca), val(dbname), path("protein_output/*.txt")
+    tuple val(gca), val(dbname), path("protein_output/*.txt"), val(species_id)
 
     script:
     def buscoDataset = params.busco_dataset ? params.busco_dataset.trim() : busco_dataset.trim()

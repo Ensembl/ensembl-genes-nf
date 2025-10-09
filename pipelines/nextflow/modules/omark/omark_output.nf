@@ -25,13 +25,13 @@ process OMARK_OUTPUT {
     //storeDir "${params.outDir}/$publish_dir/statistics/"
 
     input:
-    tuple val(gca), val(dbname), val(publish_dir), path(summary_file), val(omark_dir)
+    tuple val(gca), val(dbname), val(publish_dir), path(summary_file), val(omark_dir), val(species_id)
 
     output:
     tuple val(gca), val(dbname), path("*.txt")
 
     script:
-    scientific_name_query = getMetaValue(dbname, "species.scientific_name")[0]
+    scientific_name_query = getMetaValue(dbname, "species.scientific_name",species_id)[0]
     scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
     species=scientific_name.toLowerCase()
     gca_string = gca.toLowerCase().replaceAll(/\./, "v").replaceAll(/_/, "")   

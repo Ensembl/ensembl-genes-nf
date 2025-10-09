@@ -25,7 +25,7 @@ process BUSCO_OUTPUT {
     
     input:
     val(datatype)
-    tuple val(gca), val(dbname), path(summary_file) 
+    tuple val(gca), val(dbname), path(summary_file) , val(species_id)
 
 
     output:

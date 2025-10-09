@@ -27,10 +27,10 @@ process OMARK {
     maxForks 15
 
     input:
-    tuple val(gca), val(db), path(omamer_file)
+    tuple val(gca), val(db), path(omamer_file), val(species_id)
     
     output:
-    tuple val(gca), val(db), val(publish_dir), path("omark_output/*.txt"), path("omark_output/*")
+    tuple val(gca), val(db), val(publish_dir), path("omark_output/*.txt"), path("omark_output/*"), val(species_id)
 
     script:
     scientific_name = getMetaValue(db, "species.scientific_name")[0].meta_value.toString().replaceAll("\\s", "_")
