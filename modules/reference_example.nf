@@ -1,15 +1,31 @@
+
+
 process EXAMPLE_MODULE {
     // Resource label for appropriate compute allocation
+    // resource classes are similar to in eHive and defined in config files
+    // as withLabel and then specifications of the resources (memory, cpus, time, etc)
+    // these are then what is requested from the cluster scheduler (SLURM) and nextflow 
+    // handles the syntax depending on the scheduler. 
     label 'process_medium'
     
-    // Software dependencies - currently only support singularity as a requirement d
+    // Each job should point to an appropriate singularity container. 
+    // these can be specified in the module like this or in a config file (Like Annas Json)
     container "https://depot.galaxyproject.org/singularity/mulled-v2-example:latest"
     
-    // Dynamic tagging for better process identification
+    // Dynamic tagging for better process identification in CLI or reports
     tag "${meta.id}"
 
-    errorStrategy 'ignore'
-    
+    // What to do in case of non zero exit code. the correct option depends on the use case
+    // API calls might want to retry and then terminate. Other times you want to ignore errors
+    // example where retry 3 times and then ignore
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
+    maxRetries 3  // Retry up to 3 times on failure
+    maxErrors 10   // Allow up to 10 failed tasks total
+
+    //Unclear but I think you can also get same behaviour with
+    // errorStrategy 'ignore'
+    // maxRetries 3
+
     // Publish results to organized output directory
     publishDir "${params.outdir}/example_module", 
         pattern: "*.{txt,log,html}",
@@ -25,21 +41,28 @@ process EXAMPLE_MODULE {
     val mode                                // Required parameter for tool execution
     
     output:
-    tuple val(meta), path("${prefix}.txt"),             emit: results
+    tuple val(meta), path("${prefix}.txt"),             emit: results // keep meta in output for tracking
     tuple val(meta), path("${prefix}.log"),             emit: logs
     tuple val(meta), path("${prefix}_report.html"),     emit: reports, optional: true
     tuple val(meta), path("${prefix}_stats.json"),      emit: stats,   optional: true
-    path "versions.yml",                                emit: versions
+    path "versions.yml",                                emit: versions // capture tool versions for reproducibility
     
     when:
     // Use ext.when instead of hardcoded when conditions
     // this enables the module to be conditionally executed based on external parameters
     // and these parameters come from config rather than $params.<param> meaning they are 
-    // more flexible for reuse
+    // more flexible for reuse. I think we will use this sparingly as it adds complexity
     task.ext.when == null || task.ext.when
     
+
+    // Script block should tackle one main task only. The use of secondary tools is mainly used in 
+    // post processing of tool output like format conversion or generating reports. But by default 
+    // we should only be doing one main task per module.
     script:
     // Define variables for flexibility and reusability
+    // forcing these through as module inputs reduces module reusability. Only required
+    // inputs should be defined in the input block above. Everything else should be
+    // defined here and passed through the task.ext object.
     def args = task.ext.args ?: ''
     def args2 = task.ext.args2 ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
@@ -47,6 +70,8 @@ process EXAMPLE_MODULE {
     def input_files = is_paired ? "${reads[0]} ${reads[1]}" : "${reads}"
     
     // Check for input/output name conflicts
+    // this is an example of a what would be a silent failure and we can get around it with 
+    // these checks but I dont think its really necessary if we are careful with naming conventions
     if ("${reads}" == "${prefix}.txt") {
         error "Input and output names are the same, set prefix in module configuration to disambiguate!"
     }
@@ -61,50 +86,25 @@ process EXAMPLE_MODULE {
         --output ${prefix}.txt \\
         ${args}
     
-    # Secondary tool for additional processing (if needed)
-    if [[ -s ${prefix}.txt ]]; then
-        secondary_tool \\
-            --input ${prefix}.txt \\
-            --output ${prefix}_stats.json \\
-            ${args2} \\
-            || echo "Secondary tool failed, continuing..." >&2
-    fi
-    
-    # Generate report if conditions are met
-    if [[ "${mode}" == "detailed" ]]; then
-        generate_report \\
-            --input ${prefix}.txt \\
-            --output ${prefix}_report.html \\
-            --sample-id ${meta.id}
-    fi
-    
     # Capture versions for reproducibility
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         example_tool: \\$(example_tool --version | sed 's/example_tool v//g')
-        secondary_tool: \\$(secondary_tool --version | grep -oP '\\d+\\.\\d+\\.\\d+')
-        samtools: \\$(samtools --version | sed '1!d ; s/samtools //')
     END_VERSIONS
     """
     
     stub:
-    // Stub block for testing - must create all expected outputs
-    def args = task.ext.args ?: ''
+    //  Allows rapid testing of workflow logic without running
+    // expensive computations. Use 'nextflow run -stub' to validate your pipeline
+    // structure before committing to long-running jobs.    def args = task.ext.args ?: ''
     def args2 = task.ext.args2 ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     
     """
-    # Create main output files
+    # Create main output files. Whatever is expected to be generated by the script block
+    # should get created here. File existence is all that matters in stubs
     touch ${prefix}.txt
     touch ${prefix}.log
-    
-    # Create optional outputs based on conditions
-    if [[ "${mode}" == "detailed" ]]; then
-        touch ${prefix}_report.html
-    fi
-    
-    # Create compressed stub files properly
-    echo "stub stats data" | gzip > ${prefix}_stats.json.gz || touch ${prefix}_stats.json
     
     # Generate versions file (same as main script)
     cat <<-END_VERSIONS > versions.yml

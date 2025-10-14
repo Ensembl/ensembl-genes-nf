@@ -1,0 +1,2 @@
+2025-10-01 11:02:32	-	festering_lumiere	-	f1c8f47af1b5b14bea20df0c21725edb	b028bb6b-e765-4e7b-aecf-d181cbb2757e	nextflow run pipelines/example/main.nf
+2025-10-01 11:02:52	2.4s	sick_heisenberg	OK	ddc1f6bbadf264d5f2e080c0e8ec7c0f	f529ce97-5439-4e81-b84f-fbdb1cfc3169	nextflow run pipelines/example/main.nf

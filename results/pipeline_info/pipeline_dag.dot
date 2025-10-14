@@ -1,0 +1,71 @@
+digraph "pipeline_dag" {
+rankdir=TB;
+v0 [shape=point,label="",fixedsize=true,width=0.1,xlabel="Channel.of"];
+v1 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v0 -> v1;
+
+v1 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v2 [shape=point];
+v1 -> v2 [label="input_ch"];
+
+v3 [shape=point,label="",fixedsize=true,width=0.1,xlabel="Channel.of"];
+v4 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v3 -> v4;
+
+v4 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v5 [label="SUBWORKFLOW_EXAMPLE:MINIMAL_SUBWORKFLOW_EXAMPLE:TOOL_A"];
+v4 -> v5 [label="input_channel"];
+
+v5 [label="SUBWORKFLOW_EXAMPLE:MINIMAL_SUBWORKFLOW_EXAMPLE:TOOL_A"];
+v7 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="concat"];
+v5 -> v7;
+
+v5 [label="SUBWORKFLOW_EXAMPLE:MINIMAL_SUBWORKFLOW_EXAMPLE:TOOL_A"];
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="concat"];
+v5 -> v8;
+
+v4 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="map"];
+v6 [label="SUBWORKFLOW_EXAMPLE:MINIMAL_SUBWORKFLOW_EXAMPLE:TOOL_B"];
+v4 -> v6 [label="input_channel"];
+
+v6 [label="SUBWORKFLOW_EXAMPLE:MINIMAL_SUBWORKFLOW_EXAMPLE:TOOL_B"];
+v7 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="concat"];
+v6 -> v7;
+
+v6 [label="SUBWORKFLOW_EXAMPLE:MINIMAL_SUBWORKFLOW_EXAMPLE:TOOL_B"];
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="concat"];
+v6 -> v8;
+
+v7 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="concat"];
+v10 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="groupTuple"];
+v7 -> v10 [label="input_files"];
+
+v8 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="concat"];
+v9 [shape=point];
+v8 -> v9 [label="versions"];
+
+v10 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="groupTuple"];
+v11 [label="SUBWORKFLOW_EXAMPLE:SIMPLE_SEQUENTIAL_EXAMPLE:COMBINE_OUTPUTS"];
+v10 -> v11;
+
+v11 [label="SUBWORKFLOW_EXAMPLE:SIMPLE_SEQUENTIAL_EXAMPLE:COMBINE_OUTPUTS"];
+v12 [label="SUBWORKFLOW_EXAMPLE:SIMPLE_SEQUENTIAL_EXAMPLE:COUNT_LINES"];
+v11 -> v12 [label="combined"];
+
+v11 [label="SUBWORKFLOW_EXAMPLE:SIMPLE_SEQUENTIAL_EXAMPLE:COMBINE_OUTPUTS"];
+v14 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="concat"];
+v11 -> v14;
+
+v12 [label="SUBWORKFLOW_EXAMPLE:SIMPLE_SEQUENTIAL_EXAMPLE:COUNT_LINES"];
+v13 [shape=point];
+v12 -> v13 [label="counts"];
+
+v12 [label="SUBWORKFLOW_EXAMPLE:SIMPLE_SEQUENTIAL_EXAMPLE:COUNT_LINES"];
+v14 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="concat"];
+v12 -> v14;
+
+v14 [shape=circle,label="",fixedsize=true,width=0.1,xlabel="concat"];
+v15 [shape=point];
+v14 -> v15 [label="versions"];
+
+}
