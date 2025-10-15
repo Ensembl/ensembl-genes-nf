@@ -25,10 +25,10 @@ This runs two tools in parallel, combines their outputs, and counts lines.
 └── docs/                         # All documentation
 ```
 
-## Examples (in order of complexity)
+## Examples
 
-### 1. Simplest (workflows/simple_workflow.nf)
-Single process - the absolute minimum.
+### Simple Workflow (workflows/simple_workflow.nf)
+A single process workflow - demonstrates the basics.
 
 ```bash
 nextflow run workflows/simple_workflow.nf -stub --outdir results
@@ -36,8 +36,8 @@ nextflow run workflows/simple_workflow.nf -stub --outdir results
 
 **Output**: `tool_a/` (1 tool, 2 samples)
 
-### 2. Main Workflow (main.nf)
-Two subworkflows chained together (same as `workflows/subworkflow_example.nf`).
+### Main Workflow (main.nf)
+Two subworkflows chained together (also available as `workflows/subworkflow_example.nf`).
 
 ```bash
 nextflow run main.nf -stub --outdir results
@@ -45,8 +45,8 @@ nextflow run main.nf -stub --outdir results
 
 **Output**: `tool_a/`, `tool_b/`, `combined/`, `line_counts/` (2 tools + processing)
 
-### 3. Advanced Entry Points (advanced_entrypoints/)
-Full 4-tool workflow with dynamic entry point system.
+### Advanced Entry Points (advanced_entrypoints/)
+Dynamic entry point system with automatic workflow resumption.
 
 ```bash
 cd advanced_entrypoints
@@ -56,11 +56,13 @@ nextflow run main.nf -stub --outdir results
 
 **Output**: All 4 tools + combine + count with automatic entry point detection
 
-## Learning Path
+## Where to Start
 
-1. **Start**: `workflows/simple_workflow.nf` - Single process
-2. **Next**: `main.nf` - Subworkflow pattern  
-3. **Advanced**: `advanced_entrypoints/` - Entry point system
+**New to Nextflow?** Start with `workflows/simple_workflow.nf` to understand the basics.
+
+**Familiar with workflows?** Explore `main.nf` to see subworkflow patterns.
+
+**Building complex pipelines?** Check out `advanced_entrypoints/` for the entry point system.
 
 ## Documentation
 

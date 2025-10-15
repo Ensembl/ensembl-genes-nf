@@ -1,1 +1,0 @@
-/Users/jackt/ensembl-genes-nf/work/48/9833ad2e88c15a04e7757a904a8e95/sample1_combined.txt

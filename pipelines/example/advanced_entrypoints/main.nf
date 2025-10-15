@@ -45,7 +45,7 @@ def createChannelFromPublished(String baseDir, List<Map> requirements) {
         def pattern = "${baseDir}/${req.name}/${req.pattern}"
         def toolFiles = file(pattern)
         if (toolFiles.size() > 0) {
-            log.info "  ✓ Found ${toolFiles.size()} files in ${req.name}/"
+            log.info "  * Found ${toolFiles.size()} files in ${req.name}/"
             allFiles.addAll(toolFiles)
         }
     }
