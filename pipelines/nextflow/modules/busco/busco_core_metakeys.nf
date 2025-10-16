@@ -50,7 +50,7 @@ process BUSCO_CORE_METAKEYS {
     done < ${projectDir}/bin/requirements.txt
 
     chmod +x $projectDir/bin/busco_metakeys_patch.py
-    busco_metakeys_patch.py -db ${dbname} -file ${summary_file} -output_dir "${params.outDir}/$publish_dir/" -host ${params.host} -port ${params.port} -user ${params.user}  -password ${params.password} -run_query true
+    busco_metakeys_patch.py -db ${dbname} -file ${summary_file} -output_dir "${params.outDir}/$publish_dir/" -host ${params.host} -port ${params.port} -user ${params.user}  -password ${params.password} -spacies_id ${species_id} -run_query true
     """
     //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} < ${params.cacheDir}/$gca/${dbname}.sql
     

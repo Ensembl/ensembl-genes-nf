@@ -31,7 +31,7 @@ process RUN_ENSEMBL_META {
     output:
     tuple val(gca), val(dbname), path("*.sql")
     script:
-    scientific_name_query = getMetaValue(dbname, "species.scientific_name",species_id)[0]
+    scientific_name_query = getMetaValue(dbname, "species.production_name",species_id)[0]
     scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
     species=scientific_name.toLowerCase()
     annotation_source_query=getMetaValue(dbname, "species.annotation_source",species_id)[0]
@@ -50,10 +50,10 @@ process RUN_ENSEMBL_META {
         echo "\$package is already installed"
     fi
     done < ${projectDir}/bin/requirements.txt
-    python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir ${params.outDir}/$publish_dir/ --db_name ${dbname} --host ${params.host} --port ${params.port}  --team ${params.team}
+    python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir ${params.outDir}/$publish_dir/ --db_name ${dbname} --host ${params.host} --port ${params.port}  --team ${params.team}  --production_name ${scientific_name_query.trim()}
     ln -sf ${params.outDir}/$publish_dir/*.sql 
     """
-    //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} < ${params.cacheDir}/$gca/${dbname}.sql
+    //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} --production_name ${scientific_name_query}< ${params.cacheDir}/$gca/${dbname}.sql
     
 
     
