@@ -30,7 +30,7 @@ process BUSCO_CORE_METAKEYS {
     tuple val(gca), val(dbname),path(summary_file), val(species_id)
     
     script:
-    scientific_name_query = getMetaValue(dbname, "species.scientific_name", species_id)[0]
+    scientific_name_query = getMetaValue(dbname, "species.production_name", species_id)[0]
     scientific_name = scientific_name_query.meta_value ? scientific_name_query.meta_value.toString().replaceAll("\\s", "_") : dbname
     species=scientific_name.toLowerCase()
     annotation_source_query=getMetaValue(dbname, "species.annotation_source", species_id)[0]
