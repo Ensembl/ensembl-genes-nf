@@ -165,7 +165,7 @@ def generate_sql_patches(
     return "\n".join(sql_statements)
 
 
-def process_busco_file(busco_file, db, output_dir):
+def process_busco_file(busco_file:str, db:str, output_dir:str,species_id=1) -> str:
     """
     Parses the BUSCO file, generates a JSON, writes it to an output file,
     and generates SQL patches.
@@ -194,7 +194,7 @@ def process_busco_file(busco_file, db, output_dir):
     print(busco_json)
 
     # Generate SQL patches from the JSON
-    sql_patches = generate_sql_patches(db, busco_data)
+    sql_patches = generate_sql_patches(db, busco_data,species_id=species_id)
 
     # Return SQL patches to write them to an SQL file later
     return sql_patches
@@ -260,11 +260,12 @@ def main():
     parser.add_argument("-port", type=str, help="Server port")
     parser.add_argument("-user", type=str, help="Db user with writable permission")
     parser.add_argument("-password", type=str, help="Server password")
+    parser.add_argument("-species_id", type=str, help="Species id to use in the meta table", default="1")
     # Parse arguments
     args = parser.parse_args()
     if args.file:
         # Process the single file and write to JSON and SQL
-        sql_patches = process_busco_file(args.file, args.db, args.output_dir)
+        sql_patches = process_busco_file(args.file, args.db, args.output_dir, args.species_id)
         with open(Path(args.output_dir) / f"{args.db}.sql", "a") as f:
             f.write(sql_patches)
 
@@ -275,7 +276,7 @@ def main():
         with open(Path(args.output_dir) / f"{args.db}.sql", "a") as f:
             for file in busco_files:
                 print(f"Processing file: {file}")
-                sql_patches = process_busco_file(file, args.db, args.output_dir)
+                sql_patches = process_busco_file(file, args.db, args.output_dir, args.species_id)
                 f.write(sql_patches)
     if args.run_query == 'true':
         execute_sql_patches(args.db, sql_patches, args.host, args.user, args.password, int(args.port))
