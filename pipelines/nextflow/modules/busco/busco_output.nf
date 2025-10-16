@@ -29,7 +29,7 @@ process BUSCO_OUTPUT {
 
 
     output:
-    tuple val(gca), val(dbname), path("*_short_summary.txt")
+    tuple val(gca), val(dbname), path("*_short_summary.txt"), val(species_id)
     
     script:
     if (dbname=='core'){
