@@ -50,8 +50,8 @@ process RUN_ENSEMBL_META {
         echo "\$package is already installed"
     fi
     done < ${projectDir}/bin/requirements.txt
-    python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir ${params.outDir}/$publish_dir/ --db_name ${dbname} --host ${params.host} --port ${params.port}  --team ${params.team}  --production_name ${scientific_name_query.trim()}
-    ln -sf ${params.outDir}/$publish_dir/*.sql 
+    python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py --output_dir ${params.outDir}/$publish_dir/ --db_name ${dbname} --host ${params.host} --port ${params.port}  --team ${params.team}  --production_name ${scientific_name.toString().trim()}
+    cp ${params.outDir}/$publish_dir/*.sql ./
     """
     //bash mysql -N -u ${params.user} -h ${params.host} -P ${params.port} -D ${dbname} --production_name ${scientific_name_query}< ${params.cacheDir}/$gca/${dbname}.sql
     
