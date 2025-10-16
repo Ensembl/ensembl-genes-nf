@@ -43,7 +43,7 @@ def getMetaValue(String dbname, String metaKey, String species_id=1) {
     def jdbcUrl = "jdbc:mysql://${params.host}:${params.port}/${dbname}"
     sql = Sql.newInstance(jdbcUrl, params.user,params.password,driver)
     def query = "SELECT meta_value FROM meta WHERE meta_key = ? and species_id = ?"
-    def result = sql.rows(query, [metaKey])
+    def result = sql.rows(query, [metaKey,species_id])
 
     //result= channel.sql.fromQuery(query, db: 'core_db')
     return result
