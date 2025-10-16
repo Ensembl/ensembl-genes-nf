@@ -3,3 +3,4 @@ typing
 pymysql
 requests
 xmltodict
+pandas

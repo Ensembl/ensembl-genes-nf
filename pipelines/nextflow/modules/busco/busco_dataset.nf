@@ -29,6 +29,17 @@ process BUSCO_DATASET {
     
     script:
     """
+    # Check if Python dependencies are installed
+    # Read each line in the requirements file
+    pip install --upgrade pip
+    while read -r package; do \\
+    if ! pip show -q "\$package" &>/dev/null; then 
+        echo "\$package is not installed" 
+        pip install "\$package"
+    else
+        echo "\$package is already installed"
+    fi
+    done < ${projectDir}/bin/requirements.txt
     clade_selector.py -d ${params.busco_datasets_file} -t ${taxon_id}
     """
 
