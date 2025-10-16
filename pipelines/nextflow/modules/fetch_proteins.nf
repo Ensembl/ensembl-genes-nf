@@ -32,7 +32,7 @@ process FETCH_PROTEINS {
     tuple val(gca), val(dbname), path("*_translations.fa"),val(busco_dataset) , val(species_id)
 
     script:
-    scientific_name = getMetaValue(dbname, "species.production_name")[0].meta_value.toString().toLowerCase()
+    scientific_name = getMetaValue(dbname, "species.production_name",species_id)[0].meta_value.toString().toLowerCase()
     translations_file = scientific_name +"_translations.fa"
     """
     perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
@@ -41,6 +41,7 @@ process FETCH_PROTEINS {
         -dbname ${dbname} \
         -user ${params.user_r} \
         -file $translations_file \
+        --species_id ${species_id} \
         ${params.dump_params}
     """
 }
