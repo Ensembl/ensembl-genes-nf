@@ -62,7 +62,7 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
     # If match is not None, extract the group and assign it to mode_match
     if mode_pattern is not None:
         mode_match = mode_pattern.group(1)
-    if mode_match in ("genome", "euk_genome_met", "euk_genome_min"):
+    if mode_match in ("genome", "euk_genome_met", "euk_genome_min", "prok_genome_prod"):
         busco_mode = "genome"
     elif mode_match == "proteins":
         busco_mode = "protein"
