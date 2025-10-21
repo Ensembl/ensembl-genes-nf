@@ -1,7 +1,0 @@
-2025-10-01 11:02:32	-	festering_lumiere	-	f1c8f47af1b5b14bea20df0c21725edb	b028bb6b-e765-4e7b-aecf-d181cbb2757e	nextflow run pipelines/example/main.nf
-2025-10-01 11:02:52	2.4s	sick_heisenberg	OK	ddc1f6bbadf264d5f2e080c0e8ec7c0f	f529ce97-5439-4e81-b84f-fbdb1cfc3169	nextflow run pipelines/example/main.nf
-2025-10-15 08:45:42	2.5s	distracted_poitras	OK	ddf73b7bb3a0fab6acaa9e76dde92b0b	bdbe4d45-a73e-46ee-802a-57275f02072c	nextflow run pipelines/example/main.nf
-2025-10-15 08:47:47	2.7s	zen_bose	OK	ddf73b7bb3a0fab6acaa9e76dde92b0b	5e210522-e741-490d-a565-1ceeaf93c10d	nextflow run pipelines/example/main.nf -stub --outdir results
-2025-10-15 09:05:48	2.3s	clever_picasso	OK	ddf73b7bb3a0fab6acaa9e76dde92b0b	0d2cd613-3ccc-4ee4-99ea-a6b1ea748823	nextflow run pipelines/example/main.nf -stub --outdir results --entry_point FULL
-2025-10-15 09:06:01	2.2s	admiring_edison	OK	ddf73b7bb3a0fab6acaa9e76dde92b0b	5ef4fdd9-1797-4779-bae3-29a7458067da	nextflow run pipelines/example/main.nf -stub --outdir results --entry_point auto
-2025-10-15 10:46:43	2s	suspicious_kare	OK	ddf73b7bb3a0fab6acaa9e76dde92b0b	1a4d7912-03b5-40e7-85ce-2d8a2a79d645	nextflow run pipelines/example/main.nf -stub --outdir results --entry_point FULL
