@@ -2,10 +2,12 @@
 
 nextflow.enable.dsl = 2
 
-include { SUBWORKFLOW_EXAMPLE } from './workflows/subworkflow_example.nf'
+include { validateParameters } from 'plugin/nf-schema'
 
-// Parameters
-params.outdir = 'results'
+// Validate parameters against schema
+validateParameters()
+
+include { SUBWORKFLOW_EXAMPLE } from './workflows/subworkflow_example.nf'
 
 workflow {
     SUBWORKFLOW_EXAMPLE()
