@@ -94,7 +94,7 @@ def parse_busco_file(file_path: str, db: str) -> Dict[str, Union[str, int]]:
         if mode_match == "euk_genome_min":
             erroneus = score_match.group(7)
 
-        if mode_match in ("genome", "euk_genome_met", "euk_genome_min"):
+        if mode_match in ("genome", "euk_genome_met", "euk_genome_min", "prok_genome_prod"):
             # Extract the BUSCO version
             data["assembly.busco_version"] = str(version)
             # Extract the BUSCO dataset
