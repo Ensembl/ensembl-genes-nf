@@ -9,8 +9,6 @@ process FASTQ_DL {
 
     publishDir "${params.outdir}/fastq", mode: 'copy', pattern: '*.fastq.gz'
 
-    errorStrategy 'ignore'
-
     input:
     tuple val(meta), val(run), path(needs_processing)
 
