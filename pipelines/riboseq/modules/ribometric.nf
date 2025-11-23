@@ -7,8 +7,6 @@ process RIBOMETRIC {
 
     publishDir "${params.outdir}/RiboMetric", mode: 'copy'
 
-    errorStrategy { task.attempt <= 1 ? 'retry' : 'ignore' }
-    maxRetries 1
 
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
