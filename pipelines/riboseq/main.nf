@@ -43,7 +43,7 @@ workflow {
     //
     DATA_ACQUISITION(
         params.sample_sheet,
-        params.adapter_list
+        file(params.adapter_list)
     )
 
     //
@@ -58,8 +58,8 @@ workflow {
     //
     ALIGNMENT(
         QUALITY_CONTROL.out.samples,
-        params.star_index,
-        params.gtf
+        file(params.star_index),
+        file(params.gtf)
     )
 
     //
@@ -67,7 +67,7 @@ workflow {
     //
     ANALYSIS(
         ALIGNMENT.out.transcriptome_bam,
-        params.ribometric_annotation
+        file(params.ribometric_annotation)
     )
 
     //
@@ -76,7 +76,7 @@ workflow {
     POST_PROCESSING(
         ALIGNMENT.out.genome_bam,
         ANALYSIS.out.offsets,
-        params.chrom_sizes_file
+        file(params.chrom_sizes_file)
     )
 }
 
