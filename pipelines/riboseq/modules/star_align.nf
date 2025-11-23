@@ -20,7 +20,7 @@ process STAR_ALIGN {
 
     output:
     tuple val(meta), path("*.Aligned.sortedByCoord.out.bam"), emit: bam
-    tuple val(meta), path("*.Aligned.toTranscriptome.out.bam"), emit: transcriptome_bam, optional: true
+    tuple val(meta), path("*.Aligned.toTranscriptome.out.bam"), emit: transcriptome_bam
     tuple val(meta), path("*.Log.final.out"), emit: log
     path "versions.yml", emit: versions
 
@@ -34,7 +34,6 @@ process STAR_ALIGN {
     def alignment_type = params.alignment_type == 'Local' ? '--alignEndsType Local' : ''
     def allow_introns = params.allow_introns ? '--alignIntronMax 1000000 --alignMatesGapMax 1000000' : ''
     def unzip_command = reads.name.endsWith('.gz') ? 'zcat' : 'cat'
-    def output_transcriptome_bam = params.save_star_transcriptome_bam ? "--quantMode TranscriptomeSAM" : ""
 
     """
     STAR \
@@ -46,7 +45,7 @@ process STAR_ALIGN {
         --outFilterMultimapNmax ${params.max_multimappers} \
         --outFilterMismatchNmax ${params.mismatches} \
         --readFilesCommand $unzip_command \
-        $output_transcriptome_bam \
+        --quantMode TranscriptomeSAM \
         $alignment_type \
         $allow_introns \
         $trim_front \
@@ -62,10 +61,9 @@ process STAR_ALIGN {
 
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def output_transcriptome = params.save_star_transcriptome_bam ? "touch ${prefix}.Aligned.toTranscriptome.out.bam" : ""
     """
     touch ${prefix}.Aligned.sortedByCoord.out.bam
-    ${output_transcriptome}
+    touch ${prefix}.Aligned.toTranscriptome.out.bam
     touch ${prefix}.Log.final.out
 
     cat <<-END_VERSIONS > versions.yml

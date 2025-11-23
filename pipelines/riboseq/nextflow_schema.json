@@ -83,11 +83,6 @@
         "type": "integer",
         "default": 0,
         "description": "Number of bases to trim from 3' end"
-      },
-      "save_star_transcriptome_bam": {
-        "type": "boolean",
-        "default": true,
-        "description": "Save STAR transcriptome BAM output"
       }
     },
     "required": ["sample_sheet"]
