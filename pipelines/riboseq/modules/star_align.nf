@@ -1,0 +1,76 @@
+process STAR_ALIGN {
+    tag "${meta.id}"
+    label 'process_high'
+
+    conda "bioconda::star=2.7.11b"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/star:2.7.11b--h43eeafb_1' :
+        'biocontainers/star:2.7.11b--h43eeafb_1' }"
+
+    publishDir path: "${params.outdir}/star_align", mode: 'copy', saveAs: {
+        filename -> if (filename.endsWith('toTranscriptome.out.bam')) return "transcriptome_bam/$filename"
+        else if  (filename.endsWith('.bam')) return "bam/$filename"
+        else if (filename.endsWith('.out')) return "logs/$filename" else null
+    }
+
+    input:
+    tuple val(meta), path(reads)
+    path index
+    path gtf
+
+    output:
+    tuple val(meta), path("*.Aligned.sortedByCoord.out.bam"), emit: bam
+    tuple val(meta), path("*.Aligned.toTranscriptome.out.bam"), emit: transcriptome_bam, optional: true
+    tuple val(meta), path("*.Log.final.out"), emit: log
+    path "versions.yml", emit: versions
+
+    when:
+    task.ext.when == null || task.ext.when
+
+    script:
+    def args = task.ext.args ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def trim_front = params.trim_front > 0 ? "--clip3pNbases ${params.trim_front}" : ''
+    def alignment_type = params.alignment_type == 'Local' ? '--alignEndsType Local' : ''
+    def allow_introns = params.allow_introns ? '--alignIntronMax 1000000 --alignMatesGapMax 1000000' : ''
+    def unzip_command = reads.name.endsWith('.gz') ? 'zcat' : 'cat'
+    def output_transcriptome_bam = params.save_star_transcriptome_bam ? "--quantMode TranscriptomeSAM" : ""
+
+    """
+    STAR \
+        --genomeDir $index \
+        --readFilesIn $reads \
+        --runThreadN ${task.cpus} \
+        --outSAMtype BAM SortedByCoordinate \
+        --outSAMattributes NH HI AS nM \
+        --outFilterMultimapNmax ${params.max_multimappers} \
+        --outFilterMismatchNmax ${params.mismatches} \
+        --readFilesCommand $unzip_command \
+        $output_transcriptome_bam \
+        $alignment_type \
+        $allow_introns \
+        $trim_front \
+        $args \
+        --outFileNamePrefix ${prefix}. \
+        --sjdbGTFfile $gtf
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        star: \$(STAR --version | sed -e "s/STAR_//g")
+    END_VERSIONS
+    """
+
+    stub:
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def output_transcriptome = params.save_star_transcriptome_bam ? "touch ${prefix}.Aligned.toTranscriptome.out.bam" : ""
+    """
+    touch ${prefix}.Aligned.sortedByCoord.out.bam
+    ${output_transcriptome}
+    touch ${prefix}.Log.final.out
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        star: 2.7.11b
+    END_VERSIONS
+    """
+}
