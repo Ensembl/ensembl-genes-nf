@@ -5,6 +5,7 @@
  */
 
 include { STAR_ALIGN } from '../modules/star_align.nf'
+include { SAMTOOLS_SORT } from '../modules/samtools_sort.nf'
 include { SAMTOOLS_INDEX as SAMTOOLS_INDEX_GENOME } from '../modules/samtools_index.nf'
 include { SAMTOOLS_INDEX as SAMTOOLS_INDEX_TRANSCRIPTOME } from '../modules/samtools_index.nf'
 
@@ -16,18 +17,21 @@ workflow ALIGNMENT {
 
     main:
     // Run STAR alignment
-    // STAR outputs both genome BAM and transcriptome BAM (if enabled)
+    // STAR outputs genome BAM (sorted) and transcriptome BAM (unsorted)
     STAR_ALIGN(
         collapsed_reads,
         star_index,
         gtf
     )
 
-    // Index genome BAM
+    // Index genome BAM (already sorted by coordinate)
     SAMTOOLS_INDEX_GENOME(STAR_ALIGN.out.bam)
 
-    // Index transcriptome BAM if it exists
-    SAMTOOLS_INDEX_TRANSCRIPTOME(STAR_ALIGN.out.transcriptome_bam)
+    // Sort transcriptome BAM before indexing
+    SAMTOOLS_SORT(STAR_ALIGN.out.transcriptome_bam)
+
+    // Index sorted transcriptome BAM
+    SAMTOOLS_INDEX_TRANSCRIPTOME(SAMTOOLS_SORT.out.bam)
 
 
     emit:
