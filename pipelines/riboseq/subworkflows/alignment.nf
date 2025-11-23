@@ -27,15 +27,11 @@ workflow ALIGNMENT {
     SAMTOOLS_INDEX_GENOME(STAR_ALIGN.out.bam)
 
     // Index transcriptome BAM if it exists
-    if (params.save_star_transcriptome_bam) {
-        SAMTOOLS_INDEX_TRANSCRIPTOME(STAR_ALIGN.out.transcriptome_bam)
-        transcriptome_bam_indexed = SAMTOOLS_INDEX_TRANSCRIPTOME.out.bam_and_bai
-    } else {
-        transcriptome_bam_indexed = Channel.empty()
-    }
+    SAMTOOLS_INDEX_TRANSCRIPTOME(STAR_ALIGN.out.transcriptome_bam)
+
 
     emit:
     genome_bam = SAMTOOLS_INDEX_GENOME.out.bam_and_bai           // tuple: [ meta, bam, bai ]
-    transcriptome_bam = transcriptome_bam_indexed                // tuple: [ meta, bam, bai ]
+    transcriptome_bam = SAMTOOLS_INDEX_TRANSCRIPTOME.out.bam_and_bai                // tuple: [ meta, bam, bai ]
     logs = STAR_ALIGN.out.log                                    // tuple: [ meta, log ]
 }
