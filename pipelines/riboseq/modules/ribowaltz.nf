@@ -12,7 +12,6 @@ process RIBOWALTZ {
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
     tuple val(meta2), path(gtf)
-    tuple val(meta3), path(fasta)
 
     output:
     tuple val(meta), path("*.cds_coverage_psite.tsv.gz"), optional: true, emit: cds_coverage
@@ -40,7 +39,7 @@ process RIBOWALTZ {
     library(riboWaltz)
 
     # Create annotation data table from GTF
-    annotation_dt <- create_annotation(gtfpath = "${gtf}", fastapath = "${fasta}")
+    annotation_dt <- create_annotation(gtfpath = "${gtf}")
 
     # Read BAM file
     reads_list <- bamtolist(bamfolder = ".", annotation = annotation_dt)

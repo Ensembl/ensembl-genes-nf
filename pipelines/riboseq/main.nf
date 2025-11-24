@@ -19,10 +19,6 @@ include { validateParameters } from 'plugin/nf-schema'
 // Validate parameters against schema
 validateParameters()
 
-// Check for required parameters
-if (!params.fasta) {
-    error "Reference genome FASTA file (--fasta) is required for RiboWaltz analysis"
-}
 
 /*
 ========================================================================================
@@ -74,8 +70,7 @@ workflow {
     ANALYSIS(
         ALIGNMENT.out.transcriptome_bam,
         params.ribometric_annotation ? file(params.ribometric_annotation) : null,
-        file(params.gtf),
-        file(params.fasta)
+        file(params.gtf)
     )
 
     //
