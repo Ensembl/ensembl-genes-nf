@@ -7,7 +7,8 @@ process RIBOMETRIC {
 
     publishDir "${params.outdir}/RiboMetric", mode: 'copy'
 
-
+    errorStrategy 'ignore'
+    
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
     path ribometric_annotation
