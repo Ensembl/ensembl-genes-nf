@@ -12,10 +12,11 @@ process RIBOWALTZ {
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
     tuple val(meta2), path(gtf)
+    tuple val(meta3), path(fasta)
 
     output:
     tuple val(meta), path("*.cds_coverage_psite.tsv.gz"), optional: true, emit: cds_coverage
-    tuple val(meta), path("offset_plot/*"), optional: true, emit: offset_plots
+    tuple val(meta), path("offset_plot"), optional: true, emit: offset_plots
     tuple val(meta), path("*.psite_offset.tsv.gz"), optional: true, emit: psite_offsets
     tuple val(meta), path("*.psite.tsv.gz"), optional: true, emit: psite_table
     tuple val(meta), path("*nt_coverage_psite.tsv.gz"), optional: true, emit: nt_coverage
@@ -31,105 +32,144 @@ process RIBOWALTZ {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def exclude_start = params.ribowaltz_exclude_start ?: 0
-    def exclude_stop = params.ribowaltz_exclude_stop ?: 0
+    def start_nts = params.ribowaltz_exclude_start ?: 42
+    def stop_nts = params.ribowaltz_exclude_stop ?: 27
     """
     #!/usr/bin/env Rscript
 
-    library(riboWaltz)
+    suppressPackageStartupMessages(library(riboWaltz))
+    suppressPackageStartupMessages(library(dplyr))
+
+    # Create folders
+    dir.create("offset_plot", showWarnings = FALSE)
+    dir.create("ribowaltz_qc", showWarnings = FALSE)
 
     # Create annotation data table from GTF
-    annotation_dt <- create_annotation(gtfpath = "${gtf}")
+    annotation_dt <- create_annotation("${gtf}")
 
     # Read BAM file
-    reads_list <- bamtolist(bamfolder = ".", annotation = annotation_dt)
+    bam_name <- "${prefix}"
+    names(bam_name) <- sub(".bam\$", "", basename("${transcriptome_bam}"))
+
+    reads_list <- bamtolist(bamfolder = ".", annotation = annotation_dt, name_samples = bam_name)
+
+    # Filter reads - no filtering by default, use all lengths
+    filtered_list <- reads_list
+
+    # Check for reads overlapping start codon
+    start_overlap <- filtered_list[[1]][end5 <= cds_start & end3 >= cds_start]
+    if (nrow(start_overlap) == 0) {
+        stop("No reads overlapping start codon. Cannot calculate P-site offsets.")
+    }
 
     # Calculate P-site offsets
-    psite_offset <- psite(reads_list, flanking = 6, extremity = "auto")
+    # The psite() function with txt=TRUE automatically creates the best_offset.txt file
+    psite_offset <- psite(filtered_list, flanking = 6, extremity = "auto", start = TRUE,
+                         txt = TRUE, plot = TRUE, plot_format = "pdf",
+                         txt_file = "${prefix}.ribowaltz_best_offset.txt")
 
-    # Write offset table
-    write.table(psite_offset, file = "${prefix}.psite_offset.tsv",
-                sep = "\\t", quote = FALSE, row.names = FALSE)
-    system("gzip ${prefix}.psite_offset.tsv")
+    # Export full offset table for this sample
+    data.table::fwrite(psite_offset, "${prefix}.psite_offset.tsv.gz", sep = "\\t")
 
-    # Write best offset summary
-    best <- aggregate(percentage ~ sample, data = psite_offset, FUN = max)
-    best <- merge(best, psite_offset)
-    write.table(best[, c("sample", "length", "offset", "percentage")],
-                file = "${prefix}.best_offset.txt",
-                sep = "\\t", quote = FALSE, row.names = FALSE)
+    # Create simplified offset file for bam_to_bed (only length and offset columns)
+    # This matches the format expected by bam_to_bed.py: length<tab>offset
+    offset_simple <- psite_offset[, c("length", "offset")]
+    write.table(offset_simple, file = "${prefix}.best_offset.txt",
+                sep = "\\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
-    # Create offset plots directory
-    dir.create("offset_plot", showWarnings = FALSE)
-
-    # Generate offset plots
-    for (sample_name in names(reads_list)) {
-        pdf(paste0("offset_plot/", sample_name, "_offset_plot.pdf"))
-        print(psite_info(reads_list[[sample_name]], psite_offset))
-        dev.off()
+    # Move offset plots to folder
+    pdf_files <- list.files(pattern = "^offset.*\\\\.pdf\$")
+    if (length(pdf_files) > 0) {
+        file.rename(pdf_files, file.path("offset_plot", pdf_files))
     }
 
     # Update reads with P-site information
-    reads_psite_list <- psite_info(reads_list, psite_offset)
+    filtered_psite_list <- psite_info(filtered_list, psite_offset, site = "psite",
+                                     fasta_genome = TRUE, refseq_sep = " ",
+                                     fastapath = "${fasta}",
+                                     gtfpath = "${gtf}")
 
     # Write P-site table
-    psite_table <- do.call(rbind, reads_psite_list)
-    write.table(psite_table, file = "${prefix}.psite.tsv",
-                sep = "\\t", quote = FALSE, row.names = FALSE)
-    system("gzip ${prefix}.psite.tsv")
-
-    # Create QC directory
-    dir.create("ribowaltz_qc", showWarnings = FALSE)
+    psite_table <- filtered_psite_list[[1]]
+    psite_table <- mutate(psite_table, sample = "${prefix}")
+    data.table::fwrite(psite_table, file = "${prefix}.psite.tsv.gz",
+                      sep = "\\t")
 
     # Generate QC plots
-    for (sample_name in names(reads_psite_list)) {
-        # Read length distribution
-        pdf(paste0("ribowaltz_qc/", sample_name, "_rlength_dist.pdf"))
-        print(rlength_distr(reads_list, sample_name))
-        dev.off()
+    sample_name <- names(filtered_psite_list)[1]
 
-        # Read extremity heatmap
-        pdf(paste0("ribowaltz_qc/", sample_name, "_rends_heat.pdf"))
-        print(rends_heat(reads_list, annotation_dt, sample_name, cl = 85))
-        dev.off()
+    # Read length distribution
+    length_dist <- rlength_distr(reads_list, sample = sample_name,
+                                multisamples = "average", cl = 99,
+                                colour = "grey70")
+    ggplot2::ggsave("ribowaltz_qc/${prefix}_length_distribution.pdf",
+                   length_dist[["plot"]], dpi = 400)
 
-        # Metaprofiles
-        pdf(paste0("ribowaltz_qc/", sample_name, "_metaprofile.pdf"))
-        print(metaprofile_psite(reads_psite_list, annotation_dt, sample_name))
-        dev.off()
+    # Meta-heatmap
+    ends_heatmap <- rends_heat(reads_list, annotation_dt, sample = sample_name,
+                              cl = 100, utr5l = 25, cdsl = 40, utr3l = 25)
+    ggplot2::ggsave("ribowaltz_qc/${prefix}_ends_heatmap.pdf",
+                   ends_heatmap[[paste0("plot_", sample_name)]],
+                   dpi = 400, width = 12, height = 8)
 
-        # Frame distribution
-        pdf(paste0("ribowaltz_qc/", sample_name, "_frame_psite.pdf"))
-        print(frame_psite_length(reads_psite_list, sample_name))
-        dev.off()
-    }
+    # P-site region distribution
+    psite_region <- region_psite(filtered_psite_list, annotation = annotation_dt,
+                                sample = sample_name)
+    ggplot2::ggsave("ribowaltz_qc/${prefix}_psite_region.pdf",
+                   psite_region[["plot"]], dpi = 400, width = 10)
 
-    # Calculate CDS coverage
-    cds_coverage <- cds_coverage(reads_psite_list, annotation_dt)
-    write.table(cds_coverage, file = "${prefix}.cds_coverage_psite.tsv",
-                sep = "\\t", quote = FALSE, row.names = FALSE)
-    system("gzip ${prefix}.cds_coverage_psite.tsv")
+    # Frame distribution
+    min_length <- as.integer(min(psite_offset[,"length"]))
+    max_length <- as.integer(max(psite_offset[,"length"]))
 
-    # Calculate codon coverage
-    codon_coverage_rpf <- codon_coverage(reads_list, annotation_dt, psite = FALSE)
-    write.table(codon_coverage_rpf, file = "${prefix}.codon_coverage_rpf.tsv",
-                sep = "\\t", quote = FALSE, row.names = FALSE)
-    system("gzip ${prefix}.codon_coverage_rpf.tsv")
+    frames_stratified <- frame_psite_length(filtered_psite_list, region = "all",
+                                           sample = sample_name,
+                                           length_range = min_length:max_length,
+                                           annotation = annotation_dt)
+    ggplot2::ggsave("ribowaltz_qc/${prefix}_frames_stratified.pdf",
+                   frames_stratified[[paste0("plot_", sample_name)]],
+                   dpi = 600, height = 9, width = 12)
 
-    codon_coverage_psite <- codon_coverage(reads_psite_list, annotation_dt, psite = TRUE)
-    write.table(codon_coverage_psite, file = "${prefix}.codon_coverage_psite.tsv",
-                sep = "\\t", quote = FALSE, row.names = FALSE)
-    system("gzip ${prefix}.codon_coverage_psite.tsv")
+    frames <- frame_psite(filtered_psite_list, region = "all",
+                         length_range = min_length:max_length,
+                         sample = sample_name, annotation = annotation_dt,
+                         colour = "grey70")
+    ggplot2::ggsave("ribowaltz_qc/${prefix}_frames.pdf",
+                   frames[[paste0("plot_", sample_name)]],
+                   dpi = 600, height = 9, width = 9)
 
-    # Optional: calculate coverage excluding start/stop regions
-    if (${exclude_start} > 0 || ${exclude_stop} > 0) {
-        nt_coverage <- cds_coverage(reads_psite_list, annotation_dt,
-                                   start_nts = ${exclude_start},
-                                   stop_nts = ${exclude_stop})
-        write.table(nt_coverage, file = "${prefix}.${exclude_start}nt_coverage_psite.tsv",
-                   sep = "\\t", quote = FALSE, row.names = FALSE)
-        system("gzip ${prefix}.${exclude_start}nt_coverage_psite.tsv")
-    }
+    # Metaprofile
+    metaprofile <- metaprofile_psite(filtered_psite_list, annotation_dt,
+                                    sample = sample_name,
+                                    utr5l = 25, cdsl = 40, utr3l = 25,
+                                    colour = "black")
+    ggplot2::ggsave("ribowaltz_qc/${prefix}_metaprofile_psite.pdf",
+                   metaprofile[[paste0("plot_", sample_name)]],
+                   dpi = 400, width = 12, height = 6)
+
+    # Calculate coverage
+    # Codon coverage
+    rpf_coverage <- codon_coverage(filtered_psite_list, annotation = annotation_dt,
+                                  sample = sample_name, psite = FALSE)
+    data.table::fwrite(rpf_coverage, "${prefix}.codon_coverage_rpf.tsv.gz", sep = "\\t")
+
+    psite_coverage <- codon_coverage(filtered_psite_list, annotation = annotation_dt,
+                                    sample = sample_name, psite = TRUE)
+    data.table::fwrite(psite_coverage, "${prefix}.codon_coverage_psite.tsv.gz", sep = "\\t")
+
+    # CDS coverage
+    cds_coverage <- cds_coverage(filtered_psite_list, annotation = annotation_dt)
+    cols <- c("transcript", "length_cds", sample_name)
+    cds_coverage_subset <- cds_coverage[, ..cols]
+    data.table::fwrite(cds_coverage_subset, "${prefix}.cds_coverage_psite.tsv.gz", sep = "\\t")
+
+    # CDS coverage with window
+    cds_window_coverage <- cds_coverage(filtered_psite_list, annotation = annotation_dt,
+                                       start_nts = ${start_nts}, stop_nts = ${stop_nts})
+    cds_window_subset <- cds_window_coverage[, ..cols]
+    data.table::fwrite(cds_window_subset,
+                      "${prefix}.cds_plus${start_nts}nt_minus${stop_nts}nt_coverage_psite.tsv.gz",
+                      sep = "\\t")
 
     # Write versions
     writeLines(c(

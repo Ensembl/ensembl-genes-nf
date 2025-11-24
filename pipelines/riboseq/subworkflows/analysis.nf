@@ -13,6 +13,7 @@ workflow ANALYSIS {
     transcriptome_bam      // tuple: [ meta, bam, bai ]
     ribometric_annotation  // path: RiboMetric annotation file (optional)
     gtf                    // path: GTF annotation file
+    fasta                  // path: Reference genome FASTA (for RiboWaltz)
 
     main:
     // Run RiboMetric if annotation provided
@@ -23,13 +24,15 @@ workflow ANALYSIS {
         )
     }
 
-    // Prepare GTF with metadata for RiboWaltz
+    // Prepare GTF and FASTA with metadata for RiboWaltz
     gtf_ch = Channel.of([[ id: 'reference' ], gtf])
+    fasta_ch = Channel.of([[ id: 'reference' ], fasta])
 
     // Run RiboWaltz on transcriptome BAM
     RIBOWALTZ(
         transcriptome_bam,
-        gtf_ch
+        gtf_ch,
+        fasta_ch
     )
 
     emit:

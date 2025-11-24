@@ -23,7 +23,7 @@
       },
       "fasta": {
         "type": "string",
-        "description": "Path to reference genome FASTA file (optional, for advanced RiboWaltz features)"
+        "description": "Path to reference genome FASTA file (required for RiboWaltz P-site analysis)"
       },
       "ribometric_annotation": {
         "type": "string",
