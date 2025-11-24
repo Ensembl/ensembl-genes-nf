@@ -22,16 +22,33 @@ process BEDGRAPH_TO_BIGWIG {
 
     script:
     def args = task.ext.args ?: ''
-    // Remove '.sorted.bedgraph' from the input filename to create the prefix
-    def prefix = bedgraph.name.replaceFirst(/\.sorted\.bedgraph$/, '')
-    """
-    bedGraphToBigWig ${bedgraph} ${chrom_sizes} ${prefix}.bw
+    // Handle both single and multiple bedgraph files (stranded output)
+    if (bedgraph instanceof List) {
+        // Stranded output: process each bedgraph file
+        def commands = bedgraph.collect { bg ->
+            def prefix = bg.name.replaceFirst(/\.sorted\.bedgraph$/, '')
+            "bedGraphToBigWig ${bg} ${chrom_sizes} ${prefix}.bw"
+        }.join('\n    ')
+        """
+        ${commands}
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        bedGraphToBigWig: \$(bedGraphToBigWig 2>&1 | grep "bedGraphToBigWig v" | sed 's/^.*v//; s/ .*\$//')
-    END_VERSIONS
-    """
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            bedGraphToBigWig: \$(bedGraphToBigWig 2>&1 | grep "bedGraphToBigWig v" | sed 's/^.*v//; s/ .*\$//')
+        END_VERSIONS
+        """
+    } else {
+        // Single bedgraph file
+        def prefix = bedgraph.name.replaceFirst(/\.sorted\.bedgraph$/, '')
+        """
+        bedGraphToBigWig ${bedgraph} ${chrom_sizes} ${prefix}.bw
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            bedGraphToBigWig: \$(bedGraphToBigWig 2>&1 | grep "bedGraphToBigWig v" | sed 's/^.*v//; s/ .*\$//')
+        END_VERSIONS
+        """
+    }
 
     stub:
     // Remove '.sorted.bedgraph' from the input filename to create the prefix
