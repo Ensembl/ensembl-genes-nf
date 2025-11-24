@@ -24,9 +24,9 @@ workflow ANALYSIS {
         )
     }
 
-    // Prepare GTF and FASTA with metadata for RiboWaltz
-    gtf_ch = Channel.of([[ id: 'reference' ], gtf])
-    fasta_ch = Channel.of([[ id: 'reference' ], fasta])
+    // Prepare GTF and FASTA channels that can be reused for all samples
+    gtf_ch = Channel.value([[ id: 'reference' ], gtf])
+    fasta_ch = Channel.value([[ id: 'reference' ], fasta])
 
     // Run RiboWaltz on transcriptome BAM
     RIBOWALTZ(
