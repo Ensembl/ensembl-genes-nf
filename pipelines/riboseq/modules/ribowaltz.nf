@@ -73,7 +73,22 @@ process RIBOWALTZ {
 
     # Create simplified offset file for bam_to_bed (only length and offset columns)
     # This matches the format expected by bam_to_bed.py: length<tab>offset
-    offset_simple <- psite_offset[, c("length", "offset")]
+    # RiboWaltz uses different column names depending on extremity used
+    # Try to find the correct offset column (auto selects best extremity)
+    offset_col <- if ("corrected_offset_from_5" %in% names(psite_offset)) {
+        "corrected_offset_from_5"
+    } else if ("corrected_offset_from_3" %in% names(psite_offset)) {
+        "corrected_offset_from_3"
+    } else if ("offset_from_5" %in% names(psite_offset)) {
+        "offset_from_5"
+    } else if ("offset_from_3" %in% names(psite_offset)) {
+        "offset_from_3"
+    } else {
+        stop("Could not find offset column in psite output")
+    }
+
+    offset_simple <- psite_offset[, c("length", offset_col), with = FALSE]
+    colnames(offset_simple) <- c("length", "offset")
     write.table(offset_simple, file = "${prefix}.best_offset.txt",
                 sep = "\\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
