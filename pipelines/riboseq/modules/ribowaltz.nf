@@ -2,8 +2,10 @@ process RIBOWALTZ {
     tag "${meta.id}"
     label 'process_medium'
 
-    conda "bioconda::bioconductor-ribowaltz=1.2.0"
-    container "quay.io/biocontainers/bioconductor-ribowaltz:1.2.0--r43hdfd78af_1"
+    conda "bioconda::bioconductor-ribowaltz=2.0"
+    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
+        'https://depot.galaxyproject.org/singularity/ribowaltz:2.0--r43hdfd78af_0' :
+        'biocontainers/ribowaltz:2.0--r43hdfd78af_0' }"
 
     publishDir "${params.outdir}/ribowaltz", mode: 'copy'
 
@@ -152,7 +154,7 @@ process RIBOWALTZ {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        ribowaltz: 1.2.0
+        ribowaltz: 2.0
     END_VERSIONS
     """
 }
