@@ -7,7 +7,7 @@
     - Data acquisition and read collapsing
     - Quality control
     - STAR alignment (genome + transcriptome)
-    - RiboMetric analysis and offset calculation
+    - RiboMetric and RiboWaltz analysis (offsets, QC, profiles)
     - BEDgraph and BigWig generation
 ----------------------------------------------------------------------------------------
 */
@@ -18,6 +18,11 @@ include { validateParameters } from 'plugin/nf-schema'
 
 // Validate parameters against schema
 validateParameters()
+
+// Check for required parameters
+if (!params.fasta) {
+    error "Reference genome FASTA file (--fasta) is required for RiboWaltz analysis"
+}
 
 /*
 ========================================================================================
@@ -63,11 +68,14 @@ workflow {
     )
 
     //
-    // SUBWORKFLOW: RiboMetric analysis (calculates offsets, generates QC)
+    // SUBWORKFLOW: Analysis - RiboMetric and RiboWaltz
+    // Both tools provide complementary QC and offset calculation
     //
     ANALYSIS(
         ALIGNMENT.out.transcriptome_bam,
-        file(params.ribometric_annotation)
+        params.ribometric_annotation ? file(params.ribometric_annotation) : null,
+        file(params.gtf),
+        file(params.fasta)
     )
 
     //

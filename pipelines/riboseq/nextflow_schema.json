@@ -21,9 +21,13 @@
         "type": "string",
         "description": "Path to GTF annotation file"
       },
+      "fasta": {
+        "type": "string",
+        "description": "Path to reference genome FASTA file (required for RiboWaltz)"
+      },
       "ribometric_annotation": {
         "type": "string",
-        "description": "Path to RiboMetric annotation file"
+        "description": "Path to RiboMetric annotation file (optional, for RiboMetric QC)"
       },
       "chrom_sizes_file": {
         "type": "string",
@@ -83,6 +87,16 @@
         "type": "integer",
         "default": 0,
         "description": "Number of bases to trim from 3' end"
+      },
+      "ribowaltz_exclude_start": {
+        "type": "integer",
+        "default": 0,
+        "description": "Number of nucleotides to exclude from start codon in RiboWaltz coverage"
+      },
+      "ribowaltz_exclude_stop": {
+        "type": "integer",
+        "default": 0,
+        "description": "Number of nucleotides to exclude from stop codon in RiboWaltz coverage"
       }
     },
     "required": ["sample_sheet"]
