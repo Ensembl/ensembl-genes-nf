@@ -23,12 +23,15 @@ workflow POST_PROCESSING {
         genome_bam.map { meta, bam, bai -> tuple(meta, bam) }
     )
 
-    // Collect all 4 filtered BAM outputs into a single channel
-    // Each emits: tuple [ meta, bam ]
-    all_filtered_bams = FILTER_BAM.out.unique_no_junction
-        .concat(FILTER_BAM.out.unique_with_junction)
-        .concat(FILTER_BAM.out.multi_no_junction)
-        .concat(FILTER_BAM.out.multi_with_junction)
+    // Flatten all 4 filtered BAM outputs into individual emissions
+    // FILTER_BAM.out.all_bams emits: tuple [ meta, [bam1, bam2, bam3, bam4] ]
+    // We need: 4 separate emissions of tuple [ meta, bam ]
+    all_filtered_bams = FILTER_BAM.out.all_bams
+        .flatMap { meta, bams ->
+            bams.collect { bam ->
+                [meta, bam]
+            }
+        }
 
     // Index all filtered BAMs
     SAMTOOLS_INDEX_FILTERED(all_filtered_bams)
@@ -36,6 +39,7 @@ workflow POST_PROCESSING {
 
     // Generate BEDgraph files using offsets
     // Join filtered BAMs with offsets
+    // Now each of the 4 BAMs will be joined with the same offset file
     bam_with_offsets = all_bams_indexed
         .join(offsets)
 

@@ -21,21 +21,29 @@ process MERGE_BEDGRAPHS {
 
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
+    // Convert bedgraphs to list if it's a single file
+    def bg_list = bedgraphs instanceof List ? bedgraphs : [bedgraphs]
+
     // Check if we have stranded bedgraphs (forward/reverse pairs)
-    def has_stranded = bedgraphs.any { it.name.contains('.forward.') || it.name.contains('.reverse.') }
+    def has_stranded = bg_list.any { it.name.contains('.forward.') || it.name.contains('.reverse.') }
 
     if (has_stranded) {
         // Separate forward and reverse bedgraphs
-        def forward_bgs = bedgraphs.findAll { it.name.contains('.forward.') }.join(' ')
-        def reverse_bgs = bedgraphs.findAll { it.name.contains('.reverse.') }.join(' ')
+        def forward_bgs = bg_list.findAll { it.name.contains('.forward.') }
+        def reverse_bgs = bg_list.findAll { it.name.contains('.reverse.') }
+
+        // Create space-separated file lists
+        def forward_files = forward_bgs.collect { it.toString() }.join(' ')
+        def reverse_files = reverse_bgs.collect { it.toString() }.join(' ')
+
         """
         # Merge forward strand bedgraphs
-        bedtools unionbedg -i ${forward_bgs} | \\
+        bedtools unionbedg -i ${forward_files} | \\
             awk 'BEGIN {OFS="\\t"} {sum=0; for(i=4; i<=NF; i++) sum+=\$i; print \$1, \$2, \$3, sum}' | \\
             sort -k1,1 -k2,2n > ${prefix}.merged.forward.sorted.bedgraph
 
         # Merge reverse strand bedgraphs
-        bedtools unionbedg -i ${reverse_bgs} | \\
+        bedtools unionbedg -i ${reverse_files} | \\
             awk 'BEGIN {OFS="\\t"} {sum=0; for(i=4; i<=NF; i++) sum+=\$i; print \$1, \$2, \$3, sum}' | \\
             sort -k1,1 -k2,2n > ${prefix}.merged.reverse.sorted.bedgraph
 
@@ -46,8 +54,9 @@ process MERGE_BEDGRAPHS {
         """
     } else {
         // Unstranded bedgraphs
+        def all_files = bg_list.collect { it.toString() }.join(' ')
         """
-        bedtools unionbedg -i ${bedgraphs.join(' ')} | \\
+        bedtools unionbedg -i ${all_files} | \\
             awk 'BEGIN {OFS="\\t"} {sum=0; for(i=4; i<=NF; i++) sum+=\$i; print \$1, \$2, \$3, sum}' | \\
             sort -k1,1 -k2,2n > ${prefix}.merged.sorted.bedgraph
 
