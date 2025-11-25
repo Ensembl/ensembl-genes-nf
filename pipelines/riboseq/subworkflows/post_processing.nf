@@ -38,10 +38,16 @@ workflow POST_PROCESSING {
     all_bams_indexed = SAMTOOLS_INDEX_FILTERED.out.bam_and_bai
 
     // Generate BEDgraph files using offsets
-    // Join filtered BAMs with offsets
-    // Now each of the 4 BAMs will be joined with the same offset file
+    // Combine each BAM with its corresponding offset file
+    // Since all 4 BAMs per sample have the same meta.id, we use combine + filter
     bam_with_offsets = all_bams_indexed
-        .join(offsets)
+        .combine(offsets)
+        .filter { bam_meta, bam, bai, offset_meta, offset ->
+            bam_meta.id == offset_meta.id
+        }
+        .map { bam_meta, bam, bai, offset_meta, offset ->
+            [bam_meta, bam, bai, offset]
+        }
 
     BAM_TO_BED(bam_with_offsets)
 

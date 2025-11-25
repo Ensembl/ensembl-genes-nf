@@ -13,7 +13,7 @@ process MERGE_BEDGRAPHS {
     tuple val(meta), path(bedgraphs)
 
     output:
-    tuple val(meta), path("*.merged.sorted.bedgraph"), emit: bedgraph
+    tuple val(meta), path("*.merged.*.sorted.bedgraph"), emit: bedgraph
     path "versions.yml", emit: versions
 
     when:
