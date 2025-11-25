@@ -21,13 +21,20 @@ workflow POST_PROCESSING {
         genome_bam.map { meta, bam, bai -> tuple(meta, bam) }
     )
 
+    // Collect all 4 filtered BAM outputs into a single channel
+    // Each emits: tuple [ meta, bam ]
+    all_filtered_bams = FILTER_BAM.out.unique_no_junction
+        .concat(FILTER_BAM.out.unique_with_junction)
+        .concat(FILTER_BAM.out.multi_no_junction)
+        .concat(FILTER_BAM.out.multi_with_junction)
+
     // Index all filtered BAMs
-    SAMTOOLS_INDEX_FILTERED(FILTER_BAM.out.unique_no_junction)
-    unique_no_junction_indexed = SAMTOOLS_INDEX_FILTERED.out.bam_and_bai
+    SAMTOOLS_INDEX_FILTERED(all_filtered_bams)
+    all_bams_indexed = SAMTOOLS_INDEX_FILTERED.out.bam_and_bai
 
     // Generate BEDgraph files using offsets
-    // Join filtered BAM with offsets
-    bam_with_offsets = unique_no_junction_indexed
+    // Join filtered BAMs with offsets
+    bam_with_offsets = all_bams_indexed
         .join(offsets)
 
     BAM_TO_BED(bam_with_offsets)
