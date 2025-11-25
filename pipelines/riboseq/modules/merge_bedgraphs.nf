@@ -21,51 +21,30 @@ process MERGE_BEDGRAPHS {
 
     script:
     def prefix = task.ext.prefix ?: "${meta.id}"
-    // Convert bedgraphs to list if it's a single file
-    def bg_list = bedgraphs instanceof List ? bedgraphs : [bedgraphs]
-
-    // Check if we have stranded bedgraphs (forward/reverse pairs)
-    def has_stranded = bg_list.any { it.name.contains('.forward.') || it.name.contains('.reverse.') }
-
-    if (has_stranded) {
-        // Separate forward and reverse bedgraphs
-        def forward_bgs = bg_list.findAll { it.name.contains('.forward.') }
-        def reverse_bgs = bg_list.findAll { it.name.contains('.reverse.') }
-
-        // Create space-separated file lists
-        def forward_files = forward_bgs.collect { it.toString() }.join(' ')
-        def reverse_files = reverse_bgs.collect { it.toString() }.join(' ')
-
-        """
-        # Merge forward strand bedgraphs
-        bedtools unionbedg -i ${forward_files} | \\
+    """
+    # Use glob patterns to collect all bedgraph files by strand
+    # Check if we have stranded data
+    if ls *.forward.sorted.bedgraph 1> /dev/null 2>&1; then
+        # Stranded data - merge forward and reverse separately
+        bedtools unionbedg -i *.forward.sorted.bedgraph | \\
             awk 'BEGIN {OFS="\\t"} {sum=0; for(i=4; i<=NF; i++) sum+=\$i; print \$1, \$2, \$3, sum}' | \\
             sort -k1,1 -k2,2n > ${prefix}.merged.forward.sorted.bedgraph
 
-        # Merge reverse strand bedgraphs
-        bedtools unionbedg -i ${reverse_files} | \\
+        bedtools unionbedg -i *.reverse.sorted.bedgraph | \\
             awk 'BEGIN {OFS="\\t"} {sum=0; for(i=4; i<=NF; i++) sum+=\$i; print \$1, \$2, \$3, sum}' | \\
             sort -k1,1 -k2,2n > ${prefix}.merged.reverse.sorted.bedgraph
-
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            bedtools: \$(bedtools --version | sed 's/bedtools v//')
-        END_VERSIONS
-        """
-    } else {
-        // Unstranded bedgraphs
-        def all_files = bg_list.collect { it.toString() }.join(' ')
-        """
-        bedtools unionbedg -i ${all_files} | \\
+    else
+        # Unstranded data - merge all together
+        bedtools unionbedg -i *.sorted.bedgraph | \\
             awk 'BEGIN {OFS="\\t"} {sum=0; for(i=4; i<=NF; i++) sum+=\$i; print \$1, \$2, \$3, sum}' | \\
             sort -k1,1 -k2,2n > ${prefix}.merged.sorted.bedgraph
+    fi
 
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            bedtools: \$(bedtools --version | sed 's/bedtools v//')
-        END_VERSIONS
-        """
-    }
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        bedtools: \$(bedtools --version | sed 's/bedtools v//')
+    END_VERSIONS
+    """
 
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"

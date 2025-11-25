@@ -51,23 +51,24 @@ workflow POST_PROCESSING {
         chrom_sizes
     )
 
-    // Collect all bedgraphs per sample for merging
-    // Group by meta.id to collect all 4 filtered BAM bedgraphs per sample
-    bedgraphs_grouped = BAM_TO_BED.out.bedgraph
-        .map { meta, bedgraph ->
-            // Flatten the bedgraph list if it's stranded (contains forward/reverse)
+    // Collect ALL bedgraphs across ALL samples for grand total merge
+    // BAM_TO_BED.out.bedgraph emits: tuple [ meta, [forward.bg, reverse.bg] ] per BAM
+    // We want to merge everything into a single aggregate track
+    all_bedgraphs = BAM_TO_BED.out.bedgraph
+        .flatMap { meta, bedgraph ->
+            // Flatten stranded bedgraphs into separate files
             def bg_list = bedgraph instanceof List ? bedgraph : [bedgraph]
-            return [meta, bg_list]
+            bg_list
         }
-        .groupTuple()
-        .map { meta, bedgraph_lists ->
-            // Flatten all bedgraph lists into a single list per sample
-            def all_bedgraphs = bedgraph_lists.flatten()
-            return [meta, all_bedgraphs]
+        .collect()
+        .map { bedgraph_list ->
+            // Create a single meta for the merged output with id 'all_merged'
+            def meta = [id: 'all_merged']
+            [meta, bedgraph_list]
         }
 
-    // Merge all bedgraphs per sample (sum coverage across all 4 filtered BAM types)
-    MERGE_BEDGRAPHS(bedgraphs_grouped)
+    // Merge ALL bedgraphs (sum coverage across all samples and all filtering types)
+    MERGE_BEDGRAPHS(all_bedgraphs)
 
     // Convert merged BEDgraphs to BigWig
     BEDGRAPH_TO_BIGWIG_MERGED(
