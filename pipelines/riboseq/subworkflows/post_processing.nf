@@ -2,6 +2,7 @@
  * POST-PROCESSING SUBWORKFLOW
  * Processes genome BAMs to generate BEDgraph and BigWig files
  * Uses offsets from RiboMetric for P-site correction
+ * Also creates unique read index and count matrix from collapsed FASTA files
  */
 
 include { FILTER_BAM } from '../modules/filter_bam.nf'
@@ -10,12 +11,14 @@ include { BAM_TO_BED } from '../modules/bam_to_bed.nf'
 include { MERGE_BEDGRAPHS } from '../modules/merge_bedgraphs.nf'
 include { BEDGRAPH_TO_BIGWIG } from '../modules/bedgraph_to_bigwig.nf'
 include { BEDGRAPH_TO_BIGWIG as BEDGRAPH_TO_BIGWIG_MERGED } from '../modules/bedgraph_to_bigwig.nf'
+include { MERGE_UNIQUE_READS } from '../modules/merge_unique_reads.nf'
 
 workflow POST_PROCESSING {
     take:
     genome_bam        // tuple: [ meta, bam, bai ]
     offsets           // tuple: [ meta, offsets_file ] - from RiboMetric/RiboWaltz
     chrom_sizes       // path: chromosome sizes file
+    collapsed_fastas  // tuple: [ meta, collapsed_fasta ] - for unique read tracking
 
     main:
     // Filter genome BAM by mapping quality and multiplicity
@@ -82,10 +85,44 @@ workflow POST_PROCESSING {
         chrom_sizes
     )
 
+    // Collect all collapsed FASTA files and create unique read index
+    all_collapsed_fastas = collapsed_fastas
+        .map { meta, fasta -> fasta }
+        .collect()
+
+    // Determine mode and previous index
+    def unique_reads_mode = params.unique_reads_mode ?: 'per_run'
+    def previous_index_dir = params.unique_reads_previous_index ?: null
+
+    // For progressive mode, check if previous index exists
+    def previous_index_files = []
+    if (unique_reads_mode == 'progressive' && previous_index_dir) {
+        def prev_dir = file(previous_index_dir)
+        if (prev_dir.exists()) {
+            def prev_fasta = file("${previous_index_dir}/unique_reads.fa")
+            def prev_matrix = file("${previous_index_dir}/count_matrix.parquet")
+            def prev_mapping = file("${previous_index_dir}/read_mapping.json")
+
+            if (prev_fasta.exists() && prev_matrix.exists() && prev_mapping.exists()) {
+                previous_index_files = [prev_fasta, prev_matrix, prev_mapping]
+            }
+        }
+    }
+
+    MERGE_UNIQUE_READS(
+        all_collapsed_fastas,
+        previous_index_files,
+        unique_reads_mode
+    )
+
     emit:
     filtered_bams = FILTER_BAM.out.all_bams                    // tuple: [ meta, bams[] ]
     bedgraphs = BAM_TO_BED.out.bedgraph                        // tuple: [ meta, bedgraph ]
     bigwigs = BEDGRAPH_TO_BIGWIG.out.bigwig                    // tuple: [ meta, bigwig ]
     merged_bedgraphs = MERGE_BEDGRAPHS.out.bedgraph            // tuple: [ meta, merged_bedgraph ]
     merged_bigwigs = BEDGRAPH_TO_BIGWIG_MERGED.out.bigwig      // tuple: [ meta, merged_bigwig ]
+    unique_reads_fasta = MERGE_UNIQUE_READS.out.unique_reads_fasta     // path: unique_reads.fa
+    count_matrix = MERGE_UNIQUE_READS.out.count_matrix                 // path: count_matrix.parquet
+    read_mapping = MERGE_UNIQUE_READS.out.read_mapping                 // path: read_mapping.json
+    unique_reads_summary = MERGE_UNIQUE_READS.out.summary              // path: processing_summary.json
 }

@@ -79,12 +79,13 @@ workflow {
     )
 
     //
-    // SUBWORKFLOW: Post-processing (filter, BEDgraph, BigWig)
+    // SUBWORKFLOW: Post-processing (filter, BEDgraph, BigWig, unique reads index)
     //
     POST_PROCESSING(
         ALIGNMENT.out.genome_bam,
         ANALYSIS.out.offsets,
-        file(params.chrom_sizes_file)
+        file(params.chrom_sizes_file),
+        DATA_ACQUISITION.out.samples  // collapsed FASTA files
     )
 }
 
