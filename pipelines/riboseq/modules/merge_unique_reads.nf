@@ -3,7 +3,7 @@ process MERGE_UNIQUE_READS {
     label 'process_high'
 
     conda "conda-forge::python=3.10 conda-forge::polars=0.20.0"
-    container 'community.wave.seqera.io/library/python_polars:356ea2c3bf4ab1ed' 
+    container 'community.wave.seqera.io/library/pip_polars:50bb6fae7997c472' 
 
     publishDir "${params.outdir}/unique_reads", mode: 'copy', pattern: "unique_reads*"
     publishDir "${params.outdir}/unique_reads", mode: 'copy', pattern: "count_matrix*"
