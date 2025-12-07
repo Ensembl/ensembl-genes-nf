@@ -62,30 +62,53 @@ class BatchIndex:
         
         return batch
 
-def process_single_file(fasta_gz_path: Path) -> Tuple[str, List[Tuple[str, int]], int]:
+def process_single_file(fasta_path: Path) -> Tuple[str, List[Tuple[str, int]], int]:
     """Extract reads and counts from one file, return sorted"""
     reads_counts = {}
-    sample_name = fasta_gz_path.stem.split('_')[0]
-    
+
+    # Extract sample name from filename (remove extensions)
+    sample_name = fasta_path.name
+    if sample_name.endswith('.gz'):
+        sample_name = sample_name[:-3]
+    if sample_name.endswith('.fa') or sample_name.endswith('.fasta'):
+        sample_name = sample_name.rsplit('.', 1)[0]
+    # Further clean to get just the sample ID
+    sample_name = sample_name.split('_')[0]
+
     try:
-        with gzip.open(fasta_gz_path, 'rt') as f:
+        # Determine if file is gzipped based on extension or magic bytes
+        if fasta_path.name.endswith('.gz'):
+            f = gzip.open(fasta_path, 'rt')
+        else:
+            f = open(fasta_path, 'r')
+
+        with f:
             while True:
                 header_line = f.readline()
                 if not header_line:
                     break
                 if header_line.startswith('>'):
-                    count = int(header_line.strip().split('_x')[1])
+                    # Parse count from header (format: >read_x<count>)
+                    try:
+                        count = int(header_line.strip().split('_x')[1])
+                    except (IndexError, ValueError):
+                        print(f"Warning: Could not parse count from header in {fasta_path}: {header_line.strip()}")
+                        count = 1  # Default to count of 1 if parsing fails
+
                     sequence = f.readline().strip()
                     if sequence:
                         reads_counts[sequence] = count
     except Exception as e:
-        print(f"Error processing {fasta_gz_path}: {e}")
+        print(f"Error processing {fasta_path}: {e}")
         return sample_name, [], 0
-    
+
     # Return sorted list of (sequence, count) tuples
     sorted_reads = sorted(reads_counts.items())
     total_reads = sum(count for _, count in sorted_reads)
-    
+
+    if not sorted_reads:
+        print(f"Warning: No reads found in {fasta_path}")
+
     return sample_name, sorted_reads, total_reads
 
 def process_batch_worker(args) -> Path:
@@ -383,15 +406,20 @@ class HybridUniqueReadsMerger:
     
     def calculate_and_save_stats(self, final_batch: BatchIndex, processing_time: float):
         """Calculate and save processing statistics"""
-        
+
         # Calculate totals
         total_reads = sum(
-            sum(counts.values()) 
+            sum(counts.values())
             for counts in final_batch.count_matrix.values()
         )
-        
-        final_compression = total_reads / len(final_batch.unique_reads)
-        storage_reduction = (1 - len(final_batch.unique_reads) / total_reads) * 100
+
+        # Handle edge case of no unique reads
+        if len(final_batch.unique_reads) == 0:
+            final_compression = 0.0
+            storage_reduction = 0.0
+        else:
+            final_compression = total_reads / len(final_batch.unique_reads)
+            storage_reduction = (1 - len(final_batch.unique_reads) / total_reads) * 100 if total_reads > 0 else 0.0
         
         summary = {
             'processing_summary': {
@@ -415,8 +443,13 @@ class HybridUniqueReadsMerger:
         print(f"Files processed: {len(final_batch.samples)}")
         print(f"Total reads: {total_reads:,}")
         print(f"Unique reads: {len(final_batch.unique_reads):,}")
-        print(f"Compression ratio: {final_compression:.1f}x")
-        print(f"Storage reduction: {storage_reduction:.1f}%")
+
+        if len(final_batch.unique_reads) == 0:
+            print(f"WARNING: No unique reads found! Check input files.")
+        else:
+            print(f"Compression ratio: {final_compression:.1f}x")
+            print(f"Storage reduction: {storage_reduction:.1f}%")
+
         print(f"Processing time: {processing_time:.1f} seconds")
         
         return summary_file
