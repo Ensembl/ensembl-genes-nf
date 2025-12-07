@@ -3,9 +3,7 @@ process MERGE_UNIQUE_READS {
     label 'process_high'
 
     conda "conda-forge::python=3.10 conda-forge::polars=0.20.0"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/35/356ea2c3bf4ab1eda5f4cac53f0029a7a5c49f10e8f1f7a4e0edb71e02a68fb6/data' :
-        'community.wave.seqera.io/library/python_polars:356ea2c3bf4ab1ed' }"
+    container 'community.wave.seqera.io/library/python_polars:356ea2c3bf4ab1ed' 
 
     publishDir "${params.outdir}/unique_reads", mode: 'copy', pattern: "unique_reads*"
     publishDir "${params.outdir}/unique_reads", mode: 'copy', pattern: "count_matrix*"
