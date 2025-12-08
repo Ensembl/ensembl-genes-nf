@@ -92,35 +92,50 @@ workflow POST_PROCESSING {
         chrom_sizes
     )
 
-    // Collect all collapsed FASTA files and create unique read index
-    all_collapsed_fastas = collapsed_fastas
-        .map { meta, fasta -> fasta }
-        .collect()
+    // Optional: Collect all collapsed FASTA files and create unique read index
+    // Only run if explicitly enabled via params.enable_unique_reads_tracking
+    if (params.enable_unique_reads_tracking) {
+        all_collapsed_fastas = collapsed_fastas
+            .map { meta, fasta -> fasta }
+            .collect()
 
-    // Determine mode and previous index
-    def unique_reads_mode = params.unique_reads_mode ?: 'per_run'
-    def previous_index_dir = params.unique_reads_previous_index ?: null
+        // Determine mode and previous index
+        def unique_reads_mode = params.unique_reads_mode ?: 'per_run'
+        def previous_index_dir = params.unique_reads_previous_index ?: null
 
-    // For progressive mode, check if previous index exists
-    def previous_index_files = []
-    if (unique_reads_mode == 'progressive' && previous_index_dir) {
-        def prev_dir = file(previous_index_dir)
-        if (prev_dir.exists()) {
-            def prev_fasta = file("${previous_index_dir}/unique_reads.fa")
-            def prev_matrix = file("${previous_index_dir}/count_matrix.parquet")
-            def prev_mapping = file("${previous_index_dir}/read_mapping.json")
+        // For progressive mode, check if previous index exists
+        def previous_index_files = []
+        if (unique_reads_mode == 'progressive' && previous_index_dir) {
+            def prev_dir = file(previous_index_dir)
+            if (prev_dir.exists()) {
+                def prev_fasta = file("${previous_index_dir}/unique_reads.fa")
+                def prev_matrix = file("${previous_index_dir}/count_matrix.parquet")
+                def prev_mapping = file("${previous_index_dir}/read_mapping.json")
 
-            if (prev_fasta.exists() && prev_matrix.exists() && prev_mapping.exists()) {
-                previous_index_files = [prev_fasta, prev_matrix, prev_mapping]
+                if (prev_fasta.exists() && prev_matrix.exists() && prev_mapping.exists()) {
+                    previous_index_files = [prev_fasta, prev_matrix, prev_mapping]
+                }
             }
         }
-    }
 
-    MERGE_UNIQUE_READS(
-        all_collapsed_fastas,
-        previous_index_files,
-        unique_reads_mode
-    )
+        MERGE_UNIQUE_READS(
+            all_collapsed_fastas,
+            previous_index_files,
+            unique_reads_mode
+        )
+
+        // Emit outputs when tracking is enabled
+        unique_reads_fasta_out = MERGE_UNIQUE_READS.out.unique_reads_fasta
+        count_matrix_out = MERGE_UNIQUE_READS.out.count_matrix
+        read_mapping_out = MERGE_UNIQUE_READS.out.read_mapping
+        unique_reads_summary_out = MERGE_UNIQUE_READS.out.summary
+    } else {
+        // Emit empty channels when tracking is disabled
+        unique_reads_fasta_out = Channel.empty()
+        count_matrix_out = Channel.empty()
+        read_mapping_out = Channel.empty()
+        unique_reads_summary_out = Channel.empty()
+    }
 
     emit:
     filtered_bams = FILTER_BAM.out.all_bams                    // tuple: [ meta, bams[] ]
@@ -128,8 +143,8 @@ workflow POST_PROCESSING {
     bigwigs = BEDGRAPH_TO_BIGWIG.out.bigwig                    // tuple: [ meta, bigwig ]
     merged_bedgraphs = MERGE_BEDGRAPHS.out.bedgraph            // tuple: [ meta, merged_bedgraph ]
     merged_bigwigs = BEDGRAPH_TO_BIGWIG_MERGED.out.bigwig      // tuple: [ meta, merged_bigwig ]
-    unique_reads_fasta = MERGE_UNIQUE_READS.out.unique_reads_fasta     // path: unique_reads.fa
-    count_matrix = MERGE_UNIQUE_READS.out.count_matrix                 // path: count_matrix.parquet
-    read_mapping = MERGE_UNIQUE_READS.out.read_mapping                 // path: read_mapping.json
-    unique_reads_summary = MERGE_UNIQUE_READS.out.summary              // path: processing_summary.json
+    unique_reads_fasta = unique_reads_fasta_out                // path: unique_reads.fa (empty if disabled)
+    count_matrix = count_matrix_out                            // path: count_matrix.parquet (empty if disabled)
+    read_mapping = read_mapping_out                            // path: read_mapping.json (empty if disabled)
+    unique_reads_summary = unique_reads_summary_out            // path: processing_summary.json (empty if disabled)
 }
