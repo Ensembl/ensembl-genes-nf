@@ -26,13 +26,19 @@ workflow POST_PROCESSING {
         genome_bam.map { meta, bam, bai -> tuple(meta, bam) }
     )
 
-    // Flatten all 4 filtered BAM outputs into individual emissions
+    // Flatten all 4 filtered BAM outputs into individual emissions with type annotation
     // FILTER_BAM.out.all_bams emits: tuple [ meta, [bam1, bam2, bam3, bam4] ]
-    // We need: 4 separate emissions of tuple [ meta, bam ]
+    // We need: 4 separate emissions of tuple [ meta_with_type, bam ]
     all_filtered_bams = FILTER_BAM.out.all_bams
         .flatMap { meta, bams ->
             bams.collect { bam ->
-                [meta, bam]
+                // Extract BAM type from filename (e.g., "SRR123.unique_no_junction.bam" -> "unique_no_junction")
+                def bam_name = bam.name
+                def bam_type = bam_name.replaceAll(/.*\.([^.]+)\.bam$/, '$1')
+
+                // Add bam_type to meta for tracking
+                def meta_with_type = meta + [bam_type: bam_type]
+                [meta_with_type, bam]
             }
         }
 
@@ -42,7 +48,7 @@ workflow POST_PROCESSING {
 
     // Generate BEDgraph files using offsets
     // Combine each BAM with its corresponding offset file
-    // Since all 4 BAMs per sample have the same meta.id, we use combine + filter
+    // Match by sample ID (meta.id) regardless of bam_type
     bam_with_offsets = all_bams_indexed
         .combine(offsets)
         .filter { bam_meta, bam, bai, offset_meta, offset ->
@@ -60,24 +66,25 @@ workflow POST_PROCESSING {
         chrom_sizes
     )
 
-    // Collect ALL bedgraphs across ALL samples for grand total merge
-    // BAM_TO_BED.out.bedgraph emits: tuple [ meta, [forward.bg, reverse.bg] ] per BAM
-    // We want to merge everything into a single aggregate track
-    all_bedgraphs = BAM_TO_BED.out.bedgraph
+    // Group bedgraphs by BAM type for separate merged tracks
+    // BAM_TO_BED.out.bedgraph emits: tuple [ meta_with_type, [forward.bg, reverse.bg] ]
+    bedgraphs_by_type = BAM_TO_BED.out.bedgraph
         .flatMap { meta, bedgraph ->
-            // Flatten stranded bedgraphs into separate files
+            // Flatten stranded bedgraphs, keeping bam_type from meta
             def bg_list = bedgraph instanceof List ? bedgraph : [bedgraph]
-            bg_list
+            bg_list.collect { bg ->
+                [meta.bam_type, bg]
+            }
         }
-        .collect()
-        .map { bedgraph_list ->
-            // Create a single meta for the merged output with id 'all_merged'
-            def meta = [id: 'all_merged']
+        .groupTuple()  // Group by bam_type
+        .map { bam_type, bedgraph_list ->
+            // Create meta with bam_type as id
+            def meta = [id: "merged_${bam_type}"]
             [meta, bedgraph_list]
         }
 
-    // Merge ALL bedgraphs (sum coverage across all samples and all filtering types)
-    MERGE_BEDGRAPHS(all_bedgraphs)
+    // Merge bedgraphs separately for each BAM type
+    MERGE_BEDGRAPHS(bedgraphs_by_type)
 
     // Convert merged BEDgraphs to BigWig
     BEDGRAPH_TO_BIGWIG_MERGED(
