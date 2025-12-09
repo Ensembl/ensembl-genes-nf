@@ -9,9 +9,6 @@ process MOVE_TO_FTP {
     errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     maxRetries 3
 
-    // Switch to genebuild user context before running main script
-    beforeScript 'become genebuild'
-
     input:
     tuple val(meta), path(files)        // Meta map with file info + files to transfer
     val ftp_destination                 // FTP destination path
@@ -27,7 +24,8 @@ process MOVE_TO_FTP {
     def prefix = task.ext.prefix ?: "${meta.id}"
 
     """
-    cp ${args} ${files} ${ftp_destination}
+    # Switch to genebuild user and copy files
+    become genebuild cp ${args} ${files} ${ftp_destination}
 
     """
 
