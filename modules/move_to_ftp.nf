@@ -1,13 +1,13 @@
 process MOVE_TO_FTP {
     label 'process_low'
 
-    // Submit to datamover queue/partition
-    queue 'datamover'
-
     tag "${meta.id}"
 
     errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     maxRetries 3
+
+    // SLURM options for datamover partition
+    clusterOptions '--partition=datamover'
 
     input:
     tuple val(meta), path(files)        // Meta map with file info + files to transfer
