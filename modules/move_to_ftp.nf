@@ -24,8 +24,11 @@ process MOVE_TO_FTP {
     def prefix = task.ext.prefix ?: "${meta.id}"
 
     """
-    # Switch to genebuild user and copy files
-    become genebuild cp ${args} ${files} ${ftp_destination}
+    # Get full path to files in work directory
+    FULL_PATH=\$(readlink -f ${files})
+
+    # Switch to genebuild user and copy files using full path
+    become genebuild cp ${args} \$FULL_PATH ${ftp_destination}
 
     """
 
