@@ -7,7 +7,7 @@ process FILTER_BAM {
         'https://depot.galaxyproject.org/singularity/pysam:0.23.3--py39hdd5828d_0' :
         'biocontainers/pysam:0.23.3--py39hdd5828d_0' }"
 
-    publishDir "${params.outdir}/filtered_bams", mode: 'copy'
+    publishDir "${params.outdir}/filtered_bams", mode: 'copy', pattern: "*.bam"
 
     input:
     tuple val(meta), path(bam)

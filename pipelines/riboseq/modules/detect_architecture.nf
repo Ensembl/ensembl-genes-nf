@@ -5,7 +5,7 @@ process DETECT_ARCHITECTURE {
     conda "conda-forge::python=3.10 conda-forge::biopython"
     container "ghcr.io/lapti-ucc/riboseqorg-nf-getrpf:latest"
 
-    publishDir "${params.outdir}/getRPF/detect", mode: 'copy'
+    publishDir "${params.outdir}/getRPF/detect", mode: 'copy', pattern: "*.{seqspec.yaml,adapters.fa,extraction_report.json,fastq}"
 
     input:
     tuple val(meta), path(input_file)

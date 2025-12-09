@@ -8,7 +8,8 @@ process COUNT_LINES {
     errorStrategy 'ignore'
 
     publishDir "${params.outdir}/line_counts",
-        mode: 'copy'
+        mode: 'copy',
+        pattern: "*_line_count.txt"
 
     input:
     tuple val(meta), path(input_file)

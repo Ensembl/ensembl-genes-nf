@@ -5,7 +5,7 @@ process FIND_ADAPTERS {
     conda "conda-forge::python=3.11 conda-forge::biopython conda-forge::pandas"
     container "ghcr.io/lapti-ucc/riboseqorg-nf-python-pandas-sqlite:latest"
 
-    publishDir "${params.outdir}/adapter_reports", mode: 'copy'
+    publishDir "${params.outdir}/adapter_reports", mode: 'copy', pattern: "*_adapter_report.fa"
 
     input:
     tuple val(meta), path(raw_fastq)

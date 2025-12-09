@@ -8,7 +8,8 @@ process TOOL_A {
     errorStrategy 'ignore'
 
     publishDir "${params.outdir}/tool_a",
-        mode: 'copy'
+        mode: 'copy',
+        pattern: "*_A.txt"
 
     input:
     tuple val(meta), path(input_file)

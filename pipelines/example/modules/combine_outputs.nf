@@ -8,7 +8,8 @@ process COMBINE_OUTPUTS {
     errorStrategy 'ignore'
 
     publishDir "${params.outdir}/combined",
-        mode: 'copy'
+        mode: 'copy',
+        pattern: "*_combined.txt"
 
     input:
     tuple val(meta), path(input_files)

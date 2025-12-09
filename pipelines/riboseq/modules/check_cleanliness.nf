@@ -5,7 +5,7 @@ process CHECK_CLEANLINESS {
     conda "conda-forge::python=3.10 conda-forge::biopython"
     container "ghcr.io/lapti-ucc/riboseqorg-nf-getrpf:latest"
 
-    publishDir "${params.outdir}/getRPF/check", mode: 'copy'
+    publishDir "${params.outdir}/getRPF/check", mode: 'copy', pattern: "*_{report,rpf_checks}.txt"
 
     input:
     tuple val(meta), path(input_file)

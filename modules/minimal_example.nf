@@ -12,7 +12,8 @@ process EXAMPLE_MODULE {
 
     // TODO: Update publishDir path to reflect your module's output directory name
     publishDir "${params.outdir}/example_module",
-        saveAs: 'example_module/${meta.id}_${filename}'
+        mode: 'copy',
+        pattern: "*.txt"
 
     // TODO: Update input channels to match your tool's requirements
     input:

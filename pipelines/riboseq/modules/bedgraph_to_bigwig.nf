@@ -7,7 +7,7 @@ process BEDGRAPH_TO_BIGWIG {
         'https://depot.galaxyproject.org/singularity/ucsc-bedgraphtobigwig:469--h9b8f530_0' :
         'biocontainers/ucsc-bedgraphtobigwig:469--h9b8f530_0' }"
 
-    publishDir "${params.outdir}/bigwigs", mode: 'copy'
+    publishDir "${params.outdir}/bigwigs", mode: 'copy', pattern: "*.bw"
 
     input:
     tuple val(meta), path(bedgraph)

@@ -5,7 +5,7 @@ process RIBOMETRIC {
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
     container "ghcr.io/lapti-ucc/riboseqorg-nf-ribometric:latest"
 
-    publishDir "${params.outdir}/RiboMetric", mode: 'copy'
+    publishDir "${params.outdir}/RiboMetric", mode: 'copy', pattern: "*RiboMetric.{html,json,csv}"
 
     errorStrategy 'ignore'
     

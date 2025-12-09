@@ -5,7 +5,7 @@ process COLLAPSE_FASTQ {
     conda "conda-forge::python=3.10 pip::riboseq-dp-tools=0.1.10"
     container "ghcr.io/lapti-ucc/riboseqorg-nf-rdp-tools:latest"
 
-    publishDir "${params.outdir}/collapsed_fa", mode: 'copy'
+    publishDir "${params.outdir}/collapsed_fa", mode: 'copy', pattern: "*collapsed.fa"
 
     input:
     tuple val(meta), path(fastq)
