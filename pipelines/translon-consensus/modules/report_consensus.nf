@@ -6,7 +6,7 @@ process REPORT_CONSENSUS {
     
     tag "${meta.id}"
 
-    publishDir "${params.outdir}/consensus_reports/${meta}"
+    publishDir "${params.outdir}/consensus_reports/${meta.id}"
 
     input:
     tuple val(meta), path(samplesheet), path(bed_files)
@@ -20,7 +20,7 @@ process REPORT_CONSENSUS {
     consensus.py \
         -s ${samplesheet} \
         -n ${meta.id} \
-        -o ${meta}_consensus_results \
+        -o ${meta.id}_consensus_results \
         -u "${ucsc_session_url}"
     """
     

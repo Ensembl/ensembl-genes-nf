@@ -14,7 +14,7 @@ workflow TRANSLON_CONSENSUS {
         .map { bed_file ->
             def tool = bed_file.parent.name
             def sample_name = bed_file.baseName
-            def meta = [id: sample_name]
+            def meta = [id: sample_name]    
             return tuple(meta, tool, bed_file)
         }
 
