@@ -41,8 +41,9 @@ workflow TRANSLON_CONSENSUS {
 
     CREATE_SAMPLESHEET(multi_tool_ch)
 
-    // Prepare GTF input (use file or empty placeholder)
-    gtf_ch = params.gencode_gtf ? Channel.fromPath(params.gencode_gtf, checkIfExists: true) : Channel.value(file('NO_FILE'))
+    // Prepare GTF input as value channel (use file or empty placeholder)
+    // Value channel allows reuse across multiple samples
+    gtf_ch = params.gencode_gtf ? Channel.value(file(params.gencode_gtf, checkIfExists: true)) : Channel.value(file('NO_FILE'))
 
     // Only run consensus analysis for samples with 2+ tools
     REPORT_CONSENSUS(CREATE_SAMPLESHEET.out, params.ucsc_session_url, gtf_ch)
