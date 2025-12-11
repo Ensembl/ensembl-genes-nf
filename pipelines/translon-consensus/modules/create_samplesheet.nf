@@ -22,6 +22,6 @@ process CREATE_SAMPLESHEET {
     cat ${meta.id}_samplesheet.tsv >&2
     
     echo "Files in directory:" >&2
-    ls -lh *.bed >&2
+    ls -lh *.bed12 >&2
     """
 }

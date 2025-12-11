@@ -10,7 +10,7 @@ include { GENERATE_HTML_REPORT } from '../modules/generate_report.nf'
 
 workflow TRANSLON_CONSENSUS {
     bed_files_ch = Channel
-        .fromPath("${params.bed_results_dir}/*/*.bed")
+        .fromPath("${params.bed_results_dir}/*/*.bed12")
         .map { bed_file ->
             def tool = bed_file.parent.name
             def sample_name = bed_file.baseName
