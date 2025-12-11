@@ -41,72 +41,116 @@ def load_template(template_path=None):
 
 def parse_results_directory(results_dir):
     """
-    Parse all consensus results from a directory.
+    Parse all consensus results into a feature-centric format.
 
     Returns:
-        dict with keys: samples_with_consensus, skipped_samples, all_tools
+        dict with keys: samples (list of sample data with features)
     """
     results_dir = Path(results_dir)
-
-    samples_data = defaultdict(lambda: {
-        'name': '',
-        'tool_count': 0,
-        'tools': set(),
-        'summary_file': None,
-        'summary_data': None,
-        'consensus_files': {},
-        'consensus_data': {}
-    })
-
-    # Find all summary files
-    for summary_file in results_dir.rglob('*.summary.tsv'):
-        sample_name = summary_file.stem.replace('.summary', '')
-
-        try:
-            summary_df = pd.read_csv(summary_file, sep='\t')
-            samples_data[sample_name]['summary_file'] = str(summary_file)
-            samples_data[sample_name]['summary_data'] = summary_df.to_dict('records')
-            samples_data[sample_name]['name'] = sample_name
-            samples_data[sample_name]['tools'] = set(summary_df['tool'].tolist())
-            samples_data[sample_name]['tool_count'] = len(samples_data[sample_name]['tools'])
-        except Exception as e:
-            print(f"Warning: Failed to parse {summary_file}: {e}", file=sys.stderr)
+    samples = {}
 
     # Find all consensus detail files
     for consensus_file in results_dir.rglob('*.consensus.tsv'):
         parts = consensus_file.stem.split('.')
         if len(parts) >= 3:  # sample.tool.consensus
             sample_name = parts[0]
-            tool = parts[1]
+            query_tool = parts[1]
+
+            if sample_name not in samples:
+                samples[sample_name] = {
+                    'name': sample_name,
+                    'tools': set(),
+                    'features': [],
+                    'consensus_stats': {}  # Will aggregate across tools
+                }
 
             try:
-                consensus_df = pd.read_csv(consensus_file, sep='\t')
-                # Limit to first 100 rows for HTML (performance)
-                consensus_df_limited = consensus_df.head(100)
+                df = pd.read_csv(consensus_file, sep='\t')
 
-                samples_data[sample_name]['consensus_files'][tool] = str(consensus_file)
-                samples_data[sample_name]['consensus_data'][tool] = consensus_df_limited.to_dict('records')
+                # Get other tool names from column names (those ending in _both_matches)
+                match_cols = [col for col in df.columns if col.endswith('_both_matches')]
+                other_tools = [col.replace('_both_matches', '') for col in match_cols]
+
+                samples[sample_name]['tools'].add(query_tool)
+                samples[sample_name]['tools'].update(other_tools)
+
+                # Calculate consensus scores for all rows first
+                df['consensus_score'] = df[[col for col in match_cols]].apply(
+                    lambda row: sum(1 for val in row if val > 0), axis=1
+                )
+
+                # Group by consensus score and sample up to 500 from each level
+                sampled_features = []
+                consensus_stats = {}
+
+                for score in sorted(df['consensus_score'].unique(), reverse=True):
+                    score_group = df[df['consensus_score'] == score]
+                    total_count = len(score_group)
+                    sample_count = min(500, total_count)
+                    sampled = score_group.head(sample_count)
+
+                    sampled_features.append(sampled)
+                    consensus_stats[int(score)] = {
+                        'total': total_count,
+                        'sampled': sample_count
+                    }
+
+                df_sorted = pd.concat(sampled_features, ignore_index=True)
+
+                print(f"  {query_tool}: Sampled {len(df_sorted)} of {len(df)} features across {len(consensus_stats)} consensus levels", file=sys.stderr)
+
+                # Aggregate consensus stats for this sample
+                for score, stats in consensus_stats.items():
+                    if score not in samples[sample_name]['consensus_stats']:
+                        samples[sample_name]['consensus_stats'][score] = {
+                            'total': 0,
+                            'sampled': 0
+                        }
+                    samples[sample_name]['consensus_stats'][score]['total'] += stats['total']
+                    samples[sample_name]['consensus_stats'][score]['sampled'] += stats['sampled']
+
+                # Process features
+                for _, row in df_sorted.iterrows():
+                    consensus_count = row['consensus_score']
+                    total_tools = len(match_cols) + 1  # +1 for query tool itself
+
+                    feature = {
+                        'sample': sample_name,
+                        'query_tool': query_tool,
+                        'chr': row['chr'],
+                        'start': row['start_pos'],
+                        'end': row['end_pos'],
+                        'strand': row['strand'],
+                        'name': row.get('feature_name', 'N/A'),
+                        'consensus_score': int(consensus_count),
+                        'total_tools': total_tools,
+                        'ucsc_url': row.get('ucsc_url', ''),
+                        'rna_biotype': row.get('rna_biotype', 'N/A'),
+                        'cds_context': row.get('cds_context', 'N/A'),
+                        'gene_name': row.get('gene_name', 'N/A'),
+                        'tool_matches': {}
+                    }
+
+                    # Add per-tool match info
+                    for tool in other_tools:
+                        feature['tool_matches'][tool] = {
+                            'start': int(row.get(f'{tool}_start_matches', 0)),
+                            'end': int(row.get(f'{tool}_end_matches', 0)),
+                            'both': int(row.get(f'{tool}_both_matches', 0))
+                        }
+
+                    samples[sample_name]['features'].append(feature)
+
             except Exception as e:
                 print(f"Warning: Failed to parse {consensus_file}: {e}", file=sys.stderr)
 
-    # Separate multi-tool vs single-tool samples
-    samples_with_consensus = []
-    skipped_samples = []
-    all_tools = set()
-
-    for sample_name, data in samples_data.items():
-        data['tools'] = sorted(list(data['tools']))
-        all_tools.update(data['tools'])
-
-        if data['tool_count'] >= 2:
-            samples_with_consensus.append(data)
-        else:
-            skipped_samples.append(data)
+    # Convert sets to sorted lists
+    for sample_data in samples.values():
+        sample_data['tools'] = sorted(list(sample_data['tools']))
+        sample_data['tool_count'] = len(sample_data['tools'])
 
     return {
-        'samples_with_consensus': sorted(samples_with_consensus, key=lambda x: x['name']),
-        'skipped_samples': sorted(skipped_samples, key=lambda x: x['name']),
-        'all_tools': sorted(list(all_tools))
+        'samples': sorted(samples.values(), key=lambda x: x['name'])
     }
 
 
@@ -149,17 +193,11 @@ def main():
     print(f"Parsing results from: {args.results_dir}", file=sys.stderr)
     parsed_data = parse_results_directory(args.results_dir)
 
-    print(f"Found {len(parsed_data['samples_with_consensus'])} samples with consensus", file=sys.stderr)
-    print(f"Found {len(parsed_data['skipped_samples'])} single-tool samples", file=sys.stderr)
+    samples = parsed_data['samples']
+    print(f"Found {len(samples)} samples", file=sys.stderr)
 
-    # Calculate tool usage counts
-    tool_counts_dict = defaultdict(int)
-    for sample in parsed_data['samples_with_consensus'] + parsed_data['skipped_samples']:
-        for tool in sample['tools']:
-            tool_counts_dict[tool] += 1
-
-    tool_names = sorted(tool_counts_dict.keys())
-    tool_counts = [tool_counts_dict[t] for t in tool_names]
+    total_features = sum(len(s['features']) for s in samples)
+    print(f"Found {total_features} total features", file=sys.stderr)
 
     # Prepare template context
     from datetime import datetime
@@ -167,15 +205,9 @@ def main():
         'run_name': args.run_name,
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'ucsc_session_url': args.ucsc_session_url,
-        'total_samples': len(parsed_data['samples_with_consensus']) + len(parsed_data['skipped_samples']),
-        'multi_tool_samples': len(parsed_data['samples_with_consensus']),
-        'single_tool_samples': len(parsed_data['skipped_samples']),
-        'unique_tools': len(parsed_data['all_tools']),
-        'all_tools': parsed_data['all_tools'],
-        'tool_names': tool_names,
-        'tool_counts': tool_counts,
-        'samples_with_consensus': parsed_data['samples_with_consensus'],
-        'skipped_samples': parsed_data['skipped_samples']
+        'samples': samples,
+        'total_samples': len(samples),
+        'total_features': total_features
     }
 
     # Load and render template

@@ -39,10 +39,98 @@ def parse_samplesheet(samplesheet_path):
     return valid_entries
 
 
+def ingest_gtf_annotations(con, gtf_path):
+    """
+    Load gencode GTF annotations into DuckDB.
+
+    Loads transcript, CDS, and gene features with biotype annotations.
+
+    Args:
+        con: DuckDB connection
+        gtf_path: Path to gencode GTF file (can be .gz)
+    """
+    print(f"Loading gencode annotations from: {gtf_path}", file=sys.stderr)
+
+    # Create annotations table
+    con.execute('''
+        CREATE TABLE IF NOT EXISTS annotations (
+            chr TEXT,
+            source TEXT,
+            feature_type TEXT,
+            start_pos INTEGER,
+            end_pos INTEGER,
+            score TEXT,
+            strand TEXT,
+            frame TEXT,
+            gene_id TEXT,
+            gene_name TEXT,
+            gene_biotype TEXT,
+            transcript_id TEXT,
+            transcript_name TEXT,
+            transcript_biotype TEXT
+        )
+    ''')
+
+    # DuckDB can read .gz files directly
+    # Parse GTF attributes to extract key fields
+    con.execute(f"""
+        INSERT INTO annotations
+        SELECT
+            seqname as chr,
+            source,
+            feature as feature_type,
+            start as start_pos,
+            end as end_pos,
+            score,
+            strand,
+            frame,
+            regexp_extract(attributes, 'gene_id "([^"]+)"', 1) as gene_id,
+            regexp_extract(attributes, 'gene_name "([^"]+)"', 1) as gene_name,
+            regexp_extract(attributes, 'gene_type "([^"]+)"', 1) as gene_biotype,
+            regexp_extract(attributes, 'transcript_id "([^"]+)"', 1) as transcript_id,
+            regexp_extract(attributes, 'transcript_name "([^"]+)"', 1) as transcript_name,
+            regexp_extract(attributes, 'transcript_type "([^"]+)"', 1) as transcript_biotype
+        FROM read_csv('{gtf_path}',
+            delim='\t',
+            header=false,
+            comment='#',
+            columns={{
+                'seqname': 'VARCHAR',
+                'source': 'VARCHAR',
+                'feature': 'VARCHAR',
+                'start': 'INTEGER',
+                'end': 'INTEGER',
+                'score': 'VARCHAR',
+                'strand': 'VARCHAR',
+                'frame': 'VARCHAR',
+                'attributes': 'VARCHAR'
+            }})
+        WHERE feature IN ('transcript', 'CDS', 'gene')
+    """)
+
+    # Get counts by feature type
+    counts = con.execute("""
+        SELECT feature_type, COUNT(*) as n
+        FROM annotations
+        GROUP BY feature_type
+        ORDER BY n DESC
+    """).df()
+
+    print("Loaded annotations:", file=sys.stderr)
+    print(counts.to_string(index=False), file=sys.stderr)
+
+    # Create index for faster lookups
+    con.execute("CREATE INDEX IF NOT EXISTS idx_annotations_location ON annotations(chr, strand, start_pos, end_pos)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_annotations_transcript ON annotations(transcript_id)")
+
+
 def ingest_beds(con, sample_name, bed_files_dict):
     """
-    Load all BED files into DuckDB features table.
-    
+    Load all BED files into DuckDB features table, consolidating duplicate features.
+
+    BED12 files may contain multiple exon rows with the same feature_name.
+    We deduplicate by taking unique (chr, start_pos, end_pos, strand, feature_name) combinations.
+
     Args:
         con: DuckDB connection
         sample_name: Sample identifier
@@ -107,18 +195,44 @@ def ingest_beds(con, sample_name, bed_files_dict):
         select_cols = ', '.join([f'col{i} as {name}' for i, name in enumerate(col_names)])
         
         try:
+            # Load into temp table first
             con.execute(f"""
-                INSERT INTO features (sample, tool, {', '.join(col_names)})
-                SELECT 
+                CREATE TEMP TABLE temp_features AS
+                SELECT
                     '{sample_name}' as sample,
                     '{tool}' as tool,
                     {select_cols}
-                FROM read_csv_auto('{bed_path}', 
+                FROM read_csv_auto('{bed_path}',
                     delim='\t',
                     header=false,
                     columns={col_spec},
                     ignore_errors=true)
             """)
+
+            # Get counts before/after deduplication
+            count_before = con.execute("SELECT COUNT(*) FROM temp_features").fetchone()[0]
+
+            # Insert deduplicated features (unique by location and name)
+            con.execute(f"""
+                INSERT INTO features (sample, tool, {', '.join(col_names)})
+                SELECT DISTINCT ON (chr, start_pos, end_pos, strand, feature_name)
+                    sample, tool, {', '.join(col_names)}
+                FROM temp_features
+                ORDER BY chr, start_pos, end_pos, strand, feature_name
+            """)
+
+            count_after = con.execute(f"""
+                SELECT COUNT(*) FROM features
+                WHERE sample = '{sample_name}' AND tool = '{tool}'
+            """).fetchone()[0]
+
+            duplicates_removed = count_before - count_after
+            if duplicates_removed > 0:
+                print(f"  → Removed {duplicates_removed} duplicate features ({count_before} → {count_after})", file=sys.stderr)
+
+            # Drop temp table
+            con.execute("DROP TABLE temp_features")
+
         except Exception as e:
             print(f"Error ingesting {tool} from {bed_path}: {e}", file=sys.stderr)
             raise
@@ -184,6 +298,109 @@ def compute_matches(con, sample_name, query_tool, other_tools):
     return con.execute(query).df()
 
 
+def annotate_features(con, sample_name, query_tool):
+    """
+    Annotate features with gencode transcript biotype and CDS position context.
+
+    For each feature, finds overlapping transcript(s) and determines:
+    - RNA biotype (protein_coding, lncRNA, etc.)
+    - Position relative to CDS: upstream, overlaps_5prime, within_CDS,
+      overlaps_3prime, downstream, intergenic
+
+    Args:
+        con: DuckDB connection
+        sample_name: Sample identifier
+        query_tool: Tool name
+
+    Returns:
+        DataFrame with annotation columns added
+    """
+    query = f"""
+    WITH feature_annotations AS (
+        SELECT
+            f.*,
+            t.transcript_id,
+            t.transcript_biotype,
+            t.gene_name,
+            CASE
+                -- Check if annotations table exists and has data
+                WHEN t.transcript_id IS NULL THEN 'intergenic'
+                -- Feature overlaps transcript but need to check CDS
+                ELSE
+                    CASE
+                        -- Get CDS boundaries for this transcript
+                        WHEN EXISTS (
+                            SELECT 1 FROM annotations cds
+                            WHERE cds.transcript_id = t.transcript_id
+                            AND cds.feature_type = 'CDS'
+                        ) THEN
+                            CASE
+                                -- Completely upstream of CDS
+                                WHEN f.end_pos < (
+                                    SELECT MIN(start_pos) FROM annotations cds
+                                    WHERE cds.transcript_id = t.transcript_id
+                                    AND cds.feature_type = 'CDS'
+                                ) THEN '5prime_UTR'
+                                -- Completely downstream of CDS
+                                WHEN f.start_pos > (
+                                    SELECT MAX(end_pos) FROM annotations cds
+                                    WHERE cds.transcript_id = t.transcript_id
+                                    AND cds.feature_type = 'CDS'
+                                ) THEN '3prime_UTR'
+                                -- Overlaps start of CDS
+                                WHEN f.start_pos < (
+                                    SELECT MIN(start_pos) FROM annotations cds
+                                    WHERE cds.transcript_id = t.transcript_id
+                                    AND cds.feature_type = 'CDS'
+                                ) AND f.end_pos > (
+                                    SELECT MIN(start_pos) FROM annotations cds
+                                    WHERE cds.transcript_id = t.transcript_id
+                                    AND cds.feature_type = 'CDS'
+                                ) THEN 'overlaps_CDS_5prime'
+                                -- Overlaps end of CDS
+                                WHEN f.start_pos < (
+                                    SELECT MAX(end_pos) FROM annotations cds
+                                    WHERE cds.transcript_id = t.transcript_id
+                                    AND cds.feature_type = 'CDS'
+                                ) AND f.end_pos > (
+                                    SELECT MAX(end_pos) FROM annotations cds
+                                    WHERE cds.transcript_id = t.transcript_id
+                                    AND cds.feature_type = 'CDS'
+                                ) THEN 'overlaps_CDS_3prime'
+                                -- Within CDS boundaries
+                                ELSE 'within_CDS'
+                            END
+                        -- No CDS for this transcript (ncRNA)
+                        ELSE 'within_transcript_no_CDS'
+                    END
+            END as cds_context
+        FROM features f
+        LEFT JOIN annotations t ON
+            f.chr = t.chr
+            AND f.strand = t.strand
+            AND t.feature_type = 'transcript'
+            -- Feature overlaps transcript
+            AND NOT (f.end_pos < t.start_pos OR f.start_pos > t.end_pos)
+        WHERE f.sample = '{sample_name}'
+        AND f.tool = '{query_tool}'
+    )
+    SELECT
+        chr,
+        start_pos,
+        end_pos,
+        strand,
+        feature_name,
+        score,
+        COALESCE(transcript_id, 'none') as transcript_id,
+        COALESCE(transcript_biotype, 'intergenic') as rna_biotype,
+        COALESCE(gene_name, 'intergenic') as gene_name,
+        cds_context
+    FROM feature_annotations
+    """
+
+    return con.execute(query).df()
+
+
 def generate_ucsc_url(row, ucsc_session_url, flank=500):
     """Generate UCSC Genome Browser URL for a feature."""
     region = f"{row['chr']}:{max(0, row['start_pos']-flank)}-{row['end_pos']+flank}"
@@ -234,7 +451,12 @@ RiboTIE\t/path/to/ribotie.bed
         default=500,
         help='Flanking bases for UCSC links (default: 500)'
     )
-    
+
+    parser.add_argument(
+        '-g', '--gencode-gtf',
+        help='Path to gencode GTF file for annotation (can be .gz). If not provided, features will not be annotated with biotype/CDS context.'
+    )
+
     parser.add_argument(
         '--db',
         help='Path to DuckDB database (default: in-memory)'
@@ -259,7 +481,19 @@ RiboTIE\t/path/to/ribotie.bed
         # Ingest all BED files
         print(f"\nIngesting BED files for sample: {args.sample_name}", file=sys.stderr)
         ingest_beds(con, args.sample_name, bed_files)
-        
+
+        # Load GTF annotations if provided
+        has_annotations = False
+        if args.gencode_gtf:
+            gtf_path = Path(args.gencode_gtf)
+            if gtf_path.exists():
+                print(f"\nLoading gencode annotations...", file=sys.stderr)
+                ingest_gtf_annotations(con, str(gtf_path))
+                has_annotations = True
+            else:
+                print(f"Warning: GTF file not found: {gtf_path}", file=sys.stderr)
+                print("  Proceeding without annotation...", file=sys.stderr)
+
         # Verify ingestion
         counts = con.execute(f"""
             SELECT tool, COUNT(*) as n_features
@@ -269,23 +503,43 @@ RiboTIE\t/path/to/ribotie.bed
         """).df()
         print("\nFeature counts per tool:", file=sys.stderr)
         print(counts.to_string(index=False), file=sys.stderr)
-        
+
         # Compute matches for each tool
         print(f"\nComputing consensus matches...", file=sys.stderr)
         tools = list(bed_files.keys())
-        
+
         for query_tool in tools:
             other_tools = [t for t in tools if t != query_tool]
-            
+
             print(f"  Processing {query_tool}...", file=sys.stderr)
             df = compute_matches(con, args.sample_name, query_tool, other_tools)
-            
+
+            # Add annotations if available
+            if has_annotations:
+                print(f"    Adding gencode annotations...", file=sys.stderr)
+                annot_df = annotate_features(con, args.sample_name, query_tool)
+
+                # Merge annotations into consensus results
+                # Match on location
+                df = df.merge(
+                    annot_df[['chr', 'start_pos', 'end_pos', 'strand',
+                             'transcript_id', 'rna_biotype', 'gene_name', 'cds_context']],
+                    on=['chr', 'start_pos', 'end_pos', 'strand'],
+                    how='left'
+                )
+
+                # Fill missing values for features without annotation
+                df['transcript_id'] = df['transcript_id'].fillna('none')
+                df['rna_biotype'] = df['rna_biotype'].fillna('intergenic')
+                df['gene_name'] = df['gene_name'].fillna('intergenic')
+                df['cds_context'] = df['cds_context'].fillna('intergenic')
+
             # Add UCSC links
             df['ucsc_url'] = df.apply(
                 lambda row: generate_ucsc_url(row, args.ucsc_session_url, args.flank),
                 axis=1
             )
-            
+
             # Write output
             outfile = outdir / f"{args.sample_name}.{query_tool}.consensus.tsv"
             df.to_csv(outfile, sep='\t', index=False)

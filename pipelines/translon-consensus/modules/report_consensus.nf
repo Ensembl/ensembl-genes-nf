@@ -11,17 +11,20 @@ process REPORT_CONSENSUS {
     input:
     tuple val(meta), path(samplesheet), path(bed_files)
     val ucsc_session_url
+    path gencode_gtf, stageAs: 'gencode.gtf*'
 
     output:
     tuple val(meta), path("*.tsv"),           emit: results
 
     script:
+    def gtf_arg = gencode_gtf.name != 'NO_FILE' ? "-g ${gencode_gtf}" : ""
     """
     consensus.py \\
         -s ${samplesheet} \\
         -n ${meta.id} \\
         -o . \\
-        -u "${ucsc_session_url}"
+        -u "${ucsc_session_url}" \\
+        ${gtf_arg}
     """
     
     stub:
