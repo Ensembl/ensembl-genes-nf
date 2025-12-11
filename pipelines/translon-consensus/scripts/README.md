@@ -17,10 +17,12 @@ The consensus pipeline requires proper BED12 format with one entry per ORF (not 
 ### Auto-Detection (Recommended)
 
 ```bash
-convert_to_bed12.py input.bed output.bed12
+convert_to_bed12.py input.bed output_dir/
 ```
 
 Automatically detects the tool format and converts to BED12.
+- Input: `input.bed`
+- Output: `output_dir/input.bed12` (automatically named)
 
 ### Tool-Specific Converters
 
@@ -28,7 +30,8 @@ If auto-detection fails, use the tool-specific converter:
 
 #### RiboTIE (GTF → BED12)
 ```bash
-ribotie_to_bed12.py input.gtf output.bed12
+ribotie_to_bed12.py input.bed output_dir/
+# Creates: output_dir/input.bed12
 ```
 
 **Input format:**
@@ -45,7 +48,8 @@ chr7    RiboTIE CDS     92131774    92131872    .    -    0    gene_id "ENSG..."
 
 #### PRICE (BED12 → BED12)
 ```bash
-price_to_bed12.py input.bed output.bed12
+price_to_bed12.py input.bed output_dir/
+# Creates: output_dir/input.bed12
 ```
 
 **Input format:**
@@ -61,7 +65,8 @@ price_to_bed12.py input.bed output.bed12
 
 #### iRibo (GFF3 → BED12)
 ```bash
-iribo_to_bed12.py input.gff3 output.bed12
+iribo_to_bed12.py input.bed output_dir/
+# Creates: output_dir/input.bed12
 ```
 
 **Input format:**
@@ -77,7 +82,8 @@ chr1    iRibo    CDS    16853    17055    .    -    .    ID=candidate_orf964261
 
 #### ORFQuant (GFF3 → BED12)
 ```bash
-orfquant_to_bed12.py input.gff3 output.bed12
+orfquant_to_bed12.py input.bed output_dir/
+# Creates: output_dir/input.bed12
 ```
 
 **Input format:**
@@ -115,9 +121,22 @@ chr    start    end    name    score    strand    thickStart    thickEnd    item
 Convert all files in a directory:
 
 ```bash
+# Single output directory for all conversions
+mkdir -p output_dir
 for file in input_dir/*.bed; do
-    output=$(basename "$file" .bed).bed12
-    convert_to_bed12.py "$file" "output_dir/$output"
+    convert_to_bed12.py "$file" output_dir/
+done
+```
+
+Or convert by tool type:
+
+```bash
+# Maintain directory structure
+for tool in RiboTIE PRICE iRibo ORFQuant; do
+    mkdir -p results_bed12/$tool
+    for bed in results/$tool/*.bed; do
+        convert_to_bed12.py "$bed" results_bed12/$tool/
+    done
 done
 ```
 
@@ -128,9 +147,9 @@ These scripts should be run **before** the consensus pipeline:
 ```bash
 # 1. Convert all tool outputs to BED12
 for tool_dir in RiboTIE PRICE iRibo ORFQuant; do
+    mkdir -p results_bed12/$tool_dir
     for bed in results/$tool_dir/*.bed; do
-        base=$(basename "$bed" .bed)
-        convert_to_bed12.py "$bed" "results_bed12/$tool_dir/${base}.bed12"
+        convert_to_bed12.py "$bed" results_bed12/$tool_dir/
     done
 done
 
@@ -150,10 +169,11 @@ Test on example data:
 cd pipelines/translon-consensus/scripts
 
 # Test auto-detection
-./convert_to_bed12.py ../../../test_data/ribotie_sample.bed test_output.bed12
+mkdir -p test_output
+./convert_to_bed12.py ../../../test_data/ribotie_sample.bed test_output/
 
-# Verify output
-head test_output.bed12
+# Verify output (creates test_output/ribotie_sample.bed12)
+head test_output/ribotie_sample.bed12
 ```
 
 ## Troubleshooting

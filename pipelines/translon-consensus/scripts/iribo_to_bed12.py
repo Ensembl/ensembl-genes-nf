@@ -130,11 +130,24 @@ def main():
         description='Convert iRibo GFF3 to BED12 format'
     )
     parser.add_argument('input', help='Input iRibo GFF3 file')
-    parser.add_argument('output', help='Output BED12 file')
+    parser.add_argument('output_dir', help='Output directory for BED12 files')
 
     args = parser.parse_args()
 
-    convert_iribo_to_bed12(args.input, args.output)
+    # Create output directory if it doesn't exist
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate output filename: replace .bed with .bed12
+    input_path = Path(args.input)
+    if input_path.suffix == '.bed':
+        output_name = input_path.stem + '.bed12'
+    else:
+        output_name = input_path.name + '.bed12'
+
+    output_file = output_dir / output_name
+
+    convert_iribo_to_bed12(args.input, str(output_file))
 
 
 if __name__ == '__main__':

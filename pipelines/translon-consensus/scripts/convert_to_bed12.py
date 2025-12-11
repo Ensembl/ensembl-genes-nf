@@ -71,11 +71,12 @@ Automatically detects tool format (RiboTIE, PRICE, iRibo, ORFQuant)
 and converts to proper BED12 format.
 
 Example:
-  convert_to_bed12.py input.bed output.bed12
+  convert_to_bed12.py input.bed output_dir/
+  # Creates: output_dir/input.bed12
         """
     )
     parser.add_argument('input', help='Input file (any supported format)')
-    parser.add_argument('output', help='Output BED12 file')
+    parser.add_argument('output_dir', help='Output directory for BED12 files')
     parser.add_argument('--tool', choices=['ribotie', 'price', 'iribo', 'orfquant'],
                         help='Force specific tool converter (auto-detect if not specified)')
 
@@ -111,7 +112,7 @@ Example:
         sys.exit(1)
 
     # Call appropriate converter
-    cmd = [str(converter_script), args.input, args.output]
+    cmd = [str(converter_script), args.input, args.output_dir]
     print(f"Running: {' '.join(cmd)}", file=sys.stderr)
 
     result = subprocess.run(cmd, capture_output=False)
