@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translon Consensus Report</title>
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+    <!-- jQuery & DataTables JS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 8px;
+        }
+        h3 {
+            color: #7f8c8d;
+            margin-top: 30px;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-card.alt {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card.alt2 {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .sample-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .sample-section.skipped {
+            border-left-color: #e74c3c;
+            background: #fef5f5;
+        }
+        .alert {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            border-left: 4px solid #f39c12;
+            background: #fef9e7;
+        }
+        .alert.info {
+            border-left-color: #3498db;
+            background: #ebf5fb;
+        }
+        table.dataTable {
+            width: 100% !important;
+            margin-top: 20px !important;
+        }
+        .plot-container {
+            margin: 30px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ecf0f1;
+        }
+        .ucsc-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .ucsc-link:hover {
+            text-decoration: underline;
+        }
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+            color: #7f8c8d;
+            text-align: center;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧬 Translon Consensus Analysis Report</h1>
+
+        <div class="alert info">
+            <strong>Pipeline Run:</strong> {{ run_name }}<br>
+            <strong>Generated:</strong> {{ timestamp }}<br>
+            <strong>UCSC Session:</strong> <a href="{{ ucsc_session_url }}" target="_blank" class="ucsc-link">View in Genome Browser</a>
+        </div>
+
+        <h2>📊 Summary Statistics</h2>
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-label">Total Samples</div>
+                <div class="stat-value">{{ total_samples }}</div>
+            </div>
+            <div class="stat-card alt">
+                <div class="stat-label">Multi-Tool Samples</div>
+                <div class="stat-value">{{ multi_tool_samples }}</div>
+            </div>
+            <div class="stat-card alt2">
+                <div class="stat-label">Single-Tool Samples</div>
+                <div class="stat-value">{{ single_tool_samples }}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Unique Tools</div>
+                <div class="stat-value">{{ unique_tools }}</div>
+            </div>
+        </div>
+
+        {% if all_tools %}
+        <div class="plot-container">
+            <h3>Tools Used Across All Samples</h3>
+            <div id="tools-bar-chart"></div>
+        </div>
+        {% endif %}
+
+        {% if samples_with_consensus %}
+        <h2>✅ Samples with Consensus Analysis</h2>
+
+        {% for sample in samples_with_consensus %}
+        <div class="sample-section">
+            <h3>{{ sample.name }} <span style="color: #7f8c8d; font-size: 0.8em;">({{ sample.tool_count }} tools)</span></h3>
+
+            {% if sample.tools %}
+            <p><strong>Tools:</strong> {{ sample.tools|join(', ') }}</p>
+            {% endif %}
+
+            {% if sample.summary_file %}
+            <h4>Summary Statistics</h4>
+            <div id="summary-table-{{ loop.index0 }}"></div>
+            {% endif %}
+
+            {% if sample.consensus_files %}
+            <h4>Detailed Consensus Results</h4>
+            <p>Per-tool consensus analysis showing start/end coordinate matches:</p>
+            {% for tool, file_path in sample.consensus_files.items() %}
+            <details style="margin: 10px 0;">
+                <summary style="cursor: pointer; font-weight: bold; padding: 5px;">{{ tool }} (click to expand)</summary>
+                <div id="consensus-table-{{ loop.index0 }}-{{ loop.index }}" style="margin-top: 10px;"></div>
+            </details>
+            {% endfor %}
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if skipped_samples %}
+        <h2>⚠️ Single-Tool Samples (No Consensus)</h2>
+        <div class="alert">
+            The following samples only had results from a single tool, so consensus analysis was not possible (requires 2+ tools):
+        </div>
+        {% for sample in skipped_samples %}
+        <div class="sample-section skipped">
+            <h3>{{ sample.name }}</h3>
+            <p><strong>Tool:</strong> {{ sample.tools[0] if sample.tools else 'Unknown' }}</p>
+            <p><em>Consensus analysis requires at least 2 tools with results.</em></p>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="footer">
+            Generated by Translon Consensus Pipeline •
+            <a href="https://www.nextflow.io/" target="_blank">Nextflow</a>
+        </div>
+    </div>
+
+    <script>
+        // Initialize DataTables
+        $(document).ready(function() {
+            $('table').DataTable({
+                pageLength: 25,
+                order: [[0, 'asc']],
+                dom: 'Bfrtip',
+                buttons: ['copy', 'csv', 'excel']
+            });
+        });
+
+        // Tool usage bar chart
+        {% if tool_counts %}
+        var toolData = [{
+            x: {{ tool_names|tojson }},
+            y: {{ tool_counts|tojson }},
+            type: 'bar',
+            marker: {
+                color: '#3498db'
+            }
+        }];
+
+        var toolLayout = {
+            title: 'Tool Usage Frequency',
+            xaxis: { title: 'Tool' },
+            yaxis: { title: 'Number of Samples' },
+            margin: { t: 40, b: 100 }
+        };
+
+        Plotly.newPlot('tools-bar-chart', toolData, toolLayout);
+        {% endif %}
+
+        // Load summary tables
+        {% for sample in samples_with_consensus %}
+        {% if sample.summary_data %}
+        var summaryData{{ loop.index0 }} = {{ sample.summary_data|tojson }};
+        var summaryHtml{{ loop.index0 }} = '<table class="display"><thead><tr>';
+        Object.keys(summaryData{{ loop.index0 }}[0]).forEach(function(key) {
+            summaryHtml{{ loop.index0 }} += '<th>' + key + '</th>';
+        });
+        summaryHtml{{ loop.index0 }} += '</tr></thead><tbody>';
+        summaryData{{ loop.index0 }}.forEach(function(row) {
+            summaryHtml{{ loop.index0 }} += '<tr>';
+            Object.values(row).forEach(function(val) {
+                summaryHtml{{ loop.index0 }} += '<td>' + val + '</td>';
+            });
+            summaryHtml{{ loop.index0 }} += '</tr>';
+        });
+        summaryHtml{{ loop.index0 }} += '</tbody></table>';
+        $('#summary-table-{{ loop.index0 }}').html(summaryHtml{{ loop.index0 }});
+        {% endif %}
+
+        // Load consensus detail tables
+        {% if sample.consensus_data %}
+        {% for tool, data in sample.consensus_data.items() %}
+        var consensusData{{ loop.index0 }}_{{ loop.index }} = {{ data|tojson }};
+        if (consensusData{{ loop.index0 }}_{{ loop.index }}.length > 0) {
+            var consensusHtml{{ loop.index0 }}_{{ loop.index }} = '<table class="display"><thead><tr>';
+            Object.keys(consensusData{{ loop.index0 }}_{{ loop.index }}[0]).forEach(function(key) {
+                consensusHtml{{ loop.index0 }}_{{ loop.index }} += '<th>' + key + '</th>';
+            });
+            consensusHtml{{ loop.index0 }}_{{ loop.index }} += '</tr></thead><tbody>';
+            consensusData{{ loop.index0 }}_{{ loop.index }}.forEach(function(row) {
+                consensusHtml{{ loop.index0 }}_{{ loop.index }} += '<tr>';
+                Object.entries(row).forEach(function([key, val]) {
+                    if (key === 'ucsc_url') {
+                        consensusHtml{{ loop.index0 }}_{{ loop.index }} += '<td><a href="' + val + '" target="_blank" class="ucsc-link">View</a></td>';
+                    } else {
+                        consensusHtml{{ loop.index0 }}_{{ loop.index }} += '<td>' + val + '</td>';
+                    }
+                });
+                consensusHtml{{ loop.index0 }}_{{ loop.index }} += '</tr>';
+            });
+            consensusHtml{{ loop.index0 }}_{{ loop.index }} += '</tbody></table>';
+            $('#consensus-table-{{ loop.index0 }}-{{ loop.index }}').html(consensusHtml{{ loop.index0 }}_{{ loop.index }});
+        }
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
+
+        // Re-initialize DataTables after loading data
+        setTimeout(function() {
+            $('table:not(.dataTable)').DataTable({
+                pageLength: 10,
+                order: [[0, 'asc']]
+            });
+        }, 100);
+    </script>
+</body>
+</html>

@@ -5,6 +5,7 @@ nextflow.enable.dsl = 2
 include { RENAME_BED } from '../modules/rename_bed.nf'
 include { CREATE_SAMPLESHEET } from '../modules/create_samplesheet.nf'
 include { REPORT_CONSENSUS } from '../modules/report_consensus.nf'
+include { GENERATE_HTML_REPORT } from '../modules/generate_report.nf'
 
 
 workflow TRANSLON_CONSENSUS {
@@ -47,4 +48,12 @@ workflow TRANSLON_CONSENSUS {
     single_tool_ch.subscribe { meta, files ->
         log.warn "Sample ${meta.id} has only 1 tool - skipping consensus analysis (requires 2+ tools)"
     }
+
+    // Collect all consensus results and generate HTML report
+    all_results = REPORT_CONSENSUS.out.results
+        .map { meta, files -> files }
+        .flatten()
+        .collect()
+
+    GENERATE_HTML_REPORT(all_results, params.ucsc_session_url)
 }
