@@ -44,10 +44,11 @@ def ingest_gtf_annotations(con, gtf_path):
     Load gencode GTF annotations into DuckDB.
 
     Loads transcript, CDS, and gene features with biotype annotations.
+    DuckDB's read_csv() automatically handles gzipped files (.gtf.gz).
 
     Args:
         con: DuckDB connection
-        gtf_path: Path to gencode GTF file (can be .gz)
+        gtf_path: Path to gencode GTF file (.gtf or .gtf.gz)
     """
     print(f"Loading gencode annotations from: {gtf_path}", file=sys.stderr)
 
