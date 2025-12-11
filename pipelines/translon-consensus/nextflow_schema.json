@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "title": "Translon Consensus Pipeline Parameters",
+    "description": "Parameter schema for the translon consensus pipeline",
+    "type": "object",
+    "properties": {
+      "bed_results_dir": {
+        "type": "string",
+        "description": "Path to directory containing BED results organized by tool (e.g., results/*/sample.bed)"
+      },
+      "ucsc_session_url": {
+        "type": "string",
+        "description": "UCSC Genome Browser session URL for generating reports"
+      },
+      "outdir": {
+        "type": "string",
+        "default": "./results",
+        "description": "Output directory for pipeline results"
+      },
+      "tracedir": {
+        "type": "string",
+        "description": "Directory for pipeline execution reports"
+      }
+    },
+    "required": ["bed_results_dir", "ucsc_session_url"]
+  }
