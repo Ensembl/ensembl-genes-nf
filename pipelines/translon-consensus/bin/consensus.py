@@ -74,17 +74,18 @@ def ingest_gtf_annotations(con, gtf_path):
 
     # DuckDB can read .gz files directly
     # Parse GTF attributes to extract key fields
+    # Note: start, end, frame, score, source, feature are DuckDB reserved keywords - must be quoted
     con.execute(f"""
         INSERT INTO annotations
         SELECT
             seqname as chr,
-            source,
-            feature as feature_type,
-            start as start_pos,
-            end as end_pos,
-            score,
+            "source",
+            "feature" as feature_type,
+            "start" as start_pos,
+            "end" as end_pos,
+            "score",
             strand,
-            frame,
+            "frame",
             regexp_extract(attributes, 'gene_id "([^"]+)"', 1) as gene_id,
             regexp_extract(attributes, 'gene_name "([^"]+)"', 1) as gene_name,
             regexp_extract(attributes, 'gene_type "([^"]+)"', 1) as gene_biotype,
@@ -106,7 +107,7 @@ def ingest_gtf_annotations(con, gtf_path):
                 'frame': 'VARCHAR',
                 'attributes': 'VARCHAR'
             }})
-        WHERE feature IN ('transcript', 'CDS', 'gene')
+        WHERE "feature" IN ('transcript', 'CDS', 'gene')
     """)
 
     # Get counts by feature type
