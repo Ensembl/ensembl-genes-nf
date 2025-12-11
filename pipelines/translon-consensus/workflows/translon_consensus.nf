@@ -16,20 +16,35 @@ workflow TRANSLON_CONSENSUS {
             def meta = [id: sample_name]
             return tuple(meta, tool, bed_file)
         }
-    
+
     // Rename files to include tool name
     RENAME_BED(bed_files_ch)
-    
+
     // Group by sample name to collect all renamed files
     input_ch = RENAME_BED.out
         .groupTuple(by: 0)
         .map { meta, renamed_files ->
             // Sort files by name for consistency
             def sorted_files = renamed_files.sort { it.name }
-            return tuple(meta, sorted_files)
+            // Add tool count to metadata
+            def enriched_meta = meta + [tool_count: sorted_files.size()]
+            return tuple(enriched_meta, sorted_files)
         }
 
-    CREATE_SAMPLESHEET(input_ch)
+    // Split into single-tool and multi-tool samples
+    multi_tool_ch = input_ch
+        .filter { meta, files -> meta.tool_count >= 2 }
 
+    single_tool_ch = input_ch
+        .filter { meta, files -> meta.tool_count == 1 }
+
+    CREATE_SAMPLESHEET(multi_tool_ch)
+
+    // Only run consensus analysis for samples with 2+ tools
     REPORT_CONSENSUS(CREATE_SAMPLESHEET.out, params.ucsc_session_url)
+
+    // Log single-tool samples (no consensus possible)
+    single_tool_ch.subscribe { meta, files ->
+        log.warn "Sample ${meta.id} has only 1 tool - skipping consensus analysis (requires 2+ tools)"
+    }
 }
