@@ -1,22 +1,68 @@
 #!/usr/bin/env python3
 """
 Consensus analysis for ncORF annotations across multiple tools.
-Computes start/end/both match counts for each feature against all other tools.
+Safer ingestion for GTF/BED and robust DuckDB CSV options.
 """
 
 import argparse
 import sys
 from pathlib import Path
+import gzip
 import duckdb
 import pandas as pd
+from io import TextIOWrapper
 
+# ---------- Utilities ----------
+
+def is_gzip_file(path: Path) -> bool:
+    """Check magic bytes to detect gzip (works even if extension is wrong)."""
+    try:
+        with open(path, 'rb') as fh:
+            magic = fh.read(2)
+            return magic == b'\x1f\x8b'
+    except Exception:
+        return False
+
+
+def open_text_maybe_gz(path: Path):
+    """Open file as text, transparently handling gzip if necessary."""
+    if is_gzip_file(path):
+        return TextIOWrapper(gzip.open(path, 'rb'), encoding='utf-8', errors='replace')
+    else:
+        return open(path, 'r', encoding='utf-8', errors='replace')
+
+
+def find_first_data_line_with_tabs(path: Path, min_cols=9, max_lines=2000):
+    """
+    Return the first non-comment, non-empty line that contains at least `min_cols` tab-separated fields.
+    Returns None if no such line in the first `max_lines`.
+    """
+    with open_text_maybe_gz(path) as fh:
+        seen = 0
+        for raw in fh:
+            seen += 1
+            if seen > max_lines:
+                break
+            line = raw.rstrip('\n')
+            if not line:
+                continue
+            if line.startswith('#'):
+                continue
+            # Count fields by tabs
+            n = line.count('\t') + 1
+            if n >= min_cols:
+                return line
+        return None
+
+
+# ---------- Samplesheet parsing ----------
 
 def parse_samplesheet(samplesheet_path):
     """
     Parse samplesheet TSV with columns: tool, bed_path
     Returns: dict of {tool: bed_path}
     """
-    df = pd.read_csv(samplesheet_path, sep='\t', header=0)
+    df = pd.read_csv(samplesheet_path, sep='\t', header=0, dtype=str)
     
     if not {'tool', 'bed_path'}.issubset(df.columns):
         raise ValueError("Samplesheet must have columns: tool, bed_path")
@@ -24,7 +70,7 @@ def parse_samplesheet(samplesheet_path):
     # Filter out missing files
     valid_entries = {}
     for _, row in df.iterrows():
-        tool = row['tool']
+        tool = str(row['tool'])
         bed_path = Path(row['bed_path'])
         
         if not bed_path.exists():
@@ -39,20 +85,31 @@ def parse_samplesheet(samplesheet_path):
     return valid_entries
 
 
+# ---------- GTF ingestion (robust) ----------
+
 def ingest_gtf_annotations(con, gtf_path):
     """
-    Load gencode GTF annotations into DuckDB.
+    Robustly load GENCODE / GTF annotations into DuckDB.
 
-    Loads transcript, CDS, and gene features with biotype annotations.
-    DuckDB's read_csv() automatically handles gzipped files (.gtf.gz).
-
-    Args:
-        con: DuckDB connection
-        gtf_path: Path to gencode GTF file (.gtf or .gtf.gz)
+    Validates the GTF (first non-comment line must be tab-separated with >=9 columns),
+    detects gzip magic bytes (handles gzipped files even if not named .gz),
+    and invokes DuckDB read_csv() with safe options.
     """
+    gtf_path = Path(gtf_path)
     print(f"Loading gencode annotations from: {gtf_path}", file=sys.stderr)
 
-    # Create annotations table
+    if not gtf_path.exists():
+        raise FileNotFoundError(f"GTF not found: {gtf_path}")
+
+    # Quick validation: find a sane data line
+    data_line = find_first_data_line_with_tabs(gtf_path, min_cols=9, max_lines=2000)
+    if data_line is None:
+        raise ValueError(
+            f"Failed to find a valid GTF data line in the first 2000 non-empty/non-comment lines of {gtf_path}.\n"
+            "This likely means the file is corrupted, compressed in an unexpected format, or not a GTF."
+        )
+
+    # Create annotations table (idempotent)
     con.execute('''
         CREATE TABLE IF NOT EXISTS annotations (
             chr TEXT,
@@ -72,10 +129,37 @@ def ingest_gtf_annotations(con, gtf_path):
         )
     ''')
 
-    # DuckDB can read .gz files directly
-    # Parse GTF attributes to extract key fields
-    # Note: start, end, frame, score, source, feature are DuckDB reserved keywords - must be quoted
-    con.execute(f"""
+    # Compose safe read_csv options:
+    # - delim='\t' (explicit)
+    # - quote='' and escape='' to avoid quote parsing interfering with attributes
+    # - comment='#' so metadata lines are ignored
+    # - strict_mode=false so sniffer doesn't reject files where early lines are comments
+    # - ignore_errors=true so occasional bad lines are skipped
+    # - sample_size large enough to improve sniffing
+    # - null_padding=true to allow variable-length lines padded with NULLs
+    #
+    # Note: we still filter by feature types afterwards.
+    read_csv_opts = {
+        'delim': '\\t',
+        'header': 'false',
+        'quote': "''",        # empty string literal in DuckDB SQL -> disable quoting
+        'escape': "''",
+        'comment': "'#'",
+        'strict_mode': 'false',
+        'ignore_errors': 'true',
+        'null_padding': 'true',
+        'sample_size': '20000'
+    }
+
+    # Build options string for SQL (simple join)
+    opts_sql = ',\n            '.join([f"{k}={v}" for k, v in read_csv_opts.items()])
+
+    # DuckDB columns mapping (GTF standard 9 columns)
+    # We explicitly map to these names; any extras will be placed into attributes column via last column
+    # Use a safe SQL literal for path
+    gtf_path_sql = str(gtf_path).replace("'", "''")
+
+    sql = f"""
         INSERT INTO annotations
         SELECT
             seqname as chr,
@@ -92,23 +176,24 @@ def ingest_gtf_annotations(con, gtf_path):
             regexp_extract(attributes, 'transcript_id "([^"]+)"', 1) as transcript_id,
             regexp_extract(attributes, 'transcript_name "([^"]+)"', 1) as transcript_name,
             regexp_extract(attributes, 'transcript_type "([^"]+)"', 1) as transcript_biotype
-        FROM read_csv('{gtf_path}',
-            delim='\t',
-            header=false,
-            comment='#',
+        FROM read_csv('{gtf_path_sql}',
+            {opts_sql},
             columns={{
                 'seqname': 'VARCHAR',
                 'source': 'VARCHAR',
                 'feature': 'VARCHAR',
-                'start': 'INTEGER',
-                'end': 'INTEGER',
+                'start': 'BIGINT',
+                'end': 'BIGINT',
                 'score': 'VARCHAR',
                 'strand': 'VARCHAR',
                 'frame': 'VARCHAR',
                 'attributes': 'VARCHAR'
-            }})
+            })
         WHERE "feature" IN ('transcript', 'CDS', 'gene')
-    """)
+    """
+
+    # Execute insertion
+    con.execute(sql)
 
     # Get counts by feature type
     counts = con.execute("""
@@ -121,24 +206,21 @@ def ingest_gtf_annotations(con, gtf_path):
     print("Loaded annotations:", file=sys.stderr)
     print(counts.to_string(index=False), file=sys.stderr)
 
-    # Create index for faster lookups
+    # Create indices
     con.execute("CREATE INDEX IF NOT EXISTS idx_annotations_location ON annotations(chr, strand, start_pos, end_pos)")
     con.execute("CREATE INDEX IF NOT EXISTS idx_annotations_transcript ON annotations(transcript_id)")
 
+
+# ---------- BED ingestion (robust) ----------
 
 def ingest_beds(con, sample_name, bed_files_dict):
     """
     Load all BED files into DuckDB features table, consolidating duplicate features.
 
-    BED12 files may contain multiple exon rows with the same feature_name.
-    We deduplicate by taking unique (chr, start_pos, end_pos, strand, feature_name) combinations.
-
-    Args:
-        con: DuckDB connection
-        sample_name: Sample identifier
-        bed_files_dict: {tool: bed_path}
+    Uses read_csv_auto with tolerant options; handles gzipped BEDs and deduplicates
+    using ROW_NUMBER() over partition (DuckDB-friendly).
     """
-    # Create table if not exists
+    # Create features table
     con.execute('''
         CREATE TABLE IF NOT EXISTS features (
             sample TEXT,
@@ -157,121 +239,167 @@ def ingest_beds(con, sample_name, bed_files_dict):
             blockStarts TEXT
         )
     ''')
-    
+
     for tool, bed_path in bed_files_dict.items():
+        bed_path = Path(bed_path)
         print(f"Ingesting {tool}: {bed_path}", file=sys.stderr)
-        
-        # Try to infer BED format (BED3, BED6, BED12)
-        # Read first line to count fields
-        with open(bed_path) as f:
-            first_line = f.readline().strip()
-            if not first_line or first_line.startswith('#') or first_line.startswith('track'):
-                # Skip header/track lines
-                first_line = f.readline().strip()
-            n_fields = len(first_line.split('\t'))
-        
-        # Build column spec based on field count
+
+        if not bed_path.exists():
+            print(f"  ERROR: {bed_path} not found, skipping {tool}", file=sys.stderr)
+            continue
+
+        # Read first non-empty, non-comment line to count fields.
+        # Support gz as well.
+        first_data = None
+        with open_text_maybe_gz(bed_path) as fh:
+            for raw in fh:
+                line = raw.strip()
+                if not line:
+                    continue
+                if line.startswith('#') or line.startswith('track') or line.startswith('browser'):
+                    continue
+                first_data = line
+                break
+
+        if first_data is None:
+            print(f"  WARNING: Could not read a data line from {bed_path}, skipping.", file=sys.stderr)
+            continue
+
+        n_fields = len(first_data.split('\t'))
         if n_fields >= 12:
-            columns = {
-                'chr': 'VARCHAR', 'start_pos': 'INTEGER', 'end_pos': 'INTEGER',
-                'feature_name': 'VARCHAR', 'score': 'REAL', 'strand': 'VARCHAR',
-                'thickStart': 'INTEGER', 'thickEnd': 'INTEGER', 'itemRgb': 'VARCHAR',
-                'blockCount': 'INTEGER', 'blockSizes': 'VARCHAR', 'blockStarts': 'VARCHAR'
-            }
+            columns = [
+                ('chr', 'VARCHAR'),
+                ('start_pos', 'BIGINT'),
+                ('end_pos', 'BIGINT'),
+                ('feature_name', 'VARCHAR'),
+                ('score', 'REAL'),
+                ('strand', 'VARCHAR'),
+                ('thickStart', 'BIGINT'),
+                ('thickEnd', 'BIGINT'),
+                ('itemRgb', 'VARCHAR'),
+                ('blockCount', 'INTEGER'),
+                ('blockSizes', 'VARCHAR'),
+                ('blockStarts', 'VARCHAR')
+            ]
         elif n_fields >= 6:
-            columns = {
-                'chr': 'VARCHAR', 'start_pos': 'INTEGER', 'end_pos': 'INTEGER',
-                'feature_name': 'VARCHAR', 'score': 'REAL', 'strand': 'VARCHAR'
-            }
+            columns = [
+                ('chr', 'VARCHAR'),
+                ('start_pos', 'BIGINT'),
+                ('end_pos', 'BIGINT'),
+                ('feature_name', 'VARCHAR'),
+                ('score', 'REAL'),
+                ('strand', 'VARCHAR')
+            ]
         elif n_fields >= 3:
-            columns = {
-                'chr': 'VARCHAR', 'start_pos': 'INTEGER', 'end_pos': 'INTEGER'
-            }
+            columns = [
+                ('chr', 'VARCHAR'),
+                ('start_pos', 'BIGINT'),
+                ('end_pos', 'BIGINT')
+            ]
         else:
             raise ValueError(f"Invalid BED format in {bed_path}: only {n_fields} fields")
-        
-        col_spec = {f'col{i}': dtype for i, dtype in enumerate(columns.values())}
-        col_names = list(columns.keys())
-        
-        # Insert with tool and sample labels
+
+        # Build column spec for read_csv_auto
+        col_spec = {f'col{i}': dtype for i, (_, dtype) in enumerate(columns.items())} if isinstance(columns, dict) else {f'col{i}': dtype for i, (_, dtype) in enumerate(columns)}
+        # But above we used list of tuples; handle accordingly
+        if isinstance(columns, list):
+            col_spec = {f'col{i}': dtype for i, (_, dtype) in enumerate(columns)}
+            col_names = [name for name, _ in columns]
+        else:
+            col_names = list(columns.keys())
+
+        # Prepare select columns mapping read_csv_auto colN -> final names
         select_cols = ', '.join([f'col{i} as {name}' for i, name in enumerate(col_names)])
-        
+
+        bed_path_sql = str(bed_path).replace("'", "''")
+        sample_sql = str(sample_name).replace("'", "''")
+        tool_sql = str(tool).replace("'", "''")
+
         try:
-            # Load into temp table first
+            # Create temp table
             con.execute(f"""
-                CREATE TEMP TABLE temp_features AS
+                CREATE OR REPLACE TEMP TABLE temp_features AS
                 SELECT
-                    '{sample_name}' as sample,
-                    '{tool}' as tool,
+                    '{sample_sql}' as sample,
+                    '{tool_sql}' as tool,
                     {select_cols}
-                FROM read_csv_auto('{bed_path}',
-                    delim='\t',
+                FROM read_csv_auto('{bed_path_sql}',
+                    delim='\\t',
                     header=false,
-                    columns={col_spec},
-                    ignore_errors=true)
+                    ignore_errors=true,
+                    null_padding=true,
+                    sample_size=20000,
+                    columns={{{', '.join([f"'{k}': '{v}'" for k, v in col_spec.items()])}}}
+                )
             """)
 
-            # Get counts before/after deduplication
+            # Count before dedup
             count_before = con.execute("SELECT COUNT(*) FROM temp_features").fetchone()[0]
 
-            # Insert deduplicated features (unique by location and name)
+            # Deduplicate using row_number() partition (DuckDB supports window functions)
+            insert_cols = ', '.join(col_names)
             con.execute(f"""
-                INSERT INTO features (sample, tool, {', '.join(col_names)})
-                SELECT DISTINCT ON (chr, start_pos, end_pos, strand, feature_name)
-                    sample, tool, {', '.join(col_names)}
-                FROM temp_features
-                ORDER BY chr, start_pos, end_pos, strand, feature_name
+                INSERT INTO features (sample, tool, {insert_cols})
+                SELECT sample, tool, {insert_cols} FROM (
+                    SELECT *,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY chr, start_pos, end_pos, COALESCE(strand,''), COALESCE(feature_name,'')
+                            ORDER BY chr, start_pos, end_pos
+                        ) as rn
+                    FROM temp_features
+                ) t
+                WHERE rn = 1
             """)
 
             count_after = con.execute(f"""
                 SELECT COUNT(*) FROM features
-                WHERE sample = '{sample_name}' AND tool = '{tool}'
+                WHERE sample = '{sample_sql}' AND tool = '{tool_sql}'
             """).fetchone()[0]
 
             duplicates_removed = count_before - count_after
             if duplicates_removed > 0:
                 print(f"  → Removed {duplicates_removed} duplicate features ({count_before} → {count_after})", file=sys.stderr)
-
-            # Drop temp table
-            con.execute("DROP TABLE temp_features")
+            else:
+                print(f"  → Inserted {count_after} features for {tool}", file=sys.stderr)
 
         except Exception as e:
             print(f"Error ingesting {tool} from {bed_path}: {e}", file=sys.stderr)
+            # ensure temp table is dropped if exists
+            try:
+                con.execute("DROP TABLE IF EXISTS temp_features")
+            except Exception:
+                pass
             raise
+        finally:
+            # Try to clean up temp table
+            try:
+                con.execute("DROP TABLE IF EXISTS temp_features")
+            except Exception:
+                pass
 
+
+# ---------- Matching / Annotation / Output ----------
 
 def compute_matches(con, sample_name, query_tool, other_tools):
     """
     For each feature in query_tool, count matches in all other tools.
-    
-    Args:
-        con: DuckDB connection
-        sample_name: Sample identifier
-        query_tool: Tool to analyze
-        other_tools: List of other tool names to compare against
-        
-    Returns:
-        DataFrame with original features + match count columns
     """
-    # Build lateral join clauses for each other tool
     lateral_joins = []
     select_cols = []
     
     for other_tool in other_tools:
-        # Sanitize tool name for column names
         safe_name = other_tool.replace('-', '_').replace('.', '_')
-        
         lateral_joins.append(f"""
             LEFT JOIN LATERAL (
                 SELECT 
-                    COUNT(*) FILTER (WHERE start_pos = q.start_pos) as {safe_name}_start_matches,
-                    COUNT(*) FILTER (WHERE end_pos = q.end_pos) as {safe_name}_end_matches,
-                    COUNT(*) FILTER (WHERE start_pos = q.start_pos AND end_pos = q.end_pos) as {safe_name}_both_matches
+                    SUM(CASE WHEN start_pos = q.start_pos THEN 1 ELSE 0 END) as {safe_name}_start_matches,
+                    SUM(CASE WHEN end_pos = q.end_pos THEN 1 ELSE 0 END) as {safe_name}_end_matches,
+                    SUM(CASE WHEN start_pos = q.start_pos AND end_pos = q.end_pos THEN 1 ELSE 0 END) as {safe_name}_both_matches
                 FROM features
-                WHERE sample = '{sample_name}' 
-                  AND tool = '{other_tool}'
+                WHERE sample = '{sample_name.replace("'", "''")}' 
+                  AND tool = '{other_tool.replace("'", "''")}'
                   AND chr = q.chr 
-                  AND strand = q.strand
+                  AND COALESCE(strand,'') = COALESCE(q.strand,'')
             ) {safe_name}_m ON true
         """)
         
@@ -292,8 +420,8 @@ def compute_matches(con, sample_name, query_tool, other_tools):
             {', '.join(select_cols)}
         FROM features q
         {' '.join(lateral_joins)}
-        WHERE q.sample = '{sample_name}' 
-          AND q.tool = '{query_tool}'
+        WHERE q.sample = '{sample_name.replace("'", "''")}' 
+          AND q.tool = '{query_tool.replace("'", "''")}'
         ORDER BY q.chr, q.start_pos, q.end_pos
     """
     
@@ -303,19 +431,6 @@ def compute_matches(con, sample_name, query_tool, other_tools):
 def annotate_features(con, sample_name, query_tool):
     """
     Annotate features with gencode transcript biotype and CDS position context.
-
-    For each feature, finds overlapping transcript(s) and determines:
-    - RNA biotype (protein_coding, lncRNA, etc.)
-    - Position relative to CDS: upstream, overlaps_5prime, within_CDS,
-      overlaps_3prime, downstream, intergenic
-
-    Args:
-        con: DuckDB connection
-        sample_name: Sample identifier
-        query_tool: Tool name
-
-    Returns:
-        DataFrame with annotation columns added
     """
     query = f"""
     WITH feature_annotations AS (
@@ -325,31 +440,25 @@ def annotate_features(con, sample_name, query_tool):
             t.transcript_biotype,
             t.gene_name,
             CASE
-                -- Check if annotations table exists and has data
                 WHEN t.transcript_id IS NULL THEN 'intergenic'
-                -- Feature overlaps transcript but need to check CDS
                 ELSE
                     CASE
-                        -- Get CDS boundaries for this transcript
                         WHEN EXISTS (
                             SELECT 1 FROM annotations cds
                             WHERE cds.transcript_id = t.transcript_id
                             AND cds.feature_type = 'CDS'
                         ) THEN
                             CASE
-                                -- Completely upstream of CDS
                                 WHEN f.end_pos < (
                                     SELECT MIN(start_pos) FROM annotations cds
                                     WHERE cds.transcript_id = t.transcript_id
                                     AND cds.feature_type = 'CDS'
                                 ) THEN '5prime_UTR'
-                                -- Completely downstream of CDS
                                 WHEN f.start_pos > (
                                     SELECT MAX(end_pos) FROM annotations cds
                                     WHERE cds.transcript_id = t.transcript_id
                                     AND cds.feature_type = 'CDS'
                                 ) THEN '3prime_UTR'
-                                -- Overlaps start of CDS
                                 WHEN f.start_pos < (
                                     SELECT MIN(start_pos) FROM annotations cds
                                     WHERE cds.transcript_id = t.transcript_id
@@ -359,7 +468,6 @@ def annotate_features(con, sample_name, query_tool):
                                     WHERE cds.transcript_id = t.transcript_id
                                     AND cds.feature_type = 'CDS'
                                 ) THEN 'overlaps_CDS_5prime'
-                                -- Overlaps end of CDS
                                 WHEN f.start_pos < (
                                     SELECT MAX(end_pos) FROM annotations cds
                                     WHERE cds.transcript_id = t.transcript_id
@@ -369,22 +477,19 @@ def annotate_features(con, sample_name, query_tool):
                                     WHERE cds.transcript_id = t.transcript_id
                                     AND cds.feature_type = 'CDS'
                                 ) THEN 'overlaps_CDS_3prime'
-                                -- Within CDS boundaries
                                 ELSE 'within_CDS'
                             END
-                        -- No CDS for this transcript (ncRNA)
                         ELSE 'within_transcript_no_CDS'
                     END
             END as cds_context
         FROM features f
         LEFT JOIN annotations t ON
             f.chr = t.chr
-            AND f.strand = t.strand
+            AND COALESCE(f.strand,'') = COALESCE(t.strand,'')
             AND t.feature_type = 'transcript'
-            -- Feature overlaps transcript
             AND NOT (f.end_pos < t.start_pos OR f.start_pos > t.end_pos)
-        WHERE f.sample = '{sample_name}'
-        AND f.tool = '{query_tool}'
+        WHERE f.sample = '{sample_name.replace("'", "''")}'
+        AND f.tool = '{query_tool.replace("'", "''")}'
     )
     SELECT
         chr,
@@ -405,9 +510,11 @@ def annotate_features(con, sample_name, query_tool):
 
 def generate_ucsc_url(row, ucsc_session_url, flank=500):
     """Generate UCSC Genome Browser URL for a feature."""
-    region = f"{row['chr']}:{max(0, row['start_pos']-flank)}-{row['end_pos']+flank}"
+    region = f"{row['chr']}:{max(0, int(row['start_pos'])-int(flank))}-{int(row['end_pos'])+int(flank)}"
     return f"{ucsc_session_url}&position={region}"
 
+
+# ---------- Main ----------
 
 def main():
     parser = argparse.ArgumentParser(
@@ -423,46 +530,13 @@ RiboTIE\t/path/to/ribotie.bed
         """
     )
     
-    parser.add_argument(
-        '-s', '--samplesheet',
-        required=True,
-        help='TSV file with columns: tool, bed_path'
-    )
-    
-    parser.add_argument(
-        '-n', '--sample-name',
-        required=True,
-        help='Sample name/identifier for this comparison'
-    )
-    
-    parser.add_argument(
-        '-o', '--outdir',
-        default='consensus_results',
-        help='Output directory (default: consensus_results)'
-    )
-    
-    parser.add_argument(
-        '-u', '--ucsc_session_url',
-        default='hg38',
-        help='UCSC Session URL (No position)'
-    )
-    
-    parser.add_argument(
-        '-f', '--flank',
-        type=int,
-        default=500,
-        help='Flanking bases for UCSC links (default: 500)'
-    )
-
-    parser.add_argument(
-        '-g', '--gencode-gtf',
-        help='Path to gencode GTF file for annotation (can be .gz). If not provided, features will not be annotated with biotype/CDS context.'
-    )
-
-    parser.add_argument(
-        '--db',
-        help='Path to DuckDB database (default: in-memory)'
-    )
+    parser.add_argument('-s', '--samplesheet', required=True, help='TSV file with columns: tool, bed_path')
+    parser.add_argument('-n', '--sample-name', required=True, help='Sample name/identifier for this comparison')
+    parser.add_argument('-o', '--outdir', default='consensus_results', help='Output directory (default: consensus_results)')
+    parser.add_argument('-u', '--ucsc_session_url', default='hg38', help='UCSC Session URL (No position)')
+    parser.add_argument('-f', '--flank', type=int, default=500, help='Flanking bases for UCSC links (default: 500)')
+    parser.add_argument('-g', '--gencode-gtf', help='Path to gencode GTF file for annotation (can be .gz). If not provided, features will not be annotated with biotype/CDS context.')
+    parser.add_argument('--db', help='Path to DuckDB database (default: in-memory)')
     
     args = parser.parse_args()
     
@@ -480,7 +554,7 @@ RiboTIE\t/path/to/ribotie.bed
     con = duckdb.connect(db_path)
     
     try:
-        # Ingest all BED files
+        # Ingest BED files
         print(f"\nIngesting BED files for sample: {args.sample_name}", file=sys.stderr)
         ingest_beds(con, args.sample_name, bed_files)
 
@@ -500,7 +574,7 @@ RiboTIE\t/path/to/ribotie.bed
         counts = con.execute(f"""
             SELECT tool, COUNT(*) as n_features
             FROM features
-            WHERE sample = '{args.sample_name}'
+            WHERE sample = '{args.sample_name.replace("'", "''")}'
             GROUP BY tool
         """).df()
         print("\nFeature counts per tool:", file=sys.stderr)
@@ -522,7 +596,6 @@ RiboTIE\t/path/to/ribotie.bed
                 annot_df = annotate_features(con, args.sample_name, query_tool)
 
                 # Merge annotations into consensus results
-                # Match on location
                 df = df.merge(
                     annot_df[['chr', 'start_pos', 'end_pos', 'strand',
                              'transcript_id', 'rna_biotype', 'gene_name', 'cds_context']],
@@ -563,9 +636,9 @@ RiboTIE\t/path/to/ribotie.bed
             for other_tool in [t for t in tools if t != query_tool]:
                 safe_name = other_tool.replace('-', '_').replace('.', '_')
                 
-                stats[f'{other_tool}_start_any'] = (df[f'{safe_name}_start_matches'] > 0).sum()
-                stats[f'{other_tool}_end_any'] = (df[f'{safe_name}_end_matches'] > 0).sum()
-                stats[f'{other_tool}_both_any'] = (df[f'{safe_name}_both_matches'] > 0).sum()
+                stats[f'{other_tool}_start_any'] = int((df[f'{safe_name}_start_matches'] > 0).sum())
+                stats[f'{other_tool}_end_any'] = int((df[f'{safe_name}_end_matches'] > 0).sum())
+                stats[f'{other_tool}_both_any'] = int((df[f'{safe_name}_both_matches'] > 0).sum())
             
             summary.append(stats)
         
