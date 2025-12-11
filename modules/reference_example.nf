@@ -1,0 +1,117 @@
+
+
+process EXAMPLE_MODULE {
+    // Resource label for appropriate compute allocation
+    // resource classes are similar to in eHive and defined in config files
+    // as withLabel and then specifications of the resources (memory, cpus, time, etc)
+    // these are then what is requested from the cluster scheduler (SLURM) and nextflow 
+    // handles the syntax depending on the scheduler. 
+    label 'process_medium'
+    
+    // Each job should point to an appropriate singularity container. 
+    // these can be specified in the module like this or in a config file (Like Annas Json)
+    container "https://depot.galaxyproject.org/singularity/mulled-v2-example:latest"
+    
+    // Dynamic tagging for better process identification in CLI or reports
+    tag "${meta.id}"
+
+    // What to do in case of non zero exit code. the correct option depends on the use case
+    // API calls might want to retry and then terminate. Other times you want to ignore errors
+    // example where retry 3 times and then ignore
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
+    maxRetries 3  // Retry up to 3 times on failure
+    maxErrors 10   // Allow up to 10 failed tasks total
+
+    //Unclear but I think you can also get same behaviour with
+    // errorStrategy 'ignore'
+    // maxRetries 3
+
+    // Publish results to organized output directory
+    publishDir "${params.outdir}/example_module", 
+        pattern: "*.{txt,log,html}",
+        saveAs: { filename -> 
+            if (filename.endsWith('.log')) "logs/${meta.id}_${filename}"
+            else if (filename.endsWith('.html')) "reports/${meta.id}_${filename}" 
+            else filename 
+        }
+    
+    input:
+    tuple val(meta), path(reads)            // Meta map with sample info + input files
+    path reference                          // Reference file (shared across samples)
+    val mode                                // Required parameter for tool execution
+    
+    output:
+    tuple val(meta), path("${prefix}.txt"),             emit: results // keep meta in output for tracking
+    tuple val(meta), path("${prefix}.log"),             emit: logs
+    tuple val(meta), path("${prefix}_report.html"),     emit: reports, optional: true
+    tuple val(meta), path("${prefix}_stats.json"),      emit: stats,   optional: true
+    path "versions.yml",                                emit: versions // capture tool versions for reproducibility
+    
+    when:
+    // Use ext.when instead of hardcoded when conditions
+    // this enables the module to be conditionally executed based on external parameters
+    // and these parameters come from config rather than $params.<param> meaning they are 
+    // more flexible for reuse. I think we will use this sparingly as it adds complexity
+    task.ext.when == null || task.ext.when
+    
+
+    // Script block should tackle one main task only. The use of secondary tools is mainly used in 
+    // post processing of tool output like format conversion or generating reports. But by default 
+    // we should only be doing one main task per module.
+    script:
+    // Define variables for flexibility and reusability
+    // forcing these through as module inputs reduces module reusability. Only required
+    // inputs should be defined in the input block above. Everything else should be
+    // defined here and passed through the task.ext object.
+    def args = task.ext.args ?: ''
+    def args2 = task.ext.args2 ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    def is_paired = meta.single_end ? false : true
+    def input_files = is_paired ? "${reads[0]} ${reads[1]}" : "${reads}"
+    
+    // Check for input/output name conflicts
+    // this is an example of a what would be a silent failure and we can get around it with 
+    // these checks but I dont think its really necessary if we are careful with naming conventions
+    if ("${reads}" == "${prefix}.txt") {
+        error "Input and output names are the same, set prefix in module configuration to disambiguate!"
+    }
+    
+    """
+    # Main tool execution with proper argument handling
+    example_tool \\
+        --input ${input_files} \\
+        --reference ${reference} \\
+        --mode ${mode} \\
+        --threads ${task.cpus} \\
+        --output ${prefix}.txt \\
+        ${args}
+    
+    # Capture versions for reproducibility
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        example_tool: \\$(example_tool --version | sed 's/example_tool v//g')
+    END_VERSIONS
+    """
+    
+    stub:
+    //  Allows rapid testing of workflow logic without running
+    // expensive computations. Use 'nextflow run -stub' to validate your pipeline
+    // structure before committing to long-running jobs.    def args = task.ext.args ?: ''
+    def args2 = task.ext.args2 ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
+    
+    """
+    # Create main output files. Whatever is expected to be generated by the script block
+    # should get created here. File existence is all that matters in stubs
+    touch ${prefix}.txt
+    touch ${prefix}.log
+    
+    # Generate versions file (same as main script)
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        example_tool: 0.11.9
+        secondary_tool: 1.2.3
+        samtools: 1.17
+    END_VERSIONS
+    """
+}
