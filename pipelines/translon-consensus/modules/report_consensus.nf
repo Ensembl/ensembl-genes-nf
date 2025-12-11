@@ -6,8 +6,6 @@ process REPORT_CONSENSUS {
     
     tag "${meta.id}"
 
-    errorStrategy 'ignore'
-
     publishDir "${params.outdir}/consensus_reports/${meta}"
 
     input:
@@ -15,19 +13,17 @@ process REPORT_CONSENSUS {
     val ucsc_session_url
 
     output:
-    tuple val(meta), path("consensus_results/"),             emit: results 
-
+    tuple val(meta), path("*"),           emit: results 
 
     script:
     """
     consensus.py \
         -s ${samplesheet} \
-        -n ${meta} \
+        -n ${meta.id} \
         -o consensus_results \
-        -u ${ucsc_session_url}
+        -u "${ucsc_session_url}"
     """
     
-    // TODO: Update stub section to create mock output files matching your tool's actual outputs
     stub:
     """
     mkdir -p consensus_results

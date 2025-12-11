@@ -1,6 +1,8 @@
 process CREATE_SAMPLESHEET {
+    tag "${meta.id}"
+    
     input:
-    tuple val(meta), val(tool_names), path(bed_files)
+    tuple val(meta), path(bed_files)
     
     output:
     tuple val(meta), path("${meta.id}_samplesheet.tsv"), path(bed_files)
@@ -11,11 +13,15 @@ process CREATE_SAMPLESHEET {
     echo -e "tool\\tbed_path" > ${meta.id}_samplesheet.tsv
     
     # Add each tool/bed pair as a row
-    ${tool_names.withIndex().collect { tool, idx ->
-        "echo -e '${tool}\\t${bed_files[idx]}' >> ${meta.id}_samplesheet.tsv"
-    }.join('\n')}
+    for bed_file in ${bed_files}; do
+        tool=\$(echo "\${bed_file}" | cut -d'_' -f1)
+        echo -e "\${tool}\\t\${bed_file}" >> ${meta.id}_samplesheet.tsv
+    done
     
-    echo "Samplesheet created for ${meta.id}:"
-    cat ${meta.id}_samplesheet.tsv
+    echo "Samplesheet created for ${meta.id}:" >&2
+    cat ${meta.id}_samplesheet.tsv >&2
+    
+    echo "Files in directory:" >&2
+    ls -lh *.bed >&2
     """
 }

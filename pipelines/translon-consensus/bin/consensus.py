@@ -54,10 +54,10 @@ def ingest_beds(con, sample_name, bed_files_dict):
             sample TEXT,
             tool TEXT,
             chr TEXT,
-            start INTEGER,
-            end INTEGER,
+            start_pos INTEGER,
+            end_pos INTEGER,
             strand TEXT,
-            name TEXT,
+            feature_name TEXT,
             score REAL,
             thickStart INTEGER,
             thickEnd INTEGER,
@@ -83,19 +83,19 @@ def ingest_beds(con, sample_name, bed_files_dict):
         # Build column spec based on field count
         if n_fields >= 12:
             columns = {
-                'chr': 'VARCHAR', 'start': 'INTEGER', 'end': 'INTEGER',
-                'name': 'VARCHAR', 'score': 'REAL', 'strand': 'VARCHAR',
+                'chr': 'VARCHAR', 'start_pos': 'INTEGER', 'end_pos': 'INTEGER',
+                'feature_name': 'VARCHAR', 'score': 'REAL', 'strand': 'VARCHAR',
                 'thickStart': 'INTEGER', 'thickEnd': 'INTEGER', 'itemRgb': 'VARCHAR',
                 'blockCount': 'INTEGER', 'blockSizes': 'VARCHAR', 'blockStarts': 'VARCHAR'
             }
         elif n_fields >= 6:
             columns = {
-                'chr': 'VARCHAR', 'start': 'INTEGER', 'end': 'INTEGER',
-                'name': 'VARCHAR', 'score': 'REAL', 'strand': 'VARCHAR'
+                'chr': 'VARCHAR', 'start_pos': 'INTEGER', 'end_pos': 'INTEGER',
+                'feature_name': 'VARCHAR', 'score': 'REAL', 'strand': 'VARCHAR'
             }
         elif n_fields >= 3:
             columns = {
-                'chr': 'VARCHAR', 'start': 'INTEGER', 'end': 'INTEGER'
+                'chr': 'VARCHAR', 'start_pos': 'INTEGER', 'end_pos': 'INTEGER'
             }
         else:
             raise ValueError(f"Invalid BED format in {bed_path}: only {n_fields} fields")
@@ -148,9 +148,9 @@ def compute_matches(con, sample_name, query_tool, other_tools):
         lateral_joins.append(f"""
             LEFT JOIN LATERAL (
                 SELECT 
-                    COUNT(*) FILTER (WHERE start = q.start) as {safe_name}_start_matches,
-                    COUNT(*) FILTER (WHERE end = q.end) as {safe_name}_end_matches,
-                    COUNT(*) FILTER (WHERE start = q.start AND end = q.end) as {safe_name}_both_matches
+                    COUNT(*) FILTER (WHERE start_pos = q.start_pos) as {safe_name}_start_matches,
+                    COUNT(*) FILTER (WHERE end_pos = q.end_pos) as {safe_name}_end_matches,
+                    COUNT(*) FILTER (WHERE start_pos = q.start_pos AND end_pos = q.end_pos) as {safe_name}_both_matches
                 FROM features
                 WHERE sample = '{sample_name}' 
                   AND tool = '{other_tool}'
@@ -168,17 +168,17 @@ def compute_matches(con, sample_name, query_tool, other_tools):
     query = f"""
         SELECT 
             q.chr,
-            q.start,
-            q.end,
+            q.start_pos,
+            q.end_pos,
             q.strand,
-            q.name,
+            q.feature_name,
             q.score,
             {', '.join(select_cols)}
         FROM features q
         {' '.join(lateral_joins)}
         WHERE q.sample = '{sample_name}' 
           AND q.tool = '{query_tool}'
-        ORDER BY q.chr, q.start, q.end
+        ORDER BY q.chr, q.start_pos, q.end_pos
     """
     
     return con.execute(query).df()
@@ -186,7 +186,7 @@ def compute_matches(con, sample_name, query_tool, other_tools):
 
 def generate_ucsc_url(row, ucsc_session_url, flank=500):
     """Generate UCSC Genome Browser URL for a feature."""
-    region = f"{row['chr']}:{max(0, row['start']-flank)}-{row['end']+flank}"
+    region = f"{row['chr']}:{max(0, row['start_pos']-flank)}-{row['end_pos']+flank}"
     return f"{ucsc_session_url}&position={region}"
 
 
