@@ -6,21 +6,21 @@ process REPORT_CONSENSUS {
     
     tag "${meta.id}"
 
-    publishDir "${params.outdir}/consensus_reports/${meta.id}", mode: 'copy'
+    publishDir "${params.outdir}/consensus_reports/${meta.id}"
 
     input:
     tuple val(meta), path(samplesheet), path(bed_files)
     val ucsc_session_url
 
     output:
-    tuple val(meta), path("*.tsv"),           emit: results
+    tuple val(meta), path("*"),           emit: results 
 
     script:
     """
-    consensus.py \\
-        -s ${samplesheet} \\
-        -n ${meta.id} \\
-        -o . \\
+    consensus.py \
+        -s ${samplesheet} \
+        -n ${meta.id} \
+        -o ${meta.id}_consensus_results \
         -u "${ucsc_session_url}"
     """
     
