@@ -20,7 +20,7 @@ process REPORT_CONSENSUS {
     consensus.py \
         -s ${samplesheet} \
         -n ${meta.id} \
-        -o consensus_results \
+        -o ${meta}_consensus_results \
         -u "${ucsc_session_url}"
     """
     
