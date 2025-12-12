@@ -64,6 +64,10 @@ workflow TRANSLON_CONSENSUS {
 
     // Optionally move report to FTP server
     if (params.ftp_dir) {
-        MOVE_TO_FTP(GENERATE_HTML_REPORT.out.html_report, params.ftp_dir)
+        // Map the report to tuple format with metadata for MOVE_TO_FTP
+        report_with_meta = GENERATE_HTML_REPORT.out.html_report
+            .map { file -> [ [id: 'translon_consensus_report'], file ] }
+
+        MOVE_TO_FTP(report_with_meta, params.ftp_dir)
     }
 }

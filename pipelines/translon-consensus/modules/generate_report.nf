@@ -10,7 +10,7 @@ process GENERATE_HTML_REPORT {
     val(ucsc_session_url)
 
     output:
-    tuple val([id: 'translon_consensus_report']), path("translon_consensus_report.html"), emit: html_report
+    path("translon_consensus_report.html"), emit: html_report
 
     script:
     """
