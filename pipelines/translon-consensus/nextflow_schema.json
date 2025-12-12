@@ -31,6 +31,11 @@
         "type": "string",
         "description": "Directory for pipeline execution reports",
         "format": "directory-path"
+      },
+      "ftp_dir": {
+        "type": "string",
+        "description": "Optional FTP directory path for moving the HTML report. If not provided, report will only be saved locally.",
+        "format": "directory-path"
       }
     },
     "required": ["bed_results_dir"]
