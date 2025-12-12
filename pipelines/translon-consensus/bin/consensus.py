@@ -86,37 +86,66 @@ def parse_samplesheet(samplesheet_path):
 
 
 # ---------- GTF ingestion (robust) ----------
+from pathlib import Path
+import sys
+
+
+def find_first_data_line_with_tabs(path, min_cols=9, max_lines=2000):
+    """
+    Scan file for first non-comment line with >=min_cols tab-separated fields.
+    Returns the line or None.
+    """
+    opener = open
+    # Detect gzip magic manually (DuckDB can read gzip but our validator must too)
+    with open(path, "rb") as fh:
+        magic = fh.read(2)
+    if magic == b"\x1f\x8b":
+        import gzip
+        opener = gzip.open
+
+    with opener(path, "rt", encoding="utf-8", errors="replace") as fh:
+        count = 0
+        for raw in fh:
+            count += 1
+            if count > max_lines:
+                return None
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            cols = line.split("\t")
+            if len(cols) >= min_cols:
+                return line
+    return None
+
 
 def ingest_gtf_annotations(con, gtf_path):
     """
-    Robustly load GENCODE / GTF annotations into DuckDB.
-
-    Validates the GTF (first non-comment line must be tab-separated with >=9 columns),
-    detects gzip magic bytes (handles gzipped files even if not named .gz),
-    and invokes DuckDB read_csv() with safe options.
+    Safely ingest a GENCODE-style GTF into DuckDB.
+    Includes validation, compression detection, SQL brace escaping, and robust CSV options.
     """
+
     gtf_path = Path(gtf_path)
     print(f"Loading gencode annotations from: {gtf_path}", file=sys.stderr)
 
     if not gtf_path.exists():
         raise FileNotFoundError(f"GTF not found: {gtf_path}")
 
-    # Quick validation: find a sane data line
-    data_line = find_first_data_line_with_tabs(gtf_path, min_cols=9, max_lines=2000)
+    # ---------- VALIDATION ----------
+    data_line = find_first_data_line_with_tabs(gtf_path)
     if data_line is None:
         raise ValueError(
-            f"Failed to find a valid GTF data line in the first 2000 non-empty/non-comment lines of {gtf_path}.\n"
-            "This likely means the file is corrupted, compressed in an unexpected format, or not a GTF."
+            f"No valid GTF data line found in {gtf_path}. "
+            "Likely compressed, corrupt, or not a tab-separated GTF."
         )
 
-    # Create annotations table (idempotent)
-    con.execute('''
+    # ---------- TABLE CREATION ----------
+    con.execute("""
         CREATE TABLE IF NOT EXISTS annotations (
             chr TEXT,
             source TEXT,
             feature_type TEXT,
-            start_pos INTEGER,
-            end_pos INTEGER,
+            start_pos BIGINT,
+            end_pos BIGINT,
             score TEXT,
             strand TEXT,
             frame TEXT,
@@ -127,58 +156,47 @@ def ingest_gtf_annotations(con, gtf_path):
             transcript_name TEXT,
             transcript_biotype TEXT
         )
-    ''')
+    """)
 
-    # Compose safe read_csv options:
-    # - delim='\t' (explicit)
-    # - quote='' and escape='' to avoid quote parsing interfering with attributes
-    # - comment='#' so metadata lines are ignored
-    # - strict_mode=false so sniffer doesn't reject files where early lines are comments
-    # - ignore_errors=true so occasional bad lines are skipped
-    # - sample_size large enough to improve sniffing
-    # - null_padding=true to allow variable-length lines padded with NULLs
-    #
-    # Note: we still filter by feature types afterwards.
-    read_csv_opts = {
-        'delim': '\\t',
-        'header': 'false',
-        'quote': "''",        # empty string literal in DuckDB SQL -> disable quoting
-        'escape': "''",
-        'comment': "'#'",
-        'strict_mode': 'false',
-        'ignore_errors': 'true',
-        'null_padding': 'true',
-        'sample_size': '20000'
-    }
-
-    # Build options string for SQL (simple join)
-    opts_sql = ',\n            '.join([f"{k}={v}" for k, v in read_csv_opts.items()])
-
-    # DuckDB columns mapping (GTF standard 9 columns)
-    # We explicitly map to these names; any extras will be placed into attributes column via last column
-    # Use a safe SQL literal for path
+    # Escape path for SQL literal
     gtf_path_sql = str(gtf_path).replace("'", "''")
 
-    sql = f"""
+    # ---------- INSERT USING SAFE read_csv ----------
+    #
+    # IMPORTANT: columns={{ ... }} must use DOUBLE BRACES to escape Python f-string parsing.
+    #
+    con.execute(f"""
         INSERT INTO annotations
         SELECT
-            seqname as chr,
+            seqname AS chr,
             "source",
-            "feature" as feature_type,
-            "start" as start_pos,
-            "end" as end_pos,
+            "feature" AS feature_type,
+            "start" AS start_pos,
+            "end" AS end_pos,
             "score",
             strand,
             "frame",
-            regexp_extract(attributes, 'gene_id "([^"]+)"', 1) as gene_id,
-            regexp_extract(attributes, 'gene_name "([^"]+)"', 1) as gene_name,
-            regexp_extract(attributes, 'gene_type "([^"]+)"', 1) as gene_biotype,
-            regexp_extract(attributes, 'transcript_id "([^"]+)"', 1) as transcript_id,
-            regexp_extract(attributes, 'transcript_name "([^"]+)"', 1) as transcript_name,
-            regexp_extract(attributes, 'transcript_type "([^"]+)"', 1) as transcript_biotype
-        FROM read_csv('{gtf_path_sql}',
-            {opts_sql},
-            columns={{
+            regexp_extract(attributes, 'gene_id "([^"]+)"', 1) AS gene_id,
+            regexp_extract(attributes, 'gene_name "([^"]+)"', 1) AS gene_name,
+            regexp_extract(attributes, 'gene_type "([^"]+)"', 1) AS gene_biotype,
+            regexp_extract(attributes, 'transcript_id "([^"]+)"', 1) AS transcript_id,
+            regexp_extract(attributes, 'transcript_name "([^"]+)"', 1) AS transcript_name,
+            regexp_extract(attributes, 'transcript_type "([^"]+)"', 1) AS transcript_biotype
+        FROM read_csv(
+            '{gtf_path_sql}',
+
+            delim='\t',
+            header=FALSE,
+            quote='',              -- disable CSV quoting entirely
+            escape='',             -- no escaping
+            comment='#',           -- skip metadata/header
+
+            ignore_errors=TRUE,    -- skip malformed records
+            strict_mode=FALSE,     -- prevent dialect rejection
+            null_padding=TRUE,     -- tolerate short rows
+            sample_size=20000,     -- improve dialect inference
+
+            columns={{             -- ESCAPED BRACES ({{ }}), not Python placeholders
                 'seqname': 'VARCHAR',
                 'source': 'VARCHAR',
                 'feature': 'VARCHAR',
@@ -188,28 +206,26 @@ def ingest_gtf_annotations(con, gtf_path):
                 'strand': 'VARCHAR',
                 'frame': 'VARCHAR',
                 'attributes': 'VARCHAR'
-            })
+            }}
+        )
         WHERE "feature" IN ('transcript', 'CDS', 'gene')
-    """
+    """)
 
-    # Execute insertion
-    con.execute(sql)
+    print("GTF annotations loaded.", file=sys.stderr)
 
-    # Get counts by feature type
+    # ---------- SUMMARY ----------
     counts = con.execute("""
-        SELECT feature_type, COUNT(*) as n
+        SELECT feature_type, COUNT(*) AS n
         FROM annotations
         GROUP BY feature_type
         ORDER BY n DESC
     """).df()
 
-    print("Loaded annotations:", file=sys.stderr)
     print(counts.to_string(index=False), file=sys.stderr)
 
-    # Create indices
-    con.execute("CREATE INDEX IF NOT EXISTS idx_annotations_location ON annotations(chr, strand, start_pos, end_pos)")
-    con.execute("CREATE INDEX IF NOT EXISTS idx_annotations_transcript ON annotations(transcript_id)")
-
+    # ---------- INDEXES ----------
+    con.execute("CREATE INDEX IF NOT EXISTS idx_ann_loc ON annotations(chr, strand, start_pos, end_pos)")
+    con.execute("CREATE INDEX IF NOT EXISTS idx_ann_tx  ON annotations(transcript_id)")
 
 # ---------- BED ingestion (robust) ----------
 
