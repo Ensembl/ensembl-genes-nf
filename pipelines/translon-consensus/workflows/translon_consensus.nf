@@ -22,8 +22,10 @@ workflow TRANSLON_CONSENSUS {
     // Rename files to include tool name
     RENAME_BED(bed_files_ch)
 
+    STANDARDISE_BED12(RENAME_BED.out)
+
     // Group by sample name to collect all renamed files
-    input_ch = RENAME_BED.out
+    input_ch = STANDARDISE_BED12.out
         .groupTuple(by: 0)
         .map { meta, renamed_files ->
             // Sort files by name for consistency
