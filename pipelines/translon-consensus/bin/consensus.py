@@ -226,13 +226,13 @@ def ingest_beds(con, sample_name, bed_files_dict):
             sample TEXT,
             tool TEXT,
             chr TEXT,
-            start_pos INTEGER,
-            end_pos INTEGER,
+            start_pos BIGINT,
+            end_pos BIGINT,
             strand TEXT,
             feature_name TEXT,
             score REAL,
-            thickStart INTEGER,
-            thickEnd INTEGER,
+            thickStart BIGINT,
+            thickEnd BIGINT,
             itemRgb TEXT,
             blockCount INTEGER,
             blockSizes TEXT,
@@ -391,14 +391,14 @@ def compute_matches(con, sample_name, query_tool, other_tools):
         safe_name = other_tool.replace('-', '_').replace('.', '_')
         lateral_joins.append(f"""
             LEFT JOIN LATERAL (
-                SELECT 
-                    SUM(CASE WHEN start_pos = q.start_pos THEN 1 ELSE 0 END) as {safe_name}_start_matches,
-                    SUM(CASE WHEN end_pos = q.end_pos THEN 1 ELSE 0 END) as {safe_name}_end_matches,
-                    SUM(CASE WHEN start_pos = q.start_pos AND end_pos = q.end_pos THEN 1 ELSE 0 END) as {safe_name}_both_matches
+                SELECT
+                    COALESCE(SUM(CASE WHEN start_pos = q.start_pos THEN 1 ELSE 0 END), 0) as {safe_name}_start_matches,
+                    COALESCE(SUM(CASE WHEN end_pos = q.end_pos THEN 1 ELSE 0 END), 0) as {safe_name}_end_matches,
+                    COALESCE(SUM(CASE WHEN start_pos = q.start_pos AND end_pos = q.end_pos THEN 1 ELSE 0 END), 0) as {safe_name}_both_matches
                 FROM features
-                WHERE sample = '{sample_name.replace("'", "''")}' 
+                WHERE sample = '{sample_name.replace("'", "''")}'
                   AND tool = '{other_tool.replace("'", "''")}'
-                  AND chr = q.chr 
+                  AND chr = q.chr
                   AND COALESCE(strand,'') = COALESCE(q.strand,'')
             ) {safe_name}_m ON true
         """)
