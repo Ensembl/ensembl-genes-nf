@@ -2,7 +2,7 @@
 process STANDARDISE_BED12 {
     label 'process_high'
 
-    container "oras://community.wave.seqera.io/library/pysam_pip_biopython_pybedtools:6571590f472f2629"
+    container "oras://community.wave.seqera.io/library/pybedtools_pysam_pip_biopython:1dbd8151223e518c"
     
     tag "${meta.id}"
 
