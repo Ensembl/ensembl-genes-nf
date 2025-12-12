@@ -399,34 +399,47 @@ def ingest_beds(con, sample_name, bed_files_dict):
 def compute_matches(con, sample_name, query_tool, other_tools):
     """
     For each feature in query_tool, count matches in all other tools.
+    Uses separate queries for start and end, then computes both matches.
     """
     lateral_joins = []
     select_cols = []
-    
+
     for other_tool in other_tools:
         safe_name = other_tool.replace('-', '_').replace('.', '_')
+        # Separate LATERAL joins for start and end matches
         lateral_joins.append(f"""
             LEFT JOIN LATERAL (
                 SELECT
-                    COALESCE(SUM(CASE WHEN start_pos = q.start_pos THEN 1 ELSE 0 END), 0) as {safe_name}_start_matches,
-                    COALESCE(SUM(CASE WHEN end_pos = q.end_pos THEN 1 ELSE 0 END), 0) as {safe_name}_end_matches,
-                    COALESCE(SUM(CASE WHEN start_pos = q.start_pos AND end_pos = q.end_pos THEN 1 ELSE 0 END), 0) as {safe_name}_both_matches
+                    COALESCE(SUM(CASE WHEN start_pos = q.start_pos THEN 1 ELSE 0 END), 0) as {safe_name}_start_matches
                 FROM features
                 WHERE sample = '{sample_name.replace("'", "''")}'
                   AND tool = '{other_tool.replace("'", "''")}'
                   AND chr = q.chr
                   AND COALESCE(strand,'') = COALESCE(q.strand,'')
-            ) {safe_name}_m ON true
+            ) {safe_name}_start ON true
         """)
-        
+
+        lateral_joins.append(f"""
+            LEFT JOIN LATERAL (
+                SELECT
+                    COALESCE(SUM(CASE WHEN end_pos = q.end_pos THEN 1 ELSE 0 END), 0) as {safe_name}_end_matches
+                FROM features
+                WHERE sample = '{sample_name.replace("'", "''")}'
+                  AND tool = '{other_tool.replace("'", "''")}'
+                  AND chr = q.chr
+                  AND COALESCE(strand,'') = COALESCE(q.strand,'')
+            ) {safe_name}_end ON true
+        """)
+
         select_cols.extend([
-            f"{safe_name}_m.{safe_name}_start_matches",
-            f"{safe_name}_m.{safe_name}_end_matches",
-            f"{safe_name}_m.{safe_name}_both_matches"
+            f"{safe_name}_start.{safe_name}_start_matches",
+            f"{safe_name}_end.{safe_name}_end_matches",
+            # Compute both as the minimum of start and end matches
+            f"LEAST({safe_name}_start.{safe_name}_start_matches, {safe_name}_end.{safe_name}_end_matches) as {safe_name}_both_matches"
         ])
-    
+
     query = f"""
-        SELECT 
+        SELECT
             q.chr,
             q.start_pos,
             q.end_pos,
@@ -436,11 +449,11 @@ def compute_matches(con, sample_name, query_tool, other_tools):
             {', '.join(select_cols)}
         FROM features q
         {' '.join(lateral_joins)}
-        WHERE q.sample = '{sample_name.replace("'", "''")}' 
+        WHERE q.sample = '{sample_name.replace("'", "''")}'
           AND q.tool = '{query_tool.replace("'", "''")}'
         ORDER BY q.chr, q.start_pos, q.end_pos
     """
-    
+
     return con.execute(query).df()
 
 
