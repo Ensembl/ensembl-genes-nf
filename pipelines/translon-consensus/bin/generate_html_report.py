@@ -50,9 +50,18 @@ def parse_results_directory(results_dir):
     samples = {}
 
     # Find all consensus detail files
-    for consensus_file in results_dir.rglob('*.consensus.tsv'):
-        parts = consensus_file.stem.split('.')
-        if len(parts) >= 3:  # sample.tool.consensus
+    # Note: Files may be staged with numeric names (1.tsv, 2.tsv, etc.) as symlinks
+    # We need to resolve symlinks to get the original filename
+    for consensus_file in results_dir.rglob('*.tsv'):
+        # Resolve symlink to get original filename
+        original_name = consensus_file.resolve().name
+
+        # Skip non-consensus files (like summary.tsv)
+        if '.consensus.tsv' not in original_name:
+            continue
+
+        parts = original_name.replace('.consensus.tsv', '').split('.')
+        if len(parts) >= 2:  # sample.tool
             sample_name = parts[0]
             query_tool = parts[1]
 
