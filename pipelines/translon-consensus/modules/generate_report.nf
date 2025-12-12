@@ -1,5 +1,5 @@
 process GENERATE_HTML_REPORT {
-    label 'process_light'
+    label 'process_high'
 
     container "oras://community.wave.seqera.io/library/pip_jinja2_pandas:fee727bf7c211ccf"
 
