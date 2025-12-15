@@ -6,7 +6,7 @@ process GENERATE_HTML_REPORT {
     publishDir "${params.outdir}", mode: 'copy'
 
     input:
-    path("*.tsv")  // Stage all TSV files in work directory
+    path(consensus_results)
     val(ucsc_session_url)
 
     output:

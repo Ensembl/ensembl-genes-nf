@@ -15,6 +15,16 @@
         "format": "file-path",
         "pattern": "\\.(gtf|gtf\\.gz)$"
       },
+      "gencode_fasta": {
+        "type": "string",
+        "description": "Path to gencode FASTA.",
+        "format": "file-path"
+      },
+      "gencode_fasta_fai": {
+        "type": "string",
+        "description": "Path to gencode FASTA FAI.",
+        "format": "file-path"
+      },
       "ucsc_session_url": {
         "type": "string",
         "description": "UCSC Genome Browser session URL (without position) for generating genome browser links in reports",

@@ -9,17 +9,19 @@ process STANDARDISE_BED12 {
     publishDir "${params.outdir}/standardised_bed12s/${meta.id}", mode: 'copy'
 
     input:
-    tuple val(meta), path(bed_file)
+    tuple val(meta), val(tool), path(bed_file)
     path genome_fasta
+    path genome_fasta_fai
 
     output:
-    tuple val(meta), path("*based*.bed12")
+    tuple val(meta), val(tool), path("*.valid.bed12")
+
     script:    
     """
     standardise_bed12.py \\
         -i ${bed_file} \\
         -f ${genome_fasta} \\
-        --output_prefix ${meta.id} \\
+        --output_prefix ${meta.id} --verbose
     """
     
     stub:

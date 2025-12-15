@@ -3,6 +3,7 @@
 nextflow.enable.dsl = 2
 
 include { RENAME_BED } from '../modules/rename_bed.nf'
+include { STANDARDISE_BED12 } from '../modules/standardise_bed12.nf'
 include { CREATE_SAMPLESHEET } from '../modules/create_samplesheet.nf'
 include { REPORT_CONSENSUS } from '../modules/report_consensus.nf'
 include { GENERATE_HTML_REPORT } from '../modules/generate_report.nf'
@@ -11,7 +12,7 @@ include { MOVE_TO_FTP } from '../../../modules/move_to_ftp.nf'
 
 workflow TRANSLON_CONSENSUS {
     bed_files_ch = Channel
-        .fromPath("${params.bed_results_dir}/*/*.bed12")
+        .fromPath("${params.bed_results_dir}/*/*.{bed12,bed}")
         .map { bed_file ->
             def tool = bed_file.parent.name
             def sample_name = bed_file.baseName
@@ -19,13 +20,14 @@ workflow TRANSLON_CONSENSUS {
             return tuple(meta, tool, bed_file)
         }
 
-    // Rename files to include tool name
-    RENAME_BED(bed_files_ch)
+    STANDARDISE_BED12(bed_files_ch, params.gencode_fasta, params.gencode_fasta_fai)
 
-    STANDARDISE_BED12(RENAME_BED.out)
+    // Rename files to include tool name
+    RENAME_BED(STANDARDISE_BED12.out)
+
 
     // Group by sample name to collect all renamed files
-    input_ch = STANDARDISE_BED12.out
+    input_ch = RENAME_BED.out
         .groupTuple(by: 0)
         .map { meta, renamed_files ->
             // Sort files by name for consistency
