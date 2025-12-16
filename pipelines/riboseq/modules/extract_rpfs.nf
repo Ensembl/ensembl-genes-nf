@@ -3,7 +3,7 @@ process EXTRACT_RPFS {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
-    container "ghcr.io/jackcurragh/get-rpf:latest"
+    container "ghcr.io/jackcurragh/get-rpf:main"
 
     publishDir "${params.outdir}/getRPF/extract", mode: 'copy', pattern: "*.{seqspec.yaml,extraction_report.json,report.html}"
 
