@@ -230,8 +230,9 @@ def parse_results_directory(results_dir: Path, max_examples_per_category: int = 
 
             # Get actual count from consensus_counts
             total_count = s.get('consensus_counts', {}).get(consensus_score, len(features))
-            consensus_stats[consensus_score] = {
-                'total': total_count,
+            # Convert numpy.int64 to Python int for JSON serialization
+            consensus_stats[int(consensus_score)] = {
+                'total': int(total_count),
                 'sampled': len(features)
             }
 
