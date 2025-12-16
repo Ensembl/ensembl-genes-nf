@@ -10,11 +10,11 @@ interactive HTML report.
 
 import argparse
 import sys
-import random
 from pathlib import Path
 from collections import defaultdict, Counter
 from datetime import datetime
 import pandas as pd
+import numpy as np
 from jinja2 import Template
 
 # ---------------------------------------------------------------------
@@ -118,90 +118,184 @@ def parse_results_directory(results_dir: Path, max_examples_per_category: int = 
         samples[sample_name]['tools'].add(query_tool)
         samples[sample_name]['tools'].update(other_tools)
 
-        for _, row in df.iterrows():
-            feature = {
-                'chr': row['chr'],
-                'start': int(row['start_pos']),
-                'end': int(row['end_pos']),
-                'strand': row.get('strand', ''),
-                'query_tool': query_tool,
-                'feature_name': row.get('feature_name', 'N/A'),
-                'rna_biotype': row.get('rna_biotype', 'intergenic'),
-                'cds_context': row.get('cds_context', 'intergenic'),
-                'gene_name': row.get('gene_name', 'intergenic'),
-                'ucsc_url': row.get('ucsc_url', ''),
-                'tool_matches': {}
-            }
+        # OPTIMIZATION: Calculate consensus scores vectorized
+        consensus_scores = np.zeros(len(df), dtype=int)
+        for tool in other_tools:
+            start_col = f'{tool}_start_matches'
+            end_col = f'{tool}_end_matches'
+            # EXACT_MATCH = both start and end match
+            exact_match = (df[start_col] > 0) & (df[end_col] > 0)
+            consensus_scores += exact_match.astype(int)
 
-            # Calculate consensus score (how many tools agree)
-            consensus_score = 0
-            for tool in other_tools:
-                s = int(row.get(f'{tool}_start_matches', 0))
-                e = int(row.get(f'{tool}_end_matches', 0))
-                cls = classify_disagreement(s, e)
+        # Add consensus_score column
+        df['consensus_score'] = consensus_scores
 
-                feature['tool_matches'][tool] = {
-                    'start': s,
-                    'end': e,
-                    'class': cls
+        # OPTIMIZATION: Aggregate disagreements vectorized before sampling
+        for tool in other_tools:
+            start_col = f'{tool}_start_matches'
+            end_col = f'{tool}_end_matches'
+
+            # Vectorized classification
+            has_start = df[start_col] > 0
+            has_end = df[end_col] > 0
+
+            exact = (has_start & has_end).sum()
+            start_only = (has_start & ~has_end).sum()
+            end_only = (~has_start & has_end).sum()
+            neither = (~has_start & ~has_end).sum()
+            both_mismatch = neither  # BOTH_MISMATCH is when neither matches
+
+            samples[sample_name]['tool_disagreements'][tool]['EXACT_MATCH'] += exact
+            samples[sample_name]['tool_disagreements'][tool]['START_ONLY'] += start_only
+            samples[sample_name]['tool_disagreements'][tool]['END_ONLY'] += end_only
+            samples[sample_name]['tool_disagreements'][tool]['BOTH_MISMATCH'] += both_mismatch
+
+            # Pairwise
+            samples[sample_name]['pairwise'][query_tool][tool]['EXACT_MATCH'] += exact
+            samples[sample_name]['pairwise'][query_tool][tool]['START_ONLY'] += start_only
+            samples[sample_name]['pairwise'][query_tool][tool]['END_ONLY'] += end_only
+            samples[sample_name]['pairwise'][query_tool][tool]['BOTH_MISMATCH'] += both_mismatch
+
+            # Context stratification
+            for ctx in df['cds_context'].dropna().unique():
+                ctx_mask = df['cds_context'] == ctx
+                ctx_exact = (has_start & has_end & ctx_mask).sum()
+                ctx_start = (has_start & ~has_end & ctx_mask).sum()
+                ctx_end = (~has_start & has_end & ctx_mask).sum()
+                ctx_neither = (~has_start & ~has_end & ctx_mask).sum()
+
+                samples[sample_name]['context_disagreements'][tool][ctx]['EXACT_MATCH'] += ctx_exact
+                samples[sample_name]['context_disagreements'][tool][ctx]['START_ONLY'] += ctx_start
+                samples[sample_name]['context_disagreements'][tool][ctx]['END_ONLY'] += ctx_end
+                samples[sample_name]['context_disagreements'][tool][ctx]['BOTH_MISMATCH'] += ctx_neither
+
+        # OPTIMIZATION: Sample early by consensus score, then convert to dict
+        # Group by consensus score and sample
+        for score in df['consensus_score'].unique():
+            score_mask = df['consensus_score'] == score
+            score_df = df[score_mask]
+
+            total_count = len(score_df)
+
+            # Sample if needed
+            if len(score_df) > max_examples_per_category:
+                score_df = score_df.sample(n=max_examples_per_category, random_state=42)
+
+            # Store consensus stats
+            if 'consensus_counts' not in samples[sample_name]:
+                samples[sample_name]['consensus_counts'] = {}
+            samples[sample_name]['consensus_counts'][int(score)] = total_count
+
+            # Convert sampled rows to feature dicts (still using iterrows but on much smaller subset)
+            for _, row in score_df.iterrows():
+                feature = {
+                    'chr': row['chr'],
+                    'start': int(row['start_pos']),
+                    'end': int(row['end_pos']),
+                    'strand': str(row.get('strand', '')),
+                    'query_tool': query_tool,
+                    'feature_name': str(row.get('feature_name', 'N/A')),
+                    'rna_biotype': str(row.get('rna_biotype', 'intergenic')),
+                    'cds_context': str(row.get('cds_context', 'intergenic')),
+                    'gene_name': str(row.get('gene_name', 'intergenic')),
+                    'ucsc_url': str(row.get('ucsc_url', '')),
+                    'consensus_score': int(score),
+                    'total_tools': len(other_tools) + 1,
+                    'tool_matches': {}
                 }
 
-                if cls == 'EXACT_MATCH':
-                    consensus_score += 1
+                # Build tool_matches for sampled features only
+                for tool in other_tools:
+                    s = int(row.get(f'{tool}_start_matches', 0))
+                    e = int(row.get(f'{tool}_end_matches', 0))
+                    cls = classify_disagreement(s, e)
+                    feature['tool_matches'][tool] = {
+                        'start': s,
+                        'end': e,
+                        'class': cls
+                    }
 
-                # Aggregate per-tool disagreement
-                samples[sample_name]['tool_disagreements'][tool][cls] += 1
+                samples[sample_name]['features_by_consensus'][score].append(feature)
 
-                # Pairwise (directional)
-                samples[sample_name]['pairwise'][query_tool][tool][cls] += 1
-
-                # Context stratification
-                ctx = feature['cds_context']
-                samples[sample_name]['context_disagreements'][tool][ctx][cls] += 1
-
-            feature['consensus_score'] = consensus_score
-            feature['total_tools'] = len(other_tools) + 1
-
-            # Stratify by consensus score for sampling
-            samples[sample_name]['features_by_consensus'][consensus_score].append(feature)
-
-    # Finalize tool lists and perform stratified sampling
+    # Finalize tool lists and consolidate sampled features
     for s in samples.values():
         s['tools'] = sorted(s['tools'])
 
-        # Sample features from each consensus level
+        # Features are already sampled in the main loop, just consolidate
         sampled_features = []
         consensus_stats = {}
 
         for consensus_score, features in s['features_by_consensus'].items():
-            total_count = len(features)
+            sampled_features.extend(features)
 
-            # Sample up to max_examples_per_category from this consensus level
-            if total_count <= max_examples_per_category:
-                sampled = features
-            else:
-                # Random sample
-                sampled = random.sample(features, max_examples_per_category)
-
-            sampled_features.extend(sampled)
+            # Get actual count from consensus_counts
+            total_count = s.get('consensus_counts', {}).get(consensus_score, len(features))
             consensus_stats[consensus_score] = {
                 'total': total_count,
-                'sampled': len(sampled)
+                'sampled': len(features)
             }
 
         s['features'] = sampled_features
         s['consensus_stats'] = consensus_stats
         s['tool_count'] = len(s['tools'])
 
-        # Clean up temporary structure
+        # Clean up temporary structures
         del s['features_by_consensus']
+        if 'consensus_counts' in s:
+            del s['consensus_counts']
 
-        print(f"Sample {s['name']}: {sum(stats['total'] for stats in consensus_stats.values())} total features, "
-              f"{len(sampled_features)} sampled for report", file=sys.stderr)
+        total_features = sum(stats['total'] for stats in consensus_stats.values())
+        print(f"Sample {s['name']}: {total_features:,} total features, "
+              f"{len(sampled_features):,} sampled for report", file=sys.stderr)
 
     return {
         'samples': sorted(samples.values(), key=lambda x: x['name'])
     }
+
+
+# ---------------------------------------------------------------------
+# Per-tool statistics
+# ---------------------------------------------------------------------
+
+def compute_tool_statistics(sample):
+    """
+    Compute basic statistics for each tool: feature count, size distribution.
+    """
+    tool_stats = {}
+
+    # Group features by query tool
+    features_by_tool = defaultdict(list)
+    for feature in sample['features']:
+        features_by_tool[feature['query_tool']].append(feature)
+
+    for tool in sample['tools']:
+        if tool not in features_by_tool:
+            # This tool might be in "other_tools" but not query_tool
+            # Try to count from tool_disagreements
+            total_comparisons = sum(sample['tool_disagreements'].get(tool, {}).values())
+            tool_stats[tool] = {
+                'feature_count': 'N/A (not query tool)',
+                'mean_length': None,
+                'median_length': None,
+                'min_length': None,
+                'max_length': None,
+                'total_comparisons': total_comparisons
+            }
+            continue
+
+        features = features_by_tool[tool]
+        lengths = [f['end'] - f['start'] for f in features]
+
+        tool_stats[tool] = {
+            'feature_count': len(features),
+            'mean_length': int(sum(lengths) / len(lengths)) if lengths else 0,
+            'median_length': int(sorted(lengths)[len(lengths)//2]) if lengths else 0,
+            'min_length': min(lengths) if lengths else 0,
+            'max_length': max(lengths) if lengths else 0,
+            'total_comparisons': sum(sample['tool_disagreements'].get(tool, {}).values())
+        }
+
+    return tool_stats
 
 
 # ---------------------------------------------------------------------
@@ -234,6 +328,125 @@ def compute_tool_signatures(sample):
 
 
 # ---------------------------------------------------------------------
+# Locus-level analysis
+# ---------------------------------------------------------------------
+
+def analyze_loci(sample, max_loci=50):
+    """
+    Group features by genomic loci and analyze agreement patterns at each locus.
+    A locus is defined as overlapping features from different tools.
+
+    Returns top N loci with interesting agreement/disagreement patterns.
+    """
+    from collections import namedtuple
+
+    Interval = namedtuple('Interval', ['chr', 'start', 'end', 'strand', 'tool', 'feature'])
+
+    # Collect all features from all tools with their coordinates
+    intervals = []
+    for feature in sample['features']:
+        intervals.append(Interval(
+            chr=feature['chr'],
+            start=feature['start'],
+            end=feature['end'],
+            strand=feature['strand'],
+            tool=feature['query_tool'],
+            feature=feature
+        ))
+
+    # Sort by chromosome and position
+    intervals.sort(key=lambda x: (x.chr, x.start, x.end))
+
+    # Group overlapping intervals into loci
+    loci = []
+    current_locus = []
+
+    for interval in intervals:
+        if not current_locus:
+            current_locus = [interval]
+            continue
+
+        # Check if this interval overlaps with current locus
+        locus_chr = current_locus[0].chr
+        locus_strand = current_locus[0].strand
+        locus_start = min(iv.start for iv in current_locus)
+        locus_end = max(iv.end for iv in current_locus)
+
+        # Overlaps if same chr/strand and coordinates overlap
+        if (interval.chr == locus_chr and
+            interval.strand == locus_strand and
+            interval.start < locus_end and
+            interval.end > locus_start):
+            current_locus.append(interval)
+        else:
+            # Save current locus and start new one
+            if len(current_locus) > 1:  # Only keep multi-tool loci
+                loci.append(current_locus)
+            current_locus = [interval]
+
+    # Don't forget last locus
+    if len(current_locus) > 1:
+        loci.append(current_locus)
+
+    # Analyze each locus
+    locus_analyses = []
+    for locus in loci:
+        tools_present = set(iv.tool for iv in locus)
+
+        # Calculate locus boundaries
+        locus_chr = locus[0].chr
+        locus_strand = locus[0].strand
+        locus_start = min(iv.start for iv in locus)
+        locus_end = max(iv.end for iv in locus)
+
+        # Count agreement patterns
+        starts = defaultdict(list)  # start_pos -> [tools]
+        ends = defaultdict(list)    # end_pos -> [tools]
+
+        for iv in locus:
+            starts[iv.start].append(iv.tool)
+            ends[iv.end].append(iv.tool)
+
+        # Determine agreement pattern
+        start_consensus = max(len(tools) for tools in starts.values())
+        end_consensus = max(len(tools) for tools in ends.values())
+        total_tools = len(tools_present)
+
+        # Get gene context from first feature
+        gene_name = locus[0].feature.get('gene_name', 'intergenic')
+        cds_context = locus[0].feature.get('cds_context', 'intergenic')
+        ucsc_url = locus[0].feature.get('ucsc_url', '')
+
+        locus_analyses.append({
+            'chr': locus_chr,
+            'start': locus_start,
+            'end': locus_end,
+            'strand': locus_strand,
+            'length': locus_end - locus_start,
+            'tools_present': sorted(tools_present),
+            'num_tools': total_tools,
+            'num_features': len(locus),
+            'start_consensus': start_consensus,
+            'end_consensus': end_consensus,
+            'agreement_pattern': f"Start:{start_consensus}/{total_tools}, End:{end_consensus}/{total_tools}",
+            'gene_name': gene_name,
+            'cds_context': cds_context,
+            'ucsc_url': ucsc_url,
+            'features_per_tool': {tool: sum(1 for iv in locus if iv.tool == tool)
+                                  for tool in tools_present}
+        })
+
+    # Sort by interesting patterns: highest tool count, then most disagreement
+    locus_analyses.sort(key=lambda x: (
+        -x['num_tools'],  # More tools = more interesting
+        -(x['num_features'] - x['num_tools']),  # More features per tool = more disagreement
+        -abs(x['start_consensus'] - x['end_consensus'])  # Start/end disagreement
+    ))
+
+    return locus_analyses[:max_loci]
+
+
+# ---------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------
 
@@ -256,7 +469,10 @@ def main():
     samples = parsed['samples']
 
     for s in samples:
+        s['tool_statistics'] = compute_tool_statistics(s)
         s['tool_signatures'] = compute_tool_signatures(s)
+        s['locus_analyses'] = analyze_loci(s, max_loci=50)
+        print(f"  → Found {len(s['locus_analyses'])} interesting multi-tool loci", file=sys.stderr)
 
     total_features_sampled = sum(len(s['features']) for s in samples)
     total_features_actual = sum(

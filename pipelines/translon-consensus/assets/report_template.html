@@ -150,14 +150,24 @@
             <div id="feature-count"></div>
         </div>
 
-        <div id="stats-container" style="display: none; margin-bottom: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
-            <strong>📊 Sampling Summary:</strong>
-            <div id="stats-content" style="margin-top: 10px; font-size: 14px;"></div>
+        <div id="tool-stats-container" style="display: none; margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+            <strong>📈 Tool Statistics:</strong>
+            <div id="tool-stats-content" style="margin-top: 10px; font-size: 14px;"></div>
         </div>
 
         <div id="tool-performance-container" style="display: none; margin-bottom: 20px; padding: 15px; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;">
             <strong>🔧 Tool Performance Summary:</strong>
             <div id="tool-performance-content" style="margin-top: 10px; font-size: 14px;"></div>
+        </div>
+
+        <div id="locus-container" style="display: none; margin-bottom: 20px; padding: 15px; background: #f3e5f5; border-left: 4px solid #9c27b0; border-radius: 4px;">
+            <strong>🧬 Interesting Loci (Multi-Tool Overlaps):</strong>
+            <div id="locus-content" style="margin-top: 10px; font-size: 14px;"></div>
+        </div>
+
+        <div id="stats-container" style="display: none; margin-bottom: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+            <strong>📊 Sampling Summary:</strong>
+            <div id="stats-content" style="margin-top: 10px; font-size: 14px;"></div>
         </div>
 
         <div id="table-container">
@@ -189,13 +199,50 @@
             if (sampleIndex === '') {
                 $('#table-container').html('<div class="loading">Select a sample to view features</div>');
                 $('#feature-count').text('');
-                $('#stats-container').hide();
+                $('#tool-stats-container').hide();
                 $('#tool-performance-container').hide();
+                $('#locus-container').hide();
+                $('#stats-container').hide();
                 return;
             }
 
             const sample = samples[sampleIndex];
             const features = sample.features;
+
+            // Display tool statistics
+            if (sample.tool_statistics && Object.keys(sample.tool_statistics).length > 0) {
+                let statsHtml = '<table style="width: 100%; border-collapse: collapse;">';
+                statsHtml += '<tr style="border-bottom: 1px solid #ddd;">';
+                statsHtml += '<th style="text-align: left; padding: 5px;">Tool</th>';
+                statsHtml += '<th style="text-align: right; padding: 5px;">Features Called</th>';
+                statsHtml += '<th style="text-align: right; padding: 5px;">Mean Length</th>';
+                statsHtml += '<th style="text-align: right; padding: 5px;">Median Length</th>';
+                statsHtml += '<th style="text-align: right; padding: 5px;">Length Range</th>';
+                statsHtml += '</tr>';
+
+                const tools = Object.keys(sample.tool_statistics).sort();
+                for (const tool of tools) {
+                    const stats = sample.tool_statistics[tool];
+                    statsHtml += '<tr style="border-top: 1px solid #eee;">';
+                    statsHtml += `<td style="padding: 5px; font-weight: 600;">${tool}</td>`;
+
+                    if (typeof stats.feature_count === 'number') {
+                        statsHtml += `<td style="text-align: right; padding: 5px;">${stats.feature_count.toLocaleString()}</td>`;
+                        statsHtml += `<td style="text-align: right; padding: 5px;">${stats.mean_length.toLocaleString()} bp</td>`;
+                        statsHtml += `<td style="text-align: right; padding: 5px;">${stats.median_length.toLocaleString()} bp</td>`;
+                        statsHtml += `<td style="text-align: right; padding: 5px;">${stats.min_length.toLocaleString()} - ${stats.max_length.toLocaleString()} bp</td>`;
+                    } else {
+                        statsHtml += `<td colspan="4" style="text-align: center; padding: 5px; color: #7f8c8d; font-style: italic;">${stats.feature_count}</td>`;
+                    }
+                    statsHtml += '</tr>';
+                }
+                statsHtml += '</table>';
+
+                $('#tool-stats-content').html(statsHtml);
+                $('#tool-stats-container').show();
+            } else {
+                $('#tool-stats-container').hide();
+            }
 
             // Display sampling statistics
             if (sample.consensus_stats && Object.keys(sample.consensus_stats).length > 0) {
@@ -258,6 +305,50 @@
                 $('#tool-performance-container').show();
             } else {
                 $('#tool-performance-container').hide();
+            }
+
+            // Display interesting loci
+            if (sample.locus_analyses && sample.locus_analyses.length > 0) {
+                let locusHtml = '<p style="margin-bottom: 10px; color: #666;">Showing overlapping features from multiple tools at the same genomic locations. These reveal where tools detect similar features but may disagree on exact boundaries.</p>';
+                locusHtml += '<table style="width: 100%; border-collapse: collapse;">';
+                locusHtml += '<tr style="border-bottom: 1px solid #ddd;">';
+                locusHtml += '<th style="text-align: left; padding: 5px;">Location</th>';
+                locusHtml += '<th style="text-align: left; padding: 5px;">Gene</th>';
+                locusHtml += '<th style="text-align: center; padding: 5px;">Tools</th>';
+                locusHtml += '<th style="text-align: center; padding: 5px;">Features</th>';
+                locusHtml += '<th style="text-align: center; padding: 5px;">Agreement</th>';
+                locusHtml += '<th style="text-align: center; padding: 5px;">Browser</th>';
+                locusHtml += '</tr>';
+
+                // Show top 10 most interesting loci
+                const topLoci = sample.locus_analyses.slice(0, 10);
+                for (const locus of topLoci) {
+                    locusHtml += '<tr style="border-top: 1px solid #eee;">';
+                    locusHtml += `<td style="padding: 5px; font-family: monospace; font-size: 11px;">${locus.chr}:${locus.start.toLocaleString()}-${locus.end.toLocaleString()} (${locus.strand})<br><span style="color: #7f8c8d;">Length: ${locus.length.toLocaleString()} bp</span></td>`;
+                    locusHtml += `<td style="padding: 5px;"><span class="biotype-tag">${locus.gene_name}</span><br><span class="cds-context-tag">${locus.cds_context}</span></td>`;
+                    locusHtml += `<td style="text-align: center; padding: 5px;">${locus.num_tools}<br><span style="font-size: 10px; color: #7f8c8d;">${locus.tools_present.join(', ')}</span></td>`;
+
+                    // Show features per tool breakdown
+                    let featureBreakdown = [];
+                    for (const [tool, count] of Object.entries(locus.features_per_tool)) {
+                        featureBreakdown.push(`${tool}:${count}`);
+                    }
+                    locusHtml += `<td style="text-align: center; padding: 5px;">${locus.num_features}<br><span style="font-size: 10px; color: #7f8c8d;">${featureBreakdown.join(', ')}</span></td>`;
+
+                    locusHtml += `<td style="text-align: center; padding: 5px; font-size: 11px;">${locus.agreement_pattern}</td>`;
+                    locusHtml += `<td style="text-align: center; padding: 5px;"><a href="${locus.ucsc_url}" target="_blank" class="ucsc-link">View</a></td>`;
+                    locusHtml += '</tr>';
+                }
+                locusHtml += '</table>';
+
+                if (sample.locus_analyses.length > 10) {
+                    locusHtml += `<p style="margin-top: 10px; font-size: 12px; color: #7f8c8d; font-style: italic;">Showing top 10 of ${sample.locus_analyses.length} multi-tool loci</p>`;
+                }
+
+                $('#locus-content').html(locusHtml);
+                $('#locus-container').show();
+            } else {
+                $('#locus-container').hide();
             }
 
             // Destroy existing table
