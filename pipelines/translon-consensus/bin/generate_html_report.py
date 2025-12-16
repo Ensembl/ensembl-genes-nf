@@ -10,6 +10,7 @@ interactive HTML report.
 
 import argparse
 import sys
+import random
 from pathlib import Path
 from collections import defaultdict, Counter
 from datetime import datetime
@@ -58,36 +59,40 @@ def load_template(template_path=None):
 # Core parsing logic
 # ---------------------------------------------------------------------
 
-def parse_results_directory(results_dir: Path):
+def parse_results_directory(results_dir: Path, max_examples_per_category: int = 100):
     """
     Parse all *.consensus.tsv files into a rich data structure suitable
-    for reporting.
+    for reporting. Uses stratified sampling to limit examples per disagreement category.
+
+    Args:
+        results_dir: Directory containing consensus TSV files
+        max_examples_per_category: Maximum number of feature examples to keep per disagreement type
     """
     results_dir = Path(results_dir)
     samples = {}
 
     # Search for both *.consensus.tsv AND *.tsv that are actually consensus files
     all_tsv_files = list(results_dir.rglob('*.tsv'))
-    
+
     for tsv_file in all_tsv_files:
         # Resolve symlinks to get actual filename
         actual_file = tsv_file.resolve()
         actual_name = actual_file.name
-        
+
         # Skip if not a consensus file
         if '.consensus.tsv' not in actual_name:
             continue
-            
+
         # Parse the actual filename: ncORFs_{SAMPLE}.{TOOL}.consensus.tsv
         name_without_ext = actual_name.replace('.consensus.tsv', '')
-        
+
         # Remove 'ncORFs_' prefix if present
         if name_without_ext.startswith('ncORFs_'):
             name_without_ext = name_without_ext[7:]  # Remove 'ncORFs_'
-        
+
         # Split on last dot to get sample and tool
         parts = name_without_ext.rsplit('.', 1)
-        
+
         if len(parts) < 2:
             print(f"WARNING: Skipping {actual_name} - unexpected format", file=sys.stderr)
             continue
@@ -98,6 +103,7 @@ def parse_results_directory(results_dir: Path):
             samples[sample_name] = {
                 'name': sample_name,
                 'features': [],
+                'features_by_consensus': defaultdict(list),  # Stratify by consensus score
                 'tools': set(),
                 'tool_disagreements': defaultdict(Counter),
                 'pairwise': defaultdict(lambda: defaultdict(Counter)),
@@ -127,6 +133,8 @@ def parse_results_directory(results_dir: Path):
                 'tool_matches': {}
             }
 
+            # Calculate consensus score (how many tools agree)
+            consensus_score = 0
             for tool in other_tools:
                 s = int(row.get(f'{tool}_start_matches', 0))
                 e = int(row.get(f'{tool}_end_matches', 0))
@@ -138,6 +146,9 @@ def parse_results_directory(results_dir: Path):
                     'class': cls
                 }
 
+                if cls == 'EXACT_MATCH':
+                    consensus_score += 1
+
                 # Aggregate per-tool disagreement
                 samples[sample_name]['tool_disagreements'][tool][cls] += 1
 
@@ -148,11 +159,45 @@ def parse_results_directory(results_dir: Path):
                 ctx = feature['cds_context']
                 samples[sample_name]['context_disagreements'][tool][ctx][cls] += 1
 
-            samples[sample_name]['features'].append(feature)
+            feature['consensus_score'] = consensus_score
+            feature['total_tools'] = len(other_tools) + 1
 
-    # Finalize tool lists
+            # Stratify by consensus score for sampling
+            samples[sample_name]['features_by_consensus'][consensus_score].append(feature)
+
+    # Finalize tool lists and perform stratified sampling
     for s in samples.values():
         s['tools'] = sorted(s['tools'])
+
+        # Sample features from each consensus level
+        sampled_features = []
+        consensus_stats = {}
+
+        for consensus_score, features in s['features_by_consensus'].items():
+            total_count = len(features)
+
+            # Sample up to max_examples_per_category from this consensus level
+            if total_count <= max_examples_per_category:
+                sampled = features
+            else:
+                # Random sample
+                sampled = random.sample(features, max_examples_per_category)
+
+            sampled_features.extend(sampled)
+            consensus_stats[consensus_score] = {
+                'total': total_count,
+                'sampled': len(sampled)
+            }
+
+        s['features'] = sampled_features
+        s['consensus_stats'] = consensus_stats
+        s['tool_count'] = len(s['tools'])
+
+        # Clean up temporary structure
+        del s['features_by_consensus']
+
+        print(f"Sample {s['name']}: {sum(stats['total'] for stats in consensus_stats.values())} total features, "
+              f"{len(sampled_features)} sampled for report", file=sys.stderr)
 
     return {
         'samples': sorted(samples.values(), key=lambda x: x['name'])
@@ -202,16 +247,22 @@ def main():
     parser.add_argument('-n', '--run-name', default='Translon Consensus Analysis')
     parser.add_argument('-u', '--ucsc-session-url', default='https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38')
     parser.add_argument('-t', '--template', help='Custom HTML template')
+    parser.add_argument('-m', '--max-examples', type=int, default=100,
+                        help='Maximum number of feature examples per consensus level (default: 100)')
 
     args = parser.parse_args()
 
-    parsed = parse_results_directory(Path(args.results_dir))
+    parsed = parse_results_directory(Path(args.results_dir), max_examples_per_category=args.max_examples)
     samples = parsed['samples']
 
     for s in samples:
         s['tool_signatures'] = compute_tool_signatures(s)
 
-    total_features = sum(len(s['features']) for s in samples)
+    total_features_sampled = sum(len(s['features']) for s in samples)
+    total_features_actual = sum(
+        sum(stats['total'] for stats in s.get('consensus_stats', {}).values())
+        for s in samples
+    )
 
     context = {
         'run_name': args.run_name,
@@ -219,7 +270,9 @@ def main():
         'ucsc_session_url': args.ucsc_session_url,
         'samples': samples,
         'total_samples': len(samples),
-        'total_features': total_features
+        'total_features': total_features_sampled,
+        'total_features_actual': total_features_actual,
+        'max_examples': args.max_examples
     }
 
     template = load_template(args.template)
@@ -229,6 +282,8 @@ def main():
     output_path.write_text(html)
 
     print(f"\n✅ HTML report generated: {output_path}", file=sys.stderr)
+    print(f"   Total features analyzed: {total_features_actual:,}", file=sys.stderr)
+    print(f"   Features in report: {total_features_sampled:,} (sampled)", file=sys.stderr)
 
 
 if __name__ == '__main__':

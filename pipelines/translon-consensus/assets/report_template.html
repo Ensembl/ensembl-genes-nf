@@ -125,7 +125,9 @@
     <div class="container">
         <h1>🧬 Translon Consensus Feature Browser</h1>
         <div class="subtitle">
-            Generated: {{ timestamp }} | Total Samples: {{ total_samples }} | Total Features: {{ total_features }}
+            Generated: {{ timestamp }} | Total Samples: {{ total_samples }} |
+            Total Features Analyzed: {{ total_features_actual|default(total_features) }} |
+            Features in Report: {{ total_features }} (sampled up to {{ max_examples|default(100) }} per consensus level)
         </div>
 
         <div class="controls">
@@ -151,6 +153,11 @@
         <div id="stats-container" style="display: none; margin-bottom: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
             <strong>📊 Sampling Summary:</strong>
             <div id="stats-content" style="margin-top: 10px; font-size: 14px;"></div>
+        </div>
+
+        <div id="tool-performance-container" style="display: none; margin-bottom: 20px; padding: 15px; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;">
+            <strong>🔧 Tool Performance Summary:</strong>
+            <div id="tool-performance-content" style="margin-top: 10px; font-size: 14px;"></div>
         </div>
 
         <div id="table-container">
@@ -183,6 +190,7 @@
                 $('#table-container').html('<div class="loading">Select a sample to view features</div>');
                 $('#feature-count').text('');
                 $('#stats-container').hide();
+                $('#tool-performance-container').hide();
                 return;
             }
 
@@ -206,6 +214,50 @@
                 $('#stats-container').show();
             } else {
                 $('#stats-container').hide();
+            }
+
+            // Display tool performance summary
+            if (sample.tool_signatures && Object.keys(sample.tool_signatures).length > 0) {
+                let perfHtml = '<table style="width: 100%; border-collapse: collapse;">';
+                perfHtml += '<tr style="border-bottom: 1px solid #ddd;">';
+                perfHtml += '<th style="text-align: left; padding: 5px;">Tool</th>';
+                perfHtml += '<th style="text-align: right; padding: 5px;">Exact Match Rate</th>';
+                perfHtml += '<th style="text-align: right; padding: 5px;">Disagreement Rate</th>';
+                perfHtml += '<th style="text-align: right; padding: 5px;">Start Bias</th>';
+                perfHtml += '<th style="text-align: right; padding: 5px;">Match Counts</th>';
+                perfHtml += '</tr>';
+
+                const tools = Object.keys(sample.tool_signatures).sort();
+                for (const tool of tools) {
+                    const sig = sample.tool_signatures[tool];
+                    const counts = sig.raw_counts;
+
+                    perfHtml += '<tr style="border-top: 1px solid #eee;">';
+                    perfHtml += `<td style="padding: 5px; font-weight: 600;">${tool}</td>`;
+                    perfHtml += `<td style="text-align: right; padding: 5px;">${(sig.exact_match_rate * 100).toFixed(1)}%</td>`;
+                    perfHtml += `<td style="text-align: right; padding: 5px;">${(sig.disagreement_rate * 100).toFixed(1)}%</td>`;
+
+                    // Color code start bias
+                    const biasColor = sig.start_bias > 0.1 ? '#e74c3c' :
+                                      sig.start_bias < -0.1 ? '#3498db' : '#95a5a6';
+                    const biasLabel = sig.start_bias > 0.1 ? 'Start-biased' :
+                                      sig.start_bias < -0.1 ? 'End-biased' : 'Balanced';
+                    perfHtml += `<td style="text-align: right; padding: 5px; color: ${biasColor}; font-weight: 600;">${biasLabel} (${(sig.start_bias * 100).toFixed(1)}%)</td>`;
+
+                    // Show breakdown of disagreement types
+                    const matchDetails = `Exact: ${counts.EXACT_MATCH || 0}, Start: ${counts.START_ONLY || 0}, End: ${counts.END_ONLY || 0}, Both: ${counts.BOTH_MISMATCH || 0}`;
+                    perfHtml += `<td style="text-align: right; padding: 5px; font-size: 11px; color: #7f8c8d;">${matchDetails}</td>`;
+                    perfHtml += '</tr>';
+                }
+                perfHtml += '</table>';
+                perfHtml += '<div style="margin-top: 10px; font-size: 12px; color: #7f8c8d;">';
+                perfHtml += '<strong>Legend:</strong> Start Bias = (START_ONLY - END_ONLY) / Total. Positive = tends to disagree on end positions, Negative = tends to disagree on start positions';
+                perfHtml += '</div>';
+
+                $('#tool-performance-content').html(perfHtml);
+                $('#tool-performance-container').show();
+            } else {
+                $('#tool-performance-container').hide();
             }
 
             // Destroy existing table
