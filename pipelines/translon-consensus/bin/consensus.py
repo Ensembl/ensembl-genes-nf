@@ -298,19 +298,23 @@ def ingest_beds(con, sample_name, bed_files_dict):
                 ('blockStarts', 'VARCHAR')
             ]
         elif n_fields >= 6:
+            # BED6: chr, start, end, name, score, strand
+            # For BED6, chromStart/chromEnd are same as start_pos/end_pos (no thick/thin distinction)
             columns = [
                 ('chr', 'VARCHAR'),
-                ('start_pos', 'BIGINT'),
-                ('end_pos', 'BIGINT'),
+                ('chromStart', 'BIGINT'),   # Column 2 (same as start_pos for BED6)
+                ('chromEnd', 'BIGINT'),     # Column 3 (same as end_pos for BED6)
                 ('feature_name', 'VARCHAR'),
                 ('score', 'REAL'),
                 ('strand', 'VARCHAR')
             ]
         elif n_fields >= 3:
+            # BED3: chr, start, end
+            # For BED3, chromStart/chromEnd are same as start_pos/end_pos
             columns = [
                 ('chr', 'VARCHAR'),
-                ('start_pos', 'BIGINT'),
-                ('end_pos', 'BIGINT')
+                ('chromStart', 'BIGINT'),   # Column 2 (same as start_pos for BED3)
+                ('chromEnd', 'BIGINT')      # Column 3 (same as end_pos for BED3)
             ]
         else:
             raise ValueError(f"Invalid BED format in {bed_path}: only {n_fields} fields")
@@ -327,6 +331,17 @@ def ingest_beds(con, sample_name, bed_files_dict):
         # Prepare select columns mapping read_csv_auto colN -> final names
         select_cols = ', '.join([f'col{i} as {name}' for i, name in enumerate(col_names)])
 
+        # For BED6/BED3, add start_pos/end_pos as aliases for chromStart/chromEnd
+        extra_cols = []
+        if 'chromStart' in col_names and 'start_pos' not in col_names:
+            extra_cols.append('chromStart as start_pos')
+        if 'chromEnd' in col_names and 'end_pos' not in col_names:
+            extra_cols.append('chromEnd as end_pos')
+
+        all_select_cols = select_cols
+        if extra_cols:
+            all_select_cols = select_cols + ', ' + ', '.join(extra_cols)
+
         bed_path_sql = str(bed_path).replace("'", "''")
         sample_sql = str(sample_name).replace("'", "''")
         tool_sql = str(tool).replace("'", "''")
@@ -338,7 +353,7 @@ def ingest_beds(con, sample_name, bed_files_dict):
                 SELECT
                     '{sample_sql}' as sample,
                     '{tool_sql}' as tool,
-                    {select_cols}
+                    {all_select_cols}
                 FROM read_csv_auto('{bed_path_sql}',
                     delim='\\t',
                     header=false,
@@ -353,7 +368,14 @@ def ingest_beds(con, sample_name, bed_files_dict):
             count_before = con.execute("SELECT COUNT(*) FROM temp_features").fetchone()[0]
 
             # Deduplicate using row_number() partition (DuckDB supports window functions)
-            insert_cols = ', '.join(col_names)
+            # Explicitly specify column order to match table schema
+            table_col_order = [
+                'chr', 'chromStart', 'chromEnd', 'feature_name', 'score',
+                'strand', 'start_pos', 'end_pos', 'itemRgb', 'blockCount',
+                'blockSizes', 'blockStarts'
+            ]
+            # Only include columns that exist in col_names
+            insert_cols = ', '.join([c for c in table_col_order if c in col_names])
             con.execute(f"""
                 INSERT INTO features (sample, tool, {insert_cols})
                 SELECT sample, tool, {insert_cols} FROM (
