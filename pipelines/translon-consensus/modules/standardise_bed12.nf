@@ -6,7 +6,7 @@ process STANDARDISE_BED12 {
     
     tag "${meta.id}"
 
-    publishDir "${params.outdir}/standardised_bed12s/${meta.id}", mode: 'copy'
+    publishDir "${params.outdir}/standardised_bed12s/${meta.id}_${tool}", mode: 'copy'
 
     input:
     tuple val(meta), val(tool), path(bed_file)
