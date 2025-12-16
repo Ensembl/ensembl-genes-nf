@@ -285,13 +285,13 @@ def ingest_beds(con, sample_name, bed_files_dict):
         if n_fields >= 12:
             columns = [
                 ('chr', 'VARCHAR'),
-                ('start_pos', 'BIGINT'),
-                ('end_pos', 'BIGINT'),
+                ('chromStart', 'BIGINT'),  # Keep original for reference
+                ('chromEnd', 'BIGINT'),    # Keep original for reference
                 ('feature_name', 'VARCHAR'),
                 ('score', 'REAL'),
                 ('strand', 'VARCHAR'),
-                ('thickStart', 'BIGINT'),
-                ('thickEnd', 'BIGINT'),
+                ('start_pos', 'BIGINT'),   # Use thickStart as actual start
+                ('end_pos', 'BIGINT'),     # Use thickEnd as actual end
                 ('itemRgb', 'VARCHAR'),
                 ('blockCount', 'INTEGER'),
                 ('blockSizes', 'VARCHAR'),
