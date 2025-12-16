@@ -7,7 +7,7 @@ include { LOCATE } from '../modules/locate.nf'
 include { FASTQ_DL } from '../modules/fastq_dl.nf'
 include { FASTQC } from '../modules/fastqc.nf'
 include { FIND_ADAPTERS } from '../modules/find_adapters.nf'
-include { DETECT_ARCHITECTURE } from '../modules/detect_architecture.nf'
+include { EXTRACT_RPFS } from '../modules/extract_rpfs.nf'
 include { FASTP } from '../modules/fastp.nf'
 include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_INITIAL } from '../modules/collapse_fastq.nf'
 include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_FINAL } from '../modules/collapse_fastq.nf'
@@ -71,20 +71,14 @@ workflow DATA_ACQUISITION {
 
         // Branch based on architecture detection setting
         if (params.use_architecture_detection) {
-            // Collapse raw reads first for architecture detection
-            COLLAPSE_FASTQ_INITIAL(FASTQ_DL.out.fastq)
-
-            // Detect sequencing architecture
-            DETECT_ARCHITECTURE(COLLAPSE_FASTQ_INITIAL.out.collapsed_fasta)
-
-            // Trim with detected adapters
-            FASTP(
-                FASTQ_DL.out.fastq
-                    .join(DETECT_ARCHITECTURE.out.adapters)
+            // Masterful RPF Extraction (Detects + Trims + Reports)
+            EXTRACT_RPFS(
+                FASTQ_DL.out.fastq,
+                file(params.star_index)
             )
 
-            // Re-collapse after trimming
-            COLLAPSE_FASTQ_FINAL(FASTP.out.trimmed_fastq)
+            // Re-collapse after extraction
+            COLLAPSE_FASTQ_FINAL(EXTRACT_RPFS.out.rpfs)
             newly_collapsed_reads = COLLAPSE_FASTQ_FINAL.out.collapsed_fasta
         } else {
             // Traditional adapter finding approach
