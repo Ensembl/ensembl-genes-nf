@@ -499,7 +499,12 @@ def compute_matches(con, sample_name, query_tool, other_tools):
             -- If blockSizes is NULL or empty, fall back to end_pos - start_pos
             CASE
                 WHEN q.blockSizes IS NOT NULL AND q.blockSizes != '' THEN
-                    list_sum(CAST(string_split(q.blockSizes, ',') AS INTEGER[]))
+                    list_sum(
+                        list_transform(
+                            list_filter(string_split(q.blockSizes, ','), x -> x != ''),
+                            x -> CAST(x AS INTEGER)
+                        )
+                    )
                 ELSE
                     q.end_pos - q.start_pos
             END AS cds_length,
