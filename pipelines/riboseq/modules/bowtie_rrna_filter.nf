@@ -43,7 +43,8 @@ process BOWTIE_RRNA_FILTER {
         --un ${prefix}_no_rrna.fastq \\
         ${args} \\
         \$INDEX \\
-        - 
+        - \\
+        > /dev/null 2> ${prefix}_bowtie.stderr
 
     # Compress unmapped reads
     gzip ${prefix}_no_rrna.fastq
