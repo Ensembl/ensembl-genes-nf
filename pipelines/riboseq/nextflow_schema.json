@@ -40,8 +40,7 @@
       },
       "rrna_index": {
         "type": "string",
-        "description": "Path to bowtie1 rRNA index .1.ebwt file (e.g., /path/to/rRNA_index/rRNA.1.ebwt). All related index files (*.ebwt) will be automatically staged. Used for filtering rRNA contamination.",
-        "pattern": ".*\\.1\\.ebwt$"
+        "description": "Path to bowtie1 rRNA index directory (e.g., /path/to/rRNA_index) or path to any index file. All *.ebwt files in the directory will be staged for rRNA filtering."
       },
       "fetch": {
         "type": "boolean",
