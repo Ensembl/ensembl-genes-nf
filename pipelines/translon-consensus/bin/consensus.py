@@ -427,15 +427,16 @@ def ingest_beds(con, sample_name, bed_files_dict):
 
 def compute_matches(con, sample_name, query_tool, other_tools):
     """
-    For each feature in query_tool, count matches in all other tools.
-    Uses separate queries for start and end, then computes both matches.
+    For each feature in query_tool, count exact matches and overlaps in all other tools.
+    Uses separate queries for start/end exact matches, plus interval overlaps.
     """
     lateral_joins = []
     select_cols = []
 
     for other_tool in other_tools:
         safe_name = other_tool.replace('-', '_').replace('.', '_')
-        # Separate LATERAL joins for start and end matches
+
+        # Exact start matches
         lateral_joins.append(f"""
             LEFT JOIN LATERAL (
                 SELECT
@@ -448,6 +449,7 @@ def compute_matches(con, sample_name, query_tool, other_tools):
             ) {safe_name}_start ON true
         """)
 
+        # Exact end matches
         lateral_joins.append(f"""
             LEFT JOIN LATERAL (
                 SELECT
@@ -460,11 +462,27 @@ def compute_matches(con, sample_name, query_tool, other_tools):
             ) {safe_name}_end ON true
         """)
 
+        # Interval overlaps (any overlap, not just exact)
+        lateral_joins.append(f"""
+            LEFT JOIN LATERAL (
+                SELECT
+                    COALESCE(COUNT(*), 0) as {safe_name}_overlap_count
+                FROM features
+                WHERE sample = '{sample_name.replace("'", "''")}'
+                  AND tool = '{other_tool.replace("'", "''")}'
+                  AND chr = q.chr
+                  AND COALESCE(strand,'') = COALESCE(q.strand,'')
+                  AND start_pos < q.end_pos
+                  AND end_pos > q.start_pos
+            ) {safe_name}_overlap ON true
+        """)
+
         select_cols.extend([
             f"{safe_name}_start.{safe_name}_start_matches",
             f"{safe_name}_end.{safe_name}_end_matches",
             # Compute both as the minimum of start and end matches
-            f"LEAST({safe_name}_start.{safe_name}_start_matches, {safe_name}_end.{safe_name}_end_matches) as {safe_name}_both_matches"
+            f"LEAST({safe_name}_start.{safe_name}_start_matches, {safe_name}_end.{safe_name}_end_matches) as {safe_name}_both_matches",
+            f"{safe_name}_overlap.{safe_name}_overlap_count"
         ])
 
     query = f"""
