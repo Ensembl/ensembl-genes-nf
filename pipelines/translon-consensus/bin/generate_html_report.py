@@ -18,6 +18,30 @@ import numpy as np
 from jinja2 import Template
 
 # ---------------------------------------------------------------------
+# Type conversion utilities
+# ---------------------------------------------------------------------
+
+def convert_numpy_types(obj):
+    """
+    Recursively convert numpy types to Python native types for JSON serialization.
+    """
+    if isinstance(obj, (np.integer, np.int64, np.int32)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float64, np.float32)):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [convert_numpy_types(item) for item in obj]
+    elif isinstance(obj, Counter):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, defaultdict):
+        return {k: convert_numpy_types(v) for k, v in obj.items()}
+    return obj
+
+# ---------------------------------------------------------------------
 # Disagreement classification
 # ---------------------------------------------------------------------
 
@@ -481,11 +505,14 @@ def main():
         for s in samples
     )
 
+    # Convert all numpy types to Python native types for JSON serialization
+    samples_converted = convert_numpy_types(samples)
+
     context = {
         'run_name': args.run_name,
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'ucsc_session_url': args.ucsc_session_url,
-        'samples': samples,
+        'samples': samples_converted,
         'total_samples': len(samples),
         'total_features': total_features_sampled,
         'total_features_actual': total_features_actual,

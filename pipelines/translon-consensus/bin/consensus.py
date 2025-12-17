@@ -374,8 +374,15 @@ def ingest_beds(con, sample_name, bed_files_dict):
                 'strand', 'start_pos', 'end_pos', 'itemRgb', 'blockCount',
                 'blockSizes', 'blockStarts'
             ]
-            # Only include columns that exist in col_names
-            insert_cols = ', '.join([c for c in table_col_order if c in col_names])
+            # Build list of available columns (includes both col_names and extra_cols)
+            available_cols = set(col_names)
+            if 'chromStart' in col_names and 'start_pos' not in col_names:
+                available_cols.add('start_pos')
+            if 'chromEnd' in col_names and 'end_pos' not in col_names:
+                available_cols.add('end_pos')
+
+            # Only include columns that exist in temp_features table
+            insert_cols = ', '.join([c for c in table_col_order if c in available_cols])
             con.execute(f"""
                 INSERT INTO features (sample, tool, {insert_cols})
                 SELECT sample, tool, {insert_cols} FROM (
