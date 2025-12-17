@@ -1099,7 +1099,49 @@ def main():
             
             if args.verbose:
                 print(f"[INVALID] {orf_id}: {reason} ({details})", file=sys.stderr)
-    
+
+    # Step 3.5: Deduplicate by genomic coordinates
+    print(f"[INFO] Deduplicating ORFs by genomic coordinates", file=sys.stderr)
+
+    # Parse BED12 lines to extract coordinates
+    # BED12 format: chr, start, end, name, score, strand, thickStart, thickEnd, itemRgb, blockCount, blockSizes, blockStarts
+    coord_to_orfs = defaultdict(list)
+
+    for orf_id, bed12_line in valid_orfs:
+        fields = bed12_line.strip().split('\t')
+        if len(fields) >= 12:
+            # Use chr, thickStart, thickEnd, strand, blockCount, blockSizes, blockStarts as key
+            # This uniquely identifies the genomic ORF structure
+            chrom = fields[0]
+            thick_start = fields[6]
+            thick_end = fields[7]
+            strand = fields[5]
+            block_count = fields[9]
+            block_sizes = fields[10]
+            block_starts = fields[11]
+
+            coord_key = (chrom, thick_start, thick_end, strand, block_count, block_sizes, block_starts)
+            coord_to_orfs[coord_key].append((orf_id, bed12_line))
+
+    # Keep one representative per unique genomic coordinate
+    dedup_valid_orfs = []
+    duplicates_removed = 0
+
+    for coord_key, orf_list in coord_to_orfs.items():
+        if len(orf_list) > 1:
+            duplicates_removed += len(orf_list) - 1
+            if args.verbose:
+                orf_ids = [orf_id for orf_id, _ in orf_list]
+                print(f"[DEDUP] {len(orf_list)} identical ORFs at {coord_key[0]}:{coord_key[1]}-{coord_key[2]}: {', '.join(orf_ids)}", file=sys.stderr)
+
+        # Keep the first one (arbitrary choice)
+        dedup_valid_orfs.append(orf_list[0])
+
+    print(f"[INFO] Removed {duplicates_removed} duplicate ORFs ({len(valid_orfs)} → {len(dedup_valid_orfs)})", file=sys.stderr)
+
+    # Replace valid_orfs with deduplicated version
+    valid_orfs = dedup_valid_orfs
+
     # Step 4: Write output files
     valid_file = f"{args.output_prefix}.valid.bed12"
     invalid_file = f"{args.output_prefix}.invalid.bed12"

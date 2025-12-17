@@ -493,6 +493,16 @@ def compute_matches(con, sample_name, query_tool, other_tools):
             q.strand,
             q.feature_name,
             q.score,
+            q.blockCount,
+            q.blockSizes,
+            -- Calculate CDS length by summing blockSizes (exon lengths)
+            -- If blockSizes is NULL or empty, fall back to end_pos - start_pos
+            CASE
+                WHEN q.blockSizes IS NOT NULL AND q.blockSizes != '' THEN
+                    (SELECT SUM(CAST(unnest(string_split(q.blockSizes, ',')) AS INTEGER)))
+                ELSE
+                    q.end_pos - q.start_pos
+            END AS cds_length,
             {', '.join(select_cols)}
         FROM features q
         {' '.join(lateral_joins)}

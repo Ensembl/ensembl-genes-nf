@@ -142,6 +142,11 @@ def parse_results_directory(results_dir: Path, max_examples_per_category: int = 
         samples[sample_name]['tools'].add(query_tool)
         samples[sample_name]['tools'].update(other_tools)
 
+        # Store actual feature count for this query tool (before sampling)
+        if 'tool_feature_counts' not in samples[sample_name]:
+            samples[sample_name]['tool_feature_counts'] = {}
+        samples[sample_name]['tool_feature_counts'][query_tool] = len(df)
+
         # OPTIMIZATION: Calculate consensus scores vectorized
         consensus_scores = np.zeros(len(df), dtype=int)
         for tool in other_tools:
@@ -225,6 +230,7 @@ def parse_results_directory(results_dir: Path, max_examples_per_category: int = 
                     'ucsc_url': str(row.get('ucsc_url', '')),
                     'consensus_score': int(score),
                     'total_tools': len(other_tools) + 1,
+                    'cds_length': int(row.get('cds_length', row['end_pos'] - row['start_pos'])),
                     'tool_matches': {}
                 }
 
@@ -294,12 +300,15 @@ def compute_tool_statistics(sample):
         features_by_tool[feature['query_tool']].append(feature)
 
     for tool in sample['tools']:
+        # Get actual feature count (not sampled)
+        actual_count = sample.get('tool_feature_counts', {}).get(tool, None)
+
         if tool not in features_by_tool:
             # This tool might be in "other_tools" but not query_tool
             # Try to count from tool_disagreements
             total_comparisons = sum(sample['tool_disagreements'].get(tool, {}).values())
             tool_stats[tool] = {
-                'feature_count': 'N/A (not query tool)',
+                'feature_count': actual_count if actual_count is not None else 'N/A (not query tool)',
                 'mean_length': None,
                 'median_length': None,
                 'min_length': None,
@@ -308,11 +317,14 @@ def compute_tool_statistics(sample):
             }
             continue
 
+        # Use sampled features for length calculations (representative sample)
         features = features_by_tool[tool]
-        lengths = [f['end'] - f['start'] for f in features]
+        # NOTE: Lengths are CDS lengths calculated by summing blockSizes (exon lengths)
+        # This correctly excludes intronic sequence between exons for multi-exon ORFs
+        lengths = [f['cds_length'] for f in features]
 
         tool_stats[tool] = {
-            'feature_count': len(features),
+            'feature_count': actual_count if actual_count is not None else len(features),
             'mean_length': int(sum(lengths) / len(lengths)) if lengths else 0,
             'median_length': int(sorted(lengths)[len(lengths)//2]) if lengths else 0,
             'min_length': min(lengths) if lengths else 0,
