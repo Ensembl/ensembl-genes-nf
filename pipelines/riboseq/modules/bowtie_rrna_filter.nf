@@ -28,7 +28,8 @@ process BOWTIE_RRNA_FILTER {
 
     """
     # Find the index base name from the staged files
-    INDEX=\$(find -L ./ -name "*.1.ebwt" | sed 's/\\.1\\.ebwt\$//')
+    # Use *.3.ebwt to avoid matching .rev.1.ebwt files
+    INDEX=\$(find -L ./ -name "*.3.ebwt" | sed 's/\\.3\\.ebwt\$//')
 
     # Count input reads
     INPUT_READS=\$(${unzip_cmd} ${reads} | wc -l | awk '{print \$1/4}')
@@ -42,8 +43,7 @@ process BOWTIE_RRNA_FILTER {
         --un ${prefix}_no_rrna.fastq \\
         ${args} \\
         \$INDEX \\
-        - \\
-        > /dev/null 2> ${prefix}_bowtie.stderr
+        - 
 
     # Compress unmapped reads
     gzip ${prefix}_no_rrna.fastq
