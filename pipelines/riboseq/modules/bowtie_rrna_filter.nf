@@ -1,6 +1,6 @@
 process BOWTIE_RRNA_FILTER {
     tag "${meta.id}"
-    label 'process_medium'
+    label 'process_high'
 
     conda "bioconda::bowtie=1.3.1 bioconda::samtools=1.19"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
