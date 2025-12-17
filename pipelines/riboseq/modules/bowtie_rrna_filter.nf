@@ -25,24 +25,10 @@ process BOWTIE_RRNA_FILTER {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def unzip_cmd = reads.name.endsWith('.gz') ? 'zcat' : 'cat'
+    // Remove .1.ebwt extension if present to get base name
+    def index_base = index.toString().replaceAll(/\.1\.ebwt$/, '')
 
     """
-    # Determine index base name
-    # If index is a directory, find the base name from .ebwt files inside
-    # Otherwise use the provided path/basename
-    if [ -d "${index}" ]; then
-        INDEX_BASE=\$(ls ${index}/*.1.ebwt 2>/dev/null | head -n1 | sed 's/\\.1\\.ebwt\$//')
-        if [ -z "\$INDEX_BASE" ]; then
-            echo "Error: No bowtie index files (*.1.ebwt) found in ${index}" >&2
-            exit 1
-        fi
-    else
-        # Remove any .ebwt extension if present
-        INDEX_BASE="${index}"
-        INDEX_BASE="\${INDEX_BASE%.1.ebwt}"
-        INDEX_BASE="\${INDEX_BASE%.rev.1.ebwt}"
-    fi
-
     # Count input reads
     INPUT_READS=\$(${unzip_cmd} ${reads} | wc -l | awk '{print \$1/4}')
 
@@ -54,9 +40,9 @@ process BOWTIE_RRNA_FILTER {
         -k 1 \\
         --un ${prefix}_no_rrna.fastq \\
         ${args} \\
-        \$INDEX_BASE \\
+        ${index_base} \\
         - \\
-        > /dev/null 2> ${prefix}_bowtie.stderr
+        > /dev/null 2> ${prefix}_bowtie.stderr 
 
     # Compress unmapped reads
     gzip ${prefix}_no_rrna.fastq

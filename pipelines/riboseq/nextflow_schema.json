@@ -38,6 +38,11 @@
         "description": "Path to adapter list TSV file",
         "default": "${projectDir}/resources/adapter_list.tsv"
       },
+      "rrna_index": {
+        "type": "string",
+        "description": "Path to bowtie1 rRNA index file (e.g., /path/to/rRNA.1.ebwt). The .1.ebwt extension is optional. Used for filtering rRNA contamination.",
+        "pattern": ".*\\.(1\\.)?ebwt$|^[^.]+$"
+      },
       "fetch": {
         "type": "boolean",
         "default": false,
