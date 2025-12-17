@@ -9,6 +9,7 @@ include { FASTQC } from '../modules/fastqc.nf'
 include { FIND_ADAPTERS } from '../modules/find_adapters.nf'
 include { EXTRACT_RPFS } from '../modules/extract_rpfs.nf'
 include { FASTP } from '../modules/fastp.nf'
+include { BOWTIE_RRNA_FILTER } from '../modules/bowtie_rrna_filter.nf'
 include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_INITIAL } from '../modules/collapse_fastq.nf'
 include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_FINAL } from '../modules/collapse_fastq.nf'
 
@@ -93,8 +94,19 @@ workflow DATA_ACQUISITION {
                     .join(FIND_ADAPTERS.out.adapter_report)
             )
 
-            // Collapse after trimming
-            COLLAPSE_FASTQ_FINAL(FASTP.out.trimmed_fastq)
+            // Filter rRNA contamination (if rRNA index provided)
+            if (params.rrna_index) {
+                BOWTIE_RRNA_FILTER(
+                    FASTP.out.trimmed_fastq,
+                    file(params.rrna_index)
+                )
+                filtered_fastq = BOWTIE_RRNA_FILTER.out.filtered_fastq
+            } else {
+                filtered_fastq = FASTP.out.trimmed_fastq
+            }
+
+            // Collapse after trimming and filtering
+            COLLAPSE_FASTQ_FINAL(filtered_fastq)
             newly_collapsed_reads = COLLAPSE_FASTQ_FINAL.out.collapsed_fasta
         }
     } else {
