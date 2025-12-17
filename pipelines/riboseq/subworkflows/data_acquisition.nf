@@ -98,7 +98,7 @@ workflow DATA_ACQUISITION {
             if (params.rrna_index) {
                 BOWTIE_RRNA_FILTER(
                     FASTP.out.trimmed_fastq,
-                    file(params.rrna_index)
+                    file(params.rrna_index).parent
                 )
                 filtered_fastq = BOWTIE_RRNA_FILTER.out.filtered_fastq
             } else {

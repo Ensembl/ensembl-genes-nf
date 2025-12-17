@@ -11,7 +11,7 @@ process BOWTIE_RRNA_FILTER {
 
     input:
     tuple val(meta), path(reads)
-    path index
+    path index  // Bowtie index directory or files
 
     output:
     tuple val(meta), path("*_no_rrna.fastq.gz"), emit: filtered_fastq
@@ -25,10 +25,11 @@ process BOWTIE_RRNA_FILTER {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def unzip_cmd = reads.name.endsWith('.gz') ? 'zcat' : 'cat'
-    // Remove .1.ebwt extension if present to get base name
-    def index_base = index.toString().replaceAll(/\.1\.ebwt$/, '')
 
     """
+    # Find the index base name from the staged files
+    INDEX=\$(find -L ./ -name "*.1.ebwt" | sed 's/\\.1\\.ebwt\$//')
+
     # Count input reads
     INPUT_READS=\$(${unzip_cmd} ${reads} | wc -l | awk '{print \$1/4}')
 
@@ -40,8 +41,9 @@ process BOWTIE_RRNA_FILTER {
         -k 1 \\
         --un ${prefix}_no_rrna.fastq \\
         ${args} \\
-        ${index_base} \\
-        - 
+        \$INDEX \\
+        - \\
+        > /dev/null 2> ${prefix}_bowtie.stderr
 
     # Compress unmapped reads
     gzip ${prefix}_no_rrna.fastq
