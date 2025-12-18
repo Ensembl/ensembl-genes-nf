@@ -46,7 +46,8 @@ Usage:
         --gsm-mapping gsm_mapping.csv
 
 Aggregation Strategy (when --gsm-mapping is provided):
-    - Numeric fields (reads, percentages): mean across runs
+    - Count fields (raw_reads, adapter_trim, etc.): sum across runs
+    - Percentage fields: recalculated from summed counts
     - Adapter sequences: most common adapter
     - P-site offsets: offset from run with highest read abundance per length
 """
@@ -423,7 +424,8 @@ def aggregate_runs_to_gsm(data: List[Dict], gsm_mapping: Dict[str, str]) -> List
     """
     Aggregate multiple SRR runs to their parent GSM accessions.
 
-    For numeric fields: calculate mean
+    For count fields: sum across runs
+    For percentage fields: recalculate from summed counts
     For adapter sequences: use most common
     For P-site offsets: use most abundant read length's offset
 
@@ -462,22 +464,48 @@ def aggregate_runs_to_gsm(data: List[Dict], gsm_mapping: Dict[str, str]) -> List
             'UMI_seq_3': runs[0].get('UMI_seq_3', '')
         }
 
-        # Numeric fields - calculate mean
-        numeric_fields = [
-            'raw_reads', 'adapter_trim', 'pct_trimmed',
-            'read_length_filter', 'pct_length_filter',
-            'ncRNA_contamination_reads', 'pct_ncRNA_contamination',
-            'mapped_to_genome_unique', 'pct_genome_unique'
+        # Count fields - sum across runs (absolute counts)
+        count_fields = [
+            'raw_reads', 'adapter_trim', 'read_length_filter',
+            'ncRNA_contamination_reads', 'mapped_to_genome_unique'
         ]
 
-        for field in numeric_fields:
+        for field in count_fields:
             values = [r.get(field, 0) for r in runs if r.get(field) not in ['', None]]
             if values:
-                # Convert to float, calculate mean
+                # Convert to float and sum
                 numeric_values = [float(v) if v != '' else 0 for v in values]
-                agg_row[field] = sum(numeric_values) / len(numeric_values)
+                agg_row[field] = sum(numeric_values)
             else:
                 agg_row[field] = ''
+
+        # Percentage fields - recalculate from summed counts
+        if agg_row['raw_reads'] and agg_row['adapter_trim']:
+            agg_row['pct_trimmed'] = agg_row['adapter_trim'] / agg_row['raw_reads']
+        else:
+            agg_row['pct_trimmed'] = ''
+
+        if agg_row.get('adapter_trim') and agg_row.get('read_length_filter'):
+            agg_row['pct_length_filter'] = agg_row['read_length_filter'] / agg_row['adapter_trim']
+        else:
+            agg_row['pct_length_filter'] = ''
+
+        if agg_row.get('read_length_filter') and agg_row.get('ncRNA_contamination_reads'):
+            agg_row['pct_ncRNA_contamination'] = (agg_row['ncRNA_contamination_reads'] / agg_row['read_length_filter']) * 100
+        else:
+            agg_row['pct_ncRNA_contamination'] = ''
+
+        # Calculate pct_genome_unique from summed values
+        if agg_row.get('read_length_filter') and agg_row.get('ncRNA_contamination_reads') and agg_row.get('mapped_to_genome_unique'):
+            post_rrna_reads = agg_row['read_length_filter'] - agg_row['ncRNA_contamination_reads']
+            if post_rrna_reads > 0:
+                agg_row['pct_genome_unique'] = (agg_row['mapped_to_genome_unique'] / post_rrna_reads) * 100
+            else:
+                agg_row['pct_genome_unique'] = ''
+        elif agg_row.get('read_length_filter') and agg_row.get('mapped_to_genome_unique'):
+            agg_row['pct_genome_unique'] = (agg_row['mapped_to_genome_unique'] / agg_row['read_length_filter']) * 100
+        else:
+            agg_row['pct_genome_unique'] = ''
 
         # Adapter - use most common
         adapters = [r.get('adapter', '') for r in runs if r.get('adapter')]
