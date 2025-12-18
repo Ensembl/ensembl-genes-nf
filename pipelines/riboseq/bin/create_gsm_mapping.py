@@ -38,8 +38,54 @@ def create_gsm_mapping(gsm_list, output_csv='gsm_mapping.csv'):
     db = SRAweb()
     gsm_to_srr = db.gsm_to_srr(gsm_list)
 
+    # Debug: print available columns
+    print(f"Available columns: {list(gsm_to_srr.columns)}")
+
+    # Map common column name variations
+    possible_gsm_cols = ['experiment_accession', 'experiment_alias', 'sample_accession', 'sample_alias']
+    possible_run_cols = ['run_accession', 'run']
+
+    gsm_col = None
+    run_col = None
+
+    # Find GSM column
+    for col in possible_gsm_cols:
+        if col in gsm_to_srr.columns:
+            gsm_col = col
+            break
+
+    # Find Run column
+    for col in possible_run_cols:
+        if col in gsm_to_srr.columns:
+            run_col = col
+            break
+
+    # If standard names not found, try fuzzy matching
+    if gsm_col is None:
+        for col in gsm_to_srr.columns:
+            col_lower = col.lower()
+            if any(x in col_lower for x in ['experiment', 'sample', 'gsm']):
+                gsm_col = col
+                break
+
+    if run_col is None:
+        for col in gsm_to_srr.columns:
+            col_lower = col.lower()
+            if 'run' in col_lower:
+                run_col = col
+                break
+
+    if gsm_col is None or run_col is None:
+        print("\nError: Could not find expected columns")
+        print(f"Available columns: {list(gsm_to_srr.columns)}")
+        print("\nFull dataframe:")
+        print(gsm_to_srr.head())
+        sys.exit(1)
+
+    print(f"Using columns: GSM={gsm_col}, Run={run_col}")
+
     # Create mapping with Run and GSM columns
-    mapping = gsm_to_srr[['experiment_accession', 'run_accession']].copy()
+    mapping = gsm_to_srr[[gsm_col, run_col]].copy()
     mapping.columns = ['GSM', 'Run']
     mapping = mapping.drop_duplicates().sort_values('Run')
 
