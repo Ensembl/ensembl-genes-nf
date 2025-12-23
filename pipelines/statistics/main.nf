@@ -18,8 +18,6 @@ limitations under the License.
 
 nextflow.enable.dsl = 2
 
-
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 VALIDATE INPUTS
@@ -45,6 +43,14 @@ include { RUN_ENSEMBL_STATS } from 'subworkflows/run_ensembl_stats.nf'
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+def deleteRecursively(Path path) {
+    if (java.nio.file.Files.isDirectory(path)) {
+        java.nio.file.Files.newDirectoryStream(path).each { subPath ->
+            deleteRecursively(subPath)
+        }
+    }
+    java.nio.file.Files.delete(path)
+}
 
 workflow {
     log.info "Pipeline started at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
@@ -61,7 +67,8 @@ workflow {
         if (params.run_ensembl_stats || params.run_ensembl_beta_metakeys) {
         RUN_ENSEMBL_STATS(params.csvFile)
         }
-}
+
+
 
 workflow.onComplete {
     log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
@@ -69,7 +76,6 @@ workflow.onComplete {
     if (params.cleanCache) {    
     try {
         def outDir = java.nio.file.Paths.get(params.cacheDir)
-
         java.nio.file.Files.newDirectoryStream(outDir, "*").each { path ->
         if (!path.toString().endsWith(".gz")) {
             deleteRecursively(path)
@@ -80,17 +86,10 @@ workflow.onComplete {
         log.error "Exception occurred while executing cleaning command: ${e.message}", e
     }
     }
-
+}
 
 workflow.onError {
     println "Error: Pipeline execution stopped with the following message: ${workflow.errorMessage}"
 }
-def deleteRecursively(Path path) {
-    if (java.nio.file.Files.isDirectory(path)) {
-        java.nio.file.Files.newDirectoryStream(path).each { subPath ->
-            deleteRecursively(subPath)
-        }
-    }
-    java.nio.file.Files.delete(path)
-}
 
+}
