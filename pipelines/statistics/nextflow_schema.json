@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com///nextflow_schema.json",
+  "title": " pipeline parameters",
+  "description": "",
+  "type": "object",
+  "properties": {
+    "run_busco_core": {
+      "type": "boolean"
+    },
+    "run_busco_ncbi": {
+      "type": "boolean"
+    },
+    "run_omark": {
+      "type": "boolean"
+    },
+    "run_ensembl_stats": {
+      "type": "boolean"
+    },
+    "run_ensembl_beta_metakeys": {
+      "type": "boolean"
+    },
+    "apply_ensembl_stats": {
+      "type": "boolean"
+    },
+    "apply_ensembl_beta_metakeys": {
+      "type": "boolean"
+    },
+    "apply_busco_metakeys": {
+      "type": "boolean"
+    },
+    "dbname": {
+      "type": "string",
+      "hidden": true
+    },
+    "host": {
+      "type": "string"
+    },
+    "port": {
+      "type": "string"
+    },
+    "user": {
+      "type": "string"
+    },
+    "user_r": {
+      "type": "string"
+    },
+    "password": {
+      "type": "string"
+    },
+    "busco_dataset": {
+      "type": "string"
+    },
+    "mysql_ensadmin": {
+      "type": "string",
+      "default": "/hps/software/users/ensembl/ensw/mysql-cmds/ensembl/ensadmin"
+    },
+    "ncbiBaseUrl": {
+      "type": "string",
+      "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/"
+    },
+    "readme": {
+      "type": "string",
+      "default": "/Users/ftricomi/Documents/ensembl-genes-nf/pipelines/statistics/../data/README.txt"
+    },
+    "project": {
+      "type": "string",
+      "default": "ensembl"
+    },
+    "team": {
+      "type": "string"
+    },
+    "csvFile": {
+      "type": "string"
+    },
+    "enscode": {
+      "type": "string"
+    },
+    "bioperl": {
+      "type": "string",
+      "default": "null/bioperl-1.6.924"
+    },
+    "outDir": {
+      "type": "string"
+    },
+    "cacheDir": {
+      "type": "string",
+      "default": "null/cache"
+    },
+    "files_latency": {
+      "type": "integer",
+      "default": 60
+    },
+    "cleanCache": {
+      "type": "boolean",
+      "default": true
+    },
+    "busco_version": {
+      "type": "string",
+      "default": "v6.0.0_cv1"
+    },
+    "download_path": {
+      "type": "string",
+      "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data_odb12/"
+    },
+    "busco_mode": {
+      "type": "string",
+      "default": "['protein', 'genome']"
+    },
+    "busco_datasets_file": {
+      "type": "string",
+      "default": "/Users/ftricomi/Documents/ensembl-genes-nf/pipelines/statistics/../data/busco_lineage.json"
+    },
+    "dump_params": {
+      "type": "string",
+      "default": "--canonical_only"
+    },
+    "omamer_database": {
+      "type": "string",
+      "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/omamer_db/LUCA_MinFamSize6_OR_MinFamComp05_A21_k6.h5"
+    },
+    "omark_singularity_path": {
+      "type": "string",
+      "default": "/hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif"
+    },
+    "meta_query_file": {
+      "type": "string",
+      "default": "/Users/ftricomi/Documents/ensembl-genes-nf/pipelines/statistics/../bin/meta.sql"
+    }
+  }
+}
