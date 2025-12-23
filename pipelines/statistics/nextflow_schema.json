@@ -104,7 +104,7 @@
       "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data_odb12/"
     },
     "busco_mode": {
-      "type": "string",
+      "type": "array",
       "default": "['protein', 'genome']"
     },
     "busco_datasets_file": {
