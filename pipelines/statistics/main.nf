@@ -33,9 +33,9 @@ include { validateParameters;paramsSummaryLog } from 'plugin/nf-schema'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { RUN_BUSCO } from 'subworkflows/run_busco.nf'
-include { RUN_OMARK } from 'subworkflows/run_omark.nf'
-include { RUN_ENSEMBL_STATS } from 'subworkflows/run_ensembl_stats.nf'
+include { RUN_BUSCO } from './subworkflows/run_busco.nf'
+include { RUN_OMARK } from './subworkflows/run_omark.nf'
+include { RUN_ENSEMBL_STATS } from './subworkflows/run_ensembl_stats.nf'
 
 //include { getMetaValue } from '../modules/utils.nf'
 /*
