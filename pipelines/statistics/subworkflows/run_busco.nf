@@ -55,7 +55,7 @@ workflow RUN_BUSCO{
     if(params.run_busco_ncbi && !params.run_busco_core){
         def busco_mode = 'genome'
         // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
-        data = Channel.fromPath(csvFile, type: 'file', checkIfExists: true)
+        def data = Channel.fromPath(csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> 
                     [gca:row.get('gca'), 

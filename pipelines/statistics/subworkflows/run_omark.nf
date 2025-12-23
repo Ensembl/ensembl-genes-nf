@@ -48,7 +48,7 @@ workflow RUN_OMARK{
         error "params.fetch must be defined as true or false"
     }
     // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
-        data = Channel.fromPath(csvFile, type: 'file', checkIfExists: true)
+    def    data = Channel.fromPath(csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> 
                     [gca:row.get('gca'), 
