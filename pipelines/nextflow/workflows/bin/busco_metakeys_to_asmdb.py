@@ -19,7 +19,7 @@ import json
 import pymysql
 import re
 from pathlib import Path
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Tuple
 import os
 
 def load_json(filepath):
