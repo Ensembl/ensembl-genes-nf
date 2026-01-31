@@ -25,6 +25,7 @@ nextflow.enable.dsl=2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+include { DB_METADATA } from '../modules/db_metadata.nf'
 include { BUSCO_DATASET } from '../modules/busco_dataset.nf'
 include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
@@ -47,36 +48,43 @@ workflow RUN_BUSCO{
     csvFile
 
     main:
+     def data 
     //busco_script = file("${projectDir}/bin/busco_metakeys_patch.py")
-    // Validate required parameters
-    if (params.fetch == null) {
-        error "params.fetch must be defined as true or false"
-    }
+    def busco_mode = params.busco_mode == 'both' ? ['protein', 'genome'] : [params.busco_mode]
     if(params.run_busco_ncbi && !params.run_busco_core){
-        def busco_mode = 'genome'
+        busco_mode = 'genome'
         // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
-        def data = Channel.fromPath(csvFile, type: 'file', checkIfExists: true)
+        data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> 
                     [gca:row.get('gca'), 
                     taxon_id:row.get('taxon_id'), 
-                    core:'UNKNOWN', 
-                    busco_mode:busco_mode
+                    dbname:'UNKNOWN', 
+                    species_id:row.get('species_id') ? row.get('species_id'):1,
+                    busco_mode:busco_mode,
+                    busco_dataset:row.get('busco_dataset'),
+                    genome_file:row.get('genome_file'),
+                    protein_file:row.get('protein_file')
                     ]
                     }
                 
         
     }
     else if(params.run_busco_core){
-        def busco_mode = params.busco_mode
+//        def busco_mode = params.busco_mode == 'both' ? ['protein', 'genome'] : [params.busco_mode]
+        //def busco_mode = params.busco_mode
         // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
         data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> [
                     gca:'UNKNOWN', 
                     taxon_id:'UNKNOWN', 
-                    core:row.get('core'), 
-                    species_id:row.get('species_id'), busco_mode:busco_mode]}
+                    dbname:row.get('dbname'), 
+                    species_id:row.get('species_id') ? row.get('species_id'):1,
+                    busco_mode:busco_mode,
+                                        busco_dataset:row.get('busco_dataset'),
+                    genome_file:row.get('genome_file'),
+                    protein_file:row.get('protein_file')]}
                 
         
     }
@@ -88,34 +96,60 @@ workflow RUN_BUSCO{
     //def db_meta1=db_meta
     //db_meta1.flatten().view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.core}, Species ID: ${d.species_id}" }
     //def buscoDataset = params.busco_dataset ? params.busco_dataset.trim() : meta.busco_dataset.trim() 
+    data.view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.dbname}, Species ID: ${d.species_id}" }
+    
+    def metadata = DB_METADATA(data).metadata
+    .map { meta, metadata_file ->
+            def lines = metadata_file.text.readLines()
+            def new_taxon = lines[0].split('=')[1]
+            def new_gca = lines[1].split('=')[1]
+            def production_name = lines[2].split('=')[1]
+            def updated_meta = meta + [taxon_id: new_taxon, gca: new_gca, production_species: production_name]
+            updated_meta
+        }
 
-    def dataset_db = BUSCO_DATASET(data).output.busco_dataset_output.map{ tuple_meta, stdout ->
-        [
-        gca: tuple_meta.gca,
-        core: tuple_meta.core,
-        species_id: tuple_meta.species_id,
-        busco_mode: tuple_meta.busco_mode,
-        busco_dataset: params.busco_dataset ? params.busco_dataset.trim() :stdout.trim()
-    ]
-}
-
+    def dataset_db = BUSCO_DATASET(metadata).busco_dataset_output
+    .view { item -> "Channel contains: ${item}" }
+    .map{ tuple_meta, stdout_file  ->
+        def new_meta=tuple_meta + [ busco_dataset: tuple_meta.busco_dataset ? tuple_meta.busco_dataset.trim() : stdout_file.trim()]
+        return new_meta
+    //     [
+     //   gca: tuple_meta.gca,
+    //    dbname: tuple_meta.dbname,
+   //     species_id: tuple_meta.species_id,
+    //    busco_mode: tuple_meta.busco_mode,
+    //    busco_dataset: params.busco_dataset ? params.busco_dataset.trim() :stdout_file.trim()
+    //]
+}.view { meta -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}" }
+ch_versions_file = Channel.empty()
+ch_versions_file = ch_versions_file.mix(BUSCO_DATASET.out.versions_file)
     // Run Busco in genome mode
-    if (params.busco_mode.toLowerCase().contains('genome')) {
+    if (busco_mode.contains('genome')) {
         //def output_typeG = "genome"
-        def genomeData = FETCH_GENOME(dataset_db).output.genome_file_output
-        def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(genomeData).output.busco_genome_lineage_output
+        def genomeData = FETCH_GENOME(dataset_db).genome_file_output
+        .map { meta, fna_file ->
+        return tuple(meta, fna_file)
+       // return [updated_meta, fna_file]
+    }.view { meta,fna_file -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}, file=${fna_file}" }
+        ch_versions_file = ch_versions_file.mix(FETCH_GENOME.out.versions_file)
+        def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(genomeData).busco_genome_lineage_output
+        ch_versions_file = ch_versions_file.mix(BUSCO_GENOME_LINEAGE.out.versions_file)
         BUSCO_CORE_METAKEYS_GENOME(buscoGenomeOutput)
+        ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS_GENOME.out.versions_file)
         //if(params.apply_busco_metakeys){
             
         //}
     }
     
     // Run Busco in protein mode
-    if (params.busco_mode.toLowerCase().contains('protein')) {
+    if (busco_mode.contains('protein')) {
         //def output_typeP = "protein"
-        def proteinData = FETCH_PROTEINS(dataset_db).output.protein_file_output
-        def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(proteinData).output.busco_protein_lineage_output
+        def proteinData = FETCH_PROTEINS(dataset_db).protein_file_output
+         ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
+        def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(proteinData).busco_protein_lineage_output
+         ch_versions_file = ch_versions_file.mix(BUSCO_PROTEIN_LINEAGE.out.versions_file)
         BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinOutput)
+         ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS_PROTEIN.out.versions_file)
         //def (buscoProteinSummaryOutput) = BUSCO_PROTEIN_OUTPUT(output_typeP, buscoProteinOutput)
         //if (copyToFtp) {
         //    COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)
@@ -126,6 +160,8 @@ workflow RUN_BUSCO{
         //}
 
     }
+    emit:
+    versions = ch_versions_file
 }
 
 

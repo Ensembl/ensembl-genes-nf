@@ -25,6 +25,7 @@ nextflow.enable.dsl=2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+include { DB_METADATA } from '../modules/db_metadata.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 include { OMAMER_HOG } from '../modules/omamer_hog.nf'
 include { OMARK } from '../modules/omark.nf'
@@ -43,37 +44,49 @@ workflow RUN_OMARK{
     csvFile
 
     main:
-    // Validate required parameters
-    if (params.fetch == null) {
-        error "params.fetch must be defined as true or false"
-    }
+    ch_versions_file = Channel.empty()
     // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
-    def    data = Channel.fromPath(csvFile, type: 'file', checkIfExists: true)
+    def  data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> 
-                    [gca:row.get('gca'), 
-                    core:row.get('core'),
-                    species_id:row.get('species_id')
+                    [gca:'UNKNOWN',
+                    taxon_id:'UNKNOWN',
+                    dbname:row.get('dbname'),
+                    species_id:row.get('species_id')?row.get('species_id'):1,
+                    protein_file:row.get('protein_file')
+
                     ]
                     }
-        def db_meta=data
+        def metadata = DB_METADATA(data).metadata
+        .map { meta, metadata_file ->
+            def lines = metadata_file.text.readLines()
+            def new_taxon = lines[0].split('=')[1]
+            def new_gca = lines[1].split('=')[1]
+            def production_name = lines[2].split('=')[1]
+            def updated_meta = meta + [taxon_id: new_taxon, gca: new_gca, production_species: production_name]
+            updated_meta
+        }                    
+        //def db_meta=data
         // MODULE: Get canonical protein from db
         // 
-        def proteinData = FETCH_PROTEINS (db_meta).output.protein_file_output
+        //def proteinData = FETCH_PROTEINS (db_meta).output.protein_file_output
+        def proteinData = FETCH_PROTEINS(metadata).protein_file_output
+         ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
         //
         // MODULE: Get orthologous groups from Omamer db 
         //
-        def omamerData = OMAMER_HOG(proteinData).output.omamer_hog_output
+        def omamerData = OMAMER_HOG(proteinData).omamer_hog_output
+        ch_versions_file = ch_versions_file.mix(OMAMER_HOG.out.versions_file)
         //
         // MODULE: Run Omark
         //        
-        OMARK (omamerData).output.omark_output
-
+        OMARK (omamerData)
+        ch_versions_file = ch_versions_file.mix(OMARK.out.versions_file)
         //def (omarkSummaryOutput) = OMARK_OUTPUT(omarkOutput)
         //if (params.copyToFtp) {
         //    COPY_OMARK_OUTPUT(omarkSummaryOutput)
         //}
-
+    emit:
+    versions = ch_versions_file
 }
-
 
