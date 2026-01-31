@@ -22,7 +22,7 @@ from typing import Dict, Optional, Union
 import pymysql
 
 
-def parse_busco_file(# pylint: disable=too-many-locals, too-many-statements
+def parse_busco_file(  # pylint: disable=too-many-locals, too-many-statements
     file_path: str,
 ) -> Dict[str, Union[str, int]]:
     """
@@ -44,30 +44,18 @@ def parse_busco_file(# pylint: disable=too-many-locals, too-many-statements
         content = file.read()
 
     # Define regular expressions to match the relevant numbers
-    version_pattern: Optional[re.Match[str]] = re.search(
-        r"BUSCO version is: ((\d+\.\d+.\d+))", content
-    )
-    dataset_pattern: Optional[re.Match[str]] = re.search(
-        r"The lineage dataset is: ([\w_]+)", content
-    )
-    mode_pattern: Optional[re.Match[str]] = re.search(
-        r"BUSCO was run in mode: ([\w_]+)", content
-    )
-    completeness_pattern: Optional[re.Match[str]] = re.search(
-        r"(\d+)\s+Complete BUSCOs \(C\)", content
-    )
+    version_pattern: Optional[re.Match[str]] = re.search(r"BUSCO version is: ((\d+\.\d+.\d+))", content)
+    dataset_pattern: Optional[re.Match[str]] = re.search(r"The lineage dataset is: ([\w_]+)", content)
+    mode_pattern: Optional[re.Match[str]] = re.search(r"BUSCO was run in mode: ([\w_]+)", content)
+    completeness_pattern: Optional[re.Match[str]] = re.search(r"(\d+)\s+Complete BUSCOs \(C\)", content)
     single_copy_pattern: Optional[re.Match[str]] = re.search(
         r"(\d+)\s+Complete and single-copy BUSCOs \(S\)", content
     )
     duplicates_pattern: Optional[re.Match[str]] = re.search(
         r"(\d+)\s+Complete and duplicated BUSCOs \(D\)", content
     )
-    fragmented_pattern: Optional[re.Match[str]] = re.search(
-        r"(\d+)\s+Fragmented BUSCOs \(F\)", content
-    )
-    missing_pattern: Optional[re.Match[str]] = re.search(
-        r"(\d+)\s+Missing BUSCOs \(M\)", content
-    )
+    fragmented_pattern: Optional[re.Match[str]] = re.search(r"(\d+)\s+Fragmented BUSCOs \(F\)", content)
+    missing_pattern: Optional[re.Match[str]] = re.search(r"(\d+)\s+Missing BUSCOs \(M\)", content)
 
     # Initialize mode_match as None or str
     mode_match: Optional[str] = None
@@ -270,9 +258,7 @@ def main():
     """
 
     # Set up argument parser
-    parser = argparse.ArgumentParser(
-        description="Parse a BUSCO result file and generate JSON output."
-    )
+    parser = argparse.ArgumentParser(description="Parse a BUSCO result file and generate JSON output.")
     parser.add_argument("-file", type=str, help="Path to the BUSCO result file")
     parser.add_argument("-db", type=str, help="Core db")
     parser.add_argument(
@@ -291,16 +277,12 @@ def main():
     parser.add_argument("-port", type=str, help="Server port")
     parser.add_argument("-user", type=str, help="Db user with writable permission")
     parser.add_argument("-password", type=str, help="Server password")
-    parser.add_argument(
-        "-species_id", type=str, help="Species id to use in the meta table", default="1"
-    )
+    parser.add_argument("-species_id", type=str, help="Species id to use in the meta table", default="1")
     # Parse arguments
     args = parser.parse_args()
     if args.file:
         # Process the single file and write to JSON and SQL
-        sql_patches = process_busco_file(
-            args.file, args.db, args.output_dir, args.species_id
-        )
+        sql_patches = process_busco_file(args.file, args.db, args.output_dir, args.species_id)
         with open(Path(args.output_dir) / f"{args.db}.sql", "a", encoding="utf-8") as f:
             f.write(sql_patches)
 
@@ -311,16 +293,11 @@ def main():
         with open(Path(args.output_dir) / f"{args.db}.sql", "a", encoding="utf-8") as f:
             for file in busco_files:
                 print(f"Processing file: {file}")
-                sql_patches = process_busco_file(
-                    file, args.db, args.output_dir, args.species_id
-                )
+                sql_patches = process_busco_file(file, args.db, args.output_dir, args.species_id)
                 f.write(sql_patches)
     if args.run_query == "true":
-        execute_sql_patches(
-            args.db, sql_patches, args.host, args.user, args.password, int(args.port)
-        )
+        execute_sql_patches(args.db, sql_patches, args.host, args.user, args.password, int(args.port))
 
 
 if __name__ == "__main__":
     main()
-

@@ -60,14 +60,14 @@ def evaluate_busco(genome_json_path: str, protein_json_path: str) -> bool:
     try:
         with open(genome_json_path) as g_file:
             genome_data = json.load(g_file)
-    except Exception as e: # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         print(f"Failed to load genome BUSCO JSON: {e}")
         return False
 
     try:
         with open(protein_json_path) as p_file:
             protein_data = json.load(p_file)
-    except Exception as e: # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         print(f"Failed to load protein BUSCO JSON: {e}")
         return False
 
@@ -93,6 +93,7 @@ def evaluate_busco(genome_json_path: str, protein_json_path: str) -> bool:
     print(f"❌ Protein BUSCO completeness {protein_busco_score}% is too low")
     return False
 
+
 def main():
     """Main function to parse command line arguments and evaluate BUSCO scores."""
     parser = argparse.ArgumentParser(description="Evaluate BUSCO scores from genome and protein JSON files.")
@@ -101,13 +102,13 @@ def main():
 
     args = parser.parse_args()
 
-    try: # pylint: disable=broad-except
+    try:  # pylint: disable=broad-except
         result = evaluate_busco(args.genome, args.protein)
         # print("✅ Result: Significant difference" if result else "❌ Result: No significant difference")
         print(result)
-    except Exception as e: # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         print(f"ERROR: {e}")
-        exit(1) # pylint: disable=consider-using-sys-exit
+        exit(1)  # pylint: disable=consider-using-sys-exit
 
 
 if __name__ == "__main__":

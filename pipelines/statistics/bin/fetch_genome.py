@@ -1,4 +1,19 @@
 #!/usr/bin/env python3
+"""Fetch genome fasta files from NCBI or ENA based on GCA accession."""
+# See the NOTICE file distributed with this work for additional information
+# regarding copyright ownership.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import argparse
 import os
 import gzip
@@ -8,7 +23,16 @@ import zipfile
 import shutil
 from urllib.error import HTTPError
 
+
 def download_and_extract(url: str, output_dir: str) -> bool:
+    """Download genome zip from NCBI and extract .fna files to output_dir.
+    Returns True if successful, False otherwise.
+    Inputs:
+        url: URL to download the genome zip.
+        output_dir: Directory to extract .fna files to.
+    Returns:
+        True if download and extraction were successful, False otherwise.
+    """
     zip_path = os.path.join(output_dir, "genome.zip")
 
     req = urllib.request.Request(url, headers={"Accept": "application/zip"})
@@ -22,12 +46,9 @@ def download_and_extract(url: str, output_dir: str) -> bool:
 
         for f in fna_files:
             z.extract(f, output_dir)
-            shutil.move(
-                os.path.join(output_dir, f),
-                os.path.join(output_dir, os.path.basename(f))
-            )
+            shutil.move(os.path.join(output_dir, f), os.path.join(output_dir, os.path.basename(f)))
             # Track top-level extracted directory (e.g. ncbi_dataset)
-            #extracted_roots.add(f.split(os.sep)[0])
+            # extracted_roots.add(f.split(os.sep)[0])
             extracted_roots.add(f.split("/")[0])
 
         # Cleanup extracted directory trees
@@ -38,13 +59,29 @@ def download_and_extract(url: str, output_dir: str) -> bool:
 
     os.remove(zip_path)
     return True
+
+
 def ena_assembly_path(ena_base: str, gca: str) -> str:
+    """Construct ENA assembly path from base URL and GCA accession.
+    Inputs:
+        ena_base: Base URL for ENA assembly FTP.
+        gca: GCA accession string.
+    Returns:
+        Full URL path to the assembly directory."""
     acc = gca.replace("GCA_", "")
-    return (
-        f"{ena_base}/GCA/"
-        f"{acc[0:3]}/{acc[3:6]}/{acc[6:9]}/{gca}"
-    )
+    return f"{ena_base}/GCA/" f"{acc[0:3]}/{acc[3:6]}/{acc[6:9]}/{gca}"
+
+
 def download_from_ena(ena_base: str, gca: str, output_dir: str) -> bool:
+    """Download genome fasta from ENA for given GCA accession.
+    Returns True if successful, False otherwise.
+    Inputs:
+        ena_base: Base URL for ENA assembly FTP.
+        gca: GCA accession string.
+        output_dir: Directory to save the downloaded fasta.
+    Returns:
+        True if download and extraction were successful, False otherwise.
+    """
     try:
         base_url = ena_assembly_path(ena_base, gca)
         listing_url = f"{base_url}/"
@@ -54,9 +91,7 @@ def download_from_ena(ena_base: str, gca: str, output_dir: str) -> bool:
 
         # Find genomic fasta
         matches = [
-            line.split('"')[1]
-            for line in html.splitlines()
-            if ".fna.gz" in line and "genomic" in line
+            line.split('"')[1] for line in html.splitlines() if ".fna.gz" in line and "genomic" in line
         ]
 
         if not matches:
@@ -80,25 +115,18 @@ def download_from_ena(ena_base: str, gca: str, output_dir: str) -> bool:
 
     except HTTPError:
         return False
-    
+
 
 def main():
+    """Main function to parse arguments and download genome."""
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="fetch_genome.py 1.0.0"
-    )
+    parser.add_argument("--version", action="version", version="fetch_genome.py 1.0.0")
     parser.add_argument("--gca", required=True)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument(
-        "--ncbi_base",
-        default="https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession"
+        "--ncbi_base", default="https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession"
     )
-    parser.add_argument(
-        "--ena_base",
-        default="https://ftp.ebi.ac.uk/pub/databases/ena/assembly"
-    )
+    parser.add_argument("--ena_base", default="https://ftp.ebi.ac.uk/pub/databases/ena/assembly")
 
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
@@ -125,4 +153,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

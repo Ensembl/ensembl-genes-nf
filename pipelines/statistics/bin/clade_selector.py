@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# pylint: disable=missing-module-docstring
+"""Clade selector script to find closest matching clade from NCBI taxonomy datasets."""
 # See the NOTICE file distributed with this work for additional information
 # regarding copyright ownership.
 #
@@ -18,63 +18,55 @@
 import urllib.request
 import argparse
 from pathlib import Path
-from typing import Any, List
-#import requests
+from typing import Any, Dict, Optional
 import json
 
-def get_dataset_match(ncbi_url: str, dataset: list) -> List[Any]:
-    """
-    Get taxonomy tree from ncbi taxonomy datasets and find the closest match with the input list
 
+def get_dataset_match(ncbi_url: str, dataset: Dict[str, Any]) -> Optional[Any]:
+    """
+    Get taxonomy tree from ncbi taxonomy datasets and find the closest match with the input dict
 
     Args:
         ncbi_url (str): Ncbi dataset url
-        dataset (list): list of data to match
+        dataset (Dict[str, Any]): mapping taxid -> value
 
     Returns:
-        str: closest match in the dataset list
+        Optional[Any]: closest match in the dataset dict
 
     Raises:
         requests.HTTPError: If an HTTP error occurs during the API request.
         Exception: If any other error occurs during the function's operation.
 
     """
-
+    matched_value: Optional[Any] = None
     try:
         # Fetch data from the URL
         with urllib.request.urlopen(ncbi_url, timeout=10) as response:
             # Read the response and decode it
-            data = response.read().decode('utf-8')
+            data = response.read().decode("utf-8")
             # Parse the JSON data
             json_data = json.loads(data)
 
             # Extract classification names
             parents = json_data["reports"][0]["taxonomy"]["parents"]
-            # Variable to store the matched result
-            matched_value = None
 
             # Match parents against the dictionary
             for parent_id in reversed(parents):
                 parent_id_str = str(parent_id)
                 if parent_id_str in dataset:
                     matched_value = dataset[parent_id_str]
-                    break       
+                    break
     except urllib.error.URLError as url_err:
         print(f"URL error occurred: {url_err}")
     except json.JSONDecodeError as json_err:
         print(f"Error decoding JSON: {json_err}")
-    #print (matched_value)    
     return matched_value
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Clade selector arguments")
-    parser.add_argument(
-        "--version",
-        action="version",
-        version="fetch_genome.py 1.0.0"
-    )
+    parser.add_argument("--version", action="version", version="fetch_genome.py 1.0.0")
     parser.add_argument(
         "-d",
         "--datasets",
@@ -100,7 +92,7 @@ def main():
     ncbi_url = f"{args.ncbi_url}/{args.taxon_id}/dataset_report"
 
     with open(Path(args.datasets), "r") as file:
-        #datasets = [line[: max(line.find(" "), 0) or None] for line in file]
+        # datasets = [line[: max(line.find(" "), 0) or None] for line in file]
         datasets = json.load(file)
     clade_match = get_dataset_match(ncbi_url, datasets)
 
@@ -108,7 +100,7 @@ def main():
         raise ValueError("No match found")
 
     if args.output == "stdout":  # pylint:disable=no-else-return
-        #print(clade_match[0].strip("\n"))
+        # print(clade_match[0].strip("\n"))
         print(clade_match)
     else:
         with open(args.output, "w+") as output:
@@ -116,8 +108,6 @@ def main():
                 output.write(clade_match[1])
             else:
                 output.write(clade_match[0])
-
-    return None
 
 
 if __name__ == "__main__":
