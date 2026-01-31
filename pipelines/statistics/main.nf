@@ -49,7 +49,7 @@ def deleteRecursively(Path path) {
             deleteRecursively(subPath)
         }
     }
-    java.nio.file.Files.delete(path)
+    java.nio.file.Files.deleteIfExists(path)
 }
 
 workflow {
@@ -58,7 +58,7 @@ workflow {
     validateParameters()
     // Print summary of supplied parameters
     log.info paramsSummaryLog(workflow)
-            if (params.run_busco_core) {
+            if (params.run_busco_core || params.run_busco_ncbi) {
         RUN_BUSCO(params.csvFile)
         }
         if (params.run_omark) {
@@ -67,29 +67,54 @@ workflow {
         if (params.run_ensembl_stats || params.run_ensembl_beta_metakeys) {
         RUN_ENSEMBL_STATS(params.csvFile)
         }
-
-
+    // THEN: Collect version outputs
+    def busco_versions = params.run_busco_core || params.run_busco_ncbi ? RUN_BUSCO.out.versions : Channel.empty()
+    def omark_versions = params.run_omark ? RUN_OMARK.out.versions : Channel.empty()
+    def stats_versions = params.run_ensembl_stats ? RUN_ENSEMBL_STATS.out.versions : Channel.empty()
+    
+    // Mix all versions
+    ch_all_versions = Channel.empty()
+        .mix(busco_versions)
+        .mix(omark_versions)
+        .mix(stats_versions)
+// Collect ALL versions from ALL subworkflows
+    //ch_all_versions = Channel.empty()
+      //  .mix(RUN_BUSCO.out.versions)
+//        .mix(OTHER_WORKFLOW.out.versions)
+// Merge into single file and publish
+    COLLECT_SOFTWARE_VERSIONS(ch_all_versions.collect())
+}
 
 workflow.onComplete {
     log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
     log.info  "Execution status: ${workflow.success ? 'Successful' : 'Failed'}"
-    if (params.cleanCache) {    
+    if (params.cleanCache) {
     try {
-        def outDir = java.nio.file.Paths.get(params.cacheDir)
-        java.nio.file.Files.newDirectoryStream(outDir, "*").each { path ->
-        if (!path.toString().endsWith(".gz")) {
+        def cleanDir = java.nio.file.Paths.get(params.cacheDir)
+        java.nio.file.Files.newDirectoryStream(cleanDir,'*').each { Path path ->
             deleteRecursively(path)
-            }
         }
         log.info "Cleaning process completed successfully."
     } catch (Exception e) {
-        log.error "Exception occurred while executing cleaning command: ${e.message}", e
+       log.error "Exception occurred while executing cleaning command: ${e.message}", e
     }
     }
 }
-
 workflow.onError {
     println "Error: Pipeline execution stopped with the following message: ${workflow.errorMessage}"
 }
-
+// Single process to merge all versions
+process COLLECT_SOFTWARE_VERSIONS {
+    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
+    
+    input:
+    path 'versions_*.yml'
+    
+    output:
+    path "software_versions.yml"
+    
+    script:
+    """
+    cat versions_*.yml > software_versions.yml
+    """
 }
