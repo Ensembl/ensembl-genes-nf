@@ -71,6 +71,11 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Clade selector arguments")
     parser.add_argument(
+        "--version",
+        action="version",
+        version="fetch_genome.py 1.0.0"
+    )
+    parser.add_argument(
         "-d",
         "--datasets",
         type=str,

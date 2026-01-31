@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # See the NOTICE file distributed with this work for additional information
 # regarding copyright ownership.
 #
