@@ -33,7 +33,7 @@ include { POPULATE_DB as ADD_BETA_UPDATES_ON_CORE  } from '../modules/populate_d
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN MAIN WORKFLOW
+    RUN ENSEMBL STATISTICS WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
@@ -43,7 +43,7 @@ workflow RUN_ENSEMBL_STATS{
 
     main:
     // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
-        def data = Channel.fromPath(csvFile, type: 'file', checkIfExists: true)
+        def data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> 
                     [gca:'UNKNOWN',
@@ -52,7 +52,7 @@ workflow RUN_ENSEMBL_STATS{
                     species_id:row.get('species_id')?row.get('species_id'):1
                     ]
                     }
-        ch_versions_file = Channel.empty()            
+        ch_versions_file = channel.empty()            
         def metadata = DB_METADATA(data).metadata
         .map { meta, metadata_file ->
             def lines = metadata_file.text.readLines()
@@ -72,16 +72,15 @@ workflow RUN_ENSEMBL_STATS{
         if(params.run_ensembl_beta_metakeys){
         def betaMetakeys = RUN_BETA_METAKEYS(metadata).ensembl_meta_output
         ch_versions_file = ch_versions_file.mix(RUN_BETA_METAKEYS.out.versions_file)
-        ch_versions_file.view { "After RUN_BETA_METAKEYS mix: $it" }
+        ch_versions_file.view { item -> "After RUN_BETA_METAKEYS mix: $item" }
         ADD_BETA_UPDATES_ON_CORE(betaMetakeys)
         ch_versions_file = ch_versions_file.mix(ADD_BETA_UPDATES_ON_CORE.out.versions_file)
-        ch_versions_file.view { "After ADD_BETA_UPDATES_ON_CORE mix: $it" }
+        ch_versions_file.view { item -> "After ADD_BETA_UPDATES_ON_CORE mix: $item" }
             }
-            // Collect all versions to ensure they're ready before emitting
-ch_versions_file = ch_versions_file.collect()
-    emit:
-    versions = ch_versions_file
-
-        }
+        // Collect all versions to ensure they're ready before emitting
+        ch_versions_file = ch_versions_file.collect()
+        emit:
+        versions = ch_versions_file
+}
 
 

@@ -48,12 +48,10 @@ workflow RUN_BUSCO{
     csvFile
 
     main:
-     def data 
-    //busco_script = file("${projectDir}/bin/busco_metakeys_patch.py")
+    def data 
     def busco_mode = params.busco_mode == 'both' ? ['protein', 'genome'] : [params.busco_mode]
     if(params.run_busco_ncbi && !params.run_busco_core){
         busco_mode = 'genome'
-        // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
         data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> 
@@ -67,14 +65,9 @@ workflow RUN_BUSCO{
                     protein_file:row.get('protein_file')
                     ]
                     }
-                
-        
     }
     else if(params.run_busco_core){
-//        def busco_mode = params.busco_mode == 'both' ? ['protein', 'genome'] : [params.busco_mode]
-        //def busco_mode = params.busco_mode
-        // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
-        data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
+        data = channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> [
                     gca:'UNKNOWN', 
@@ -82,22 +75,16 @@ workflow RUN_BUSCO{
                     dbname:row.get('dbname'), 
                     species_id:row.get('species_id') ? row.get('species_id'):1,
                     busco_mode:busco_mode,
-                                        busco_dataset:row.get('busco_dataset'),
+                    busco_dataset:row.get('busco_dataset'),
                     genome_file:row.get('genome_file'),
                     protein_file:row.get('protein_file')]}
-                
-        
     }
     else{
         error "At least one of the parameters params.run_busco_ncbi or params.run_busco_core must be set to true"
     }
-
-    // Get the closest Busco dataset from the taxonomy classification stored in db meta table
-    //def db_meta1=db_meta
-    //db_meta1.flatten().view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.core}, Species ID: ${d.species_id}" }
-    //def buscoDataset = params.busco_dataset ? params.busco_dataset.trim() : meta.busco_dataset.trim() 
-    data.view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.dbname}, Species ID: ${d.species_id}" }
     
+    data.view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, Core name: ${d.dbname}, Species ID: ${d.species_id}" }
+    // Get metadata from the database
     def metadata = DB_METADATA(data).metadata
     .map { meta, metadata_file ->
             def lines = metadata_file.text.readLines()
@@ -107,58 +94,38 @@ workflow RUN_BUSCO{
             def updated_meta = meta + [taxon_id: new_taxon, gca: new_gca, production_species: production_name]
             updated_meta
         }
+    ch_versions_file = channel.empty()
+    ch_versions_file = ch_versions_file.mix(DB_METADATA.out.versions_file)
+    // Get the closest Busco dataset from the taxonomy classification stored in db meta table
 
     def dataset_db = BUSCO_DATASET(metadata).busco_dataset_output
-    .view { item -> "Channel contains: ${item}" }
-    .map{ tuple_meta, stdout_file  ->
-        def new_meta=tuple_meta + [ busco_dataset: tuple_meta.busco_dataset ? tuple_meta.busco_dataset.trim() : stdout_file.trim()]
-        return new_meta
-    //     [
-     //   gca: tuple_meta.gca,
-    //    dbname: tuple_meta.dbname,
-   //     species_id: tuple_meta.species_id,
-    //    busco_mode: tuple_meta.busco_mode,
-    //    busco_dataset: params.busco_dataset ? params.busco_dataset.trim() :stdout_file.trim()
-    //]
-}.view { meta -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}" }
-ch_versions_file = Channel.empty()
-ch_versions_file = ch_versions_file.mix(BUSCO_DATASET.out.versions_file)
+        .view { item -> "Channel contains: ${item}" }
+        .map{ tuple_meta, stdout_file  ->
+            def new_meta=tuple_meta + [ busco_dataset: tuple_meta.busco_dataset ? tuple_meta.busco_dataset.trim() : stdout_file.trim()]
+            return new_meta
+        }.view { meta -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}" }
+    ch_versions_file = ch_versions_file.mix(BUSCO_DATASET.out.versions_file)
     // Run Busco in genome mode
     if (busco_mode.contains('genome')) {
-        //def output_typeG = "genome"
         def genomeData = FETCH_GENOME(dataset_db).genome_file_output
         .map { meta, fna_file ->
-        return tuple(meta, fna_file)
-       // return [updated_meta, fna_file]
-    }.view { meta,fna_file -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}, file=${fna_file}" }
+            return tuple(meta, fna_file)
+        }.view { meta,fna_file -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}, file=${fna_file}" }
         ch_versions_file = ch_versions_file.mix(FETCH_GENOME.out.versions_file)
         def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(genomeData).busco_genome_lineage_output
         ch_versions_file = ch_versions_file.mix(BUSCO_GENOME_LINEAGE.out.versions_file)
         BUSCO_CORE_METAKEYS_GENOME(buscoGenomeOutput)
         ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS_GENOME.out.versions_file)
-        //if(params.apply_busco_metakeys){
-            
-        //}
     }
     
     // Run Busco in protein mode
     if (busco_mode.contains('protein')) {
-        //def output_typeP = "protein"
         def proteinData = FETCH_PROTEINS(dataset_db).protein_file_output
-         ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
+        ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
         def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(proteinData).busco_protein_lineage_output
-         ch_versions_file = ch_versions_file.mix(BUSCO_PROTEIN_LINEAGE.out.versions_file)
+        ch_versions_file = ch_versions_file.mix(BUSCO_PROTEIN_LINEAGE.out.versions_file)
         BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinOutput)
-         ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS_PROTEIN.out.versions_file)
-        //def (buscoProteinSummaryOutput) = BUSCO_PROTEIN_OUTPUT(output_typeP, buscoProteinOutput)
-        //if (copyToFtp) {
-        //    COPY_PROTEIN_OUTPUT(buscoProteinSummaryOutput)
-        //}
-        //def buscoProteinSummaryOutput1=buscoProteinSummaryOutput
-        //if(params.apply_busco_metakeys){
-            
-        //}
-
+        ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS_PROTEIN.out.versions_file)
     }
     emit:
     versions = ch_versions_file
