@@ -23,14 +23,11 @@ process OMARK {
     publishDir "${params.outdir}/$meta.gca", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 15
-    resourceMonitor = false
 
     input:
-    //tuple val(gca), val(db), path(omamer_file), val(species_id)
     tuple val(meta), path(omamer_file)
 
     output:
-    //tuple val(gca), val(db), val(publish_dir), path("omark_output/*.txt"), path("omark_output/*"), val(species_id)
     tuple val(meta), path("omark_output/*.txt"), path("omark_output/*"), emit: omark_output
     path "versions.yml", emit: versions_file
 

@@ -22,10 +22,8 @@ process OMAMER_HOG {
         tag "$meta.gca"
         storeDir "${params.cacheDir}/$meta.gca/omamer/"
         afterScript "sleep $params.files_latency"  // Needed because of file system latency
-        resourceMonitor = false
 
         input:
-        //tuple val(gca), val(dbname), path(translation_file), val(species_id)
         tuple val(meta), path(translation_file)
         
         output:
@@ -42,8 +40,8 @@ process OMAMER_HOG {
         OMAMER_VERSION=\$(pip show omamer | grep -i '^Version:' | awk '{print \$2}')
 
         cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        omamer: \$OMAMER_VERSION
-    END_VERSIONS
+        "${task.process}":
+            omamer: \$OMAMER_VERSION
+        END_VERSIONS
         """
 }
