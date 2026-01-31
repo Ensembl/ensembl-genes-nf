@@ -18,9 +18,10 @@ limitations under the License.
 
 
 process FETCH_PROTEINS {
-    tag "$meta.gca:protein"
+    tag "$meta.dbname:protein"
     label 'fetch_file'
-    storeDir "${params.cacheDir}/$meta.gca/fasta/"
+    publishDir "${params.cacheDir}/${meta.gca}/fasta", mode: 'copy', pattern: "*.fa"
+    publishDir "${params.cacheDir}/${meta.gca}/fasta", mode: 'copy', pattern: "versions.yml"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 20
 
@@ -30,12 +31,13 @@ process FETCH_PROTEINS {
 
     output:
     //tuple val(gca), val(dbname), path("*_translations.fa"),val(busco_dataset) , val(species_id)
-    tuple val(meta), path("*translations.fa"), emit: protein_file_output
+    tuple val(meta), path("*.fa"), emit: protein_file_output
     path "versions.yml", emit: versions_file
 
     script:
     translations_file = "translations.fa"
     """
+    if [[ ! -f "${meta.protein_file}" ]]; then
     perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
         -host ${params.host} \
         -port ${params.port} \
@@ -44,5 +46,13 @@ process FETCH_PROTEINS {
         -file $translations_file \
         --species_id ${meta.species_id} \
         ${params.dump_params}
+    else
+    ln -s ${meta.protein_file} ${translations_file}
+    fi
+    # Create versions file - simpler approach
+    PERL_VERSION=\$(perl --version | grep -oP 'v\\K[0-9.]+' | head -n1)
+    
+    echo '"FETCH_PROTEINS":' > versions.yml
+    echo "  perl: \$PERL_VERSION" >> versions.yml
     """
 }
