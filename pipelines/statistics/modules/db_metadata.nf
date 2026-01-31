@@ -1,0 +1,80 @@
+#!/usr/bin/env nextflow
+/*
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+process DB_METADATA {
+
+    label 'python'
+    tag "${meta.dbname}"
+
+    input:
+    //tuple val(gca),  val(dbname), val(species_id)
+    val meta
+
+    output:
+    tuple val(meta), path("metadata.txt"), emit: metadata
+    path "versions.yml", emit: versions_file
+
+    script:
+    """
+    # Debug output to stderr (won't interfere with stdout capture)
+    echo "DEBUG: meta.core=${meta.dbname}, meta.species_id=${meta.species_id}, meta.taxon_id=${meta.taxon_id}" >&2
+
+    if [[ "${meta.taxon_id}" == "UNKNOWN"  &&  "${meta.gca}" == "UNKNOWN" ]]; then
+        echo "DEBUG: Fetching taxon_id from database..." >&2
+        TAXON_ID=\$(utils.py \
+            --db ${meta.dbname} \
+            --key species.taxonomy_id \
+            --species-id ${meta.species_id} \
+            --host ${params.host} \
+            --port ${params.port} \
+            --user ${params.user_r})
+        echo "DEBUG: Found TAXON_ID=\$TAXON_ID" >&2
+        GCA=\$(utils.py \
+            --db ${meta.dbname} \
+            --key assembly.accession \
+            --species-id ${meta.species_id} \
+            --host ${params.host} \
+            --port ${params.port} \
+            --user ${params.user_r}
+            )
+        PRODUCTION_NAME=\$(utils.py \
+    --db ${meta.dbname} \
+    --key species.production_name \
+    --species-id ${meta.species_id} \
+    --host ${params.host} \
+    --port ${params.port} \
+    --user ${params.user_r}
+    )
+    else
+        GCA="${meta.gca}";
+        TAXON_ID="${meta.taxon_id}";
+        PRODUCTION_NAME="${meta.production_name}"
+        echo "DEBUG: Using provided TAXON_ID=\$TAXON_ID" >&2
+    fi
+    # Output metadata to file
+    echo "taxon_id=\$TAXON_ID" >> metadata.txt
+    echo "gca=\$GCA" >> metadata.txt
+    echo "production_name=\$PRODUCTION_NAME" >> metadata.txt
+    # Create versions file
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        utils.py: \$(utils.py --version 2>&1 | grep -oP 'version \\K[0-9.]+' || echo "unknown")
+        python: \$(python --version | sed 's/Python //g')
+    END_VERSIONS
+    """
+    }
