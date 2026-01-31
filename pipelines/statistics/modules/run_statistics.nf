@@ -30,16 +30,6 @@ process RUN_STATISTICS {
     path "versions.yml", emit: versions_file
 
     script:
-
-    
-    //PRODUCTION_NAME=\$(python utils.py \
-    //--db ${meta.core} \
-    //--key species.production_name \
-    //--species-id ${meta.species_id} \
-    //--host ${params.host} \
-    //--port ${params.port} \
-    //--user ${params.user_r}
-    //)
     """
     perl ${params.enscode}/ensembl-genes/src/perl/ensembl/genes/generate_species_homepage_stats.pl \
         -dbname ${meta.dbname} \
@@ -48,12 +38,10 @@ process RUN_STATISTICS {
         -production_name ${meta.production_name} \
         -output_dir core_statistics
     # Create versions file
-    
-     PERL_VERSION=\$(perl --version | grep -oP 'v\\K[0-9.]+' | head -n1)
+    PERL_VERSION=\$(perl --version | grep -oP 'v\\K[0-9.]+' | head -n1)
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         perl: \$PERL_VERSION
     END_VERSIONS
     """
-
 }

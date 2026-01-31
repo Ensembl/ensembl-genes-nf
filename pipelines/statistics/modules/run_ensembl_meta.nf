@@ -16,9 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 process RUN_ENSEMBL_META {
-
     label 'python'
     tag "$meta.gca"
     publishDir "${params.outdir}/$meta.gca", mode: 'copy'
@@ -26,21 +24,12 @@ process RUN_ENSEMBL_META {
 
     input:
     val(meta)
-    //tuple val(gca), val(dbname), val(species_id)
+
     output:
     tuple val(meta),path("*.sql"), emit: ensembl_meta_output
     path "versions.yml", emit: versions_file
-    //tuple val(gca), val(dbname), path("*.sql")
 
     script:
-    //PRODUCTION_NAME=\$(python utils.py \
-    //--db ${meta.core} \
-    //--key species.production_name \
-    //--species-id ${meta.species_id} \
-    //--host ${params.host} \
-    //--port ${params.port} \
-    //--user ${params.user_r}
-    //)
     """
     python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py \
     --output_dir core_statistics --db_name ${meta.dbname} \
