@@ -21,26 +21,18 @@ process BUSCO_GENOME_LINEAGE {
     label "busco"
     tag "$meta.gca:busco_genome"
     publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
-    //publishDir "${params.outdir}/${meta.gca}/busco_genome", mode: 'copy', pattern: "busco_genome/*.txt", saveAs: { filename -> filename.replaceAll("busco_genome/", "") }
     publishDir "${params.cacheDir}/${meta.gca}/busco_genome", mode: 'copy', pattern: "versions_busco_genome.yml"
-//    storeDir "${params.cacheDir}/$meta.gca/" 
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 10
-    resourceMonitor = false
 
     input:
-    //val(busco_dataset)
     tuple val(meta), path(genome_file)
-    //tuple val(gca), val(dbname), path(genome_file), val(busco_dataset), val(species_id)
 
     output:
-    //tuple val(gca), val(dbname), path("busco_genome/*.txt"), val(species_id)
     tuple val(meta), path("busco_genome/*.txt"), emit: busco_genome_lineage_output
     path "versions_busco_genome.yml", emit: versions_file
 
     script:
-    //def buscoDataset = params.busco_dataset ? params.busco_dataset.trim() : meta.busco_dataset.trim() 
-
     log.info("Selected BUSCO dataset: $meta.busco_dataset")
 
     """

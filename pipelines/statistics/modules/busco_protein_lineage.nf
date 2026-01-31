@@ -23,20 +23,15 @@ process BUSCO_PROTEIN_LINEAGE {
     publishDir "${params.outdir}/${meta.gca}", mode: 'copy', pattern: "versions_busco_protein.yml"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 10
-    resourceMonitor = false
 
     input:
-    // val(gca), val(dbname), path(translation_file), val(busco_dataset), val(species_id)
     tuple val(meta), path(translation_file)
 
     output:
-    //tuple val(gca), val(dbname), path("protein_output/*.txt"), val(species_id)
     tuple val(meta), path("busco_protein/*.txt"), emit: busco_protein_lineage_output
     path "versions_busco_protein.yml", emit: versions_file
 
     script:
-    //def buscoDataset = params.busco_dataset ? params.busco_dataset.trim() : busco_dataset.trim()
-
     log.info("Selected BUSCO dataset: $meta.busco_dataset")
 
     """
@@ -48,7 +43,7 @@ process BUSCO_PROTEIN_LINEAGE {
         --out busco_protein \
         --offline \
         --download_path ${params.download_path}
-       
+
     cat <<EOF > versions_busco_protein.yml
     BUSCO_PROTEIN_LINEAGE:
         busco: \$(busco --version 2>&1 | head -n1 | awk '{print \$2}')
