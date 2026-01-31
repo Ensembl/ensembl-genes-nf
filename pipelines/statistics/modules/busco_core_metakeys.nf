@@ -20,14 +20,14 @@ process BUSCO_CORE_METAKEYS {
 
     label 'python'
     tag "$meta.gca"
-    //publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
-    storeDir "${params.cacheDir}/$meta.gca/" 
+    publishDir "${params.outdir}/$meta.gca", mode: 'copy'
+    //storeDir "${params.outdir}/$meta.gca/" 
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
     //val(busco_script)
     //tuple val(gca), val(dbname),path(summary_file), val(species_id)
-    tuple val(meta), path(summary_file), val(output_dir)
+    tuple val(meta), path(summary_file)
     output:
     path "versions.yml", emit: versions_file, optional: true
     
@@ -40,10 +40,16 @@ process BUSCO_CORE_METAKEYS {
 
     busco_metakeys_patch.py \
     -db ${meta.dbname} -file ${summary_file} \
-    -output_dir "${output_dir}/" -host ${params.host} \
+    -output_dir "${params.outdir}/$meta.gca/"  -host ${params.host} \
     -port ${params.port} -user ${params.user}  \
     -password ${params.password} -species_id ${meta.species_id} \
     -run_query true
+    
+        # Create versions file
+    PYTHON_VERSION=\$(python --version 2>&1 | awk '{print \$2}')
+
+    echo '"BUSCO_CORE_METAKEYS":' > versions.yml
+    echo "  python: \$PYTHON_VERSION" >> versions.yml
     """
 }
 

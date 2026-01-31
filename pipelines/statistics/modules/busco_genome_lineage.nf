@@ -1,3 +1,4 @@
+#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -15,14 +16,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// run Busco in genome mode 
 
 process BUSCO_GENOME_LINEAGE {
     label "busco"
     tag "$meta.gca:busco_genome"
-    storeDir "${params.cacheDir}/$meta.gca/busco_genome/" 
+    publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
+    //publishDir "${params.outdir}/${meta.gca}/busco_genome", mode: 'copy', pattern: "busco_genome/*.txt", saveAs: { filename -> filename.replaceAll("busco_genome/", "") }
+    publishDir "${params.cacheDir}/${meta.gca}/busco_genome", mode: 'copy', pattern: "versions_busco_genome.yml"
+//    storeDir "${params.cacheDir}/$meta.gca/" 
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 10
+    resourceMonitor = false
 
     input:
     //val(busco_dataset)
@@ -30,9 +34,9 @@ process BUSCO_GENOME_LINEAGE {
     //tuple val(gca), val(dbname), path(genome_file), val(busco_dataset), val(species_id)
 
     output:
-    //tuple val(gca), val(dbname), path("genome_output/*.txt"), val(species_id)
-    tuple val(meta), path("genome_output/*.txt"), val("${params.cacheDir}/$meta.gca/busco_genome/"), emit: busco_genome_lineage_output
-    path "versions.yml", emit: versions_file
+    //tuple val(gca), val(dbname), path("busco_genome/*.txt"), val(species_id)
+    tuple val(meta), path("busco_genome/*.txt"), emit: busco_genome_lineage_output
+    path "versions_busco_genome.yml", emit: versions_file
 
     script:
     //def buscoDataset = params.busco_dataset ? params.busco_dataset.trim() : meta.busco_dataset.trim() 
@@ -45,14 +49,14 @@ process BUSCO_GENOME_LINEAGE {
     --mode genome \
     -l ${meta.busco_dataset} \
     -c ${task.cpus} \
-    --out genome_output \
+    --out busco_genome \
     --offline \
     --download_path ${params.download_path}
 
 
-    cat <<EOF > versions.yml
+    cat <<EOF > versions_busco_genome.yml
     BUSCO_GENOME_LINEAGE:
-    busco: \$(busco --version 2>&1 | head -n1 | awk '{print \$2}')
+        busco: \$(busco --version 2>&1 | head -n1 | awk '{print \$2}')
     EOF
     """
 }
