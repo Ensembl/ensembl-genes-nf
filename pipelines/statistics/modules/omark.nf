@@ -20,9 +20,10 @@ process OMARK {
     label 'omamer'
     tag "$meta.gca"
 
-    storeDir "${params.cacheDir}/$meta.gca/omark_output"
+    publishDir "${params.outdir}/$meta.gca", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 15
+    resourceMonitor = false
 
     input:
     //tuple val(gca), val(db), path(omamer_file), val(species_id)
@@ -36,5 +37,12 @@ process OMARK {
     script:
     """
     omark -f ${omamer_file} -d ${params.omamer_database} -o omark_output
+    # Create versions file
+    # OMARK_VERSION=\$(omark --version 2>&1 | grep -oP 'OMark\\s+v?\\K[0-9.]+' || echo "unknown")
+    OMARK_VERSION=\$(pip show omark | grep -i '^Version:' | awk '{print \$2}')    
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        omark: \$OMARK_VERSION
+    END_VERSIONS
     """
 }

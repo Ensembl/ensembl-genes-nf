@@ -22,6 +22,8 @@ process OMAMER_HOG {
         tag "$meta.gca"
         storeDir "${params.cacheDir}/$meta.gca/omamer/"
         afterScript "sleep $params.files_latency"  // Needed because of file system latency
+        resourceMonitor = false
+
         input:
         //tuple val(gca), val(dbname), path(translation_file), val(species_id)
         tuple val(meta), path(translation_file)
@@ -32,6 +34,16 @@ process OMAMER_HOG {
 
         script:
         """
-        omamer search --db ${params.omamer_database} --query ${translation_file} --score sensitive --out proteins.omamer 
+        omamer search --db ${params.omamer_database} --query ${translation_file}  --out proteins.omamer 
+
+        # Create versions file
+        #OMAMER_VERSION=\$(omamer --version 2>&1 | grep -oP 'OMAmer\\s+v?\\K[0-9.]+' || echo "unknown")
+    
+        OMAMER_VERSION=\$(pip show omamer | grep -i '^Version:' | awk '{print \$2}')
+
+        cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        omamer: \$OMAMER_VERSION
+    END_VERSIONS
         """
 }
