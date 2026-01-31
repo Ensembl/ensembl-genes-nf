@@ -18,33 +18,31 @@ limitations under the License.
 
 
 process FETCH_GENOME {
-  tag "$meta.gca:genome"
-  label 'fetch_file'
-  label 'python'
-  //publishDir "${params.cacheDir}/${meta.gca}/ncbi_dataset", mode: 'copy', pattern: "*.fna"
-  publishDir "${params.cacheDir}/${meta.gca}/ncbi_dataset", mode: 'copy', pattern: "versions.yml"
-  afterScript "sleep $params.files_latency"  // Needed because of file system latency
-  maxForks 10
-  input:
-  //tuple val(gca), val(dbname), val(species_id), val(busco_dataset)
-  val(meta)
+    tag "$meta.gca:genome"
+    label 'fetch_file'
+    label 'python'
+    publishDir "${params.cacheDir}/${meta.gca}/ncbi_dataset", mode: 'copy', pattern: "versions.yml"
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    maxForks 10
+    input:
+    val(meta)
 
-  output:
-  //tuple val(gca), val(dbname), path("*.fna"), val(busco_dataset), val(species_id)
-  tuple val(meta), path("*.fna") ,emit: genome_file_output
-  path "versions.yml", emit: versions_file
-  
-  script:
-  """
+    output:
+    tuple val(meta), path("*.fna") ,emit: genome_file_output
+    path "versions.yml", emit: versions_file
+    
+    script:
+    """
     if [[ ! -f ${params.cacheDir}/${meta.gca}/ncbi_dataset/*.fna || ! -f "${meta.genome_file}" ]]; then 
     fetch_genome.py --output_dir ${params.cacheDir}/${meta.gca}/ncbi_dataset --gca ${meta.gca}
     fi
     # Link the appropriate genome file
-if [[ -f "${meta.genome_file}" ]]; then
-    ln -s ${meta.genome_file} genome.fna
-else
-    ln -s ${params.cacheDir}/${meta.gca}/ncbi_dataset/*.fna genome.fna
-fi
+    if [[ -f "${meta.genome_file}" ]]; then
+        ln -s ${meta.genome_file} genome.fna
+    else
+        ln -s ${params.cacheDir}/${meta.gca}/ncbi_dataset/*.fna genome.fna
+    fi
+    
     # Create versions file
     PYTHON_VERSION=\$(python --version 2>&1 | awk '{print \$2}')
     FETCH_GENOME_VERSION=\$(fetch_genome.py  --version 2>&1 || echo "unknown")

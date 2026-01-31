@@ -23,7 +23,6 @@ process POPULATE_DB {
     tag "$meta.dbname"
 
     input:
-    //tuple val(gca), val(core), path(sql_file)
     tuple val(meta), path(sql_file)
     output:
     path("versions.yml"), emit: versions_file, optional :true
@@ -32,9 +31,6 @@ process POPULATE_DB {
     params.apply_ensembl_stats || params.apply_ensembl_beta_metakeys
     
     script:
-    
-    //${params.host} -w ${core} < ${statistics_file}
-    // /hps/software/users/ensembl/ensw/mysql-cmds/ensembl/ensadmin/mysql-ens-genebuild-prod-6 ftricomi_gca035666275v1_core_110 </hps/nobackup/flicek/ensembl/genebuild/ftricomi/aves/chukar_partridge_annotation/alectoris_chukar/GCA_035666275.1//stats_ftricomi_gca035666275v1_core_110.sql
     """
     ${params.mysql_ensadmin}/${params.host} ${meta.dbname} < ${sql_file}
 

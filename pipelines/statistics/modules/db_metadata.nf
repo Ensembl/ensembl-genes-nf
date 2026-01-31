@@ -17,12 +17,10 @@ limitations under the License.
 */
 
 process DB_METADATA {
-
     label 'python'
     tag "${meta.dbname}"
 
     input:
-    //tuple val(gca),  val(dbname), val(species_id)
     val meta
 
     output:
@@ -31,7 +29,6 @@ process DB_METADATA {
 
     script:
     """
-    # Debug output to stderr (won't interfere with stdout capture)
     echo "DEBUG: meta.core=${meta.dbname}, meta.species_id=${meta.species_id}, meta.taxon_id=${meta.taxon_id}" >&2
 
     if [[ "${meta.taxon_id}" == "UNKNOWN"  &&  "${meta.gca}" == "UNKNOWN" ]]; then
@@ -53,13 +50,13 @@ process DB_METADATA {
             --user ${params.user_r}
             )
         PRODUCTION_NAME=\$(utils.py \
-    --db ${meta.dbname} \
-    --key species.production_name \
-    --species-id ${meta.species_id} \
-    --host ${params.host} \
-    --port ${params.port} \
-    --user ${params.user_r}
-    )
+            --db ${meta.dbname} \
+            --key species.production_name \
+            --species-id ${meta.species_id} \
+            --host ${params.host} \
+            --port ${params.port} \
+            --user ${params.user_r}
+            )
     else
         GCA="${meta.gca}";
         TAXON_ID="${meta.taxon_id}";

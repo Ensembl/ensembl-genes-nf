@@ -26,11 +26,9 @@ process FETCH_PROTEINS {
     maxForks 20
 
     input:
-    //tuple val(gca), val(dbname), val(species_id), val(busco_dataset)
     val(meta)
 
     output:
-    //tuple val(gca), val(dbname), path("*_translations.fa"),val(busco_dataset) , val(species_id)
     tuple val(meta), path("*.fa"), emit: protein_file_output
     path "versions.yml", emit: versions_file
 
