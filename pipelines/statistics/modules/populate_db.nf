@@ -20,7 +20,7 @@ limitations under the License.
 
 process POPULATE_DB {
     label 'default'
-    tag "$meta.core"
+    tag "$meta.dbname"
 
     input:
     //tuple val(gca), val(core), path(sql_file)
@@ -29,13 +29,19 @@ process POPULATE_DB {
     path("versions.yml"), emit: versions_file, optional :true
 
     when:
-    params.apply_ensembl_stats || params.apply_beta_metakeys
+    params.apply_ensembl_stats || params.apply_ensembl_beta_metakeys
     
     script:
     
     //${params.host} -w ${core} < ${statistics_file}
     // /hps/software/users/ensembl/ensw/mysql-cmds/ensembl/ensadmin/mysql-ens-genebuild-prod-6 ftricomi_gca035666275v1_core_110 </hps/nobackup/flicek/ensembl/genebuild/ftricomi/aves/chukar_partridge_annotation/alectoris_chukar/GCA_035666275.1//stats_ftricomi_gca035666275v1_core_110.sql
     """
-    ${params.mysql_ensadmin}/${params.host} ${meta.core} < ${sql_file}
+    ${params.mysql_ensadmin}/${params.host} ${meta.dbname} < ${sql_file}
+
+    # Create versions file
+    MYSQL_VERSION=\$(mysql --version | grep -oP 'Distrib \\K[0-9.]+')
+    
+    echo '"POPULATE_DB":' > versions.yml
+    echo "  mysql: \$MYSQL_VERSION" >> versions.yml
     """
 }

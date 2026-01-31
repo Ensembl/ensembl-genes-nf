@@ -21,9 +21,7 @@ process RUN_ENSEMBL_META {
 
     label 'python'
     tag "$meta.gca"
-    storeDir "${params.cacheDir}/$meta.gca/core_statistics", mode: 'copy'
-    //publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
-//    storeDir "${params.cacheDir}/$gca/" 
+    publishDir "${params.outdir}/$meta.gca", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
@@ -35,23 +33,29 @@ process RUN_ENSEMBL_META {
     //tuple val(gca), val(dbname), path("*.sql")
 
     script:
+    //PRODUCTION_NAME=\$(python utils.py \
+    //--db ${meta.core} \
+    //--key species.production_name \
+    //--species-id ${meta.species_id} \
+    //--host ${params.host} \
+    //--port ${params.port} \
+    //--user ${params.user_r}
+    //)
     """
-    PRODUCTION_NAME=\$(python utils.py \
-    --db ${meta.core} \
-    --key species.production_name \
-    --species-id ${meta.species_id} \
-    --host ${params.host} \
-    --port ${params.port} \
-    --user ${params.user_r}
-    )
     python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py \
-    --output_dir core_statistics --db_name ${meta.core} \
+    --output_dir core_statistics --db_name ${meta.dbname} \
     --host ${params.host} --port ${params.port}  \
     --team ${params.team}  \
-    --production_name "\$PRODUCTION_NAME"
+    --production_name ${meta.production_name}
+    ln -s core_statistics/*.sql .
+    # Create versions file
+    PYTHON_VERSION=\$(python --version 2>&1 | awk '{print \$2}')
+    
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$PYTHON_VERSION
+    END_VERSIONS
     """
-
-    //cp ${params.outDir}/$publish_dir/*.sql ./
 }
 
 

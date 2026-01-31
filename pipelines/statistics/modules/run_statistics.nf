@@ -19,7 +19,7 @@ limitations under the License.
 process RUN_STATISTICS {
     label 'fetch_file'
     tag "$meta.gca"
-    publishDir "${params.cacheDir}/$meta.gca/core_statistics", mode: 'copy'
+    publishDir "${params.outdir}/$meta.gca", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 20    
     input:
@@ -31,22 +31,29 @@ process RUN_STATISTICS {
 
     script:
 
+    
+    //PRODUCTION_NAME=\$(python utils.py \
+    //--db ${meta.core} \
+    //--key species.production_name \
+    //--species-id ${meta.species_id} \
+    //--host ${params.host} \
+    //--port ${params.port} \
+    //--user ${params.user_r}
+    //)
     """
-    PRODUCTION_NAME=\$(python utils.py \
-    --db ${meta.core} \
-    --key species.production_name \
-    --species-id ${meta.species_id} \
-    --host ${params.host} \
-    --port ${params.port} \
-    --user ${params.user_r}
-    )
-
     perl ${params.enscode}/ensembl-genes/src/perl/ensembl/genes/generate_species_homepage_stats.pl \
-        -dbname ${meta.core} \
+        -dbname ${meta.dbname} \
         -host ${params.host} \
         -port ${params.port} \
-        -production_name \$PRODUCTION_NAME \
+        -production_name ${meta.production_name} \
         -output_dir core_statistics
+    # Create versions file
+    
+     PERL_VERSION=\$(perl --version | grep -oP 'v\\K[0-9.]+' | head -n1)
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        perl: \$PERL_VERSION
+    END_VERSIONS
     """
 
 }
