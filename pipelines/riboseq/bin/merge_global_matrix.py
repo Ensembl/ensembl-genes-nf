@@ -8,6 +8,7 @@ Takes all study matrix outputs and produces:
 3. Metadata parquet (read_id, length, etc.)
 
 Uses tournament-style pairwise merging for O(n log k) complexity.
+Supports dinucleotide partitioning for reduced memory (16 independent streams).
 Designed for 100-250 studies, ~100-200M total unique reads.
 """
 
@@ -47,12 +48,25 @@ except ImportError:
     USE_XXHASH = False
 
 
+# All possible dinucleotide prefixes
+DINUCLEOTIDES = [f"{a}{b}" for a in "ACGT" for b in "ACGT"]
+
+
 def hash_sequence(seq: str) -> int:
     """Hash a sequence to a 64-bit integer."""
     if USE_XXHASH:
         return xxhash.xxh64(seq.encode()).intdigest()
     else:
         return int(hashlib.md5(seq.encode()).hexdigest()[:16], 16)
+
+
+def get_dinucleotide(seq: str) -> str:
+    """Get dinucleotide prefix, defaulting to 'NN' for short/invalid sequences."""
+    if len(seq) >= 2:
+        prefix = seq[:2].upper()
+        if prefix in DINUCLEOTIDES:
+            return prefix
+    return 'NN'
 
 
 # =============================================================================
@@ -68,6 +82,19 @@ def read_study_sequences(sequences_path: Path, study_id: str) -> Iterator[Tuple[
         for line in f:
             seq = line.strip()
             if seq:
+                yield (seq, study_id)
+
+
+def read_study_sequences_filtered(sequences_path: Path, study_id: str,
+                                   dinucleotide: str) -> Iterator[Tuple[str, str]]:
+    """
+    Stream sorted sequences filtered by dinucleotide prefix.
+    Yields: (sequence, study_id)
+    """
+    with gzip.open(sequences_path, 'rt') as f:
+        for line in f:
+            seq = line.strip()
+            if seq and get_dinucleotide(seq) == dinucleotide:
                 yield (seq, study_id)
 
 
@@ -174,6 +201,13 @@ def study_to_intermediate(sequences_path: Path, study_id: str) -> Iterator[Tuple
         yield (seq, [sid])
 
 
+def study_to_intermediate_filtered(sequences_path: Path, study_id: str,
+                                    dinucleotide: str) -> Iterator[Tuple[str, List[str]]]:
+    """Convert a study's sequences to intermediate format, filtered by dinucleotide."""
+    for seq, sid in read_study_sequences_filtered(sequences_path, study_id, dinucleotide):
+        yield (seq, [sid])
+
+
 class TournamentMerger:
     """
     Tournament-style pairwise merger for sorted sequence files.
@@ -194,12 +228,14 @@ class TournamentMerger:
         self.temp_files.append(path)
         return path
 
-    def merge_studies(self, study_inputs: List[Tuple[str, Path]]) -> Path:
+    def merge_studies(self, study_inputs: List[Tuple[str, Path]],
+                      dinucleotide: Optional[str] = None) -> Path:
         """
         Merge multiple (study_id, sequences_path) pairs using tournament merge.
 
         Args:
             study_inputs: List of (study_id, sequences_gz_path) tuples
+            dinucleotide: If set, only process sequences with this prefix
 
         Returns:
             Path to final merged intermediate file
@@ -210,10 +246,15 @@ class TournamentMerger:
         # Convert all inputs to intermediate format files
         current_files: List[Path] = []
 
-        print(f"  Round 0: Converting {len(study_inputs)} study sequence files", file=sys.stderr)
+        prefix_str = f" [{dinucleotide}]" if dinucleotide else ""
+        print(f"  Round 0{prefix_str}: Converting {len(study_inputs)} study sequence files", file=sys.stderr)
+
         for study_id, seq_path in study_inputs:
             out_path = self._new_temp_file("init")
-            write_intermediate_file(out_path, study_to_intermediate(seq_path, study_id))
+            if dinucleotide:
+                write_intermediate_file(out_path, study_to_intermediate_filtered(seq_path, study_id, dinucleotide))
+            else:
+                write_intermediate_file(out_path, study_to_intermediate(seq_path, study_id))
             current_files.append(out_path)
 
         # Tournament rounds
@@ -222,7 +263,7 @@ class TournamentMerger:
             next_files: List[Path] = []
             n_pairs = len(current_files) // 2
 
-            print(f"  Round {self.round_num}: Merging {len(current_files)} files into {n_pairs + len(current_files) % 2}", file=sys.stderr)
+            print(f"  Round {self.round_num}{prefix_str}: Merging {len(current_files)} files into {n_pairs + len(current_files) % 2}", file=sys.stderr)
 
             # Pairwise merges
             for i in range(0, len(current_files) - 1, 2):
@@ -265,8 +306,10 @@ class GlobalMatrixMerger:
     """
     Merges study matrices into a global Zarr matrix using tournament merge.
 
+    Supports dinucleotide partitioning for reduced memory usage.
+
     Process:
-    1. Tournament merge study sequences to build global vocabulary
+    1. Tournament merge study sequences (optionally partitioned by dinucleotide)
     2. Build global->study ID remapping
     3. Stream study matrices into global Zarr array
     """
@@ -287,33 +330,16 @@ class GlobalMatrixMerger:
         self.study_sample_offsets: Dict[str, int] = {}  # study -> sample column offset
         self.studies: List[str] = []
 
-    def build_global_vocabulary(self, study_inputs: List[Tuple[str, Path, Path, Path]],
-                                temp_dir: Path):
-        """
-        Build global vocabulary using tournament merge.
+        # Study vocabs (loaded once, used for remapping)
+        self.study_vocabs: Dict[str, Dict[int, int]] = {}  # study_id -> {seq_hash: local_id}
 
-        Args:
-            study_inputs: List of (study_id, vocab_path, sequences_path, matrix_path)
-            temp_dir: Temporary directory for merge files
-        """
-        print("\nPhase 1: Building global vocabulary via tournament merge", file=sys.stderr)
-
-        # Prepare inputs for tournament
-        merge_inputs = [(study_id, seq_path) for study_id, _, seq_path, _ in study_inputs]
-
-        merger = TournamentMerger(temp_dir)
-        final_file = merger.merge_studies(merge_inputs)
-
-        # Read merged output and build global vocabulary + per-study remappings
-        print(f"\n  Building global ID mappings from merged sequences", file=sys.stderr)
-
-        # First, load all study vocabs to know local IDs
-        study_vocabs = {}  # study_id -> {seq_hash: local_id}
+    def _load_study_vocabs(self, study_inputs: List[Tuple[str, Path, Path, Path]]):
+        """Load all study vocabularies and record sample offsets."""
         for study_id, vocab_path, _, _ in study_inputs:
             with open(vocab_path, 'rb') as f:
                 vocab_data = pickle.load(f)
-            # Invert the mapping: we need to go from hash -> local_id
-            study_vocabs[study_id] = vocab_data['seq_to_id']
+
+            self.study_vocabs[study_id] = vocab_data['seq_to_id']
             study_samples = vocab_data['samples']
 
             # Record sample offset
@@ -324,8 +350,9 @@ class GlobalMatrixMerger:
             # Initialize remap dict
             self.study_local_to_global[study_id] = {}
 
-        # Read the merged file and assign global IDs
-        for seq, studies_containing in read_intermediate_file(final_file):
+    def _process_merged_partition(self, merged_file: Path):
+        """Process a merged partition file, appending to global structures."""
+        for seq, studies_containing in read_intermediate_file(merged_file):
             global_id = len(self.sequences)
             self.sequences.append(seq)
             self.seq_to_global_id[seq] = global_id
@@ -333,15 +360,64 @@ class GlobalMatrixMerger:
             # Build remapping for each study that has this sequence
             seq_hash = hash_sequence(seq)
             for study_id in studies_containing:
-                if study_id in study_vocabs:
-                    local_id = study_vocabs[study_id].get(seq_hash)
+                if study_id in self.study_vocabs:
+                    local_id = self.study_vocabs[study_id].get(seq_hash)
                     if local_id is not None:
                         self.study_local_to_global[study_id][local_id] = global_id
 
-        merger.cleanup(keep_final=False)
+    def build_global_vocabulary(self, study_inputs: List[Tuple[str, Path, Path, Path]],
+                                temp_dir: Path, use_partitioning: bool = False):
+        """
+        Build global vocabulary using tournament merge.
+
+        Args:
+            study_inputs: List of (study_id, vocab_path, sequences_path, matrix_path)
+            temp_dir: Temporary directory for merge files
+            use_partitioning: If True, process each dinucleotide partition separately
+        """
+        print("\nPhase 1: Building global vocabulary via tournament merge", file=sys.stderr)
+
+        # Load all study vocabs first
+        self._load_study_vocabs(study_inputs)
+
+        # Prepare inputs for tournament
+        merge_inputs = [(study_id, seq_path) for study_id, _, seq_path, _ in study_inputs]
+
+        if use_partitioning:
+            self._build_vocab_partitioned(merge_inputs, temp_dir)
+        else:
+            self._build_vocab_single(merge_inputs, temp_dir)
 
         print(f"  Global vocabulary: {len(self.sequences):,} unique sequences", file=sys.stderr)
         print(f"  Total samples: {len(self.all_samples):,}", file=sys.stderr)
+
+    def _build_vocab_single(self, merge_inputs: List[Tuple[str, Path]], temp_dir: Path):
+        """Build vocabulary without partitioning."""
+        merger = TournamentMerger(temp_dir)
+        final_file = merger.merge_studies(merge_inputs)
+
+        print(f"\n  Building global ID mappings from merged sequences", file=sys.stderr)
+        self._process_merged_partition(final_file)
+        merger.cleanup(keep_final=False)
+
+    def _build_vocab_partitioned(self, merge_inputs: List[Tuple[str, Path]], temp_dir: Path):
+        """Build vocabulary with dinucleotide partitioning for reduced memory."""
+        print(f"  Using dinucleotide partitioning (16 partitions)", file=sys.stderr)
+
+        for di_idx, dinucleotide in enumerate(DINUCLEOTIDES):
+            partition_dir = temp_dir / dinucleotide
+            partition_dir.mkdir(exist_ok=True)
+
+            merger = TournamentMerger(partition_dir)
+            partition_file = merger.merge_studies(merge_inputs, dinucleotide=dinucleotide)
+
+            # Process this partition immediately (append to global structures)
+            self._process_merged_partition(partition_file)
+            merger.cleanup(keep_final=False)
+
+            # Log progress
+            if (di_idx + 1) % 4 == 0:
+                print(f"  Completed {di_idx + 1}/16 partitions ({len(self.sequences):,} sequences so far)", file=sys.stderr)
 
     def build_global_matrix(self, study_matrices: Dict[str, Path]) -> Path:
         """
@@ -554,10 +630,17 @@ def main():
         default=10000,
         help='Zarr chunk size (rows per chunk, default: 10000)'
     )
+    parser.add_argument(
+        '--partition',
+        action='store_true',
+        help='Use dinucleotide partitioning for reduced memory (16 independent streams)'
+    )
 
     args = parser.parse_args()
 
     print(f"Merging {len(args.study_dirs)} studies using tournament merge", file=sys.stderr)
+    if args.partition:
+        print(f"  Using dinucleotide partitioning (16 partitions)", file=sys.stderr)
 
     # Discover all study files
     study_inputs = []
@@ -591,7 +674,7 @@ def main():
 
     with tempfile.TemporaryDirectory(prefix="global_merge_") as temp_dir:
         # Phase 1: Build global vocabulary via tournament merge
-        merger.build_global_vocabulary(study_inputs, Path(temp_dir))
+        merger.build_global_vocabulary(study_inputs, Path(temp_dir), use_partitioning=args.partition)
 
         # Phase 2: Build global matrix
         matrix_path = merger.build_global_matrix(study_matrices)

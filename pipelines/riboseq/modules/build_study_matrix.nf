@@ -28,12 +28,14 @@ process BUILD_STUDY_MATRIX {
 
     script:
     def sample_ids_arg = sample_ids.join(',')
+    def partition_flag = task.ext.partition ? '--partition' : ''
     """
     build_study_matrix.py \\
         ${tsv_files} \\
         --output-dir . \\
         --study-id ${study_id} \\
-        --sample-ids ${sample_ids_arg}
+        --sample-ids ${sample_ids_arg} \\
+        ${partition_flag}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

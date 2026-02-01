@@ -8,6 +8,7 @@ Takes multiple sorted TSV files (one per sample) and merges them into:
 3. A sequences file (for later FASTA generation)
 
 Uses tournament-style pairwise merging for O(n log k) complexity instead of O(n²).
+Optionally partitions by dinucleotide prefix for parallel processing and reduced memory.
 Designed for 20-50 samples per study.
 """
 
@@ -32,6 +33,10 @@ except ImportError:
     print("Warning: xxhash not available, using hashlib (slower)", file=sys.stderr)
 
 
+# All possible dinucleotide prefixes
+DINUCLEOTIDES = [f"{a}{b}" for a in "ACGT" for b in "ACGT"]
+
+
 def hash_sequence(seq: str) -> int:
     """Hash a sequence to a 64-bit integer."""
     if USE_XXHASH:
@@ -39,6 +44,15 @@ def hash_sequence(seq: str) -> int:
     else:
         # Fallback to md5 truncated to 64 bits
         return int(hashlib.md5(seq.encode()).hexdigest()[:16], 16)
+
+
+def get_dinucleotide(seq: str) -> str:
+    """Get dinucleotide prefix, defaulting to 'NN' for short/invalid sequences."""
+    if len(seq) >= 2:
+        prefix = seq[:2].upper()
+        if prefix in DINUCLEOTIDES:
+            return prefix
+    return 'NN'
 
 
 def read_sorted_tsv(tsv_path: Path) -> Iterator[Tuple[str, int]]:
@@ -165,6 +179,14 @@ def tsv_to_intermediate(tsv_path: Path, sample_idx: int) -> Iterator[Tuple[str, 
         yield (seq, [(sample_idx, count)])
 
 
+def tsv_to_intermediate_filtered(tsv_path: Path, sample_idx: int,
+                                  dinucleotide: str) -> Iterator[Tuple[str, List[Tuple[int, int]]]]:
+    """Convert a sorted TSV to intermediate format, filtered by dinucleotide prefix."""
+    for seq, count in read_sorted_tsv(tsv_path):
+        if get_dinucleotide(seq) == dinucleotide:
+            yield (seq, [(sample_idx, count)])
+
+
 class TournamentMerger:
     """
     Tournament-style pairwise merger for sorted TSV files.
@@ -185,12 +207,14 @@ class TournamentMerger:
         self.temp_files.append(path)
         return path
 
-    def merge_files(self, inputs: List[Tuple[Path, int]]) -> Path:
+    def merge_files(self, inputs: List[Tuple[Path, int]],
+                    dinucleotide: Optional[str] = None) -> Path:
         """
         Merge multiple (tsv_path, sample_idx) pairs using tournament merge.
 
         Args:
             inputs: List of (tsv_path, sample_idx) tuples
+            dinucleotide: If set, only process sequences with this prefix
 
         Returns:
             Path to final merged intermediate file
@@ -201,10 +225,15 @@ class TournamentMerger:
         # Convert all inputs to intermediate format files
         current_files: List[Path] = []
 
-        print(f"  Round 0: Converting {len(inputs)} TSVs to intermediate format", file=sys.stderr)
+        prefix_str = f" [{dinucleotide}]" if dinucleotide else ""
+        print(f"  Round 0{prefix_str}: Converting {len(inputs)} TSVs to intermediate format", file=sys.stderr)
+
         for tsv_path, sample_idx in inputs:
             out_path = self._new_temp_file("init")
-            write_intermediate_file(out_path, tsv_to_intermediate(tsv_path, sample_idx))
+            if dinucleotide:
+                write_intermediate_file(out_path, tsv_to_intermediate_filtered(tsv_path, sample_idx, dinucleotide))
+            else:
+                write_intermediate_file(out_path, tsv_to_intermediate(tsv_path, sample_idx))
             current_files.append(out_path)
 
         # Tournament rounds
@@ -213,7 +242,7 @@ class TournamentMerger:
             next_files: List[Path] = []
             n_pairs = len(current_files) // 2
 
-            print(f"  Round {self.round_num}: Merging {len(current_files)} files into {n_pairs + len(current_files) % 2}", file=sys.stderr)
+            print(f"  Round {self.round_num}{prefix_str}: Merging {len(current_files)} files into {n_pairs + len(current_files) % 2}", file=sys.stderr)
 
             # Pairwise merges
             for i in range(0, len(current_files) - 1, 2):
@@ -254,6 +283,8 @@ class StudyMatrixBuilder:
 
     All samples are merged in parallel (pairwise tournament) rather than
     sequentially, giving O(n log k) complexity.
+
+    Supports dinucleotide partitioning for reduced memory usage.
     """
 
     def __init__(self, study_id: str, output_dir: Path):
@@ -271,39 +302,83 @@ class StudyMatrixBuilder:
         self.cols: List[int] = []
         self.data: List[int] = []
 
-    def build_from_tsvs(self, sample_ids: List[str], tsv_paths: List[Path]):
+    def build_from_tsvs(self, sample_ids: List[str], tsv_paths: List[Path],
+                        use_partitioning: bool = False):
         """
         Build study matrix from multiple TSV files using tournament merge.
+
+        Args:
+            sample_ids: List of sample identifiers
+            tsv_paths: List of TSV file paths
+            use_partitioning: If True, process each dinucleotide partition separately
         """
         self.samples = sample_ids
         n_samples = len(sample_ids)
 
         # Create temp directory for merge
         with tempfile.TemporaryDirectory(prefix=f"study_{self.study_id}_") as temp_dir:
-            merger = TournamentMerger(Path(temp_dir))
+            if use_partitioning:
+                self._build_partitioned(tsv_paths, Path(temp_dir))
+            else:
+                self._build_single(tsv_paths, Path(temp_dir))
 
-            # Prepare inputs
-            inputs = [(path, idx) for idx, path in enumerate(tsv_paths)]
+    def _build_single(self, tsv_paths: List[Path], temp_dir: Path):
+        """Build without partitioning (original approach)."""
+        merger = TournamentMerger(temp_dir)
+        inputs = [(path, idx) for idx, path in enumerate(tsv_paths)]
 
-            # Run tournament merge
-            print(f"  Starting tournament merge for {n_samples} samples", file=sys.stderr)
-            final_file = merger.merge_files(inputs)
+        print(f"  Starting tournament merge for {len(self.samples)} samples", file=sys.stderr)
+        final_file = merger.merge_files(inputs)
 
-            # Read final merged file and build data structures
-            print(f"  Building final matrix from merged data", file=sys.stderr)
-            for seq, counts in read_intermediate_file(final_file):
-                local_id = len(self.sequences)
-                seq_hash = hash_sequence(seq)
+        # Read final merged file and build data structures
+        print(f"  Building final matrix from merged data", file=sys.stderr)
+        self._read_merged_file(final_file)
 
-                self.sequences.append(seq)
-                self.seq_to_id[seq_hash] = local_id
+    def _build_partitioned(self, tsv_paths: List[Path], temp_dir: Path):
+        """Build with dinucleotide partitioning for reduced memory."""
+        print(f"  Starting partitioned tournament merge (16 partitions) for {len(self.samples)} samples", file=sys.stderr)
 
-                for sample_idx, count in counts:
-                    self.rows.append(local_id)
-                    self.cols.append(sample_idx)
-                    self.data.append(count)
+        inputs = [(path, idx) for idx, path in enumerate(tsv_paths)]
+        partition_files: List[Path] = []
 
-            # Cleanup happens automatically when temp_dir context exits
+        # Process each dinucleotide partition independently
+        for di_idx, dinucleotide in enumerate(DINUCLEOTIDES):
+            partition_dir = temp_dir / dinucleotide
+            partition_dir.mkdir(exist_ok=True)
+
+            merger = TournamentMerger(partition_dir)
+            partition_file = merger.merge_files(inputs, dinucleotide=dinucleotide)
+            partition_files.append(partition_file)
+
+            # Log progress
+            if (di_idx + 1) % 4 == 0:
+                print(f"  Completed {di_idx + 1}/16 partitions", file=sys.stderr)
+
+        # Concatenate all partitions (they're disjoint, just append in sorted order)
+        print(f"  Concatenating 16 partitions", file=sys.stderr)
+        for partition_file in partition_files:
+            self._read_merged_file(partition_file, append=True)
+
+    def _read_merged_file(self, merged_file: Path, append: bool = False):
+        """Read merged intermediate file and populate data structures."""
+        if not append:
+            self.sequences = []
+            self.seq_to_id = {}
+            self.rows = []
+            self.cols = []
+            self.data = []
+
+        for seq, counts in read_intermediate_file(merged_file):
+            local_id = len(self.sequences)
+            seq_hash = hash_sequence(seq)
+
+            self.sequences.append(seq)
+            self.seq_to_id[seq_hash] = local_id
+
+            for sample_idx, count in counts:
+                self.rows.append(local_id)
+                self.cols.append(sample_idx)
+                self.data.append(count)
 
     def save(self) -> Tuple[Path, Path, Path]:
         """
@@ -392,6 +467,11 @@ def main():
         type=str,
         help='Comma-separated sample IDs (default: derived from filenames)'
     )
+    parser.add_argument(
+        '--partition',
+        action='store_true',
+        help='Use dinucleotide partitioning for reduced memory (16 parallel streams)'
+    )
 
     args = parser.parse_args()
 
@@ -413,10 +493,12 @@ def main():
 
     print(f"Building study matrix for {args.study_id}", file=sys.stderr)
     print(f"  Samples: {len(args.tsv_files)}", file=sys.stderr)
+    if args.partition:
+        print(f"  Using dinucleotide partitioning (16 partitions)", file=sys.stderr)
 
     # Build matrix using tournament merge
     builder = StudyMatrixBuilder(args.study_id, args.output_dir)
-    builder.build_from_tsvs(sample_ids, args.tsv_files)
+    builder.build_from_tsvs(sample_ids, args.tsv_files, use_partitioning=args.partition)
 
     # Save outputs
     matrix_path, vocab_path, sequences_path = builder.save()
