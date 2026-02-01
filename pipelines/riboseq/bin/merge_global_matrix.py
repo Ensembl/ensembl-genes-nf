@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
 """
-Merge study matrices into a global matrix with Zarr output.
+Merge study matrices into a global matrix with Zarr output using tournament-style merge.
 
 Takes all study matrix outputs and produces:
 1. Global Zarr matrix (chunked by reads for efficient locus queries)
 2. Global unique reads FASTA (for single-pass alignment)
 3. Metadata parquet (read_id, length, etc.)
 
+Uses tournament-style pairwise merging for O(n log k) complexity.
 Designed for 100-250 studies, ~100-200M total unique reads.
-Uses memory-mapped sequence storage to avoid OOM.
 """
 
 import argparse
 import gzip
 import json
-import mmap
+import os
 import pickle
 import struct
 import sys
+import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import numpy as np
 import scipy.sparse as sp
@@ -54,123 +55,219 @@ def hash_sequence(seq: str) -> int:
         return int(hashlib.md5(seq.encode()).hexdigest()[:16], 16)
 
 
-class MemoryMappedSequenceStore:
+# =============================================================================
+# Streaming merge helpers
+# =============================================================================
+
+def read_study_sequences(sequences_path: Path, study_id: str) -> Iterator[Tuple[str, str]]:
     """
-    Memory-efficient sequence storage using memory-mapped files.
+    Stream sorted sequences from a study's gzipped sequences file.
+    Yields: (sequence, study_id)
+    """
+    with gzip.open(sequences_path, 'rt') as f:
+        for line in f:
+            seq = line.strip()
+            if seq:
+                yield (seq, study_id)
 
-    Stores sequences on disk, keeps only hash->id mapping in RAM.
+
+def read_intermediate_file(path: Path) -> Iterator[Tuple[str, List[str]]]:
+    """
+    Read intermediate merge file.
+    Format: sequence\tstudy1,study2,...
+
+    Yields: (sequence, [study_ids])
+    """
+    with open(path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split('\t')
+            seq = parts[0]
+            studies = parts[1].split(',') if len(parts) > 1 and parts[1] else []
+            yield seq, studies
+
+
+def write_intermediate_file(path: Path, data: Iterator[Tuple[str, List[str]]]):
+    """
+    Write intermediate merge file.
+    Format: sequence\tstudy1,study2,...
+    """
+    with open(path, 'w') as f:
+        for seq, studies in data:
+            studies_str = ','.join(studies)
+            f.write(f"{seq}\t{studies_str}\n")
+
+
+def merge_two_sources(
+    source1: Iterator[Tuple[str, List[str]]],
+    source2: Iterator[Tuple[str, List[str]]]
+) -> Iterator[Tuple[str, List[str]]]:
+    """
+    Two-pointer merge of two sorted sources.
+    Each source yields (sequence, [study_ids])
+
+    This is the core merge operation - O(n) for two sorted lists.
+    """
+    item1: Optional[Tuple[str, List[str]]] = None
+    item2: Optional[Tuple[str, List[str]]] = None
+
+    # Get first items
+    try:
+        item1 = next(source1)
+    except StopIteration:
+        item1 = None
+
+    try:
+        item2 = next(source2)
+    except StopIteration:
+        item2 = None
+
+    while item1 is not None or item2 is not None:
+        if item1 is None:
+            # Source 1 exhausted, drain source 2
+            yield item2
+            for remaining in source2:
+                yield remaining
+            break
+        elif item2 is None:
+            # Source 2 exhausted, drain source 1
+            yield item1
+            for remaining in source1:
+                yield remaining
+            break
+        else:
+            # Compare sequences
+            seq1, studies1 = item1
+            seq2, studies2 = item2
+
+            if seq1 < seq2:
+                yield item1
+                try:
+                    item1 = next(source1)
+                except StopIteration:
+                    item1 = None
+            elif seq1 > seq2:
+                yield item2
+                try:
+                    item2 = next(source2)
+                except StopIteration:
+                    item2 = None
+            else:
+                # Same sequence - merge study lists
+                merged_studies = studies1 + studies2
+                yield (seq1, merged_studies)
+                try:
+                    item1 = next(source1)
+                except StopIteration:
+                    item1 = None
+                try:
+                    item2 = next(source2)
+                except StopIteration:
+                    item2 = None
+
+
+def study_to_intermediate(sequences_path: Path, study_id: str) -> Iterator[Tuple[str, List[str]]]:
+    """Convert a study's sequences to intermediate format."""
+    for seq, sid in read_study_sequences(sequences_path, study_id):
+        yield (seq, [sid])
+
+
+class TournamentMerger:
+    """
+    Tournament-style pairwise merger for sorted sequence files.
+
+    Merges N files in O(log N) rounds, each round doing pairwise merges.
+    Total complexity: O(n log k) where n = total entries, k = number of files.
     """
 
-    def __init__(self, output_dir: Path):
-        self.output_dir = output_dir
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, temp_dir: Path):
+        self.temp_dir = Path(temp_dir)
+        self.temp_dir.mkdir(parents=True, exist_ok=True)
+        self.temp_files: List[Path] = []
+        self.round_num = 0
 
-        # Memory-mapped file for sequences
-        self.seq_file_path = self.output_dir / '_sequences.mmap'
-        self.seq_file = open(self.seq_file_path, 'wb+')
+    def _new_temp_file(self, prefix: str = "merge") -> Path:
+        """Create a new temp file path."""
+        path = self.temp_dir / f"{prefix}_r{self.round_num}_{len(self.temp_files)}.txt"
+        self.temp_files.append(path)
+        return path
 
-        # Index: [(offset, length), ...]
-        self.seq_index: List[Tuple[int, int]] = []
-
-        # Hash -> global_id mapping (this stays in RAM)
-        self.hash_to_id: Dict[int, int] = {}
-
-        self.next_id = 0
-
-    def add_sequence(self, seq: str, seq_hash: int) -> Tuple[int, bool]:
+    def merge_studies(self, study_inputs: List[Tuple[str, Path]]) -> Path:
         """
-        Add sequence to store if not already present.
+        Merge multiple (study_id, sequences_path) pairs using tournament merge.
+
+        Args:
+            study_inputs: List of (study_id, sequences_gz_path) tuples
 
         Returns:
-            (global_id, is_new) tuple
+            Path to final merged intermediate file
         """
-        if seq_hash in self.hash_to_id:
-            return self.hash_to_id[seq_hash], False
+        if not study_inputs:
+            raise ValueError("No inputs to merge")
 
-        # Write sequence to mmap file
-        offset = self.seq_file.tell()
-        seq_bytes = seq.encode('utf-8')
+        # Convert all inputs to intermediate format files
+        current_files: List[Path] = []
 
-        # Write: 4-byte length + sequence bytes
-        self.seq_file.write(struct.pack('I', len(seq_bytes)))
-        self.seq_file.write(seq_bytes)
+        print(f"  Round 0: Converting {len(study_inputs)} study sequence files", file=sys.stderr)
+        for study_id, seq_path in study_inputs:
+            out_path = self._new_temp_file("init")
+            write_intermediate_file(out_path, study_to_intermediate(seq_path, study_id))
+            current_files.append(out_path)
 
-        # Record in index
-        self.seq_index.append((offset, len(seq_bytes)))
+        # Tournament rounds
+        self.round_num = 1
+        while len(current_files) > 1:
+            next_files: List[Path] = []
+            n_pairs = len(current_files) // 2
 
-        # Assign ID
-        global_id = self.next_id
-        self.hash_to_id[seq_hash] = global_id
-        self.next_id += 1
+            print(f"  Round {self.round_num}: Merging {len(current_files)} files into {n_pairs + len(current_files) % 2}", file=sys.stderr)
 
-        return global_id, True
+            # Pairwise merges
+            for i in range(0, len(current_files) - 1, 2):
+                file1 = current_files[i]
+                file2 = current_files[i + 1]
 
-    def get_sequence(self, global_id: int) -> str:
-        """Retrieve sequence by global ID."""
-        offset, length = self.seq_index[global_id]
-        self.seq_file.seek(offset)
-        _ = struct.unpack('I', self.seq_file.read(4))[0]
-        return self.seq_file.read(length).decode('utf-8')
+                out_path = self._new_temp_file("merge")
 
-    def finalize(self):
-        """Flush and prepare for reading."""
-        self.seq_file.flush()
+                # Stream merge
+                source1 = read_intermediate_file(file1)
+                source2 = read_intermediate_file(file2)
+                merged = merge_two_sources(source1, source2)
+                write_intermediate_file(out_path, merged)
 
-    def write_fasta(self, fasta_path: Path):
-        """Write all sequences to FASTA file."""
-        self.seq_file.seek(0)
+                next_files.append(out_path)
 
-        with open(fasta_path, 'w') as fasta:
-            for global_id in range(self.next_id):
-                seq = self.get_sequence(global_id)
-                fasta.write(f">read_{global_id}\n{seq}\n")
+            # Handle odd file (pass through to next round)
+            if len(current_files) % 2 == 1:
+                next_files.append(current_files[-1])
 
-    def write_metadata(self, metadata_path: Path):
-        """Write metadata parquet with read_id, length, etc."""
-        if not HAVE_POLARS:
-            # Fallback to JSON
-            metadata = []
-            for global_id in range(self.next_id):
-                seq = self.get_sequence(global_id)
-                metadata.append({
-                    'read_id': global_id,
-                    'length': len(seq)
-                })
+            current_files = next_files
+            self.round_num += 1
 
-            with open(metadata_path.with_suffix('.json'), 'w') as f:
-                json.dump(metadata, f)
-            return
+        return current_files[0]
 
-        # Build metadata DataFrame
-        read_ids = []
-        lengths = []
+    def cleanup(self, keep_final: bool = True):
+        """Remove temporary files."""
+        for path in self.temp_files[:-1] if keep_final else self.temp_files:
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                pass
 
-        for global_id in range(self.next_id):
-            seq = self.get_sequence(global_id)
-            read_ids.append(global_id)
-            lengths.append(len(seq))
 
-        df = pl.DataFrame({
-            'read_id': read_ids,
-            'length': lengths
-        })
-
-        df.write_parquet(metadata_path)
-
-    def cleanup(self):
-        """Clean up temporary files."""
-        self.seq_file.close()
-        if self.seq_file_path.exists():
-            self.seq_file_path.unlink()
-
+# =============================================================================
+# Global matrix builder
+# =============================================================================
 
 class GlobalMatrixMerger:
     """
-    Merges study matrices into a global Zarr matrix.
+    Merges study matrices into a global Zarr matrix using tournament merge.
 
     Process:
-    1. Build global sequence vocabulary (streaming through study sequences)
-    2. Create global->study ID remapping for each study
+    1. Tournament merge study sequences to build global vocabulary
+    2. Build global->study ID remapping
     3. Stream study matrices into global Zarr array
     """
 
@@ -180,64 +277,80 @@ class GlobalMatrixMerger:
 
         self.chunk_size = chunk_size
 
-        # Sequence store
-        self.seq_store = MemoryMappedSequenceStore(self.output_dir / '_temp')
+        # Global sequence tracking
+        self.sequences: List[str] = []  # In sorted order from tournament merge
+        self.seq_to_global_id: Dict[str, int] = {}  # sequence -> global_id
 
-        # Study tracking
-        self.studies: List[str] = []
-        self.study_remaps: Dict[str, Dict[int, int]] = {}  # study -> {local_id: global_id}
+        # Per-study info
+        self.study_local_to_global: Dict[str, Dict[int, int]] = {}  # study -> {local_id: global_id}
         self.all_samples: List[str] = []
         self.study_sample_offsets: Dict[str, int] = {}  # study -> sample column offset
+        self.studies: List[str] = []
 
-    def add_study(self, study_id: str, vocab_path: Path, sequences_path: Path):
+    def build_global_vocabulary(self, study_inputs: List[Tuple[str, Path, Path, Path]],
+                                temp_dir: Path):
         """
-        Add a study's sequences to the global vocabulary.
+        Build global vocabulary using tournament merge.
 
-        Returns mapping from study local IDs to global IDs.
+        Args:
+            study_inputs: List of (study_id, vocab_path, sequences_path, matrix_path)
+            temp_dir: Temporary directory for merge files
         """
-        print(f"  Adding study: {study_id}", file=sys.stderr)
+        print("\nPhase 1: Building global vocabulary via tournament merge", file=sys.stderr)
 
-        # Load study vocab
-        with open(vocab_path, 'rb') as f:
-            vocab_data = pickle.load(f)
+        # Prepare inputs for tournament
+        merge_inputs = [(study_id, seq_path) for study_id, _, seq_path, _ in study_inputs]
 
-        study_seq_to_id = vocab_data['seq_to_id']
-        study_samples = vocab_data['samples']
-        n_reads = vocab_data['n_reads']
+        merger = TournamentMerger(temp_dir)
+        final_file = merger.merge_studies(merge_inputs)
 
-        # Record sample offset
-        self.study_sample_offsets[study_id] = len(self.all_samples)
-        self.all_samples.extend(study_samples)
-        self.studies.append(study_id)
+        # Read merged output and build global vocabulary + per-study remappings
+        print(f"\n  Building global ID mappings from merged sequences", file=sys.stderr)
 
-        # Build local->global remapping by streaming sequences
-        remap = {}
+        # First, load all study vocabs to know local IDs
+        study_vocabs = {}  # study_id -> {seq_hash: local_id}
+        for study_id, vocab_path, _, _ in study_inputs:
+            with open(vocab_path, 'rb') as f:
+                vocab_data = pickle.load(f)
+            # Invert the mapping: we need to go from hash -> local_id
+            study_vocabs[study_id] = vocab_data['seq_to_id']
+            study_samples = vocab_data['samples']
 
-        with gzip.open(sequences_path, 'rt') as f:
-            for local_id, line in enumerate(f):
-                seq = line.strip()
-                if not seq:
-                    continue
+            # Record sample offset
+            self.study_sample_offsets[study_id] = len(self.all_samples)
+            self.all_samples.extend(study_samples)
+            self.studies.append(study_id)
 
-                seq_hash = hash_sequence(seq)
-                global_id, is_new = self.seq_store.add_sequence(seq, seq_hash)
-                remap[local_id] = global_id
+            # Initialize remap dict
+            self.study_local_to_global[study_id] = {}
 
-        self.study_remaps[study_id] = remap
+        # Read the merged file and assign global IDs
+        for seq, studies_containing in read_intermediate_file(final_file):
+            global_id = len(self.sequences)
+            self.sequences.append(seq)
+            self.seq_to_global_id[seq] = global_id
 
-        print(f"    {n_reads:,} study reads -> {self.seq_store.next_id:,} global reads",
-              file=sys.stderr)
+            # Build remapping for each study that has this sequence
+            seq_hash = hash_sequence(seq)
+            for study_id in studies_containing:
+                if study_id in study_vocabs:
+                    local_id = study_vocabs[study_id].get(seq_hash)
+                    if local_id is not None:
+                        self.study_local_to_global[study_id][local_id] = global_id
 
-        return remap
+        merger.cleanup(keep_final=False)
+
+        print(f"  Global vocabulary: {len(self.sequences):,} unique sequences", file=sys.stderr)
+        print(f"  Total samples: {len(self.all_samples):,}", file=sys.stderr)
 
     def build_global_matrix(self, study_matrices: Dict[str, Path]) -> Path:
         """
         Build the global matrix by merging all study matrices.
         """
-        n_reads = self.seq_store.next_id
+        n_reads = len(self.sequences)
         n_samples = len(self.all_samples)
 
-        print(f"\nBuilding global matrix: {n_reads:,} reads × {n_samples:,} samples",
+        print(f"\nPhase 2: Building global matrix: {n_reads:,} reads × {n_samples:,} samples",
               file=sys.stderr)
 
         if HAVE_ZARR:
@@ -276,23 +389,25 @@ class GlobalMatrixMerger:
             print(f"  Merging study: {study_id}", file=sys.stderr)
 
             study_matrix = sp.load_npz(matrix_path_study)
-            remap = self.study_remaps[study_id]
+            remap = self.study_local_to_global[study_id]
             sample_offset = self.study_sample_offsets[study_id]
 
             # Convert to COO for iteration
             coo = study_matrix.tocoo()
 
             # Group by chunk for efficient writing
-            chunk_data = {}  # chunk_idx -> list of (local_row, col, data)
+            chunk_data = {}  # chunk_idx -> list of (global_row, global_col, val)
 
             for i in range(len(coo.data)):
                 local_row = coo.row[i]
                 col = coo.col[i]
                 val = coo.data[i]
 
-                global_row = remap[local_row]
-                global_col = col + sample_offset
+                global_row = remap.get(local_row)
+                if global_row is None:
+                    continue  # Sequence not in global vocab (shouldn't happen)
 
+                global_col = col + sample_offset
                 chunk_idx = global_row // self.chunk_size
 
                 if chunk_idx not in chunk_data:
@@ -331,13 +446,15 @@ class GlobalMatrixMerger:
             print(f"  Merging study: {study_id}", file=sys.stderr)
 
             study_matrix = sp.load_npz(matrix_path_study)
-            remap = self.study_remaps[study_id]
+            remap = self.study_local_to_global[study_id]
             sample_offset = self.study_sample_offsets[study_id]
 
             coo = study_matrix.tocoo()
 
             for i in range(len(coo.data)):
-                global_row = remap[coo.row[i]]
+                global_row = remap.get(coo.row[i])
+                if global_row is None:
+                    continue
                 global_col = coo.col[i] + sample_offset
 
                 all_rows.append(global_row)
@@ -361,24 +478,43 @@ class GlobalMatrixMerger:
 
     def save_outputs(self) -> Dict[str, Path]:
         """Save all outputs and return paths."""
-        self.seq_store.finalize()
+        n_reads = len(self.sequences)
 
         # Write FASTA
         fasta_path = self.output_dir / 'unique_reads.fasta'
         print(f"Writing FASTA: {fasta_path}", file=sys.stderr)
-        self.seq_store.write_fasta(fasta_path)
+        with open(fasta_path, 'w') as fasta:
+            for global_id, seq in enumerate(self.sequences):
+                fasta.write(f">read_{global_id}\n{seq}\n")
 
         # Write metadata
         metadata_path = self.output_dir / 'read_metadata.parquet'
         print(f"Writing metadata: {metadata_path}", file=sys.stderr)
-        self.seq_store.write_metadata(metadata_path)
+
+        if HAVE_POLARS:
+            read_ids = list(range(n_reads))
+            lengths = [len(seq) for seq in self.sequences]
+
+            df = pl.DataFrame({
+                'read_id': read_ids,
+                'length': lengths
+            })
+            df.write_parquet(metadata_path)
+        else:
+            # Fallback to JSON
+            metadata = [
+                {'read_id': i, 'length': len(seq)}
+                for i, seq in enumerate(self.sequences)
+            ]
+            with open(metadata_path.with_suffix('.json'), 'w') as f:
+                json.dump(metadata, f)
 
         # Write config
         config = {
             'version': '1.0',
             'matrix_format': 'zarr' if HAVE_ZARR else 'npz',
             'chunk_size': self.chunk_size,
-            'n_reads': self.seq_store.next_id,
+            'n_reads': n_reads,
             'n_samples': len(self.all_samples),
             'n_studies': len(self.studies),
             'studies': self.studies
@@ -387,9 +523,6 @@ class GlobalMatrixMerger:
         config_path = self.output_dir / 'index_config.json'
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
-
-        # Cleanup temp files
-        self.seq_store.cleanup()
 
         return {
             'fasta': fasta_path,
@@ -400,7 +533,7 @@ class GlobalMatrixMerger:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Merge study matrices into global Zarr matrix'
+        description='Merge study matrices into global Zarr matrix using tournament merge'
     )
     parser.add_argument(
         '--study-dirs',
@@ -424,12 +557,10 @@ def main():
 
     args = parser.parse_args()
 
-    print(f"Merging {len(args.study_dirs)} studies", file=sys.stderr)
+    print(f"Merging {len(args.study_dirs)} studies using tournament merge", file=sys.stderr)
 
-    merger = GlobalMatrixMerger(args.output_dir, chunk_size=args.chunk_size)
-
-    # Phase 1: Build global vocabulary
-    print("\nPhase 1: Building global vocabulary", file=sys.stderr)
+    # Discover all study files
+    study_inputs = []
     study_matrices = {}
 
     for study_dir in args.study_dirs:
@@ -448,12 +579,22 @@ def main():
             print(f"Warning: Incomplete study files for {study_id}, skipping", file=sys.stderr)
             continue
 
-        merger.add_study(study_id, vocab_path, seq_path)
+        study_inputs.append((study_id, vocab_path, seq_path, matrix_path))
         study_matrices[study_id] = matrix_path
 
-    # Phase 2: Build global matrix
-    print("\nPhase 2: Building global matrix", file=sys.stderr)
-    matrix_path = merger.build_global_matrix(study_matrices)
+    if not study_inputs:
+        print("Error: No valid study inputs found", file=sys.stderr)
+        sys.exit(1)
+
+    # Create merger and run
+    merger = GlobalMatrixMerger(args.output_dir, chunk_size=args.chunk_size)
+
+    with tempfile.TemporaryDirectory(prefix="global_merge_") as temp_dir:
+        # Phase 1: Build global vocabulary via tournament merge
+        merger.build_global_vocabulary(study_inputs, Path(temp_dir))
+
+        # Phase 2: Build global matrix
+        matrix_path = merger.build_global_matrix(study_matrices)
 
     # Phase 3: Save outputs
     print("\nPhase 3: Saving outputs", file=sys.stderr)
