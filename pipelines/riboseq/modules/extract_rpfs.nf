@@ -27,7 +27,7 @@ process EXTRACT_RPFS {
     """
     # Use the recommended 'extract' command (alignment-based extraction)
     getRPF extract \\
-        temp_input.fastq \\
+        ${input_file} \\
         ${prefix}_rpfs.fastq \\
         --star-index ${star_index} \\
         --sample-size ${sample_size} \\
