@@ -37,13 +37,15 @@ workflow DATA_ACQUISITION {
     }
 
     // Parse sample sheet and create samples channel
+    // Sample sheet must have columns: Run, study_accession
     samples_ch = Channel
         .fromPath(sample_sheet)
         .splitCsv(header: true, sep: ',')
         .map { row ->
             def meta = [
                 id: row.Run,
-                study_accession: row.study_accession ?: 'unknown',
+                study_id: row.study_accession ?: 'unknown',  // Used for matrix grouping
+                study_accession: row.study_accession ?: 'unknown',  // Keep for backwards compat
             ]
             [ meta, row.Run ]
         }

@@ -34,6 +34,7 @@ include { ALIGNMENT } from './subworkflows/alignment.nf'
 include { ANALYSIS } from './subworkflows/analysis.nf'
 include { POST_PROCESSING } from './subworkflows/post_processing.nf'
 include { TRACKHUB_GENERATION } from './subworkflows/trackhub_generation.nf'
+include { UNIQUE_READS_MATRIX } from './subworkflows/unique_reads_matrix.nf'
 
 /*
 ========================================================================================
@@ -174,52 +175,89 @@ workflow {
     )
 
     //
-    // SUBWORKFLOW: STAR alignment (genome + transcriptome)
+    // MODE SELECTION: Matrix-based vs Per-sample analysis
     //
-    ALIGNMENT(
-        QUALITY_CONTROL.out.samples,
-        star_index_ch,
-        gtf_ch
-    )
+    // matrix_mode: Build global unique reads matrix, align once, then downstream analysis
+    // per_sample_mode: Traditional per-sample alignment with RiboMetric/RiboWaltz (default)
+    //
+    def use_matrix_mode = params.run_matrix_mode ?: false
 
-    //
-    // SUBWORKFLOW: Analysis - RiboMetric and RiboWaltz
-    //
-    ANALYSIS(
-        ALIGNMENT.out.transcriptome_bam,
-        ribometric_anno_ch,
-        gtf_ch,
-        fasta_ch
-    )
+    if (use_matrix_mode) {
+        //
+        // MATRIX MODE: Unique reads matrix pipeline
+        // - Groups samples by study
+        // - Builds study-level matrices
+        // - Merges into global matrix (Zarr)
+        // - Single alignment of unique reads
+        //
+        log.info "Running in MATRIX MODE: Building global unique reads matrix"
 
-    //
-    // SUBWORKFLOW: Post-processing (filter, BEDgraph, BigWig, unique reads index)
-    //
-    POST_PROCESSING(
-        ALIGNMENT.out.genome_bam,
-        ANALYSIS.out.offsets,
-        chrom_sizes_ch,
-        DATA_ACQUISITION.out.samples  // collapsed FASTA files
-    )
-
-    //
-    // OPTIONAL: Track hub generation
-    //
-    if (params.generate_trackhub) {
-        // Validate required params for trackhub
-        if (!params.genome_assembly) {
-            error "Genome assembly (--genome_assembly) is required for trackhub generation (e.g., 'hg38', 'mm39')"
-        }
-
-        TRACKHUB_GENERATION(
-            POST_PROCESSING.out.bigwigs,
-            POST_PROCESSING.out.merged_bigwigs,
-            params.hub_name ?: 'riboseq_hub',
-            params.genome_assembly,
-            params.hub_email ?: 'noreply@example.com',
-            params.sample_regex ?: '',
-            params.annotation_regex ?: ''
+        UNIQUE_READS_MATRIX(
+            QUALITY_CONTROL.out.samples,
+            star_index_ch
         )
+
+        // Downstream analysis will use:
+        // - UNIQUE_READS_MATRIX.out.global_matrix (Zarr)
+        // - UNIQUE_READS_MATRIX.out.unique_reads_bam (single BAM)
+        // - UNIQUE_READS_MATRIX.out.global_metadata (read info)
+
+        log.info "Matrix mode complete. Outputs in: ${params.outdir}/global/"
+
+    } else {
+        //
+        // PER-SAMPLE MODE: Traditional per-sample alignment and analysis
+        //
+        log.info "Running in PER-SAMPLE MODE: Traditional alignment and analysis"
+
+        //
+        // SUBWORKFLOW: STAR alignment (genome + transcriptome)
+        //
+        ALIGNMENT(
+            QUALITY_CONTROL.out.samples,
+            star_index_ch,
+            gtf_ch
+        )
+
+        //
+        // SUBWORKFLOW: Analysis - RiboMetric and RiboWaltz
+        //
+        ANALYSIS(
+            ALIGNMENT.out.transcriptome_bam,
+            ribometric_anno_ch,
+            gtf_ch,
+            fasta_ch
+        )
+
+        //
+        // SUBWORKFLOW: Post-processing (filter, BEDgraph, BigWig, unique reads index)
+        //
+        POST_PROCESSING(
+            ALIGNMENT.out.genome_bam,
+            ANALYSIS.out.offsets,
+            chrom_sizes_ch,
+            DATA_ACQUISITION.out.samples  // collapsed FASTA files
+        )
+
+        //
+        // OPTIONAL: Track hub generation
+        //
+        if (params.generate_trackhub) {
+            // Validate required params for trackhub
+            if (!params.genome_assembly) {
+                error "Genome assembly (--genome_assembly) is required for trackhub generation (e.g., 'hg38', 'mm39')"
+            }
+
+            TRACKHUB_GENERATION(
+                POST_PROCESSING.out.bigwigs,
+                POST_PROCESSING.out.merged_bigwigs,
+                params.hub_name ?: 'riboseq_hub',
+                params.genome_assembly,
+                params.hub_email ?: 'noreply@example.com',
+                params.sample_regex ?: '',
+                params.annotation_regex ?: ''
+            )
+        }
     }
 }
 
