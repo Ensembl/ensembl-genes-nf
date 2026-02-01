@@ -5,7 +5,7 @@
 
 process MERGE_GLOBAL_MATRIX {
     tag "global"
-    label 'process_high_memory'
+    label 'process_ultra_high'
 
     // Dependencies: python, numpy, scipy, zarr, numcodecs, polars, xxhash
     // Use conda profile or enable Wave for automatic container generation

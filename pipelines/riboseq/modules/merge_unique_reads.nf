@@ -1,6 +1,6 @@
 process MERGE_UNIQUE_READS {
     tag "${mode}"
-    label 'process_high'
+    label 'process_ultra_high'
 
     conda "conda-forge::python=3.10 conda-forge::polars=0.20.0"
     container 'community.wave.seqera.io/library/pip_polars:50bb6fae7997c472' 
