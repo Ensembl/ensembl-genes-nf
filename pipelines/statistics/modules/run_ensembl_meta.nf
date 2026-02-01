@@ -18,15 +18,15 @@ limitations under the License.
 
 process RUN_ENSEMBL_META {
     label 'python'
-    tag "$meta.gca"
-    publishDir "${params.outdir}/$meta.gca", mode: 'copy'
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    tag "${meta.gca}"
+    publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
+    afterScript "sleep ${params.files_latency}"
 
     input:
-    val(meta)
+    val meta
 
     output:
-    tuple val(meta),path("*.sql"), emit: ensembl_meta_output
+    tuple val(meta), path("*.sql"), emit: ensembl_meta_output
     path "versions.yml", emit: versions_file
 
     script:
@@ -46,6 +46,3 @@ process RUN_ENSEMBL_META {
     END_VERSIONS
     """
 }
-
-
-

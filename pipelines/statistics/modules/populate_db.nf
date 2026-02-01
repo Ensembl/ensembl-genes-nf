@@ -20,16 +20,17 @@ limitations under the License.
 
 process POPULATE_DB {
     label 'default'
-    tag "$meta.dbname"
+    tag "${meta.dbname}"
 
     input:
     tuple val(meta), path(sql_file)
+
     output:
-    path("versions.yml"), emit: versions_file, optional :true
+    path ("versions.yml"), emit: versions_file, optional: true
 
     when:
     params.apply_ensembl_stats || params.apply_ensembl_beta_metakeys
-    
+
     script:
     """
     ${params.mysql_ensadmin}/${params.host} ${meta.dbname} < ${sql_file}

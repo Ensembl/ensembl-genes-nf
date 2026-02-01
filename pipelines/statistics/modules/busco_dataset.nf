@@ -47,6 +47,3 @@ process BUSCO_DATASET {
     echo "  clade_selector: \$CLADE_VERSION" >> versions.yml
     """
 }
-
-
-

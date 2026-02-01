@@ -18,15 +18,16 @@ limitations under the License.
 
 
 process FETCH_PROTEINS {
-    tag "$meta.dbname:protein"
+    tag "${meta.dbname}:protein"
     label 'fetch_file'
     publishDir "${params.cacheDir}/${meta.gca}/fasta", mode: 'copy', pattern: "*.fa"
     publishDir "${params.cacheDir}/${meta.gca}/fasta", mode: 'copy', pattern: "versions.yml"
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    afterScript "sleep ${params.files_latency}"
+    // Needed because of file system latency
     maxForks 20
 
     input:
-    val(meta)
+    val meta
 
     output:
     tuple val(meta), path("*.fa"), emit: protein_file_output
@@ -41,7 +42,7 @@ process FETCH_PROTEINS {
         -port ${params.port} \
         -dbname ${meta.dbname} \
         -user ${params.user_r} \
-        -file $translations_file \
+        -file ${translations_file} \
         --species_id ${meta.species_id} \
         ${params.dump_params}
     else

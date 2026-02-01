@@ -18,19 +18,21 @@ limitations under the License.
 
 
 process FETCH_GENOME {
-    tag "$meta.gca:genome"
+    tag "${meta.gca}:genome"
     label 'fetch_file'
     label 'python'
     publishDir "${params.cacheDir}/${meta.gca}/ncbi_dataset", mode: 'copy', pattern: "versions.yml"
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    afterScript "sleep ${params.files_latency}"
+    // Needed because of file system latency
     maxForks 10
+
     input:
-    val(meta)
+    val meta
 
     output:
-    tuple val(meta), path("*.fna") ,emit: genome_file_output
+    tuple val(meta), path("*.fna"), emit: genome_file_output
     path "versions.yml", emit: versions_file
-    
+
     script:
     """
     if [[ ! -f ${params.cacheDir}/${meta.gca}/ncbi_dataset/*.fna || ! -f "${meta.genome_file}" ]]; then 

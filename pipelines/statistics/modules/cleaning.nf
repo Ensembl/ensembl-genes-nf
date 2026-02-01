@@ -29,4 +29,3 @@ process CLEANING {
     rm -rf joinPath(params.outDir, "${taxon_id}", "${run_accession}")
     """
 }
-

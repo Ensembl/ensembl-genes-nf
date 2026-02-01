@@ -74,4 +74,4 @@ process DB_METADATA {
         python: \$(python --version | sed 's/Python //g')
     END_VERSIONS
     """
-    }
+}

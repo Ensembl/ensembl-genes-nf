@@ -17,21 +17,21 @@ limitations under the License.
 */
 
 process OMAMER_HOG {
-        maxForks 15
-        label 'omamer'
-        tag "$meta.gca"
-        storeDir "${params.cacheDir}/$meta.gca/omamer/"
-        afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    maxForks 15
+    label 'omamer'
+    tag "${meta.gca}"
+    storeDir "${params.cacheDir}/${meta.gca}/omamer/"
+    afterScript "sleep ${params.files_latency}"
 
-        input:
-        tuple val(meta), path(translation_file)
-        
-        output:
-        tuple val(meta), path("proteins.omamer"), emit: omamer_hog_output
-        path "versions.yml", emit: versions_file
+    input:
+    tuple val(meta), path(translation_file)
 
-        script:
-        """
+    output:
+    tuple val(meta), path("proteins.omamer"), emit: omamer_hog_output
+    path "versions.yml", emit: versions_file
+
+    script:
+    """
         omamer search --db ${params.omamer_database} --query ${translation_file}  --out proteins.omamer 
 
         # Create versions file

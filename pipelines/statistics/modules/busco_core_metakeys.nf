@@ -19,24 +19,25 @@ limitations under the License.
 process BUSCO_CORE_METAKEYS {
 
     label 'python'
-    tag "$meta.gca"
-    publishDir "${params.outdir}/$meta.gca", mode: 'copy'
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    tag "${meta.gca}"
+    publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
+    afterScript "sleep ${params.files_latency}"
 
     input:
     tuple val(meta), path(summary_file)
+
     output:
     path "versions.yml", emit: versions_file, optional: true
-    
+
     when:
     params.apply_busco_metakeys
-    
+
     script:
 
     """
     busco_metakeys_patch.py \
     -db ${meta.dbname} -file ${summary_file} \
-    -output_dir "${params.outdir}/$meta.gca/"  -host ${params.host} \
+    -output_dir "${params.outdir}/${meta.gca}/"  -host ${params.host} \
     -port ${params.port} -user ${params.user}  \
     -password ${params.password} -species_id ${meta.species_id} \
     -run_query true
@@ -48,6 +49,3 @@ process BUSCO_CORE_METAKEYS {
     echo "  python: \$PYTHON_VERSION" >> versions.yml
     """
 }
-
-
-

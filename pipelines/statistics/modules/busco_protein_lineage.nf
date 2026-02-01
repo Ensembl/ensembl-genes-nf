@@ -18,10 +18,11 @@ limitations under the License.
 
 process BUSCO_PROTEIN_LINEAGE {
     label 'busco'
-    tag "$meta.gca"
+    tag "${meta.gca}"
     publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
     publishDir "${params.outdir}/${meta.gca}", mode: 'copy', pattern: "versions_busco_protein.yml"
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    afterScript "sleep ${params.files_latency}"
+    // Needed because of file system latency
     maxForks 10
 
     input:
@@ -32,7 +33,7 @@ process BUSCO_PROTEIN_LINEAGE {
     path "versions_busco_protein.yml", emit: versions_file
 
     script:
-    log.info("Selected BUSCO dataset: $meta.busco_dataset")
+    log.info("Selected BUSCO dataset: ${meta.busco_dataset}")
 
     """
     busco -f \

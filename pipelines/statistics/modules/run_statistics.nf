@@ -18,12 +18,14 @@ limitations under the License.
 
 process RUN_STATISTICS {
     label 'fetch_file'
-    tag "$meta.gca"
-    publishDir "${params.outdir}/$meta.gca", mode: 'copy'
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    maxForks 20    
+    tag "${meta.gca}"
+    publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
+    afterScript "sleep ${params.files_latency}"
+    // Needed because of file system latency
+    maxForks 20
+
     input:
-    val(meta)
+    val meta
 
     output:
     tuple val(meta), path("core_statistics/*.sql"), emit: statistics_output
