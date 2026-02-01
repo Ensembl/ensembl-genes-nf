@@ -1,0 +1,58 @@
+# =============================================================================
+# ALIGNMENT: LOCAL MODE (with soft-clipping)
+# =============================================================================
+# Use STAR in Local alignment mode which allows soft-clipping at read ends.
+# Compare with EndToEnd mode to evaluate impact on alignment rates.
+#
+# Key difference: alignment_type: 'Local'
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# RPF Extraction
+# -----------------------------------------------------------------------------
+rpf_extraction_method: 'getrpf'
+getrpf_max_reads: 5000
+
+# -----------------------------------------------------------------------------
+# rRNA Filtering
+# -----------------------------------------------------------------------------
+run_rrna_filter: false
+
+# -----------------------------------------------------------------------------
+# Alignment (STAR) - MODIFIED
+# -----------------------------------------------------------------------------
+mismatches: 3
+alignment_type: 'Local'                   # Allow soft-clipping
+allow_introns: true
+max_multimappers: 10
+min_mapq: 0
+trim_front: 0
+align_soft_clip_at_ref_ends: 'Yes'        # Allow soft-clip at reference ends
+
+# -----------------------------------------------------------------------------
+# Read Length Filtering
+# -----------------------------------------------------------------------------
+filter_by_length: false
+
+# -----------------------------------------------------------------------------
+# RiboMetric
+# -----------------------------------------------------------------------------
+ribometric_offset_method: 'tripsviz'
+ribometric_sample_size: 10000000
+
+# -----------------------------------------------------------------------------
+# RiboWaltz
+# -----------------------------------------------------------------------------
+ribowaltz_exclude_start: 0
+ribowaltz_exclude_stop: 0
+ribowaltz_flanking: 6
+ribowaltz_extremity: 'auto'
+ribowaltz_confidence_level: 99
+ribowaltz_utr5_length: 25
+ribowaltz_cds_length: 40
+ribowaltz_utr3_length: 25
+
+# -----------------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------------
+normalize_coverage: false

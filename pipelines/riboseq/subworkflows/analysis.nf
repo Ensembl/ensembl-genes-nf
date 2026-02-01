@@ -3,6 +3,8 @@
  * Runs both RiboMetric and RiboWaltz for complementary QC and offset calculation
  * - RiboMetric: Fast QC and offset calculation
  * - RiboWaltz: Detailed P-site analysis and comprehensive profiles
+ *
+ * Supports passing RiboWaltz offsets to RiboMetric when params.ribometric_use_ribowaltz_offsets = true
  */
 
 include { RIBOMETRIC } from '../modules/ribometric.nf'
@@ -16,24 +18,45 @@ workflow ANALYSIS {
     fasta                  // path: Reference genome FASTA (for RiboWaltz)
 
     main:
-    // Run RiboMetric if annotation provided
-    if (ribometric_annotation) {
-        RIBOMETRIC(
-            transcriptome_bam,
-            ribometric_annotation
-        )
-    }
+    // Prepare GTF and FASTA channels with metadata for RiboWaltz
+    // gtf and fasta are already channels, just need to add metadata
+    gtf_ch = gtf.map { [[ id: 'reference' ], it] }
+    fasta_ch = fasta.map { [[ id: 'reference' ], it] }
 
-    // Prepare GTF and FASTA channels that can be reused for all samples
-    gtf_ch = Channel.value([[ id: 'reference' ], gtf])
-    fasta_ch = Channel.value([[ id: 'reference' ], fasta])
-
-    // Run RiboWaltz on transcriptome BAM
+    // Run RiboWaltz on transcriptome BAM (always runs first when passing offsets)
     RIBOWALTZ(
         transcriptome_bam,
         gtf_ch,
         fasta_ch
     )
+
+    // Run RiboMetric if annotation provided
+    if (ribometric_annotation) {
+        // Determine offset input for RiboMetric
+        if (params.ribometric_use_ribowaltz_offsets) {
+            // Join RiboWaltz offsets with transcriptome BAM on sample ID
+            // RiboWaltz best_offset: tuple [ meta, offset_file ]
+            // transcriptome_bam: tuple [ meta, bam, bai ]
+            ribometric_input = transcriptome_bam
+                .join(RIBOWALTZ.out.best_offset)
+                .map { meta, bam, bai, offset_file ->
+                    [ meta, bam, bai, offset_file ]
+                }
+
+            RIBOMETRIC(
+                ribometric_input.map { meta, bam, bai, offset -> [ meta, bam, bai ] },
+                ribometric_annotation,
+                ribometric_input.map { meta, bam, bai, offset -> offset }
+            )
+        } else {
+            // No external offset file - use RiboMetric's internal calculation
+            RIBOMETRIC(
+                transcriptome_bam,
+                ribometric_annotation,
+                file('NO_OFFSET_FILE')  // Placeholder for optional input
+            )
+        }
+    }
 
     emit:
     // RiboMetric outputs

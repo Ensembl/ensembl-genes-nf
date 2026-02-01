@@ -35,6 +35,11 @@ process STAR_ALIGN {
     def allow_introns = params.allow_introns ? '--alignIntronMax 1000000 --alignMatesGapMax 1000000' : ''
     def unzip_command = reads.name.endsWith('.gz') ? 'zcat' : 'cat'
 
+    // Soft-clipping parameters (used primarily with Local alignment)
+    def clip_5p = params.clip_5p_nbases ? "--clip5pNbases ${params.clip_5p_nbases}" : ''
+    def clip_3p = params.clip_3p_nbases ? "--clip3pNbases ${params.clip_3p_nbases}" : ''
+    def soft_clip_at_ref = params.align_soft_clip_at_ref_ends ? "--alignSoftClipAtReferenceEnds ${params.align_soft_clip_at_ref_ends}" : ''
+
     """
     STAR \
         --genomeDir $index \
@@ -49,6 +54,9 @@ process STAR_ALIGN {
         $alignment_type \
         $allow_introns \
         $trim_front \
+        $clip_5p \
+        $clip_3p \
+        $soft_clip_at_ref \
         $args \
         --outFileNamePrefix ${prefix}. \
         --sjdbGTFfile $gtf

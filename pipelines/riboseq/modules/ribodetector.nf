@@ -1,20 +1,20 @@
-process BOWTIE_RRNA_FILTER {
+process RIBODETECTOR {
     tag "${meta.id}"
     label 'process_high'
 
-    conda "bioconda::bowtie=1.3.1 bioconda::samtools=1.19"
+    conda "bioconda::ribodetector=0.3.1"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/6f/6f5ca09fd5aab931d9b87c532c69e0122ce5ff8ec88732f906e12108d48425e9/data' :
-        'community.wave.seqera.io/library/bowtie_htslib_samtools:e1e242368ffcb5d3' }"
+        'https://depot.galaxyproject.org/singularity/ribodetector:0.3.1--pyhdfd78af_0' :
+        'biocontainers/ribodetector:0.3.1--pyhdfd78af_0' }"
 
     publishDir "${params.outdir}/rrna_filter", mode: 'copy', pattern: "*_rrna_filter.log"
 
     input:
     tuple val(meta), path(reads)
-    path index  // Bowtie index directory or files
 
     output:
     tuple val(meta), path("*_no_rrna.fastq.gz"), emit: filtered_fastq
+    tuple val(meta), path("*_rrna.fastq.gz"), emit: rrna_fastq
     tuple val(meta), path("*_rrna_filter.log"), emit: log
     path "versions.yml", emit: versions
 
@@ -25,58 +25,55 @@ process BOWTIE_RRNA_FILTER {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def unzip_cmd = reads.name.endsWith('.gz') ? 'zcat' : 'cat'
-    def mismatches = params.bowtie_rrna_mismatches ?: 2
-    def k_value = params.bowtie_rrna_k ?: 1
+    def chunk_size = params.ribodetector_chunk_size ?: 256
+    def read_len = params.ribodetector_len ?: 100
 
     """
-    # Find the index base name from the staged files
-    # Use *.3.ebwt to avoid matching .rev.1.ebwt files
-    INDEX=\$(find -L ./ -name "*.3.ebwt" | sed 's/\\.3\\.ebwt\$//')
-
     # Count input reads
     INPUT_READS=\$(${unzip_cmd} ${reads} | wc -l | awk '{print \$1/4}')
 
-    # Align to rRNA index and extract unmapped reads
-    ${unzip_cmd} ${reads} | \\
-        bowtie \\
-        -p ${task.cpus} \\
-        -v ${mismatches} \\
-        -k ${k_value} \\
-        --un ${prefix}_no_rrna.fastq \\
-        ${args} \\
-        \$INDEX \\
-        - \\
-        > /dev/null 2> ${prefix}_bowtie.stderr
-
-    # Compress unmapped reads
-    gzip ${prefix}_no_rrna.fastq
+    # Run RiboDetector
+    # -i: input file
+    # -o: output file (non-rRNA reads)
+    # -r: output file for rRNA reads
+    # -t: number of threads
+    # -l: read length (for short reads, use actual length)
+    # -c: chunk size for processing
+    ribodetector_cpu \\
+        -i ${reads} \\
+        -o ${prefix}_no_rrna.fastq.gz \\
+        -r ${prefix}_rrna.fastq.gz \\
+        -t ${task.cpus} \\
+        -l ${read_len} \\
+        -c ${chunk_size} \\
+        ${args}
 
     # Count output reads (non-rRNA)
     OUTPUT_READS=\$(zcat ${prefix}_no_rrna.fastq.gz | wc -l | awk '{print \$1/4}')
 
-    # Calculate rRNA contamination
-    RRNA_READS=\$((\$INPUT_READS - \$OUTPUT_READS))
+    # Count rRNA reads
+    RRNA_READS=\$(zcat ${prefix}_rrna.fastq.gz | wc -l | awk '{print \$1/4}')
+
+    # Calculate percentages
     PCT_RRNA=\$(awk -v rrna=\$RRNA_READS -v input=\$INPUT_READS 'BEGIN {printf "%.6f", (rrna/input)*100}')
 
     # Create log file
     cat > ${prefix}_rrna_filter.log <<EOF
 Sample: ${prefix}
+Method: RiboDetector (ML-based)
 Input reads: \$INPUT_READS
 rRNA reads: \$RRNA_READS
 Percentage rRNA: \$PCT_RRNA
 Filtered reads (no rRNA): \$OUTPUT_READS
 Percentage retained: \$(awk -v out=\$OUTPUT_READS -v input=\$INPUT_READS 'BEGIN {printf "%.6f", (out/input)*100}')
+Parameters:
+  Read length: ${read_len}
+  Chunk size: ${chunk_size}
 EOF
-
-    # Append bowtie alignment summary
-    echo "" >> ${prefix}_rrna_filter.log
-    echo "Bowtie alignment summary:" >> ${prefix}_rrna_filter.log
-    cat ${prefix}_bowtie.stderr >> ${prefix}_rrna_filter.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        bowtie: \$(bowtie --version 2>&1 | head -n1 | sed 's/.*version //g')
-        samtools: \$(samtools --version 2>&1 | head -n1 | sed 's/samtools //g')
+        ribodetector: \$(ribodetector_cpu --version 2>&1 | sed 's/ribodetector_cpu //g' || echo "0.3.1")
     END_VERSIONS
     """
 
@@ -84,19 +81,20 @@ EOF
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     touch ${prefix}_no_rrna.fastq.gz
+    touch ${prefix}_rrna.fastq.gz
     cat > ${prefix}_rrna_filter.log <<EOF
 Sample: ${prefix}
+Method: RiboDetector (ML-based)
 Input reads: 1000000
-rRNA reads: 500000
-Percentage rRNA: 50.0
-Filtered reads (no rRNA): 500000
-Percentage retained: 50.0
+rRNA reads: 450000
+Percentage rRNA: 45.0
+Filtered reads (no rRNA): 550000
+Percentage retained: 55.0
 EOF
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        bowtie: 1.3.1
-        samtools: 1.19
+        ribodetector: 0.3.1
     END_VERSIONS
     """
 }

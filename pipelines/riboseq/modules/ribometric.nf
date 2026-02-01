@@ -8,10 +8,11 @@ process RIBOMETRIC {
     publishDir "${params.outdir}/RiboMetric", mode: 'copy', pattern: "*RiboMetric.{html,json,csv}"
 
     errorStrategy 'ignore'
-    
+
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
     path ribometric_annotation
+    path offset_file  // Optional: external offset file (e.g., from RiboWaltz)
 
     output:
     tuple val(meta), path("*RiboMetric.html"), emit: html
@@ -25,6 +26,22 @@ process RIBOMETRIC {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def sample_size = params.ribometric_sample_size ?: 10000000
+
+    // Determine offset configuration
+    // Priority: 1) external offset file, 2) global offset, 3) calculation method
+    def offset_args = ''
+    if (offset_file && offset_file.name != 'NO_OFFSET_FILE') {
+        // Use external offset file (e.g., from RiboWaltz)
+        offset_args = "--offset-read-length ${offset_file}"
+    } else if (params.ribometric_offset_global) {
+        // Use fixed global offset
+        offset_args = "--offset-global ${params.ribometric_offset_global}"
+    } else {
+        // Use calculation method (tripsviz, changepoint, ribowaltz)
+        def offset_method = params.ribometric_offset_method ?: 'tripsviz'
+        offset_args = "--offset-calculation-method ${offset_method}"
+    }
     """
     RiboMetric run \\
         --bam ${transcriptome_bam} \\
@@ -33,8 +50,8 @@ process RIBOMETRIC {
         --html \\
         --json \\
         --csv \\
-        --offset-calculation-method tripsviz \\
-        -S 10000000 \\
+        ${offset_args} \\
+        -S ${sample_size} \\
         $args
 
     cat <<-END_VERSIONS > versions.yml

@@ -5,7 +5,7 @@ process EXTRACT_RPFS {
     conda "conda-forge::python=3.10 conda-forge::biopython"
     container "ghcr.io/jackcurragh/get-rpf:main"
 
-    publishDir "${params.outdir}/getRPF/extract", mode: 'copy', pattern: "*.{seqspec.yaml,extraction_report.json,report.html}"
+    publishDir "${params.outdir}/getRPF/extract", mode: 'copy', pattern: "*.{extraction_report.json}"
 
     input:
     tuple val(meta), path(input_file)
@@ -13,9 +13,7 @@ process EXTRACT_RPFS {
 
     output:
     tuple val(meta), path("*_rpfs.fastq"), emit: rpfs
-    tuple val(meta), path("*.seqspec.yaml"), emit: seqspec
     tuple val(meta), path("*.extraction_report.json"), emit: report
-    tuple val(meta), path("*.report.html"), emit: html_report
     path "versions.yml", emit: versions
 
     when:
@@ -24,17 +22,18 @@ process EXTRACT_RPFS {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    // Ensure format is specified or inferred. Usually input_file identifies it.
-    // Assuming fastq input from pipeline.
+    def sample_size = params.getrpf_max_reads ?: 10000
+    def preserve_umi = params.getrpf_preserve_umi ? '--preserve-umi' : ''
     """
-    getRPF extract-rpf \\
+    # Use the recommended 'extract' command (alignment-based extraction)
+    getRPF extract \\
         ${input_file} \\
         ${prefix}_rpfs.fastq \\
-        -f fastq \\
-        --generate-seqspec \\
-        --output-format json \\
         --star-index ${star_index} \\
-        --star-threads ${task.cpus} \\
+        --sample-size ${sample_size} \\
+        --threads ${task.cpus} \\
+        ${preserve_umi} \\
+        --output-report ${prefix}.extraction_report.json \\
         $args
 
     cat <<-END_VERSIONS > versions.yml
@@ -47,9 +46,7 @@ process EXTRACT_RPFS {
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     touch ${prefix}_rpfs.fastq
-    touch ${prefix}_rpfs.seqspec.yaml
-    touch ${prefix}_rpfs.extraction_report.json
-    touch ${prefix}_rpfs.report.html
+    touch ${prefix}.extraction_report.json
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

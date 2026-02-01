@@ -1,6 +1,17 @@
 /*
  * DATA ACQUISITION SUBWORKFLOW
  * Handles fetching and collapsing of ribosome profiling data
+ *
+ * Supports multiple adapter detection methods:
+ * - getRPF (alignment-based extraction - RECOMMENDED)
+ * - Traditional with multiple fastp modes:
+ *   - fastp auto-detection
+ *   - fastp with explicit adapter sequence
+ *   - fastp with adapter FASTA from FASTQC top-hit
+ *
+ * Supports multiple rRNA filtering methods:
+ * - Bowtie (alignment-based, requires index)
+ * - RiboDetector (ML-based, no reference required)
  */
 
 include { LOCATE } from '../modules/locate.nf'
@@ -10,13 +21,14 @@ include { FIND_ADAPTERS } from '../modules/find_adapters.nf'
 include { EXTRACT_RPFS } from '../modules/extract_rpfs.nf'
 include { FASTP } from '../modules/fastp.nf'
 include { BOWTIE_RRNA_FILTER } from '../modules/bowtie_rrna_filter.nf'
-include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_INITIAL } from '../modules/collapse_fastq.nf'
+include { RIBODETECTOR } from '../modules/ribodetector.nf'
 include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_FINAL } from '../modules/collapse_fastq.nf'
 
 workflow DATA_ACQUISITION {
     take:
     sample_sheet      // path: CSV file with Run,study_accession columns
     adapter_list      // path: adapter list file for FASTQC
+    star_index        // path: STAR index directory
 
     main:
     // Validate required parameters
@@ -64,43 +76,85 @@ workflow DATA_ACQUISITION {
         // Download FastQ files
         FASTQ_DL(needs_processing)
 
-        // Run FastQC for quality control and adapter detection
+        // Run FastQC for quality control (always useful for QC reports)
         FASTQC(
             FASTQ_DL.out.fastq,
             adapter_list
         )
 
-        // Branch based on architecture detection setting
-        if (params.use_architecture_detection) {
-            // Masterful RPF Extraction (Detects + Trims + Reports)
+        // Branch based on RPF extraction method
+        // 'getrpf' = alignment-based extraction (recommended)
+        // 'traditional' = fastp-based trimming + optional rRNA filter
+        def use_getrpf = (params.rpf_extraction_method ?: 'getrpf') == 'getrpf'
+
+        if (use_getrpf) {
+            // getRPF Extraction (alignment-based - RECOMMENDED)
+            // Uses STAR alignment to determine biological sequence boundaries
             EXTRACT_RPFS(
                 FASTQ_DL.out.fastq,
-                file(params.star_index)
+                star_index
             )
 
             // Re-collapse after extraction
             COLLAPSE_FASTQ_FINAL(EXTRACT_RPFS.out.rpfs)
             newly_collapsed_reads = COLLAPSE_FASTQ_FINAL.out.collapsed_fasta
+
         } else {
-            // Traditional adapter finding approach
-            FIND_ADAPTERS(
-                FASTQ_DL.out.fastq,
-                FASTQC.out.txt
-            )
+            // Traditional fastp-based approach
+            // Determine adapter source based on params:
+            // 1. params.fastp_adapter_sequence - explicit sequence (handled in module)
+            // 2. params.fastp_adapter_fasta - user-provided FASTA file
+            // 3. FASTQC top-hit via FIND_ADAPTERS
+            // 4. fastp auto-detection (no adapter file)
 
-            // Trim with found adapters
-            FASTP(
-                FASTQ_DL.out.fastq
-                    .join(FIND_ADAPTERS.out.adapter_report)
-            )
-
-            // Filter rRNA contamination (if rRNA index provided)
-            if (params.rrna_index) {
-                BOWTIE_RRNA_FILTER(
-                    FASTP.out.trimmed_fastq,
-                    file("${params.rrna_index}/*")
+            if (params.fastp_adapter_fasta) {
+                // User-provided adapter FASTA file
+                adapter_file = Channel.fromPath(params.fastp_adapter_fasta)
+                fastq_with_adapter = FASTQ_DL.out.fastq
+                    .combine(adapter_file)
+            } else if (params.fastp_adapter_sequence) {
+                // Explicit sequence - pass placeholder, module uses param
+                fastq_with_adapter = FASTQ_DL.out.fastq
+                    .map { meta, fastq -> [ meta, fastq, file('NO_ADAPTER_FILE') ] }
+            } else if (params.adapter_detection_method == 'fastqc_tophit') {
+                // Use FASTQC to find top-hit adapter
+                FIND_ADAPTERS(
+                    FASTQ_DL.out.fastq,
+                    FASTQC.out.txt
                 )
-                filtered_fastq = BOWTIE_RRNA_FILTER.out.filtered_fastq
+                fastq_with_adapter = FASTQ_DL.out.fastq
+                    .join(FIND_ADAPTERS.out.adapter_report)
+            } else {
+                // fastp auto-detection (default for traditional)
+                fastq_with_adapter = FASTQ_DL.out.fastq
+                    .map { meta, fastq -> [ meta, fastq, file('NO_ADAPTER_FILE') ] }
+            }
+
+            // Unpack and run FASTP with appropriate inputs
+            FASTP(
+                fastq_with_adapter.map { meta, fastq, adapter -> [ meta, fastq ] },
+                fastq_with_adapter.map { meta, fastq, adapter -> adapter }.first()
+            )
+
+            // Filter rRNA contamination (if explicitly enabled)
+            if (params.run_rrna_filter) {
+                def rrna_method = params.rrna_filter_method ?: 'bowtie'
+
+                if (rrna_method == 'ribodetector') {
+                    // ML-based rRNA detection (no reference required)
+                    RIBODETECTOR(FASTP.out.trimmed_fastq)
+                    filtered_fastq = RIBODETECTOR.out.filtered_fastq
+                } else if (rrna_method == 'bowtie' && params.rrna_index) {
+                    // Bowtie alignment-based filtering (requires index)
+                    BOWTIE_RRNA_FILTER(
+                        FASTP.out.trimmed_fastq,
+                        file("${params.rrna_index}/*")
+                    )
+                    filtered_fastq = BOWTIE_RRNA_FILTER.out.filtered_fastq
+                } else {
+                    log.warn "rRNA filtering enabled but no valid method/index. Using unfiltered reads."
+                    filtered_fastq = FASTP.out.trimmed_fastq
+                }
             } else {
                 filtered_fastq = FASTP.out.trimmed_fastq
             }
