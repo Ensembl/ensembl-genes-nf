@@ -25,9 +25,10 @@ process EXTRACT_RPFS {
     def sample_size = params.getrpf_max_reads ?: 10000
     def preserve_umi = params.getrpf_preserve_umi ? '--preserve-umi' : ''
     """
+    gzip -d -c ${input_file} > temp_input.fastq
     # Use the recommended 'extract' command (alignment-based extraction)
     getRPF extract \\
-        ${input_file} \\
+        temp_input.fastq \\
         ${prefix}_rpfs.fastq \\
         --star-index ${star_index} \\
         --sample-size ${sample_size} \\
