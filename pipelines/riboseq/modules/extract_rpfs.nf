@@ -5,15 +5,18 @@ process EXTRACT_RPFS {
     conda "conda-forge::python=3.10 conda-forge::biopython"
     container "ghcr.io/jackcurragh/get-rpf:main"
 
-    publishDir "${params.outdir}/getRPF/extract", mode: 'copy', pattern: "*.{extraction_report.json}"
+    publishDir "${params.outdir}/getRPF/extract", mode: 'copy', pattern: "*.{extraction_report.json,trimmed.fastq}"
+    publishDir "${params.outdir}/collapsed_fa", mode: 'copy', pattern: "*.collapsed.fa"
 
     input:
     tuple val(meta), path(input_file)
     path star_index
 
     output:
+    tuple val(meta), path("*.collapsed.fa"), emit: collapsed_fasta
     tuple val(meta), path("*_rpfs.fastq"), emit: rpfs
     tuple val(meta), path("*.extraction_report.json"), emit: report
+    tuple val(meta), path("*.trimmed.fastq"), optional: true, emit: debug_trimmed
     path "versions.yml", emit: versions
 
     when:
@@ -33,7 +36,6 @@ process EXTRACT_RPFS {
         --sample-size ${sample_size} \\
         --threads ${task.cpus} \\
         ${preserve_umi} \\
-        --output-report ${prefix}.extraction_report.json \\
         $args
 
     cat <<-END_VERSIONS > versions.yml
@@ -45,6 +47,7 @@ process EXTRACT_RPFS {
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
+    touch ${prefix}_rpfs.collapsed.fa
     touch ${prefix}_rpfs.fastq
     touch ${prefix}.extraction_report.json
 

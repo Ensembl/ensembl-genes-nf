@@ -92,14 +92,13 @@ workflow DATA_ACQUISITION {
         if (use_getrpf) {
             // getRPF Extraction (alignment-based - RECOMMENDED)
             // Uses STAR alignment to determine biological sequence boundaries
+            // Produces collapsed FASTA directly (no separate collapse step needed)
             EXTRACT_RPFS(
                 FASTQ_DL.out.fastq,
                 star_index
             )
 
-            // Re-collapse after extraction
-            COLLAPSE_FASTQ_FINAL(EXTRACT_RPFS.out.rpfs)
-            newly_collapsed_reads = COLLAPSE_FASTQ_FINAL.out.collapsed_fasta
+            newly_collapsed_reads = EXTRACT_RPFS.out.collapsed_fasta
 
         } else {
             // Traditional fastp-based approach
