@@ -381,33 +381,16 @@ class GlobalMatrixMerger:
         zarr_version = tuple(int(x) for x in zarr.__version__.split('.')[:2])
 
         if zarr_version >= (3, 0):
-            # Zarr v3 API - use open_group and create_array with codecs
-            try:
-                from zarr.codecs import BloscCodec, BytesCodec
-                codecs = [BytesCodec(), BloscCodec(cname='zstd', clevel=3, shuffle='bitshuffle')]
-            except ImportError:
-                # Fallback if codecs module structure differs
-                codecs = None
-
+            # Zarr v3 API - use open_group and create_array
+            # Use default compression (zarr v3 handles this automatically)
             root = zarr.open_group(str(matrix_path), mode='w')
-            if codecs:
-                counts = root.create_array(
-                    'counts',
-                    shape=(n_reads, n_samples),
-                    chunks=(self.chunk_size, n_samples),
-                    dtype='uint32',
-                    fill_value=0,
-                    codecs=codecs
-                )
-            else:
-                # Use defaults if codec import failed
-                counts = root.create_array(
-                    'counts',
-                    shape=(n_reads, n_samples),
-                    chunks=(self.chunk_size, n_samples),
-                    dtype='uint32',
-                    fill_value=0
-                )
+            counts = root.create_array(
+                'counts',
+                shape=(n_reads, n_samples),
+                chunks=(self.chunk_size, n_samples),
+                dtype='uint32',
+                fill_value=0
+            )
         else:
             # Zarr v2 API
             blosc_compressor = numcodecs.Blosc(cname='zstd', clevel=3, shuffle=2)
