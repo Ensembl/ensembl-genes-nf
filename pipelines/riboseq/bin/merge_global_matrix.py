@@ -381,16 +381,19 @@ class GlobalMatrixMerger:
         zarr_version = tuple(int(x) for x in zarr.__version__.split('.')[:2])
 
         if zarr_version >= (3, 0):
-            # Zarr v3 API - use open_group and create_array
-            # Use default compression (zarr v3 handles this automatically)
-            root = zarr.open_group(str(matrix_path), mode='w')
-            counts = root.create_array(
-                'counts',
+            # Zarr v3 API - create array directly, then open group for metadata
+            matrix_path.mkdir(parents=True, exist_ok=True)
+            counts_path = matrix_path / 'counts'
+            counts = zarr.open_array(
+                str(counts_path),
+                mode='w',
                 shape=(n_reads, n_samples),
                 chunks=(self.chunk_size, n_samples),
                 dtype='uint32',
                 fill_value=0
             )
+            # Open the parent group for metadata
+            root = zarr.open_group(str(matrix_path), mode='a')
         else:
             # Zarr v2 API
             blosc_compressor = numcodecs.Blosc(cname='zstd', clevel=3, shuffle=2)
