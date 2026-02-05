@@ -377,22 +377,52 @@ class GlobalMatrixMerger:
         """Build chunked Zarr matrix."""
         matrix_path = self.output_dir / f'{self.prefix}_matrix.zarr'
 
-        # Initialize Zarr array
-        store = zarr.DirectoryStore(str(matrix_path))
-        root = zarr.group(store=store, overwrite=True)
+        # Initialize Zarr array - handle both v2 and v3 APIs
+        zarr_version = tuple(int(x) for x in zarr.__version__.split('.')[:2])
 
-        # Create chunked array
-        # Chunks: (chunk_size reads, all samples) for efficient locus queries
-        counts = root.create_dataset(
-            'counts',
-            shape=(n_reads, n_samples),
-            chunks=(self.chunk_size, n_samples),
-            dtype='uint32',
-            compressor=numcodecs.Blosc(cname='zstd', clevel=3, shuffle=2),
-            fill_value=0
-        )
+        if zarr_version >= (3, 0):
+            # Zarr v3 API - use open_group and create_array with codecs
+            try:
+                from zarr.codecs import BloscCodec, BytesCodec
+                codecs = [BytesCodec(), BloscCodec(cname='zstd', clevel=3, shuffle='bitshuffle')]
+            except ImportError:
+                # Fallback if codecs module structure differs
+                codecs = None
 
-        # Store metadata
+            root = zarr.open_group(str(matrix_path), mode='w')
+            if codecs:
+                counts = root.create_array(
+                    'counts',
+                    shape=(n_reads, n_samples),
+                    chunks=(self.chunk_size, n_samples),
+                    dtype='uint32',
+                    fill_value=0,
+                    codecs=codecs
+                )
+            else:
+                # Use defaults if codec import failed
+                counts = root.create_array(
+                    'counts',
+                    shape=(n_reads, n_samples),
+                    chunks=(self.chunk_size, n_samples),
+                    dtype='uint32',
+                    fill_value=0
+                )
+        else:
+            # Zarr v2 API
+            blosc_compressor = numcodecs.Blosc(cname='zstd', clevel=3, shuffle=2)
+            store = zarr.DirectoryStore(str(matrix_path))
+            root = zarr.group(store=store, overwrite=True)
+            counts = root.create_dataset(
+                'counts',
+                shape=(n_reads, n_samples),
+                chunks=(self.chunk_size, n_samples),
+                dtype='uint32',
+                compressor=blosc_compressor,
+                fill_value=0
+            )
+
+        # Store metadata (attrs API works in both v2 and v3)
         root.attrs['n_reads'] = n_reads
         root.attrs['n_samples'] = n_samples
         root.attrs['samples'] = self.all_samples
