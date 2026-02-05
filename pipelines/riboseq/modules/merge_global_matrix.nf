@@ -18,9 +18,9 @@ process MERGE_GLOBAL_MATRIX {
 
     output:
     path "global_matrix.zarr", emit: matrix, type: 'dir'
-    path "unique_reads.fasta", emit: fasta
-    path "read_metadata.parquet", emit: metadata
-    path "index_config.json", emit: config
+    path "global_reads.fasta", emit: fasta
+    path "global_metadata.parquet", emit: metadata
+    path "global_config.json", emit: config
     path "samples.json", emit: samples, optional: true
     path "versions.yml", emit: versions
 
