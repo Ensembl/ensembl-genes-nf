@@ -222,7 +222,7 @@ All modules receive and emit a `meta` map containing:
 
 - [Workflow Documentation](../workflows/busco.md) - How workflows use modules
 - [Parameter Reference](../parameters.md) - Configuration options
-- [Pipeline Overview](../overview.md) - Architecture and design
+- [Pipeline Overview](../index.md) - Architecture and design
 - [Source Code](https://github.com/Ensembl/ensembl-genes-nf/tree/feature/collection_tmp/pipelines/statistics/modules) - View module implementations
 
 ---
