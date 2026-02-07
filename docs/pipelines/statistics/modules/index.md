@@ -39,13 +39,6 @@ Modules for storing results in Ensembl databases:
 | **BUSCO_CORE_METAKEYS** | Insert BUSCO results into core database | [View Docs](busco-core-metakeys.md) |
 | **POPULATE_DB** | Load statistics into database | [View Docs](populate-db.md) |
 
-### Utility Modules
-
-Supporting modules for pipeline operations:
-
-| Module | Purpose | Documentation |
-|--------|---------|---------------|
-| **CLEANING** | Clean up temporary files | [View Docs](cleaning.md) |
 
 ## 🔗 Module Usage by Workflow
 
@@ -190,10 +183,6 @@ All modules receive and emit a `meta` map containing:
 -   [**BUSCO_PROTEIN_LINEAGE**](busco-protein-lineage.md)
     
     Run BUSCO assessment on protein sequences
-
--   [**CLEANING**](cleaning.md)
-    
-    Clean up temporary files and directories
 
 -   [**DB_METADATA**](db-metadata.md)
     

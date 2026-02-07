@@ -29,11 +29,6 @@ I've created comprehensive documentation for the Statistics Pipeline modules. He
    - Includes caching strategies, performance optimization
    - Complete troubleshooting guide for network issues
 
-3. **CLEANING Module** (`modules/cleaning.md`)
-   - 495 lines of documentation
-   - Covers cleanup utilities and best practices
-   - Includes safety considerations and alternatives
-   - Warnings about data deletion
 
 ## 📁 Documentation Structure
 
@@ -41,8 +36,7 @@ I've created comprehensive documentation for the Statistics Pipeline modules. He
 ensembl-genes-nf/docs/pipelines/statistics/modules/
 ├── index.md                    # Main module overview (243 lines)
 ├── db-metadata.md              # DB_METADATA module (518 lines)
-├── fetch-genome.md             # FETCH_GENOME module (642 lines)
-└── cleaning.md                 # CLEANING module (495 lines)
+└──  fetch-genome.md             # FETCH_GENOME module (642 lines)
 ```
 
 **Total Documentation**: 1,898 lines across 4 files
@@ -405,7 +399,6 @@ If you find issues or want to contribute:
 - [Module Index](modules/index.md) - All modules overview
 - [DB_METADATA](modules/db-metadata.md) - Database metadata extraction
 - [FETCH_GENOME](modules/fetch-genome.md) - Genome downloading
-- [CLEANING](modules/cleaning.md) - Cleanup utilities
 
 ### External Resources
 
