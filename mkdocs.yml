@@ -1,6 +1,6 @@
 copyright: Copyright &copy; [2016-<script>document.write(new Date().getFullYear())</script>]
   <a href="https://www.ebi.ac.uk">EMBL-European Bioinformatics Institute</a>
-docs_dir: mkdocs
+docs_dir: docs
 site_name: Ensembl Genes Statistics Pipeline
 site_description: Documentation for the Ensembl Genes Statistics Pipeline
 site_author: Ensembl Team
