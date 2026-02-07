@@ -53,8 +53,6 @@ dev = [
 ]
 
 docs = [
-    "sphinx>=7,<9",
-
     "mkdocs",
     "mkdocs-material",
     "mkdocs-gen-files",
