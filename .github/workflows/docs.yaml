@@ -94,7 +94,8 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: site  # MkDocs build output directory
+          publish_dir: site_statistics
+          # MkDocs build output directory
           # Optional: specify branch or folder
           # publish_branch: gh-pages
           # keep_files: true
