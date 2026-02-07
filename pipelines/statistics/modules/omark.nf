@@ -15,7 +15,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*OMARK process to run OMark on input files
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+- omamer_file: path to the input file for OMark
+Outputs:
+- omark_output: tuple of meta and OMark output files
+- versions.yml: versions file containing software versions used
+*/
 process OMARK {
     label 'omamer'
     tag "${meta.gca}"

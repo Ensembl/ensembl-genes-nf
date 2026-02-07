@@ -15,9 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-
-
+/*POPULATE_DB process to populate core database with statistics and metakeys
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+- sql_file: path to the SQL file to be executed
+Outputs:
+- versions.yml: versions file containing software versions used
+*/
 process POPULATE_DB {
     label 'default'
     tag "${meta.dbname}"

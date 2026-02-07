@@ -15,7 +15,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*BUSCO_GENOME_LINEAGE process to run BUSCO in genome mode
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+- genome_file: path to the genome FASTA file
+Outputs:
+- busco_genome_lineage_output: tuple of meta and BUSCO output files
+- versions_busco_genome.yml: versions file containing software versions used
+*/
 
 process BUSCO_GENOME_LINEAGE {
     label "busco"

@@ -16,7 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
+/*FETCH_GENOME process to fetch genome FASTA file from NCBI using GCA accession
+Inputs:
+- meta: metadata map containing gca
+Outputs:
+- genome_file_output: tuple of meta and genome FASTA file
+- versions.yml: versions file containing software versions used
+*/
 process FETCH_GENOME {
     tag "${meta.gca}:genome"
     label 'fetch_file'

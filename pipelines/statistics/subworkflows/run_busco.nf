@@ -31,17 +31,18 @@ include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 include { BUSCO_GENOME_LINEAGE } from '../modules/busco_genome_lineage.nf'
 include { BUSCO_PROTEIN_LINEAGE } from '../modules/busco_protein_lineage.nf'
-//include { BUSCO_OUTPUT as BUSCO_GENOME_OUTPUT } from '../modules/busco_output.nf'
-//include { BUSCO_OUTPUT as BUSCO_PROTEIN_OUTPUT } from '../modules/busco_output.nf'
 include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_PROTEIN } from '../modules/busco_core_metakeys.nf'
 include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_GENOME } from '../modules/busco_core_metakeys.nf'
-//include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_GENOME_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
-//include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_PROTEIN_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN MAIN WORKFLOW
+    RUN BUSCO SUBWORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In this subworkflow we run BUSCO on either genome or protein mode based on user input.
+We first fetch metadata from the core database or from NCBI depending on the input parameters.
+We then select the appropriate BUSCO dataset based on the taxon_id.
+Finally, we run BUSCO in the selected mode(s) and populate the core database with the results.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 */
 workflow RUN_BUSCO {
     take:

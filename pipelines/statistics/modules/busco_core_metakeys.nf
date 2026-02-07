@@ -15,7 +15,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*BUSCO_CORE_METAKEYS process to add BUSCO results to core database metadata
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+- summary_file: path to the BUSCO summary file  
+Outputs:
+- versions.yml: versions file containing software versions used
 
+*/
 process BUSCO_CORE_METAKEYS {
 
     label 'python'

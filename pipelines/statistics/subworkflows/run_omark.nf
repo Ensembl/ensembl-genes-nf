@@ -21,7 +21,10 @@ nextflow.enable.dsl = 2
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    IMPORT LOCAL MODULES/SUBWORKFLOWS
+RUN OMARK WORKFLOW
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In this subworkflow we fetch core database metadata, fetch protein sequences from the core database,
+run Omamer to get orthologous groups, run OMark to get metakeys, and populate the core database with the results.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
@@ -29,8 +32,6 @@ include { DB_METADATA } from '../modules/db_metadata.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 include { OMAMER_HOG } from '../modules/omamer_hog.nf'
 include { OMARK } from '../modules/omark.nf'
-//include { OMARK_OUTPUT } from '../modules/omark/omark_output.nf'
-//include { COPY_OUTPUT_TO_ENSEMBL_FTP as COPY_OMARK_OUTPUT } from '../modules/copy_output_to_ensembl_ftp.nf'
 
 
 /*

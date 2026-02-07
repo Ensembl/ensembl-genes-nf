@@ -15,7 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*DB_METADATA process to fetch core database metadata
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+Outputs:
+- metadata: tuple of meta and metadata.txt file
+- versions.yml: versions file containing software versions used
+*/
 process DB_METADATA {
     label 'python'
     tag "${meta.dbname}"

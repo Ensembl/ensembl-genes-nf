@@ -15,7 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*FETCH_PROTEINS process to fetch protein FASTA file from core database
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+Outputs:
+- protein_file_output: tuple of meta and protein FASTA file
+- versions.yml: versions file containing software versions used
+*/
 
 process FETCH_PROTEINS {
     tag "${meta.dbname}:protein"

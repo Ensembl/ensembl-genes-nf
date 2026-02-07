@@ -15,7 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*BUSCO_DATASET process to select BUSCO dataset based on taxon_id
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+Outputs:
+- busco_dataset_output: tuple of meta and selected busco_dataset
+- versions.yml: versions file containing software versions used
+*/
 process BUSCO_DATASET {
 
     label 'python'

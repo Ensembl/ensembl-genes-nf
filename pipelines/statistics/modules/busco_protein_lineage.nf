@@ -15,7 +15,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*BUSCO_PROTEIN_LINEAGE process to run BUSCO in protein mode
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca       
+- translation_file: path to the protein FASTA file
+Outputs:
+- busco_protein_lineage_output: tuple of meta and BUSCO output files
+- versions_busco_protein.yml: versions file containing software versions used
+*/
 process BUSCO_PROTEIN_LINEAGE {
     label 'busco'
     tag "${meta.gca}"

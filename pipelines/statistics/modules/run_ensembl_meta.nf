@@ -15,7 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*RUN_ENSEMBL_META process to fetch Ensembl core database metadata SQL files
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca   
+Outputs:
+- ensembl_meta_output: tuple of meta and generated SQL files
+- versions.yml: versions file containing software versions used
+*/
 process RUN_ENSEMBL_META {
     label 'python'
     tag "${meta.gca}"

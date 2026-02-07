@@ -15,7 +15,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*OMAMER_HOG process to run OMAMER HOG search
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+- translation_file: path to the protein FASTA file
+Outputs:
+- omamer_hog_output: tuple of meta and OMAMER output files
+- versions.yml: versions file containing software versions used
+*/
 process OMAMER_HOG {
     maxForks 15
     label 'omamer'
