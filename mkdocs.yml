@@ -67,7 +67,6 @@ plugins:
       enable_creation_date: true    
 
 nav:
-  - Home: index.md
   - Statistics Pipeline:
     - Overview: pipelines/statistics/index.md
     - Quick Start: pipelines/statistics/quickstart.md

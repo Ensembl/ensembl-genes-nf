@@ -4,7 +4,6 @@ The **Statistics Pipeline** generates comprehensive quality metrics and statisti
 
 ## Quick Links
 
-- **[Overview](overview.md)** - Introduction
 - **[Quick Start Guide](quickstart.md)** - Get up and running quickly
 - **[Input Specification](input.md)** - Prepare your input data
 - **[Output Reference](output.md)** - Understand the results
@@ -343,29 +342,27 @@ nextflow run main.nf \
 The statistics pipeline consists of 13 modules organized into functional categories:
 
 ### Data Retrieval Modules
-1. **[fetch-genome](fetch-genome.md)** - Retrieves genome sequences from Ensembl core databases
-2. **[fetch-proteins](fetch-proteins.md)** - Extracts protein translations from Ensembl databases
+1. **[fetch-genome](modules/fetch-genome.md)** - Retrieves genome sequences from Ensembl core databases
+2. **[fetch-proteins](modules/fetch-proteins.md)** - Extracts protein translations from Ensembl databases
 
 ### BUSCO Quality Assessment Modules
-3. **[busco-dataset](busco-dataset.md)** - Downloads appropriate BUSCO lineage datasets
-4. **[busco-genome-lineage](busco-genome-lineage.md)** - Runs BUSCO assessment on genome sequences
-5. **[busco-protein-lineage](busco-protein-lineage.md)** - Runs BUSCO assessment on protein translations
-6. **[busco-core-metakeys](busco-core-metakeys.md)** - Patches BUSCO metadata into core databases
+3. **[busco-dataset](modules/busco-dataset.md)** - Downloads appropriate BUSCO lineage datasets
+4. **[busco-genome-lineage](modules/busco-genome-lineage.md)** - Runs BUSCO assessment on genome sequences
+5. **[busco-protein-lineage](modules/busco-protein-lineage.md)** - Runs BUSCO assessment on protein translations
+6. **[busco-core-metakeys](modules/busco-core-metakeys.md)** - Patches BUSCO metadata into core databases
 
 ### Orthology Analysis Modules
-7. **[omamer-hog](omamer-hog.md)** - Performs orthology inference using OMAmer
-8. **[omark](omark.md)** - Quality assessment of protein annotations using OMark
+7. **[omamer-hog](modules/omamer-hog.md)** - Performs orthology inference using OMAmer
+8. **[omark](modules/omark.md)** - Quality assessment of protein annotations using OMark
 
 ### Statistics Generation Modules
-9. **[run-statistics](run-statistics.md)** - Generates comprehensive annotation statistics
-10. **[run-ensembl-meta](run-ensembl-meta.md)** - Generates core database metadata SQL files
+9. **[run-statistics](modules/run-statistics.md)** - Generates comprehensive annotation statistics
+10. **[run-ensembl-meta](modules/run-ensembl-meta.md)** - Generates core database metadata SQL files
 
 ### Database Operations Modules
-11. **[populate-db](populate-db.md)** - Executes SQL files to populate databases
-12. **[db-metadata](db-metadata.md)** - Manages database metadata and versioning
+11. **[populate-db](modules/populate-db.md)** - Executes SQL files to populate databases
+12. **[db-metadata](modules/db-metadata.md)** - Manages database metadata and versioning
 
-### Data Cleanup Modules
-13. **[cleaning](cleaning.md)** - Removes intermediate files to save storage space
 
 ## Pipeline Flow
 
