@@ -73,7 +73,7 @@ jobs:
       - name: Build MkDocs site
         run: |
           echo "Building statistics pipeline documentation..."
-          mkdocs build --config-file mkdocs.yml --site-dir site_statistics
+          mkdocs build --config-file mkdocs.yml -d site_statistics
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -105,7 +105,7 @@ jobs:
           echo "## 📚 Statistics Pipeline Documentation Deployed! 🎉" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Documentation built successfully" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 Live at: https://${{ github.repository_owner }}.github.io/${{ github.repository }}/" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 GitHub URL: https://github.com/Ensembl/ensembl-genes-nf/" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Pipeline Info" >> $GITHUB_STEP_SUMMARY
           echo "- Pipeline: Statistics" >> $GITHUB_STEP_SUMMARY
