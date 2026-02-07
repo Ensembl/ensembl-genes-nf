@@ -80,32 +80,29 @@ jobs:
         with:
           path: site_statistics
 
-  # Deploy job
+    # Deploy job
   deploy:
     # Only deploy on push to main/feature branches (not on PRs)
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    environment:
+      name: github-pages-statistics
+      url: ${{ steps.deployment.outputs.page_url }}
+
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Deploy Statistics Pipeline Docs to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: site_statistics
-          # MkDocs build output directory
-          # Optional: specify branch or folder
-          # publish_branch: gh-pages
-          # keep_files: true
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: Summary
         run: |
           echo "## 📚 Statistics Pipeline Documentation Deployed! 🎉" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "✅ Documentation built successfully" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 GitHub URL: https://github.com/Ensembl/ensembl-genes-nf/" >> $GITHUB_STEP_SUMMARY
+          echo "🌐 Live at: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Pipeline Info" >> $GITHUB_STEP_SUMMARY
           echo "- Pipeline: Statistics" >> $GITHUB_STEP_SUMMARY
@@ -128,4 +125,3 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: '## 📚 Documentation Preview Built\n\n✅ Statistics pipeline documentation built successfully!\n\n> **Note:** This is a preview build. Documentation will be deployed when merged to main.'
-            })
