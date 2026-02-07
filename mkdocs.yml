@@ -77,6 +77,8 @@ nav:
       - BUSCO: pipelines/statistics/workflows/busco.md
       - OMArk: pipelines/statistics/workflows/omark.md
       - Ensembl Stats: pipelines/statistics/workflows/ensembl-stats.md
+    - Modules:
+          - Overview: pipelines/statistics/modules/index.md  
     - Output: pipelines/statistics/output.md
     - Troubleshooting: pipelines/statistics/troubleshooting.md
   - Development:
