@@ -63,4 +63,4 @@ For questions, issues, or contributions:
 
 ## License
 
-This project is licensed under the Apache License 2.0. See the [License](development/license.md) page for details.
+This project is licensed under the Apache License 2.0.

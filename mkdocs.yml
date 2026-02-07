@@ -81,6 +81,4 @@ nav:
           - Overview: pipelines/statistics/modules/index.md  
     - Output: pipelines/statistics/output.md
     - Troubleshooting: pipelines/statistics/troubleshooting.md
-  - Development:
-    - Contributing: development/contributing.md
-    - License: development/license.md
+
