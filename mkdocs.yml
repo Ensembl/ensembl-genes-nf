@@ -1,0 +1,84 @@
+copyright: Copyright &copy; [2016-<script>document.write(new Date().getFullYear())</script>]
+  <a href="https://www.ebi.ac.uk">EMBL-European Bioinformatics Institute</a>
+docs_dir: mkdocs
+site_name: Ensembl Genes Statistics Pipeline
+site_description: Documentation for the Ensembl Genes Statistics Pipeline
+site_author: Ensembl Team
+repo_url: https://github.com/Ensembl/ensembl-genes-nf
+repo_name: Ensembl/ensembl-genes-nf
+
+extra_css:
+- stylesheets/extra.css
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+  font:
+    code: IBM Plex Mono
+    text: Lato
+  icon:
+    repo: fontawesome/brands/github
+  logo: img/ebang.png
+
+use_directory_urls: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+  - git-revision-date-localized:
+    enable_creation_date: true    
+
+nav:
+  - Home: index.md
+  - Statistics Pipeline:
+    - Overview: pipelines/statistics/overview.md
+    - Quick Start: pipelines/statistics/quickstart.md
+    - Parameters: pipelines/statistics/parameters.md
+    - Input Format: pipelines/statistics/input.md
+    - Workflows:
+      - BUSCO: pipelines/statistics/workflows/busco.md
+      - OMArk: pipelines/statistics/workflows/omark.md
+      - Ensembl Stats: pipelines/statistics/workflows/ensembl-stats.md
+    - Output: pipelines/statistics/output.md
+    - Troubleshooting: pipelines/statistics/troubleshooting.md
+  - Development:
+    - Contributing: development/contributing.md
+    - License: development/license.md
