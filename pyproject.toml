@@ -60,6 +60,8 @@ docs = [
     "mkdocs-literate-nav",
     "mkdocs-section-index",
     "mkdocs-coverage",
+    "mkdocs-minify-plugin",
+    "mkdocs-git-revision-date-localized-plugin",
 ]
 
 [project.urls]

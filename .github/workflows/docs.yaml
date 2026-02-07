@@ -64,7 +64,7 @@ jobs:
           pip install ".[docs]" || \
           pip install mkdocs mkdocs-material mkdocs-gen-files \
           mkdocstrings[python] mkdocs-literate-nav mkdocs-section-index \
-          mkdocs-coverage
+          mkdocs-coverage mkdocs-minify-plugin mkdocs-git-revision-date-localized-plugin
       
       - name: Verify MkDocs configuration
         run: |
