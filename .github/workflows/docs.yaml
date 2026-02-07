@@ -69,12 +69,12 @@ jobs:
       - name: Verify MkDocs configuration
         run: |
           echo "Verifying MkDocs configuration for statistics pipeline..."
-          mkdocs build --config-file mkdocs_statistics.yml --strict --verbose
+          mkdocs build --config-file mkdocs.yml --strict --verbose
       
       - name: Build MkDocs site
         run: |
           echo "Building statistics pipeline documentation..."
-          mkdocs build --config-file mkdocs_statistics.yml
+          mkdocs build --config-file mkdocs.yml
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

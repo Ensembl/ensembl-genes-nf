@@ -14,7 +14,7 @@
 
 [project]
 name = "ensembl-genes-nf"
-description = "Ensembl Gene Statistics pipeline"
+description = "Ensembl Gene Nextflow pipelines"
 requires-python = ">= 3.8"
 version = "0.1"
 readme = "README.md"
@@ -38,7 +38,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-# dependencies = []
+
 
 [project.optional-dependencies]
 dev = [
@@ -51,9 +51,17 @@ dev = [
     "pytest",
     "Sphinx",
 ]
-doc = [
-    "mock",
-    "Sphinx",
+
+docs = [
+    "sphinx>=7,<9",
+
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-gen-files",
+    "mkdocstrings[python]",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
+    "mkdocs-coverage",
 ]
 
 [project.urls]
