@@ -8,9 +8,7 @@ process STAR_ALIGN_UNIQUE_READS {
     label 'process_high'
 
     conda "bioconda::star=2.7.11a bioconda::samtools=1.19"
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mulled-v2-1fa26d1ce03c295fe2fdcf85831a92fbcbd7e8c2:ded3841da0194af2701c780e9b3d653a85d27571-0' :
-        'biocontainers/mulled-v2-1fa26d1ce03c295fe2fdcf85831a92fbcbd7e8c2:ded3841da0194af2701c780e9b3d653a85d27571-0' }"
+    container "oras://community.wave.seqera.io/library/samtools_star:1b5dd3ca5b761fb8"
 
     publishDir "${params.outdir}/global", mode: 'copy'
 
