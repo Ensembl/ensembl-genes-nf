@@ -1,0 +1,19 @@
+name: riboseq-analysis
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.12
+  - numpy>=2.0
+  - polars>=1.0
+  - zarr>=3.0
+  - matplotlib>=3.9
+  - scikit-learn>=1.5
+  - scipy>=1.14
+  - pandas>=2.2
+  - pysam>=0.22
+  - ipykernel
+  - pip
+  - pip:
+    - biobear
+    - pyranges1
