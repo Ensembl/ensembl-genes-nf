@@ -50,19 +50,22 @@ if (!params.chrom_sizes) { error "Please provide --chrom_sizes" }
 include { PSITE_BIGWIG } from './subworkflows/psite_bigwig.nf'
 
 workflow {
-    // Load genome BAMs as regular channel
-    // Expects: sample1.bam, sample1.bam.bai (or sample1.bai)
+    // Load genome BAMs with their index files
     genome_bam_ch = Channel
-        .fromFilePairs("${params.genome_bam_dir}/*.{bam,bam.bai}", size: 2, flat: true)
-        .map { prefix, bam, bai ->
+        .fromPath("${params.genome_bam_dir}/*.bam")
+        .map { bam ->
+            def bai = file("${bam}.bai")
+            if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai")
             def meta = [id: bam.baseName.replaceAll(/\.sorted$/, '')]
             [meta, bam, bai]
         }
 
-    // Load transcriptome BAMs as regular channel
+    // Load transcriptome BAMs with their index files
     transcriptome_bam_ch = Channel
-        .fromFilePairs("${params.transcriptome_bam_dir}/*.{bam,bam.bai}", size: 2, flat: true)
-        .map { prefix, bam, bai ->
+        .fromPath("${params.transcriptome_bam_dir}/*.bam")
+        .map { bam ->
+            def bai = file("${bam}.bai")
+            if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai")
             def meta = [id: bam.baseName.replaceAll(/\.sorted$/, '').replaceAll(/\.toTranscriptome$/, '')]
             [meta, bam, bai]
         }
