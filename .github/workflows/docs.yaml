@@ -26,17 +26,16 @@ on:
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: write
-  pages: write
-  id-token: write
+
 
 # Allow only one concurrent deployment
 concurrency:
-  group: "pages"
+  group: "gh-pages"
   cancel-in-progress: false
 
 jobs:
   # Build job
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     
     steps:
@@ -75,48 +74,18 @@ jobs:
           echo "Building statistics pipeline documentation..."
           mkdocs build --config-file mkdocs.yml -d site_statistics
       
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      # Deploy ONLY on push or manual trigger
+      - name: Deploy to GitHub Pages (gh-pages branch)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          path: site_statistics
-
-    # Deploy job
-  deploy:
-    # Only deploy on push to main/feature branches (not on PRs)
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-
-    environment:
-      name: github-pages-statistics
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
-      - name: Summary
-        run: |
-          echo "## 📚 Statistics Pipeline Documentation Deployed! 🎉" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Documentation built successfully" >> $GITHUB_STEP_SUMMARY
-          echo "🌐 Live at: ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Pipeline Info" >> $GITHUB_STEP_SUMMARY
-          echo "- Pipeline: Statistics" >> $GITHUB_STEP_SUMMARY
-          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-
-  # Preview job for pull requests
-  preview:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Comment on PR
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
+          publish_branch: gh-pages
+          force_orphan: true
+      # PR Preview Comment
+      - name: Comment on Pull Request
+        if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
@@ -124,4 +93,9 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## 📚 Documentation Preview Built\n\n✅ Statistics pipeline documentation built successfully!\n\n> **Note:** This is a preview build. Documentation will be deployed when merged to main.'
+              body: `## 📚 Documentation Preview Built
+
+              ✅ Statistics pipeline documentation built successfully!
+
+              > This is a preview build. Documentation will be deployed when merged or pushed to the deployment branch.`
+                          })
