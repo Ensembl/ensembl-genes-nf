@@ -19,7 +19,6 @@ process GENERATE_CONFIG {
     path(genome_fasta)
     path(chrom_sizes)
     path(ribometric_tsv)
-    path(annotation_sqlite)
     path(transcriptome_fasta)
     val(organism)
     val(version)
@@ -55,7 +54,6 @@ params {{
     fasta = "{base_path}/${genome_fasta}"
     chrom_sizes_file = "{base_path}/${chrom_sizes}"
     ribometric_annotation = "{base_path}/${ribometric_tsv}"
-    annotation_sqlite = "{base_path}/${annotation_sqlite}"
     transcriptome_fasta = "{base_path}/${transcriptome_fasta}"
 
     // Organism Info
