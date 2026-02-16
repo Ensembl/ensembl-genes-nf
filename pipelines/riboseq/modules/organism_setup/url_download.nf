@@ -8,9 +8,7 @@ process URL_DOWNLOAD {
     tag "${organism}"
     label 'process_low'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/mulled-v2-8849acf39a43cdd6c839a369a74c0adc823e2f91:1196f19ebf5dec139b02f2b5077300fdd8d0aa94-0' :
-        'biocontainers/mulled-v2-8849acf39a43cdd6c839a369a74c0adc823e2f91:1196f19ebf5dec139b02f2b5077300fdd8d0aa94-0' }"
+    container 'oras://community.wave.seqera.io/library/curl:4bd76f737af7f9c0'
 
     publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
 
