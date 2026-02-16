@@ -107,7 +107,7 @@ workflow {
             ORGANISM_SETUP(
                 params.organism,
                 params.download_method ?: 'gget',
-                params.ensembl_version ?: 'latest',
+                params.ensembl_version ?: '115',
                 params.rrna_source ?: 'gtf',
                 params.genome_fasta_url ?: '',
                 params.genome_gtf_url ?: '',
