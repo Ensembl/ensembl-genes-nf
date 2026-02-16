@@ -7,9 +7,7 @@ process BUILD_BOWTIE_INDEX {
     tag "${index_name}"
     label 'process_high'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/bowtie:1.3.1--py39hd16f23e_2' :
-        'quay.io/biocontainers/bowtie:1.3.1--py39hd16f23e_2' }"
+    container "quay.io/biocontainers/bowtie:1.2.2--py36h2d50403_1"
 
     publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
 

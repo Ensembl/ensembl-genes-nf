@@ -14,7 +14,6 @@ include { EXTRACT_RRNA } from '../modules/organism_setup/extract_rrna.nf'
 include { DOWNLOAD_SILVA } from '../modules/organism_setup/download_silva.nf'
 include { GENERATE_CHROM_SIZES } from '../modules/organism_setup/generate_chrom_sizes.nf'
 include { RIBOMETRIC_PREPARE } from '../modules/organism_setup/ribometric_prepare.nf'
-include { CREATE_ANNOTATION_SQLITE } from '../modules/organism_setup/create_annotation_sqlite.nf'
 include { GENERATE_CONFIG } from '../modules/organism_setup/generate_config.nf'
 
 workflow ORGANISM_SETUP {
@@ -116,17 +115,6 @@ workflow ORGANISM_SETUP {
         version
     )
     ch_versions = ch_versions.mix(RIBOMETRIC_PREPARE.out.versions)
-
-    //
-    // Step 7: Create annotation SQLite database
-    //
-    CREATE_ANNOTATION_SQLITE(
-        genome_gtf,
-        MAKE_TRANSCRIPTOME.out.transcripts,
-        organism_normalized,
-        version
-    )
-    ch_versions = ch_versions.mix(CREATE_ANNOTATION_SQLITE.out.versions)
 
     //
     // Step 8: Get rRNA sequences (from GTF or SILVA)

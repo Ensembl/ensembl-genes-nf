@@ -7,9 +7,7 @@ process GENERATE_CHROM_SIZES {
     tag "${organism}_${version}"
     label 'process_low'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/samtools:1.21--h96c455f_1' :
-        'quay.io/biocontainers/samtools:1.21--h96c455f_1' }"
+    container "quay.io/biocontainers/samtools:0.1.19--2"
 
     publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
 

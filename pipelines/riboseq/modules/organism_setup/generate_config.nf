@@ -7,9 +7,7 @@ process GENERATE_CONFIG {
     tag "${organism}_${version}"
     label 'process_low'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/python:3.10--1' :
-        'biocontainers/python:3.10--1' }"
+    container "quay.io/biocontainers/python:3.11"
 
     publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
 

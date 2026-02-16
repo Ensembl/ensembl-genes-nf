@@ -7,9 +7,7 @@ process BUILD_STAR_INDEX {
     tag "${organism}_${version}"
     label 'process_high'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/star:2.7.11b--h43eeafb_0' :
-        'quay.io/biocontainers/star:2.7.11b--h43eeafb_0' }"
+    container "quay.io/biocontainers/star:2.5.4a--0"
 
     publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
 

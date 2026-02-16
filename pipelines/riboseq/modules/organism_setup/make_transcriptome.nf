@@ -7,9 +7,7 @@ process MAKE_TRANSCRIPTOME {
     tag "${organism}_${version}"
     label 'process_low'
 
-    container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        'https://depot.galaxyproject.org/singularity/gffread:0.12.7--hd03093a_1' :
-        'quay.io/biocontainers/gffread:0.12.7--hd03093a_1' }"
+    container "quay.io/biocontainers/gffread:0.9.12--0"
 
     publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
 
