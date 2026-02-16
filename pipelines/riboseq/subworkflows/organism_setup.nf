@@ -162,7 +162,6 @@ workflow ORGANISM_SETUP {
         genome_fasta,
         GENERATE_CHROM_SIZES.out.chrom_sizes,
         RIBOMETRIC_PREPARE.out.ribometric_tsv,
-        CREATE_ANNOTATION_SQLITE.out.sqlite_db,
         MAKE_TRANSCRIPTOME.out.transcripts,
         organism_normalized,
         version
@@ -177,7 +176,6 @@ workflow ORGANISM_SETUP {
     fasta             = genome_fasta                             // path: Genome FASTA
     chrom_sizes       = GENERATE_CHROM_SIZES.out.chrom_sizes    // path: Chromosome sizes file
     ribometric_anno   = RIBOMETRIC_PREPARE.out.ribometric_tsv   // path: RiboMetric annotation TSV
-    sqlite_db         = CREATE_ANNOTATION_SQLITE.out.sqlite_db  // path: Annotation SQLite database
     transcriptome     = MAKE_TRANSCRIPTOME.out.transcripts      // path: Transcriptome FASTA
     config            = GENERATE_CONFIG.out.config              // path: Generated params.config
     versions          = ch_versions                             // channel: versions
