@@ -7,7 +7,7 @@ process BUILD_STAR_INDEX {
     tag "${organism}_${version}"
     label 'process_high'
 
-    container "quay.io/biocontainers/star:2.5.4a--0"
+    container "quay.io/biocontainers/star:2.7.6a--0"
 
     publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
 
