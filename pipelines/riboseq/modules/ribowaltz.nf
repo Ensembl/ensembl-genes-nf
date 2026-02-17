@@ -1,6 +1,5 @@
 process RIBOWALTZ {
     tag "${meta.id}"
-    label 'process_medium'
 
     conda "bioconda::bioconductor-ribowaltz=2.0"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
