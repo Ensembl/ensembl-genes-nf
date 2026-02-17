@@ -1,6 +1,6 @@
 process EXTRACT_RPFS {
     tag "${meta.id}"
-    label 'process_medium'
+    label 'process_high'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
     container "ghcr.io/jackcurragh/get-rpf:main"
