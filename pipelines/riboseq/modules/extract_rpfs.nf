@@ -1,4 +1,4 @@
-process EXTRACT_RPFS_OPTIMIZED {
+process EXTRACT_RPFS {
     tag "${meta.id}"
     label 'process_high'
 
