@@ -3,7 +3,7 @@ process RIBOMETRIC {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
-    container "ghcr.io/lapti-ucc/riboseqorg-nf-ribometric:latest"
+    container "ghcr.io/jackcurragh/ribometric:main-0c2e9be"
 
     publishDir "${params.outdir}/RiboMetric", mode: 'copy', pattern: "*RiboMetric.{html,json,csv}"
     publishDir "${params.outdir}/RiboMetric/offsets", mode: 'copy', pattern: "*.offsets.tsv"
@@ -13,14 +13,14 @@ process RIBOMETRIC {
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
     path ribometric_annotation
-    path offset_file  // Optional: external offset file (e.g., from RiboWaltz)
+    path offset_file  // Optional: external offset file (e.g., calculated offsets)
 
     output:
     tuple val(meta), path("*RiboMetric.html"), emit: html
     tuple val(meta), path("*RiboMetric.json"), emit: json
-    tuple val(meta), path("*RiboMetric.csv"), emit: csv
+    tuple val(meta), path("*RiboMetric.csv"),  emit: csv
     tuple val(meta), path("*.offsets.tsv"), optional: true, emit: offsets
-    path "versions.yml", emit: versions
+    path "versions.yml",                       emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -34,17 +34,14 @@ process RIBOMETRIC {
     // Priority: 1) external offset file, 2) global offset, 3) calculation method
     def offset_args = ''
     if (offset_file && offset_file.name != 'NO_OFFSET_FILE') {
-        // Use external offset file (e.g., from RiboWaltz)
         offset_args = "--offset-read-length ${offset_file}"
     } else if (params.ribometric_offset_global) {
-        // Use fixed global offset
         offset_args = "--offset-global ${params.ribometric_offset_global}"
     } else {
-        // Use calculation method (tripsviz, changepoint, ribowaltz)
         def offset_method = params.ribometric_offset_method ?: 'tripsviz'
         offset_args = "--offset-calculation-method ${offset_method}"
     }
-    // Only output offsets when calculating internally (not when using external file)
+    // Only output offsets when calculating internally (not when using an external file)
     def output_offsets_arg = (offset_file && offset_file.name != 'NO_OFFSET_FILE') ? '' : "--output-offsets ${prefix}.offsets.tsv"
     """
     RiboMetric run \\

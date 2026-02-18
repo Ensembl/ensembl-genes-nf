@@ -7,12 +7,14 @@
  *   2. FILTER_BAM: Filter genome BAM by mapping quality/multiplicity (optional)
  *   3. BAM_TO_BED: Convert genome BAM to bedgraph using offsets
  *   4. BEDGRAPH_TO_BIGWIG: Convert bedgraph to bigwig
+ *
+ * Note: requires RiboMetric built with --output-offsets support.
  */
 
-include { RIBOMETRIC } from '../modules/ribometric.nf'
-include { FILTER_BAM } from '../modules/filter_bam.nf'
-include { SAMTOOLS_INDEX } from '../modules/samtools_index.nf'
-include { BAM_TO_BED } from '../modules/bam_to_bed.nf'
+include { RIBOMETRIC }         from '../modules/ribometric.nf'
+include { FILTER_BAM }         from '../modules/filter_bam.nf'
+include { SAMTOOLS_INDEX }     from '../modules/samtools_index.nf'
+include { BAM_TO_BED }         from '../modules/bam_to_bed.nf'
 include { BEDGRAPH_TO_BIGWIG } from '../modules/bedgraph_to_bigwig.nf'
 
 workflow PSITE_BIGWIG {
@@ -23,7 +25,7 @@ workflow PSITE_BIGWIG {
     chrom_sizes            // path: Chromosome sizes file
 
     main:
-    // Step 1: Calculate offsets from transcriptome BAM using RiboMetric
+    // Step 1: Calculate A-site offsets from transcriptome BAM using RiboMetric
     RIBOMETRIC(
         transcriptome_bam,
         ribometric_annotation,
@@ -80,12 +82,12 @@ workflow PSITE_BIGWIG {
 
     emit:
     // RiboMetric outputs
-    ribometric_html = RIBOMETRIC.out.html     // tuple: [ meta, html ]
-    ribometric_json = RIBOMETRIC.out.json     // tuple: [ meta, json ]
-    ribometric_csv  = RIBOMETRIC.out.csv      // tuple: [ meta, csv ]
-    offsets         = RIBOMETRIC.out.offsets  // tuple: [ meta, tsv ]
+    ribometric_html = RIBOMETRIC.out.html    // tuple: [ meta, html ]
+    ribometric_json = RIBOMETRIC.out.json    // tuple: [ meta, json ]
+    ribometric_csv  = RIBOMETRIC.out.csv     // tuple: [ meta, csv ]
+    offsets         = RIBOMETRIC.out.offsets // tuple: [ meta, tsv ]
 
     // Bedgraph and BigWig outputs
-    bedgraphs = BAM_TO_BED.out.bedgraph              // tuple: [ meta, bedgraph ]
-    bigwigs = BEDGRAPH_TO_BIGWIG.out.bigwig          // tuple: [ meta, bigwig ]
+    bedgraphs = BAM_TO_BED.out.bedgraph     // tuple: [ meta, bedgraph ]
+    bigwigs   = BEDGRAPH_TO_BIGWIG.out.bigwig // tuple: [ meta, bigwig ]
 }
