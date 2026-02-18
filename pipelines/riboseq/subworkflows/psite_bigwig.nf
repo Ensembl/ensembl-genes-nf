@@ -68,15 +68,14 @@ workflow PSITE_BIGWIG {
     }
 
     // Step 3: Combine BAMs with their corresponding offsets
-    // Match by sample ID (meta.id) regardless of bam_type
+    // Normalize the key to the sample name before '.Aligned' to match across
+    // sortedByCoord (genome) and toTranscriptome (transcriptome) naming conventions
     bam_with_offsets = bams_to_process
-        .combine(RIBOMETRIC.out.offsets).view()
-        .filter { bam_meta, bam, bai, offset_meta, offset ->
-            bam_meta.id == offset_meta.id
-        }
-        .map { bam_meta, bam, bai, offset_meta, offset ->
-            [bam_meta, bam, bai, offset]
-        }
+        .map { meta, bam, bai -> [meta.id.split('\\.Aligned')[0], meta, bam, bai] }
+        .join(
+            RIBOMETRIC.out.offsets.map { meta, offset -> [meta.id.split('\\.Aligned')[0], offset] }
+        )
+        .map { key, bam_meta, bam, bai, offset -> [bam_meta, bam, bai, offset] }
 
     // Step 4: Convert BAMs to BEDgraph using offsets
     BAM_TO_BED(bam_with_offsets)
