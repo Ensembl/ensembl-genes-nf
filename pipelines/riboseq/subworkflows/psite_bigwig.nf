@@ -11,8 +11,8 @@
  * Note: requires RiboMetric built with --output-offsets support.
  */
 
-include { SAMTOOLS_SORT }      from '../modules/samtools_sort.nf'
-include { SAMTOOLS_INDEX }     from '../modules/samtools_index.nf'
+include { SAMTOOLS_SORT as SORT_TRANSCRIPTOME }      from '../modules/samtools_sort.nf'
+include { SAMTOOLS_INDEX as INDEX_TRANSCRIPTOME }     from '../modules/samtools_index.nf'
 include { RIBOMETRIC }         from '../modules/ribometric.nf'
 include { FILTER_BAM }         from '../modules/filter_bam.nf'
 include { SAMTOOLS_INDEX }     from '../modules/samtools_index.nf'
@@ -27,14 +27,14 @@ workflow PSITE_BIGWIG {
     chrom_sizes            // path: Chromosome sizes file
 
     main:
-    SAMTOOLS_SORT(
+    SORT_TRANSCRIPTOME(
         transcriptome_bam.map { meta, bam, bai -> tuple(meta, bam) }
     )
 
-    SAMTOOLS_INDEX(SAMTOOLS_SORT.out.bam)
+    INDEX_TRANSCRIPTOME(SORT_TRANSCRIPTOME.out.bam)
     // Step 1: Calculate A-site offsets from transcriptome BAM using RiboMetric
     RIBOMETRIC(
-        SAMTOOLS_INDEX.out.bam_and_bai,
+        INDEX_TRANSCRIPTOME.out.bam_and_bai,
         ribometric_annotation,
         file('NO_OFFSET_FILE')  // Use internal offset calculation
     )
