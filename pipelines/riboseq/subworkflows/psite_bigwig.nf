@@ -3,13 +3,13 @@
  * Takes paired genome and transcriptome BAMs and produces P-site bigwig files
  *
  * Flow:
- *   1. RIBOWALTZ: Calculate P-site offsets from transcriptome BAM
+ *   1. RIBOMETRIC: Calculate A-site offsets from transcriptome BAM
  *   2. FILTER_BAM: Filter genome BAM by mapping quality/multiplicity (optional)
- *   3. BAM_TO_BED: Convert genome BAM to bedgraph using P-site offsets
+ *   3. BAM_TO_BED: Convert genome BAM to bedgraph using offsets
  *   4. BEDGRAPH_TO_BIGWIG: Convert bedgraph to bigwig
  */
 
-include { RIBOWALTZ } from '../modules/ribowaltz.nf'
+include { RIBOMETRIC } from '../modules/ribometric.nf'
 include { FILTER_BAM } from '../modules/filter_bam.nf'
 include { SAMTOOLS_INDEX } from '../modules/samtools_index.nf'
 include { BAM_TO_BED } from '../modules/bam_to_bed.nf'
@@ -17,22 +17,17 @@ include { BEDGRAPH_TO_BIGWIG } from '../modules/bedgraph_to_bigwig.nf'
 
 workflow PSITE_BIGWIG {
     take:
-    genome_bam         // tuple: [ meta, bam, bai ]
-    transcriptome_bam  // tuple: [ meta, bam, bai ]
-    gtf                // path: GTF annotation file
-    fasta              // path: Reference genome FASTA
-    chrom_sizes        // path: Chromosome sizes file
+    genome_bam             // tuple: [ meta, bam, bai ]
+    transcriptome_bam      // tuple: [ meta, bam, bai ]
+    ribometric_annotation  // path: RiboMetric annotation TSV file
+    chrom_sizes            // path: Chromosome sizes file
 
     main:
-    // Prepare GTF and FASTA channels with metadata for RiboWaltz
-    gtf_ch = gtf.map { [[ id: 'reference' ], it] }
-    fasta_ch = fasta.map { [[ id: 'reference' ], it] }
-
-    // Step 1: Calculate P-site offsets from transcriptome BAM using RiboWaltz
-    RIBOWALTZ(
+    // Step 1: Calculate offsets from transcriptome BAM using RiboMetric
+    RIBOMETRIC(
         transcriptome_bam,
-        gtf_ch,
-        fasta_ch
+        ribometric_annotation,
+        file('NO_OFFSET_FILE')  // Use internal offset calculation
     )
 
     // Step 2: Optionally filter genome BAMs
@@ -63,10 +58,10 @@ workflow PSITE_BIGWIG {
         }
     }
 
-    // Step 3: Combine BAMs with their corresponding P-site offsets
+    // Step 3: Combine BAMs with their corresponding offsets
     // Match by sample ID (meta.id) regardless of bam_type
     bam_with_offsets = bams_to_process
-        .combine(RIBOWALTZ.out.best_offset)
+        .combine(RIBOMETRIC.out.offsets)
         .filter { bam_meta, bam, bai, offset_meta, offset ->
             bam_meta.id == offset_meta.id
         }
@@ -74,7 +69,7 @@ workflow PSITE_BIGWIG {
             [bam_meta, bam, bai, offset]
         }
 
-    // Step 4: Convert BAMs to BEDgraph using P-site offsets
+    // Step 4: Convert BAMs to BEDgraph using offsets
     BAM_TO_BED(bam_with_offsets)
 
     // Step 5: Convert BEDgraphs to BigWig
@@ -84,11 +79,11 @@ workflow PSITE_BIGWIG {
     )
 
     emit:
-    // RiboWaltz outputs
-    psite_offsets = RIBOWALTZ.out.psite_offsets     // tuple: [ meta, tsv.gz ]
-    best_offset = RIBOWALTZ.out.best_offset          // tuple: [ meta, txt ]
-    psite_table = RIBOWALTZ.out.psite_table          // tuple: [ meta, tsv.gz ]
-    qc_plots = RIBOWALTZ.out.qc_plots                // tuple: [ meta, pdfs ]
+    // RiboMetric outputs
+    ribometric_html = RIBOMETRIC.out.html     // tuple: [ meta, html ]
+    ribometric_json = RIBOMETRIC.out.json     // tuple: [ meta, json ]
+    ribometric_csv  = RIBOMETRIC.out.csv      // tuple: [ meta, csv ]
+    offsets         = RIBOMETRIC.out.offsets  // tuple: [ meta, tsv ]
 
     // Bedgraph and BigWig outputs
     bedgraphs = BAM_TO_BED.out.bedgraph              // tuple: [ meta, bedgraph ]

@@ -6,6 +6,7 @@ process RIBOMETRIC {
     container "ghcr.io/lapti-ucc/riboseqorg-nf-ribometric:latest"
 
     publishDir "${params.outdir}/RiboMetric", mode: 'copy', pattern: "*RiboMetric.{html,json,csv}"
+    publishDir "${params.outdir}/RiboMetric/offsets", mode: 'copy', pattern: "*.offsets.tsv"
 
     errorStrategy 'ignore'
 
@@ -18,6 +19,7 @@ process RIBOMETRIC {
     tuple val(meta), path("*RiboMetric.html"), emit: html
     tuple val(meta), path("*RiboMetric.json"), emit: json
     tuple val(meta), path("*RiboMetric.csv"), emit: csv
+    tuple val(meta), path("*.offsets.tsv"), optional: true, emit: offsets
     path "versions.yml", emit: versions
 
     when:
@@ -42,6 +44,8 @@ process RIBOMETRIC {
         def offset_method = params.ribometric_offset_method ?: 'tripsviz'
         offset_args = "--offset-calculation-method ${offset_method}"
     }
+    // Only output offsets when calculating internally (not when using external file)
+    def output_offsets_arg = (offset_file && offset_file.name != 'NO_OFFSET_FILE') ? '' : "--output-offsets ${prefix}.offsets.tsv"
     """
     RiboMetric run \\
         --bam ${transcriptome_bam} \\
@@ -51,6 +55,7 @@ process RIBOMETRIC {
         --json \\
         --csv \\
         ${offset_args} \\
+        ${output_offsets_arg} \\
         -S ${sample_size} \\
         $args
 
@@ -66,6 +71,7 @@ process RIBOMETRIC {
     touch ${prefix}_RiboMetric.html
     touch ${prefix}_RiboMetric.json
     touch ${prefix}_RiboMetric.csv
+    printf 'read_len\toffset\n28\t12\n29\t12\n30\t12\n' > ${prefix}.offsets.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

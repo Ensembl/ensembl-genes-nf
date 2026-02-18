@@ -8,8 +8,7 @@
  *   nextflow run psite_bigwig_main.nf \
  *     --genome_bam_dir /path/to/genome_bams \
  *     --transcriptome_bam_dir /path/to/transcriptome_bams \
- *     --gtf /path/to/annotation.gtf \
- *     --fasta /path/to/genome.fa \
+ *     --ribometric_annotation /path/to/annotation.tsv \
  *     --chrom_sizes /path/to/chrom.sizes \
  *     --outdir results
  */
@@ -19,21 +18,14 @@ nextflow.enable.dsl = 2
 // Default parameters
 params.genome_bam_dir = null
 params.transcriptome_bam_dir = null
-params.gtf = null
-params.fasta = null
+params.ribometric_annotation = null
 params.chrom_sizes = null
 params.outdir = 'results'
 params.filter_bams = true
 
-// RiboWaltz parameters (with defaults)
-params.ribowaltz_exclude_start = 0
-params.ribowaltz_exclude_stop = 0
-params.ribowaltz_flanking = 6
-params.ribowaltz_extremity = 'auto'
-params.ribowaltz_confidence_level = 99
-params.ribowaltz_utr5_length = 25
-params.ribowaltz_cds_length = 40
-params.ribowaltz_utr3_length = 25
+// RiboMetric parameters (with defaults)
+params.ribometric_offset_method = 'changepoint'
+params.ribometric_sample_size = 10000000
 
 // Filter BAM parameters
 params.max_multimappers = 10
@@ -42,8 +34,7 @@ params.min_mapq = 0
 // Validate required parameters
 if (!params.genome_bam_dir) { error "Please provide --genome_bam_dir" }
 if (!params.transcriptome_bam_dir) { error "Please provide --transcriptome_bam_dir" }
-if (!params.gtf) { error "Please provide --gtf" }
-if (!params.fasta) { error "Please provide --fasta" }
+if (!params.ribometric_annotation) { error "Please provide --ribometric_annotation" }
 if (!params.chrom_sizes) { error "Please provide --chrom_sizes" }
 
 // Include subworkflow
@@ -71,16 +62,14 @@ workflow {
         }
 
     // Load reference files as value channels
-    gtf_ch = Channel.value(file(params.gtf, checkIfExists: true))
-    fasta_ch = Channel.value(file(params.fasta, checkIfExists: true))
+    ribometric_annotation_ch = Channel.value(file(params.ribometric_annotation, checkIfExists: true))
     chrom_sizes_ch = Channel.value(file(params.chrom_sizes, checkIfExists: true))
 
     // Run the pipeline
     PSITE_BIGWIG(
         genome_bam_ch,
         transcriptome_bam_ch,
-        gtf_ch,
-        fasta_ch,
+        ribometric_annotation_ch,
         chrom_sizes_ch
     )
 }
@@ -90,12 +79,12 @@ log.info """
 ╔═══════════════════════════════════════════════════════════════╗
 ║                    P-SITE BIGWIG PIPELINE                     ║
 ╠═══════════════════════════════════════════════════════════════╣
-║  Genome BAM dir      : ${params.genome_bam_dir}
+║  Genome BAM dir       : ${params.genome_bam_dir}
 ║  Transcriptome BAM dir: ${params.transcriptome_bam_dir}
-║  GTF                 : ${params.gtf}
-║  FASTA               : ${params.fasta}
-║  Chrom sizes         : ${params.chrom_sizes}
-║  Output directory    : ${params.outdir}
-║  Filter BAMs         : ${params.filter_bams}
+║  RiboMetric annotation: ${params.ribometric_annotation}
+║  Chrom sizes          : ${params.chrom_sizes}
+║  Output directory     : ${params.outdir}
+║  Filter BAMs          : ${params.filter_bams}
+║  Offset method        : ${params.ribometric_offset_method}
 ╚═══════════════════════════════════════════════════════════════╝
 """
