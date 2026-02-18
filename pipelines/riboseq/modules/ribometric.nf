@@ -3,7 +3,7 @@ process RIBOMETRIC {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
-    container "ghcr.io/jackcurragh/ribometric:main-0c2e9be"
+    container "ghcr.io/jackcurragh/ribometric:main-58c0eb1"
 
     publishDir "${params.outdir}/RiboMetric", mode: 'copy', pattern: "*RiboMetric.{html,json,csv}"
     publishDir "${params.outdir}/RiboMetric/offsets", mode: 'copy', pattern: "*.offsets.tsv"
