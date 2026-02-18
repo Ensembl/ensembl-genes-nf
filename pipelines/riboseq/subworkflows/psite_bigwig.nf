@@ -66,8 +66,7 @@ workflow PSITE_BIGWIG {
             [meta_with_type, bam, bai]
         }
     }
-    RIBOMETRIC.out.offsets.view()
-    bams_to_process.view()
+
     // Step 3: Combine BAMs with their corresponding offsets
     // Match by sample ID (meta.id) regardless of bam_type
     bam_with_offsets = bams_to_process
@@ -78,7 +77,7 @@ workflow PSITE_BIGWIG {
         .map { bam_meta, bam, bai, offset_meta, offset ->
             [bam_meta, bam, bai, offset]
         }
-
+    bam_with_offsets.view()
     // Step 4: Convert BAMs to BEDgraph using offsets
     BAM_TO_BED(bam_with_offsets)
 
