@@ -197,14 +197,14 @@ results/
 
 ### System Requirements
 
-- **Nextflow**: 21.04.0 or higher
+- **Nextflow**: 24.10.3 or higher
 - **Java**: 11 or higher
 - **Memory**: 32+ GB recommended
 - **Storage**: 50+ GB for temporary files
 
 ### Software Dependencies
 
-- **BUSCO**: 5.4.0+
+- **BUSCO**: 6.0.0+
 - **OMArk**: Latest version
 - **Ensembl API**: Release-specific
 - **Singularity/Docker**: For containerized workflows
@@ -284,7 +284,7 @@ cat results/ensembl_stats/*.json
 
 ## Common Workflows by Role
 
-### Annotation Team
+### Annotation Completeness
 
 ```bash
 # Complete annotation QC
@@ -299,7 +299,7 @@ nextflow run main.nf \
   --enscode /software/ensembl/ENSCODE
 ```
 
-### Assembly Team
+### Assembly Completeness
 
 ```bash
 # Assembly quality assessment
@@ -309,7 +309,7 @@ nextflow run main.nf \
   --outdir assembly_qc
 ```
 
-### Database Administrator
+### Ensembl statistics
 
 ```bash
 # Generate and apply statistics
@@ -324,19 +324,7 @@ nextflow run main.nf \
   --team genebuild
 ```
 
-### Comparative Genomics
 
-```bash
-# Multi-species comparison
-nextflow run main.nf \
-  --csvFile species_set.csv \
-  --run_busco_core \
-  --busco_mode protein \
-  --run_omark \
-  --host mysql-server.example.com \
-  --user_r ensro \
-  --outdir comparative_qc
-```
 ## Module Overview
 
 The statistics pipeline consists of 13 modules organized into functional categories:
@@ -418,7 +406,7 @@ The typical execution flow of the statistics pipeline:
 ## Key Dependencies
 
 ### External Tools
-- **BUSCO** (v5+): Genome/proteome completeness assessment
+- **BUSCO** (v6+): Genome/proteome completeness assessment
 - **OMAmer**: Orthology inference
 - **OMark**: Annotation quality assessment
 
@@ -468,7 +456,7 @@ Some modules execute conditionally based on parameters:
 
 - **BUSCO_CORE_METAKEYS**: `params.apply_busco_metakeys`
 - **POPULATE_DB**: `params.apply_ensembl_stats` OR `params.apply_ensembl_beta_metakeys`
-- **CLEANING**: `params.clean` AND `params.clean_work_dir`
+
 
 ## Output Structure
 

@@ -32,8 +32,7 @@ Required when using `--run_busco_core`:
 |--------|------|----------|-------------|---------|
 | `dbname` | string | ✅ | Ensembl core database name | `homo_sapiens_core_110_38` |
 | `species_id` | integer | ✅ | Species ID in the core database | `1` |
-| `busco_dataset` | string | ✅* | BUSCO lineage dataset | `primates_odb12` |
-| `taxon_id` | integer | ✅ | NCBI taxonomy ID | `9606` |
+| `busco_dataset` | string | ⚠️ * | Specific BUSCO lineage dataset (if not will select the closest one in terms of taxonomy ) | `primates_odb12` |
 | `protein_file` | string | ⚠️ | Path to protein FASTA file (if not using DB) | `/data/proteins.fa` |
 | `genome_file` | string | ⚠️ | Path to genome FASTA file (if not using DB) | `/data/genome.fa` |
 
@@ -41,10 +40,10 @@ Required when using `--run_busco_core`:
 
 **Example CSV:**
 ```csv
-dbname,species_id,busco_dataset,taxon_id
-homo_sapiens_core_110_38,1,primates_odb12,9606
-mus_musculus_core_110_39,1,glires_odb12,10090
-danio_rerio_core_110_11,1,actinopterygii_odb12,7955
+dbname,species_id,busco_dataset
+homo_sapiens_core_110_38,1,primates_odb12
+mus_musculus_core_110_39,1,glires_odb12
+danio_rerio_core_110_11,1,actinopterygii_odb12
 ```
 
 ### For BUSCO (NCBI Mode)
@@ -55,7 +54,7 @@ Required when using `--run_busco_ncbi`:
 |--------|------|----------|-------------|---------|
 | `gca` | string | ✅ | NCBI assembly accession | `GCA_000001405.29` |
 | `taxon_id` | integer | ✅ | NCBI taxonomy ID | `9606` |
-| `busco_dataset` | string | ✅* | BUSCO lineage dataset | `primates_odb12` |
+| `busco_dataset` | string | ⚠️ * | Specific BUSCO lineage dataset (if not will select the closest one in terms of taxonomy ) | `primates_odb12` |
 
 \* Can be specified globally with `--busco_dataset` parameter instead
 
@@ -78,14 +77,13 @@ Required when using `--run_omark`:
 |--------|------|----------|-------------|---------|
 | `dbname` | string | ✅ | Ensembl core database name | `xenopus_tropicalis_core_110_10` |
 | `species_id` | integer | ✅ | Species ID in the core database | `1` |
-| `taxon_id` | integer | ✅ | NCBI taxonomy ID | `8364` |
 | `protein_file` | string | ⚠️ | Path to protein FASTA file (if not using DB) | `/data/proteins.fa` |
 
 **Example CSV:**
 ```csv
-dbname,species_id,taxon_id
-xenopus_tropicalis_core_110_10,1,8364
-danio_rerio_core_110_11,1,7955
+dbname,species_id
+xenopus_tropicalis_core_110_10,1
+danio_rerio_core_110_11,1
 ```
 
 ### For Ensembl Statistics
@@ -112,11 +110,11 @@ drosophila_melanogaster_core_110_9,1
 Full quality assessment with both protein and genome BUSCO modes:
 
 ```csv
-dbname,species_id,busco_dataset,taxon_id
-homo_sapiens_core_110_38,1,primates_odb12,9606
-pan_troglodytes_core_110_40,1,primates_odb12,9598
-gorilla_gorilla_core_110_6,1,primates_odb12,9593
-pongo_abelii_core_110_5,1,primates_odb12,9601
+dbname,species_id,busco_dataset
+homo_sapiens_core_110_38,1,primates_odb12
+pan_troglodytes_core_110_40,1,primates_odb12
+gorilla_gorilla_core_110_6,1,primates_odb12
+pongo_abelii_core_110_5,1,primates_odb12
 ```
 
 Command:
@@ -152,10 +150,10 @@ nextflow run main.nf \
 Run all quality metrics together:
 
 ```csv
-dbname,species_id,busco_dataset,taxon_id
-drosophila_melanogaster_core_110_9,1,diptera_odb12,7227
-anopheles_gambiae_core_110_56,1,diptera_odb12,7165
-aedes_aegypti_core_110_6,1,diptera_odb12,7159
+dbname,species_id,busco_dataset
+drosophila_melanogaster_core_110_9,1,diptera_odb12
+anopheles_gambiae_core_110_56,1,diptera_odb12
+aedes_aegypti_core_110_6,1,diptera_odb12
 ```
 
 Command:
@@ -176,12 +174,12 @@ nextflow run main.nf \
 Different BUSCO lineages for different species:
 
 ```csv
-dbname,species_id,busco_dataset,taxon_id
-homo_sapiens_core_110_38,1,primates_odb12,9606
-danio_rerio_core_110_11,1,actinopterygii_odb12,7955
-drosophila_melanogaster_core_110_9,1,diptera_odb12,7227
-arabidopsis_thaliana_core_110_11,1,embryophyta_odb12,3702
-saccharomyces_cerevisiae_core_110_4,1,saccharomycetes_odb12,4932
+dbname,species_id,busco_dataset
+homo_sapiens_core_110_38,1,primates_odb12
+danio_rerio_core_110_11,1,actinopterygii_odb12
+drosophila_melanogaster_core_110_9,1,diptera_odb12
+arabidopsis_thaliana_core_110_11,1,embryophyta_odb12
+saccharomyces_cerevisiae_core_110_4,1,saccharomycetes_odb12
 ```
 
 Command:
@@ -198,9 +196,9 @@ nextflow run main.nf \
 When sequences are not in a database:
 
 ```csv
-dbname,species_id,busco_dataset,taxon_id,protein_file,genome_file
-custom_genome_v1,1,vertebrata_odb12,9606,/data/project1/proteins.fa,/data/project1/genome.fa
-custom_genome_v2,1,vertebrata_odb12,9606,/data/project2/proteins.fa,/data/project2/genome.fa
+dbname,species_id,busco_dataset,protein_file,genome_file
+custom_genome_v1,1,vertebrata_odb12,/data/project1/proteins.fa,/data/project1/genome.fa
+custom_genome_v2,1,vertebrata_odb12,/data/project2/proteins.fa,/data/project2/genome.fa
 ```
 
 Command:

@@ -68,7 +68,6 @@ plugins:
 nav:
   - Statistics Pipeline:
     - Overview: pipelines/statistics/index.md
-    - Quick Start: pipelines/statistics/quickstart.md
     - Parameters: pipelines/statistics/parameters.md
     - Input Format: pipelines/statistics/input.md
     - Workflows:
