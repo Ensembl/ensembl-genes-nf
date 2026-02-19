@@ -6,6 +6,7 @@ site_description: Documentation for the Ensembl Genes Statistics Pipeline
 site_author: Ensembl Team
 repo_url: https://github.com/Ensembl/ensembl-genes-nf
 repo_name: Ensembl/ensembl-genes-nf
+site_dir: site_statistics
 
 
 theme:
