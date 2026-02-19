@@ -80,7 +80,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: site
+          publish_dir: site_statistics
           publish_branch: gh-pages
           force_orphan: true
       # PR Preview Comment

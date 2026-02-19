@@ -7,8 +7,6 @@ site_author: Ensembl Team
 repo_url: https://github.com/Ensembl/ensembl-genes-nf
 repo_name: Ensembl/ensembl-genes-nf
 
-extra_css:
-- stylesheets/extra.css
 
 theme:
   name: material
