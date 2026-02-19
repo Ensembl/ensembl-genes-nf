@@ -60,7 +60,7 @@ jobs:
       - name: Install project docs dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mkdocs mkdocs-material mkdocs-gen-files \
+          pip install zensical mkdocs-material mkdocs-gen-files \
           mkdocstrings[python] mkdocs-literate-nav mkdocs-section-index \
           mkdocs-coverage mkdocs-minify-plugin mkdocs-git-revision-date-localized-plugin
       
