@@ -67,7 +67,7 @@ jobs:
       - name: Verify MkDocs configuration
         run: |
           echo "Verifying MkDocs configuration for statistics pipeline..."
-          zensical build --config-file mkdocs.yml --strict --verbose
+          zensical build --config-file mkdocs.yml --strict
       
       - name: Build MkDocs site
         run: |
