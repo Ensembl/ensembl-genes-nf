@@ -72,7 +72,7 @@ jobs:
       - name: Build MkDocs site
         run: |
           echo "Building statistics pipeline documentation..."
-          zensical build --config-file mkdocs.yml -d site_statistics
+          zensical build --config-file mkdocs.yml --output site_statistics
       
       # Deploy ONLY on push or manual trigger
       - name: Deploy to GitHub Pages (gh-pages branch)
