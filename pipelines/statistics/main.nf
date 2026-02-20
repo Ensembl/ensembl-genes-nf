@@ -41,7 +41,26 @@ include { RUN_ENSEMBL_STATS } from './subworkflows/run_ensembl_stats.nf'
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
+// Helper function to clean cache directory
+def cleanCacheDirectory() {
+    if (params.cleanCache) {
+        try {
+            def cacheDir = file(params.cacheDir)
+            if (cacheDir.exists() && cacheDir.isDirectory()) {
+                cacheDir.listFiles().each { f ->
+                    if (f.isDirectory()) {
+                        f.deleteDir()
+                    } else {
+                        f.delete()
+                    }
+                }
+                log.info("Cleaning process completed successfully.")
+            }
+        } catch (Exception e) {
+            log.error("Exception occurred while executing cleaning command: ${e.message}")
+        }
+    }
+}
 workflow {
     main:
     log.info("Pipeline started at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
@@ -81,28 +100,7 @@ workflow {
     workflow.onComplete {
     log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
     log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
-
-    if (params.cleanCache) {
-        try {
-            def cacheDir = file(params.cacheDir)
-            if (cacheDir.exists() && cacheDir.isDirectory()) {
-                cacheDir
-                    .listFiles()
-                    .each { f ->
-                        if (f.isDirectory()) {
-                            f.deleteDir()
-                        }
-                        else {
-                            f.delete()
-                        }
-                    }
-                log.info("Cleaning process completed successfully.")
-            }
-        }
-        catch (e: Exception) {
-            log.error("Exception occurred while executing cleaning command: ${e.message}")
-        }
-    }
+    cleanCacheDirectory()
     }
     workflow.onError {
         log.error("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
