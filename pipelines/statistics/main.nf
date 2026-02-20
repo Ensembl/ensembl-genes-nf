@@ -78,7 +78,7 @@ workflow {
     // Merge into single file and publish
     COLLECT_SOFTWARE_VERSIONS(ch_all_versions.collect())
 
-    onComplete:
+    workflow.onComplete {
     log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
     log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
 
@@ -103,11 +103,12 @@ workflow {
             log.error("Exception occurred while executing cleaning command: ${e.message}")
         }
     }
+    }
+    workflow.onError {
+        log.error("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
+    }
 
-    onError:
-    log.error("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
 }
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     COMPLETION HANDLERS
