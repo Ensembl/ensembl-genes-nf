@@ -1,4 +1,5 @@
 #!/usr/bin/env nextflow
+// nextflow-lint-disable-file
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
