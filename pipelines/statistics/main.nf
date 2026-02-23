@@ -97,7 +97,7 @@ workflow {
 
     // Merge into single file and publish
     COLLECT_SOFTWARE_VERSIONS(ch_all_versions.collect())
-}
+
     // nextflow-lint-disable
     workflow.onComplete {
     log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
@@ -107,6 +107,7 @@ workflow {
     // nextflow-lint-disable
     workflow.onError{
         log.error("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
+}
 }
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
