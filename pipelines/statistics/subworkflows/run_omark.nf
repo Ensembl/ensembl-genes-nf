@@ -45,7 +45,7 @@ workflow RUN_OMARK {
     csvFile
 
     main:
-    ch_versions_file = channel.empty()
+    def ch_versions_file = channel.empty()
     // Read data from the CSV file, split it, and map each row to extract GCA and taxon values
     def data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
         .splitCsv(sep: ',', header: true)
