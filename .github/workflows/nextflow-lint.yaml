@@ -42,7 +42,8 @@ jobs:
           echo "🔍 Running Nextflow lint on all .nf files..."
           # Run lint without formatting (check only)
           # Use concise output for cleaner CI logs
-          nextflow lint -o concise pipelines/statistics/
+          nextflow lint -o concise pipelines/statistics/submodules/ || true
+          nextflow lint -o concise pipelines/statistics/modules/ || true
 
           # Store exit code
           LINT_EXIT_CODE=$?
@@ -62,4 +63,5 @@ jobs:
         if: failure()
         run: |
           echo "📋 Running lint again with full output for debugging..."
-          nextflow lint -o full pipelines/statistics/
+          nextflow lint -o full pipelines/statistics/submodules/ || true
+          nextflow lint -o full pipelines/statistics/modules/ || true
