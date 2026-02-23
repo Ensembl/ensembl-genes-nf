@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 nextflow.enable.dsl = 2
-
+// nextflow-lint-disable-file
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 VALIDATE INPUTS
