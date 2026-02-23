@@ -1,5 +1,4 @@
 #!/usr/bin/env nextflow
-// nextflow-lint-disable-file
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -63,7 +62,6 @@ def cleanCacheDirectory() {
     }
 }
 workflow {
- //   main:
     log.info("Pipeline started at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
 
     // Validate input parameters
@@ -97,7 +95,7 @@ workflow {
 
     // Merge into single file and publish
     COLLECT_SOFTWARE_VERSIONS(ch_all_versions.collect())
-}
+    }
     // nextflow-lint-disable
     workflow.onComplete {
     log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
@@ -107,7 +105,7 @@ workflow {
     // nextflow-lint-disable
     workflow.onError{
         log.error("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
-}
+    }
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,13 +113,6 @@ workflow {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    PROCESS DEFINITIONS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
 
 // Single process to merge all versions
 process COLLECT_SOFTWARE_VERSIONS {

@@ -39,16 +39,16 @@ process OMAMER_HOG {
 
     script:
     """
-        omamer search --db ${params.omamer_database} --query ${translation_file}  --out proteins.omamer 
+    omamer search --db ${params.omamer_database} --query ${translation_file}  --out proteins.omamer 
 
-        # Create versions file
-        #OMAMER_VERSION=\$(omamer --version 2>&1 | grep -oP 'OMAmer\\s+v?\\K[0-9.]+' || echo "unknown")
-    
-        OMAMER_VERSION=\$(pip show omamer | grep -i '^Version:' | awk '{print \$2}')
+    # Create versions file
+    #OMAMER_VERSION=\$(omamer --version 2>&1 | grep -oP 'OMAmer\\s+v?\\K[0-9.]+' || echo "unknown")
 
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            omamer: \$OMAMER_VERSION
-        END_VERSIONS
-        """
+    OMAMER_VERSION=\$(pip show omamer | grep -i '^Version:' | awk '{print \$2}')
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        omamer: \$OMAMER_VERSION
+    END_VERSIONS
+    """
 }
