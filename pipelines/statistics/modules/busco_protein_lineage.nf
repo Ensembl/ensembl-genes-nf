@@ -26,7 +26,9 @@ Outputs:
 process BUSCO_PROTEIN_LINEAGE {
     label 'busco'
     tag "${meta.gca}"
-    publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
+    //publishDir "${params.outdir}/${meta.gca}", mode: 'copy', pattern: "busco_protein/**"
+    publishDir "${params.outdir}/${meta.gca}", mode: 'copy',
+    saveAs: { filename -> filename.startsWith('busco_protein') ? filename : null }
     publishDir "${params.outdir}/${meta.gca}", mode: 'copy', pattern: "versions_busco_protein.yml"
     afterScript "sleep ${params.files_latency}"
     // Needed because of file system latency

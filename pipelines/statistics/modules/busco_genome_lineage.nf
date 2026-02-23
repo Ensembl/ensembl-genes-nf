@@ -27,7 +27,9 @@ Outputs:
 process BUSCO_GENOME_LINEAGE {
     label "busco"
     tag "${meta.gca}:busco_genome"
-    publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
+    //publishDir "${params.outdir}/${meta.gca}", mode: 'copy', pattern: "busco_genome/*"
+    publishDir "${params.outdir}/${meta.gca}", mode: 'copy',
+    saveAs: { filename -> filename.startsWith('busco_genome') ? filename : null }
     publishDir "${params.cacheDir}/${meta.gca}/busco_genome", mode: 'copy', pattern: "versions_busco_genome.yml"
     afterScript "sleep ${params.files_latency}"
     // Needed because of file system latency
@@ -39,6 +41,7 @@ process BUSCO_GENOME_LINEAGE {
     output:
     tuple val(meta), path("busco_genome/*.txt"), emit: busco_genome_lineage_output
     path "versions_busco_genome.yml", emit: versions_file
+    path "busco_genome", emit: busco_full_output
 
     script:
     log.info("Selected BUSCO dataset: ${meta.busco_dataset}")
