@@ -1,204 +1,124 @@
-# Genebuild statistics pipeline
+# Ensembl Eukaryotic Annotation Nextflow Pipelines
 
-The pipeline provides Busco, Omark completeness scores, calculates statistics for Ensembl website when the core database is available. 
-If only the assembly accession and the taxon id are available the pipeline provide Busco score (mode=genome) for the assembly.
+**Template Repository** - Best practices and patterns for building Nextflow pipelines for eukaryotic genome annotation.
 
-![plot](./plot.jpeg)
+> **Note**: This branch contains templates and documentation. Implementation branches contain the actual production pipelines.
 
-Nextflow version nextflow  <= 22.10.1. (21.10.5.5658 currently available on Slurm) 
+## What's Here
 
-## Running options  
+This repository provides templates and examples to help you build Nextflow pipelines:
 
-The following options require a list of mandatory arguments (see `Mandatory arguments`).
+- **Pipeline templates** - Production-ready patterns and structure
+- **Example workflows** - Working examples from simple to complex
+- **Module templates** - Reusable process definitions
+- **Comprehensive documentation** - Guides, patterns, and best practices
+- **Advanced patterns** - Entry point system for complex workflows
 
-## Busco pipeline `--run_busco_core`
+## Quick Start
 
-Busco is a measure of completeness of genome assembly and annotation of the gene set. See the documentation for further details [Busco userguide](https://busco.ezlab.org/busco_userguide.html)
-
-Docker image available in https://hub.docker.com/r/ezlabgva/busco
-
-#### `--busco_mode`
-Select Busco mode, i.e. genome mode (assess a genome assembly), protein mode (assess a gene set) or both. By default, run both modes.
-
-#### `--busco_dataset`
-Select Busco dataset; if not specified the pipeline will choose  the closest lineage according to the ncbi taxonomy classification.
-
-#### `--copyToFtp`
-Boolean option to copy output in Ensembl ftp, default false
-
-#### `--apply_busco_metakeys`
-Boolean option to load Busco metakey into db
-
-#### `--host`
-The host name for the databases 
-
-#### `--port`
-The port number of the host 
-
-#### `--user`
-The read/wrote username for the host. 
-
-#### `--user_r`
-The read only username for the host. 
-
-#### `--password`
-The database password. 
+Explore the templates by running the example workflows:
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password> --busco_mode <busco_mode> --run_busco_core true --apply_busco_metakeys true --run_ensembl_stats true --apply_ensembl_stats true --run_ensembl_beta_metakeys  true --apply_ensembl_beta_metakeys true --team -profile slurm
+# Navigate to the example pipeline
+cd pipelines/example
+
+# Run the simplest example (single process)
+nextflow run workflows/simple_workflow.nf -stub --outdir results
+
+# Run the main workflow (subworkflows chained together)
+nextflow run main.nf -stub --outdir results
+
+# Explore the advanced entry point system
+cd advanced_entrypoints
+nextflow run main.nf --help
 ```
 
-## OMArk pipeline `--run_omark`
-  
-OMArk is a software of proteome (protein-coding gene repertoire) quality assessment. It provides measure of proteome completeness, characterize all protein coding genes in the light of existing homologs, and identify the presence of contamination from other species.
-Further information available in the official repo https://github.com/DessimozLab/OMArk
+## Repository Structure
 
-#### `--copyToFtp`
-Boolean option to copy output in Ensembl ftp, default false
-
-#### `--host`
-The host name for the databases 
-
-#### `--port`
-The port number of the host 
-
-#### `--user`
-The read/wrote username for the host. 
-
-#### `--user_r`
-The read only username for the host. 
-
-#### `--password`
-The database password. 
-
-```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password> --run_omark true -profile slurm
+```
+ensembl-genes-nf/  (template branch)
+├── pipelines/
+│   └── example/          # Complete example pipeline showing all patterns
+│       ├── workflows/    # Example workflows (start here)
+│       ├── subworkflows/ # Subworkflow patterns (parallel, sequential)
+│       ├── modules/      # Process templates
+│       └── advanced_entrypoints/  # Dynamic entry point system
+├── modules/              # Module templates for creating new processes
+├── subworkflows/         # Subworkflow templates
+├── config/               # Configuration templates
+└── docs/                 # Complete documentation and guides
 ```
 
-## Ensembl statistics and Beta Metakeys pipeline `--run_ensembl_stats, --run_ensembl_beta_metakeys`
+## Documentation
 
-The pipeline calculate core statistics for Ensembl browser.
+**[docs/](docs/)** - Complete documentation
 
-### `--run_ensembl_stats`
-Boolean option to run Ensembl statistics in a mysql db, default false
+Start with:
+- **[docs/QUICK_START.md](docs/QUICK_START.md)** - Step-by-step guide from basics to advanced
+- **[docs/PATTERNS.md](docs/PATTERNS.md)** - 12 common Nextflow patterns with examples
+- **[pipelines/example/README.md](pipelines/example/README.md)** - Example pipeline overview
 
-#### `--apply_ensembl_stats`
-Boolean option to load Ensembl statistics in a mysql db, default false
+## Key Features
 
-### `--run_ensembl_beta_metakeys`
-Boolean option to run Ensembl beta metakeys in a mysql db, default false
+### Progressive Examples
 
-#### `--apply_ensembl_beta_metakeys`
-Boolean option to load Ensembl beta metakeys in a mysql db, default false
+The example pipeline demonstrates patterns from simple to complex:
 
-#### `--host`
-The host name for the databases 
+1. **Simple workflows** - Single process execution
+2. **Subworkflow composition** - Chaining reusable components
+3. **Dynamic entry points** - Automatic workflow resumption
 
-#### `--port`
-The port number of the host 
+### Best Practices
 
-#### `--user`
-The read/wrote username for the host. 
+- Modular design with reusable components
+- Consistent metadata (`meta`) handling across processes
+- Proper channel operations and data flow
+- Version tracking for all tools
+- Stub mode for fast testing and development
 
-#### `--user_r`
-The read only username for the host. 
+### Advanced Patterns
 
-#### `--password`
-The database password. 
+- **Entry point registry** - Declarative dependency management
+- **Automatic validation** - Verify required inputs before execution
+- **Smart resumption** - Detect existing outputs and skip completed steps
 
-#### `--team`
-Required by Ensembl metakey script if run_ensembl_beta_metakeys is enabled. 
+## Using This Template
 
-```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --host <mysql_host> --port <mysql_port> --user <user> --user_r <read_user>  --password <mysql_password>  --run_ensembl_stats true --apply_ensembl_stats true  --run_ensembl_beta_metakeys true --apply_ensembl_beta_metakeys true --team <team> -profile slurm
-```
+**Learning the patterns?** Start with the [Quick Start Guide](docs/QUICK_START.md) and run the example workflows in `pipelines/example/`.
 
-## Busco NCBI genome pipeline `--run_busco_ncbi`
+**Building a new pipeline?**
+1. Copy the structure from `pipelines/example/`
+2. Use module templates from `modules/` as starting points
+3. Follow the patterns in [docs/PATTERNS.md](docs/PATTERNS.md)
+4. Reference the example implementations
 
-Option available to check the quality of the genome by running Busco in genome mode.
-
-```bash
-nextflow -C $ENSCODE/ensembl-genes-nf/nextflow.config run $ENSCODE/ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf -entry STATISTICS --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path>  --run_busco_ncbi true -profile slurm
-```
-
+**Adding to an existing pipeline?** Browse `modules/` and `subworkflows/` for reusable components you can adapt.
 
 ## Requirements
 
-### Mandatory arguments
+- Nextflow ≥ 21.04.0 (DSL2)
+- Singularity 
 
-#### `--csvFile`
-The structure of the file can cahnge according to the running options
-| Running mode | csv file format |
-|-----------------|--------|
-| --run_busco_core |  core (header)   | 
-|                  |  <db_name>  |
-| --run_omark |  core  (header)  | 
-|                  |  <db_name>  |
-| --run_busco_ncbi |  gca,taxon_id (header)   | 
-|                  |  <gca>,<taxon_id>  |
+## Branch Structure
 
-For example tu run busco on a list of core dbs the file should be
-|core |
-|db1  |
-|db2  |
+- **`template`** (this branch) - Templates, examples, and documentation
+- **Implementation branches** - Production pipelines for specific annotation workflows
 
-#### `--enscode`
-Path to the root directory containing the Perl repositories (ensembl-analysis)
+## Contributing to Templates
 
-#### `--outDir`
-Path to the directory where to store the results of the pipeline
+Contributions to improve templates and documentation are welcome! Consider:
+- Adding new pattern examples
+- Improving documentation clarity
+- Adding module/subworkflow templates
+- Enhancing the entry point system
 
-### Optional arguments
+## Resources
 
-#### `--bioperl`
-Path to the directory containing the BioPerl 1.6.924 library. If not provided, the value passed to `--enscode` will be used as root, i.e. `<enscode>/bioperl-1.6.924`.
+- [Nextflow Documentation](https://nextflow.io/docs/latest/)
+- [nf-core Guidelines](https://nf-co.re/docs/guidelines)
+- [Nextflow Patterns](https://nextflow-io.github.io/patterns/)
 
-#### `--cacheDir`
-Path to the directory to use as cache for the intermediate files. If not provided, the value passed to `--outDir` will be used as root, i.e. `<outDir>/cache`.
+## License
 
-#### `--files_latency`
-Sleep time (in seconds) after the genome and proteins have been fetched. Needed by several file systems due to their internal latency. By default, 60 seconds.
+[Add license information]
 
-### Pipeline configuration
-
-#### Using the provided nextflow.config
-We are using profiles to be able to run the pipeline on different HPC clusters. The default is `standard`.
-
-* `standard`: uses LSF to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem.
-* `slurm`: uses SLURM to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem.
-
-
-#### Using a local configuration file
-You can use a local config with `-c` to finely configure your pipeline. All parameters can be configured, we recommend setting these ones as well:
-
-* `process.scratch`: The patch to the scratch directory to use
-* `workDir`: The directory where nextflow stores any file
-
-### Information about all the parameters
-
-```bash
-nextflow run ./ensembl-genes-nf/pipelines/nextflow/workflows/statistics.nf --help
-```
-
-
-#### Ensembl dependencies
-These are the Ensembl repositories required by this pipeline:
-
-| Repository name | branch | URL|
-|-----------------|--------|----|
-| ensembl | default | https://github.com/Ensembl/ensembl.git |
-| ensembl-analysis | main | https://github.com/Ensembl/ensembl-analysis.git |
-| ensembl-io | default | https://github.com/Ensembl/ensembl-io.git |
-| ensembl-genes | default | https://github.com/Ensembl/ensembl-genes.git |
-
-It is recommended that all the repositories are cloned into the same folder.
-
-Remember that, following the instructions in [Ensembl's Perl API installation](http://www.ensembl.org/info/docs/api/api_installation.html), you will also need to have BioPerl v1.6.924 available in your system. If you do not, you can install it executing the following commands:
-
-```bash
-wget https://github.com/bioperl/bioperl-live/archive/release-1-6-924.zip
-unzip release-1-6-924.zip
-mv bioperl-live-release-1-6-924 bioperl-1.6.924
-```
-
-It is recommended to install it in the same folder as the Ensembl repositories.
