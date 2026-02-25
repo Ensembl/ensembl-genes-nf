@@ -1,0 +1,3 @@
+file_path	file_type	study	analysis_alias	title	description	run_accessions	assembly_accession	sample_accession	ref_seqs	remote_name
+/path/to/aln1.bam	bam	PRJEB12345	aln1_test	Run ERR111 on GCA_000001405.28	Example alignment of public run ERR111	ERR111	GCA_000001405.28	ERS1234567		aln1.bam
+/path/to/aln2.cram	cram	PRJEB12345	aln2_test	Run ERR222 on GCA_000001405.28	Example alignment of public run ERR222	ERR222	GCA_000001405.28			aln2.cram
