@@ -13,11 +13,16 @@ Provide a tab-separated `manifest.tsv` with the following columns (header requir
 - title: Human-readable title.
 - description: Short description.
 - run_accessions: Comma-separated ENA run accessions that the file derives from (e.g. ERR123,ERR456).
+- run_list_path: Optional path to a text/TSV file containing run accessions (commas and whitespace allowed). Merged with `run_accessions` and de-duplicated.
+- experiment_accessions: Optional comma-separated ENA experiment accessions (if you prefer linking experiments).
 - assembly_accession: ENA/INSDC assembly accession the reads were aligned to (e.g. GCA_000001405.28 or GCF_...).
-- sample_accession: Optional sample accession to associate (e.g. ERS1234567).
+- sample_accession: Optional sample accession to associate (e.g. ERS1234567). Leave blank for cross-sample merges.
 - ref_seqs: Optional comma-separated list of reference sequence accessions (for <SEQUENCE> entries) when relevant.
 - remote_name: Optional alternate remote filename (defaults to the source basename).
-- analysis_type: Optional; one of `READ_ALIGNMENT` (default) or `REFERENCE_ALIGNMENT`.
+- analysis_type: Optional; one of `READ_ALIGNMENT` or `REFERENCE_ALIGNMENT` (default). The pipeline maps `READ_ALIGNMENT` to `REFERENCE_ALIGNMENT` to satisfy current ENA schema validation.
+- analysis_links: Optional; `Label|URL; Label2|URL2`.
+- analysis_attributes: Optional; `key=value; key2=value2`. You can also supply `attr_*` columns; e.g., `attr_pipeline=ensembl-genes-nf` becomes a TAG/VALUE pair.
+- omit_run_refs_in_test: Optional; `true|false` to omit or emit RUN_REF when `--mode test` (default true/omit).
 
 Example: see `pipelines/ena_submit/examples/manifest.tsv`.
 
@@ -46,6 +51,7 @@ Notes:
 - Use `--mode prod` to switch to production endpoints.
 - Use `--upload_protocol ftp` if Aspera is unavailable.
 - Keep `--upload_parallelism` low to avoid overwhelming ENA (2–3 typical).
+- In TEST mode, the pipeline omits RUN_REF by default so ENA TEST doesn’t 404 production run accessions. Set `omit_run_refs_in_test=false` in your manifest row to include RUN_REF in TEST.
 
 ## Outputs
 
@@ -76,3 +82,22 @@ Notes:
 - For FTP: `lftp` installed.
 - For submission: `curl` installed.
 - Credentials exported: `WEBIN_USER`, `WEBIN_PASSWORD`.
+
+## Utilities
+
+- Build a manifest from a runs/tissue CSV (like `tissueall.csv`):
+
+```
+python3 pipelines/ena_submit/bin/build_manifest_from_runs.py \
+  --input tissueall.csv \
+  --study PRJEB999999 \
+  --species-map species.tsv \
+  --release Ensembl_110 \
+  --group-by assembly,tissue \
+  --file-dir /path/to/merged/files \
+  --file-ext cram \
+  --outdir /tmp/ena_manifest \
+  --links-prefix https://example.org/runs
+```
+
+This writes `/tmp/ena_manifest/manifest.tsv` and per-group run lists under `/tmp/ena_manifest/runs/`. The manifest is compatible with this pipeline and defaults to cross‑sample merges (no `SAMPLE_REF`) with many `RUN_REF` in PROD and omitted in TEST.

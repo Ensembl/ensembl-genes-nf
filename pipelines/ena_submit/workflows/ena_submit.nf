@@ -1,14 +1,24 @@
 nextflow.enable.dsl=2
 
 include { ENA_COMPUTE_MD5 }   from '../modules/compute_md5.nf'
-include { ENA_ASCP_UPLOAD }   from '../modules/upload_ascp.nf'
 include { ENA_FTP_UPLOAD }    from '../modules/upload_ftp.nf'
 include { ENA_GENERATE_XML }  from '../modules/generate_xml.nf'
 include { ENA_SUBMIT_WEBIN }  from '../modules/submit_webin.nf'
+include { ENA_POLL_WEBIN }    from '../modules/poll_webin.nf'
+include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
 
 // Parse manifest and dispatch one analysis per row/file
 workflow ENA_SUBMIT_WORKFLOW {
-    assert params.manifest, "--manifest is required"
+    assert params.manifest,       "--manifest is required"
+    assert params.webin_user,     "--webin_user is required"
+    assert params.webin_password, "--webin_password is required"
+    assert params.mode in ['test', 'prod'], "--mode must be 'test' or 'prod'"
+    assert params.outdir,        "--outdir is required"
+
+    def ch_webin_user     = Channel.value(params.webin_user)
+    def ch_webin_password = Channel.value(params.webin_password)
+    // Base endpoint derived from mode unless overridden
+    def ch_webin_base = Channel.value(params.webin_base ?: ((params.mode == 'prod') ? 'https://www.ebi.ac.uk/ena/submit/webin-v2' : 'https://wwwdev.ebi.ac.uk/ena/submit/webin-v2'))
 
     Channel
       .fromPath(params.manifest)
@@ -22,28 +32,69 @@ workflow ENA_SUBMIT_WORKFLOW {
       }
       .set { inputs }
 
+    // Optional project registration: read a projects.tsv if provided
+    def ch_proj_queue_list = null
+    if (params.projects) {
+        Channel
+          .fromPath(params.projects)
+          .splitCsv(header:true, sep:'\t')
+          .map { row ->
+              def meta = [
+                id:          row.alias,  // satisfy submit module's tag/filename
+                alias:       row.alias,
+                name:        row.name ?: row.alias,
+                title:       row.title ?: row.name ?: row.alias,
+                description: row.description ?: '',
+                hold_until:  params.hold_until ?: ''
+              ]
+              tuple(meta)
+          }
+          .set { project_rows }
+
+        ENA_GENERATE_PROJECT_XML(project_rows)
+        ENA_SUBMIT_WEBIN(ENA_GENERATE_PROJECT_XML.out.xml, ch_webin_base, ch_webin_user, ch_webin_password)
+        ch_proj_queue_list = ENA_SUBMIT_WEBIN.out.queued.map { meta, f -> f }.collect()
+    }
+
     // Compute md5 per file
     md5s = ENA_COMPUTE_MD5( inputs )
 
-    // Uploads — broadcast config as value channels
-    def ch_remote_dir = Channel.value(params.remote_dir ?: '')
-    def ch_ascp_limit = Channel.value(params.ascp_limit ?: '300M')
-    def ch_ascp_host  = Channel.value(params.webin_ascp_host ?: 'webin.ebi.ac.uk')
-    def ch_ftp_host   = Channel.value(params.webin_ftp_host  ?: 'ftp.webin.ebi.ac.uk')
-
-    def uploads = (params.upload_protocol == 'aspera') ?
-        ENA_ASCP_UPLOAD(md5s, ch_remote_dir, ch_ascp_limit, ch_ascp_host) :
-        ENA_FTP_UPLOAD(md5s, ch_remote_dir, ch_ftp_host)
+    ENA_FTP_UPLOAD(
+        md5s,
+        params.remote_dir ?: '',
+        params.webin_ftp_host ?: 'webin2.ebi.ac.uk',
+        ch_webin_user,
+        ch_webin_password
+        )
 
     // Generate XMLs
-    def ch_hold_until = Channel.value(params.hold_until ?: null)
-    xmls = ENA_GENERATE_XML( uploads, ch_hold_until )
+    ENA_GENERATE_XML(
+        ENA_FTP_UPLOAD.out.uploaded,
+        params.remote_dir ?: '',
+        params.hold_until ?: ''
+        )
 
-    // Submit via Webin — URLs provided by workflow
-    def ch_submit_api  = Channel.value(params.submit_api ?: 'v1')
-    def ch_v1_base     = Channel.value(params.webin_v1_base ?: ((params.mode == 'prod') ? 'https://www.ebi.ac.uk/ena/submit/drop-box/' : 'https://wwwdev.ebi.ac.uk/ena/submit/drop-box/'))
-    def ch_v2_base     = Channel.value(params.webin_v2_base ?: ((params.mode == 'prod') ? 'https://www.ebi.ac.uk/ena/submit/webin-v2/'     : 'https://wwwdev.ebi.ac.uk/ena/submit/webin-v2/'))
-    receipts = ENA_SUBMIT_WEBIN( xmls, ch_submit_api, ch_v1_base, ch_v2_base )
+    // Submit to async queue — one POST per file, returns immediately with a submission ID
+    ENA_SUBMIT_WEBIN(
+        ENA_GENERATE_XML.out.xml,
+        ch_webin_base,
+        ch_webin_user,
+        ch_webin_password
+        )
+    def ch_analysis_queue_list = ENA_SUBMIT_WEBIN.out.queued.map { meta, f -> f }.collect()
 
-    receipts.view { it -> "ENA receipt for ${it[0].id}: ${it[1]}" }
+    // Collect all queue responses then poll until each submission resolves
+    def ch_all_queue_list = ch_analysis_queue_list
+    if (ch_proj_queue_list) {
+        ch_all_queue_list = Channel.combine(ch_proj_queue_list, ch_analysis_queue_list).map { a, b -> a + b }
+    }
+    ENA_POLL_WEBIN(
+        ch_all_queue_list,
+        ch_webin_user,
+        ch_webin_password,
+        Channel.value(params.poll_interval    ?: 20),
+        Channel.value(params.poll_max_attempts ?: 30)
+        )
+
+    ENA_POLL_WEBIN.out.accessions.view { f -> "Accessions written to: ${f}" }
 }

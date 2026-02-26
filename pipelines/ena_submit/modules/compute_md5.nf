@@ -1,6 +1,7 @@
 process ENA_COMPUTE_MD5 {
     label 'process_light'
     tag { meta.id }
+    container 'docker.io/library/ubuntu:22.04'
 
     input:
     tuple val(meta), val(row), path(file)
@@ -10,6 +11,6 @@ process ENA_COMPUTE_MD5 {
 
     shell:
     """
-    md5sum ${file} | awk '{print $1}' > md5.txt
+    md5sum "${file}" > md5.txt
     """
 }
