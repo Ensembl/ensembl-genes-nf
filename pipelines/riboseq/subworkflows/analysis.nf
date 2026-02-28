@@ -75,5 +75,5 @@ workflow ANALYSIS {
     qc_plots = RIBOWALTZ.out.qc_plots                // tuple: [ meta, pdfs ]
 
     // Use RiboWaltz best_offset for downstream processing
-    offsets = RIBOWALTZ.out.best_offset
+    offsets = RIBOMETRIC.out.offsets
 }

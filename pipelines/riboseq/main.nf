@@ -36,6 +36,11 @@ include { POST_PROCESSING } from './subworkflows/post_processing.nf'
 include { TRACKHUB_GENERATION } from './subworkflows/trackhub_generation.nf'
 include { UNIQUE_READS_MATRIX } from './subworkflows/unique_reads_matrix.nf'
 
+include { COLLECT_STAR_LOG } from './modules/collect_star_log.nf'
+include { COLLECT_RIBOMETRIC } from './modules/collect_ribometric.nf'
+include { COLLECT_GETRPF_CLEAN } from './modules/collect_getrpf_clean.nf'
+include { QC_GATE } from './modules/qc_gate.nf'
+
 /*
 ========================================================================================
     MAIN WORKFLOW
@@ -232,9 +237,36 @@ workflow {
         //
         // SUBWORKFLOW: Post-processing (filter, BEDgraph, BigWig, unique reads index)
         //
+
+        // Collect metrics into DuckDB and perform QC gating (RiboMetric-first)
+        def run_id = workflow.runName
+
+        // STAR alignment metrics
+        COLLECT_STAR_LOG( run_id, ALIGNMENT.out.logs )
+
+        // getRPF cleanliness
+        COLLECT_GETRPF_CLEAN( run_id, QUALITY_CONTROL.out.reports, QUALITY_CONTROL.out.rpf_checks )
+
+        // RiboMetric metrics + artifacts: join JSON, CSV, and offsets by sample
+        ribometric_triplet = ANALYSIS.out.ribometric_json
+            .join(ANALYSIS.out.ribometric_csv)
+            .join(ANALYSIS.out.offsets)
+
+        COLLECT_RIBOMETRIC(
+            run_id,
+            ribometric_triplet.map { m1, j, m2, c, m3, off -> [m1, j, c, off] }
+        )
+
+        // Gate using RiboMetric offsets; filter passing lengths
+        def rules_path = params.qc_rules ?: "${projectDir}/resources/qc_rules.default.yaml"
+        QC_GATE( run_id, ANALYSIS.out.offsets, file(rules_path) )
+
+        // Use filtered offsets for downstream processing
+        def offsets_for_post = QC_GATE.out.filtered_offsets
+
         POST_PROCESSING(
             ALIGNMENT.out.genome_bam,
-            ANALYSIS.out.offsets,
+            offsets_for_post,
             chrom_sizes_ch,
             DATA_ACQUISITION.out.samples  // collapsed FASTA files
         )
