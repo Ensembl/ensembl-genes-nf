@@ -1,0 +1,26 @@
+Polling ERA35900782 (prj_GCA_000001405.28_2026_02) ...
+EXISTS: ERA35900782 (alias already registered)
+Polling ERA35900783 (aln2_test) ...
+ERROR: ERA35900783 rejected by ENA:
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="receipt.xsl"?>
+<RECEIPT receiptDate="2026-02-26T15:52:21.855Z" submissionFile="submission-EMBL-EBI_1772121141855.xml" success="false">
+     <SUBMISSION alias="SUBMISSION-26-02-2026-15:52:21:853"/>
+     <MESSAGES>
+          <ERROR>Failed to validate analysis xml, error: Expected element 'FILES' instead of 'ANALYSIS_ATTRIBUTES' here in element ANALYSIS</ERROR>
+          <INFO>This submission is a TEST submission and will be discarded within 24 hours</INFO>
+     </MESSAGES>
+     <ACTIONS>ADD</ACTIONS>
+</RECEIPT>
+Polling ERA35900784 (aln1_test) ...
+ERROR: ERA35900784 rejected by ENA:
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="receipt.xsl"?>
+<RECEIPT receiptDate="2026-02-26T15:52:21.886Z" submissionFile="submission-EMBL-EBI_1772121141886.xml" success="false">
+     <SUBMISSION alias="SUBMISSION-26-02-2026-15:52:21:883"/>
+     <MESSAGES>
+          <ERROR>Failed to validate analysis xml, error: Expected element 'FILES' instead of 'ANALYSIS_ATTRIBUTES' here in element ANALYSIS</ERROR>
+          <INFO>This submission is a TEST submission and will be discarded within 24 hours</INFO>
+     </MESSAGES>
+     <ACTIONS>ADD</ACTIONS>
+</RECEIPT>

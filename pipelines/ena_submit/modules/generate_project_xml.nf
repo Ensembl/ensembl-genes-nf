@@ -5,22 +5,23 @@ process ENA_GENERATE_PROJECT_XML {
     publishDir "${params.outdir}/ena_submission/projects", mode: 'copy', pattern: '*.xml', saveAs: { fn -> "${meta.alias}/$fn" }
 
     input:
-    tuple val(meta)
+    val meta
 
     output:
     tuple val(meta), path('webin_project.xml'), emit: xml
 
-    script:
-    def hold_until_arg = meta.hold_until ? "--hold-until ${meta.hold_until}" : ''
-    """
+    // Use shell block to avoid Groovy string interpolation issues with $ and $(...)
+    shell:
+    '''
     set -euo pipefail
-    generate_project_xml.py \
-      --alias ${meta.alias} \
-      --name "${meta.name}" \
-      --title "${meta.title}" \
-      --description "${meta.description}" \
+    hold_until_arg=""
+    if [ -n "!{meta.hold_until}" ]; then hold_until_arg="--hold-until !{meta.hold_until}"; fi
+    python3 $(command -v generate_project_xml.py) \
+      --alias !{meta.alias} \
+      --name "!{meta.name}" \
+      --title "!{meta.title}" \
+      --description "!{meta.description}" \
       ${hold_until_arg} \
       --outdir .
-    """
+    '''
 }
-

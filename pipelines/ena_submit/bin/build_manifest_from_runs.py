@@ -47,7 +47,8 @@ def main():
     ap.add_argument('--study-map', help='TSV/CSV mapping of assembly_accession or taxon_id to study; columns: key,study. Overrides --study per matching row.')
     ap.add_argument('--species-map', help='TSV/CSV mapping of taxon_id to species; columns: taxon_id,species')
     ap.add_argument('--release', default='Ensembl_release', help='Release label used in titles/descriptions (e.g., Ensembl_110)')
-    ap.add_argument('--group-by', default='assembly', help='Comma list of grouping keys: assembly[,tissue|taxon]')
+    ap.add_argument('--mode', choices=['per-run','merged'], default='per-run', help='per-run: one analysis per run; merged: one per group')
+    ap.add_argument('--group-by', default='assembly', help='When --mode merged, comma list of grouping keys: assembly[,tissue|taxon]')
     ap.add_argument('--file-dir', required=True, help='Directory containing final merged BAM/CRAM files')
     ap.add_argument('--file-ext', default='cram', choices=['bam','cram'], help='File extension and file_type')
     ap.add_argument('--outdir', required=True, help='Output directory for manifest and run lists')
@@ -87,23 +88,23 @@ def main():
                         continue
                 except Exception:
                     pass
-            key = choose_group_key(row, group_by)
-            groups[key].append(row)
-            # derive per-assembly project alias
+            if args.mode == 'merged':
+                key = choose_group_key(row, group_by)
+                groups[key].append(row)
+            else:
+                # per-run: use a synthetic key per row
+                key = ('__per_run__', row.get('run_accession') or row.get('run') or '')
+                groups[key].append(row)
+            # derive per-assembly project alias (workflow also derives; this keeps manifest readable)
             assembly = row.get('assembly_accession') or row.get('assembly') or ''
             taxon_id = str(row.get('taxon_id') or '').strip()
-            if assembly:
-                palias = f"prj_{slug(assembly)}"
-            elif taxon_id:
-                palias = f"prj_taxon_{slug(taxon_id)}"
-            else:
-                palias = None
+            palias = f"prj_{slug(assembly)}" if assembly else (f"prj_taxon_{slug(taxon_id)}" if taxon_id else None)
             if palias and palias not in projects:
                 projects[palias] = {
                     'alias': palias,
                     'name': palias,
                     'title': f"Annotation evidence project for {assembly or taxon_id}",
-                    'description': "Per-assembly project auto-generated from tissueall.csv"
+                    'description': "Per-assembly project auto-generated from runs CSV"
                 }
 
     manifest_path = os.path.join(args.outdir, 'manifest.tsv')
@@ -113,99 +114,116 @@ def main():
         w.writeheader()
 
         for key, rows in groups.items():
-            # derive assembly/species/tissue
+            # Common derived values
             assembly = next((r.get('assembly_accession') for r in rows if r.get('assembly_accession')), '')
             taxon_id = str(next((r.get('taxon_id') for r in rows if r.get('taxon_id')), '')).strip()
-            species = species_map.get(taxon_id) or f"taxon_{taxon_id}" if taxon_id else 'unknown_species'
-            tissue = None
-            if 'tissue' in group_by or 'tissue_prediction' in group_by:
-                tissue = key[group_by.index('tissue') if 'tissue' in group_by else group_by.index('tissue_prediction')]
+            species = species_map.get(taxon_id) or (f"taxon_{taxon_id}" if taxon_id else 'unknown_species')
 
-            group_label = tissue if tissue else None
-            alias = build_alias(species, assembly, args.release, group_label)
-
-            # run list and counts
-            runs = []
-            sample_counts = Counter()
-            tissue_counts = Counter()
-            for r in rows:
-                ra = (r.get('run_accession') or r.get('run') or '').strip()
-                if ra:
-                    runs.append(ra)
-                sa = (r.get('sample_accession') or '').strip()
-                if sa:
-                    sample_counts[sa] += 1
-                tp = (r.get('tissue_prediction') or '').strip()
-                if tp:
-                    tissue_counts[tp] += 1
-            # de-dup preserve order
-            seen = set()
-            run_list = [x for x in runs if not (x in seen or seen.add(x))]
-
-            run_list_rel = f"runs/{alias}.tsv"
-            run_list_path = os.path.join(args.outdir, run_list_rel)
-            with open(run_list_path, 'w') as rl:
-                rl.write('run\tsample\ttissue\tstudy\n')
+            if args.mode == 'per-run':
                 for r in rows:
                     ra = (r.get('run_accession') or r.get('run') or '').strip()
                     if not ra:
                         continue
                     sa = (r.get('sample_accession') or '').strip()
-                    tp = (r.get('tissue_prediction') or '').strip()
-                    st = (r.get('study') or r.get('study_accession') or '').strip()
-                    rl.write(f"{ra}\t{sa}\t{tp}\t{st}\n")
-
-            # links
-            links = ''
-            if args.links_prefix:
-                links = f"Runs TSV|{args.links_prefix.rstrip('/')}/{alias}.tsv"
-
-            # attributes
-            attrs = []
-            attrs.append(("source_runs_count", str(len(run_list))))
-            if tissue_counts:
-                parts = [f"{k}({v})" for k, v in tissue_counts.most_common(12)]
-                attrs.append(("tissue_summary", ", ".join(parts)))
-                attrs.append(("tissue_method", "prediction from metadata"))
-            if assembly:
-                attrs.append(("reference_accession", assembly))
-
-            analysis_attributes = '; '.join([f"attr_{k}={v}" if not k.startswith('attr_') else f"{k}={v}" for k,v in attrs])
-
-            # study selection
-            study = args.study
-            if study_map:
-                study = study_map.get(assembly) or study_map.get(taxon_id) or study
-
-            # titles/descriptions
-            if tissue:
-                title = f"Merged {tissue} reads aligned to {assembly} for {species}, {args.release}"
+                    tissue = (r.get('tissue_prediction') or '').strip()
+                    alias = slug(f"{ra}_{assembly}_{args.release}_aln")
+                    remote_name = f"{alias}.{args.file_ext}"
+                    file_path = os.path.join(args.file_dir, remote_name)
+                    title = f"Run {ra} aligned to {assembly} for {species}, {args.release}"
+                    desc = f"Alignment of run {ra}{' ('+tissue+')' if tissue else ''} to {assembly}; evidence for genome annotation {args.release}."
+                    links = ''
+                    attrs = [("reference_accession", assembly), ("source_runs_count", "1")]
+                    if tissue:
+                        attrs.append(("tissue_summary", tissue))
+                        attrs.append(("tissue_method", "prediction from metadata"))
+                    analysis_attributes = '; '.join([f"attr_{k}={v}" if not k.startswith('attr_') else f"{k}={v}" for k,v in attrs])
+                    study = args.study
+                    if study_map:
+                        study = study_map.get(assembly) or study_map.get(taxon_id) or study
+                    row_out = {
+                        'file_path': file_path,
+                        'file_type': args.file_ext,
+                        'study': study,
+                        'analysis_alias': alias,
+                        'title': title,
+                        'description': desc,
+                        'run_accessions': ra,
+                        'assembly_accession': assembly,
+                        'sample_accession': sa,
+                        'analysis_links': links,
+                        'analysis_attributes': analysis_attributes,
+                        'remote_name': remote_name,
+                        'analysis_type': 'REFERENCE_ALIGNMENT',
+                        'omit_run_refs_in_test': 'true',
+                    }
+                    w.writerow(row_out)
             else:
-                title = f"Merged reads aligned to {assembly} for {species}, {args.release}"
-            desc = f"Merged {len(run_list)} public runs across multiple BioSamples; evidence for genome annotation {args.release}."
-
-            # paths/names
-            remote_name = f"{alias}.{args.file_ext}"
-            file_path = os.path.join(args.file_dir, remote_name)
-
-            row_out = {
-                'file_path': file_path,
-                'file_type': args.file_ext,
-                'study': study,
-                'analysis_alias': alias,
-                'title': title,
-                'description': desc,
-                'run_list_path': run_list_path,
-                'assembly_accession': assembly,
-                'sample_accession': '',
-                'analysis_links': links,
-                'analysis_attributes': analysis_attributes,
-                'remote_name': remote_name,
-                'analysis_type': 'READ_ALIGNMENT',
-                'omit_run_refs_in_test': 'true',
-            }
-
-            w.writerow(row_out)
+                # merged mode: existing behaviour
+                tissue = None
+                if 'tissue' in group_by or 'tissue_prediction' in group_by:
+                    tissue = key[group_by.index('tissue') if 'tissue' in group_by else group_by.index('tissue_prediction')]
+                group_label = tissue if tissue else None
+                alias = build_alias(species, assembly, args.release, group_label)
+                # run list and counts
+                runs = []
+                sample_counts = Counter()
+                tissue_counts = Counter()
+                for r in rows:
+                    ra = (r.get('run_accession') or r.get('run') or '').strip()
+                    if ra:
+                        runs.append(ra)
+                    sa = (r.get('sample_accession') or '').strip()
+                    if sa:
+                        sample_counts[sa] += 1
+                    tp = (r.get('tissue_prediction') or '').strip()
+                    if tp:
+                        tissue_counts[tp] += 1
+                seen = set()
+                run_list = [x for x in runs if not (x in seen or seen.add(x))]
+                run_list_rel = f"runs/{alias}.tsv"
+                run_list_path = os.path.join(args.outdir, run_list_rel)
+                with open(run_list_path, 'w') as rl:
+                    rl.write('run\tsample\ttissue\tstudy\n')
+                    for r in rows:
+                        ra = (r.get('run_accession') or r.get('run') or '').strip()
+                        if not ra:
+                            continue
+                        sa = (r.get('sample_accession') or '').strip()
+                        tp = (r.get('tissue_prediction') or '').strip()
+                        st = (r.get('study') or r.get('study_accession') or '').strip()
+                        rl.write(f"{ra}\t{sa}\t{tp}\t{st}\n")
+                # links/attrs
+                links = f"Runs TSV|{args.links_prefix.rstrip('/')}/{alias}.tsv" if args.links_prefix else ''
+                attrs = [("reference_accession", assembly), ("source_runs_count", str(len(run_list)))]
+                if tissue_counts:
+                    parts = [f"{k}({v})" for k, v in tissue_counts.most_common(12)]
+                    attrs.append(("tissue_summary", ", ".join(parts)))
+                    attrs.append(("tissue_method", "prediction from metadata"))
+                analysis_attributes = '; '.join([f"attr_{k}={v}" if not k.startswith('attr_') else f"{k}={v}" for k,v in attrs])
+                study = args.study
+                if study_map:
+                    study = study_map.get(assembly) or study_map.get(taxon_id) or study
+                title = f"Merged {'%s ' % tissue if tissue else ''}reads aligned to {assembly} for {species}, {args.release}"
+                desc = f"Merged {len(run_list)} public runs across multiple BioSamples; evidence for genome annotation {args.release}."
+                remote_name = f"{alias}.{args.file_ext}"
+                file_path = os.path.join(args.file_dir, remote_name)
+                row_out = {
+                    'file_path': file_path,
+                    'file_type': args.file_ext,
+                    'study': study,
+                    'analysis_alias': alias,
+                    'title': title,
+                    'description': desc,
+                    'run_list_path': run_list_path,
+                    'assembly_accession': assembly,
+                    'sample_accession': '',
+                    'analysis_links': links,
+                    'analysis_attributes': analysis_attributes,
+                    'remote_name': remote_name,
+                    'analysis_type': 'REFERENCE_ALIGNMENT',
+                    'omit_run_refs_in_test': 'true',
+                }
+                w.writerow(row_out)
 
     print(manifest_path)
 

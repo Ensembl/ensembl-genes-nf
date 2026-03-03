@@ -17,9 +17,14 @@ def build_analysis_xml(row, remote_path, md5, mode='REFERENCE_ALIGNMENT'):
     mk_text(analysis, 'TITLE', row.get('title') or os.path.basename(remote_path))
     mk_text(analysis, 'DESCRIPTION', row.get('description') or 'Alignment of public runs')
 
-    study = row.get('study')
+    study = (row.get('study') or '').strip()
     if study:
-        mk_text(analysis, 'STUDY_REF', accession=study) if study.upper().startswith(('PRJ', 'ERP', 'SRP', 'DRP')) else mk_text(analysis, 'STUDY_REF', refname=study)
+        # Treat as accession only if it matches an INSDC study/project accession pattern
+        # e.g., PRJEB12345, PRJNA12345, ERP123456, SRP123456, DRP123456
+        if re.match(r'^(PRJ[EDNA][A-Z]*\d+|ER[PS]\d+|SRP\d+|DRP\d+)$', study, flags=re.IGNORECASE):
+            mk_text(analysis, 'STUDY_REF', accession=study)
+        else:
+            mk_text(analysis, 'STUDY_REF', refname=study)
 
     # One or more samples can be associated
     samples = [s.strip() for s in (row.get('sample_accession') or '').split(',') if s.strip()]
@@ -74,6 +79,7 @@ def build_analysis_xml(row, remote_path, md5, mode='REFERENCE_ALIGNMENT'):
     for s in seqs:
         mk_text(ra, 'SEQUENCE', accession=s)
 
+    # FILES must appear before ANALYSIS_LINKS / ANALYSIS_ATTRIBUTES
     files = mk_text(analysis, 'FILES')
     ftype = (row.get('file_type') or '').lower()
     filetype_attr = 'bam' if ftype == 'bam' else 'cram'

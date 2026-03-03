@@ -1,0 +1,28 @@
+Polling ERA35900782 (prj_GCA_000001405.28_2026_02) ...
+EXISTS: ERA35900782 (alias already registered)
+Polling ERA35900788 (aln1_test) ...
+ERROR: ERA35900788 rejected by ENA:
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="receipt.xsl"?>
+<RECEIPT receiptDate="2026-02-26T15:54:14.354Z" submissionFile="submission-EMBL-EBI_1772121254354.xml" success="false">
+     <ANALYSIS alias="aln1_test" status="PRIVATE"/>
+     <SUBMISSION alias="SUBMISSION-26-02-2026-15:54:14:222"/>
+     <MESSAGES>
+          <ERROR>File size(bytes) for aln1.bam :  is null</ERROR>
+          <INFO>This submission is a TEST submission and will be discarded within 24 hours</INFO>
+     </MESSAGES>
+     <ACTIONS>ADD</ACTIONS>
+</RECEIPT>
+Polling ERA35900789 (aln2_test) ...
+ERROR: ERA35900789 rejected by ENA:
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="receipt.xsl"?>
+<RECEIPT receiptDate="2026-02-26T15:54:14.339Z" submissionFile="submission-EMBL-EBI_1772121254339.xml" success="false">
+     <ANALYSIS alias="aln2_test" status="PRIVATE"/>
+     <SUBMISSION alias="SUBMISSION-26-02-2026-15:54:14:201"/>
+     <MESSAGES>
+          <ERROR>File size(bytes) for aln2.cram :  is null</ERROR>
+          <INFO>This submission is a TEST submission and will be discarded within 24 hours</INFO>
+     </MESSAGES>
+     <ACTIONS>ADD</ACTIONS>
+</RECEIPT>

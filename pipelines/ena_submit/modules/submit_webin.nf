@@ -1,6 +1,6 @@
 process ENA_SUBMIT_WEBIN {
     label 'process_light'
-    tag { meta.id }
+    tag { meta.id ?: meta.alias ?: 'submission' }
     container 'community.wave.seqera.io/library/curl:8.18.0--78f80c4b644630b0'
 
     input:
@@ -13,11 +13,12 @@ process ENA_SUBMIT_WEBIN {
     tuple val(meta), path('*.queue.json'), emit: queued
 
     shell:
-    """
+    '''
     set -euo pipefail
+    ID="!{meta.id ?: meta.alias ?: 'submission'}"
     curl -sS -u "!{webin_user}:!{webin_password}" \
       -H 'Content-Type: application/xml' \
       --data-binary @!{webin_xml} \
-      "!{webin_base}/submit/queue" > "!{meta.id}.queue.json"
-    """
+      "!{webin_base}/submit/queue" > "$ID.queue.json"
+    '''
 }

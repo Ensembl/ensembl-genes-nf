@@ -1,6 +1,7 @@
 # ENA Submission Pipeline
 
 This pipeline uploads analysis files (e.g. BAM/CRAM) to ENA Webin drop-box and submits an ANALYSIS linking them to public runs.
+See also: `pipelines/ena_submit/SUBMISSION_STRATEGY.md` for project/alias and idempotency conventions.
 
 ## Inputs
 
@@ -19,7 +20,7 @@ Provide a tab-separated `manifest.tsv` with the following columns (header requir
 - sample_accession: Optional sample accession to associate (e.g. ERS1234567). Leave blank for cross-sample merges.
 - ref_seqs: Optional comma-separated list of reference sequence accessions (for <SEQUENCE> entries) when relevant.
 - remote_name: Optional alternate remote filename (defaults to the source basename).
-- analysis_type: Optional; one of `READ_ALIGNMENT` or `REFERENCE_ALIGNMENT` (default). The pipeline maps `READ_ALIGNMENT` to `REFERENCE_ALIGNMENT` to satisfy current ENA schema validation.
+- analysis_type: Optional; one of `READ_ALIGNMENT` or `REFERENCE_ALIGNMENT` (default). The pipeline coerces `READ_ALIGNMENT` to `REFERENCE_ALIGNMENT` to satisfy current ENA schema validation.
 - analysis_links: Optional; `Label|URL; Label2|URL2`.
 - analysis_attributes: Optional; `key=value; key2=value2`. You can also supply `attr_*` columns; e.g., `attr_pipeline=ensembl-genes-nf` becomes a TAG/VALUE pair.
 - omit_run_refs_in_test: Optional; `true|false` to omit or emit RUN_REF when `--mode test` (default true/omit).
@@ -39,6 +40,7 @@ Set Webin credentials via environment variables before running:
 nextflow run pipelines/ena_submit/main.nf \
   --manifest pipelines/ena_submit/examples/manifest.tsv \
   --mode test \
+  --release Ensembl_110 \
   --upload_protocol aspera \
   --upload_parallelism 2 \
   --ascp_limit 300M \
@@ -52,6 +54,7 @@ Notes:
 - Use `--upload_protocol ftp` if Aspera is unavailable.
 - Keep `--upload_parallelism` low to avoid overwhelming ENA (2–3 typical).
 - In TEST mode, the pipeline omits RUN_REF by default so ENA TEST doesn’t 404 production run accessions. Set `omit_run_refs_in_test=false` in your manifest row to include RUN_REF in TEST.
+- Projects are auto‑derived and registered per assembly+release; supply `--release`.
 
 ## Outputs
 
@@ -100,4 +103,4 @@ python3 pipelines/ena_submit/bin/build_manifest_from_runs.py \
   --links-prefix https://example.org/runs
 ```
 
-This writes `/tmp/ena_manifest/manifest.tsv` and per-group run lists under `/tmp/ena_manifest/runs/`. The manifest is compatible with this pipeline and defaults to cross‑sample merges (no `SAMPLE_REF`) with many `RUN_REF` in PROD and omitted in TEST.
+This writes `/tmp/ena_manifest/manifest.tsv` and per-group run lists under `/tmp/ena_manifest/runs/`. The manifest is compatible with this pipeline and supports per‑run mode by default. In TEST, `RUN_REF` are omitted unless overridden; in PROD they are included so your analyses link back to the submitter’s RUN and BioSample where available.
