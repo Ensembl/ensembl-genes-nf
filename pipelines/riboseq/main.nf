@@ -35,6 +35,7 @@ include { ANALYSIS } from './subworkflows/analysis.nf'
 include { POST_PROCESSING } from './subworkflows/post_processing.nf'
 include { TRACKHUB_GENERATION } from './subworkflows/trackhub_generation.nf'
 include { UNIQUE_READS_MATRIX } from './subworkflows/unique_reads_matrix.nf'
+include { TRANSLONSCORER } from './modules/translonscorer.nf'
 
 include { COLLECT_STAR_LOG } from './modules/collect_star_log.nf'
 include { COLLECT_RIBOMETRIC } from './modules/collect_ribometric.nf'
@@ -288,6 +289,38 @@ workflow {
                 params.hub_email ?: 'noreply@example.com',
                 params.sample_regex ?: '',
                 params.annotation_regex ?: ''
+            )
+        }
+
+        // OPTIONAL: TranslonScorer per-sample scoring (gated by QC)
+        if (params.run_translonscorer) {
+            // Select per-sample bigWigs for a chosen BAM type
+            def chosen_type = params.translonscorer_bam_type ?: 'unique_no_junction'
+
+            // Filter for the chosen BAM type and group multiple stranded bigwigs per sample
+            bigwigs_per_sample = POST_PROCESSING.out.bigwigs
+                .filter { meta, bw -> meta.bam_type == chosen_type }
+                .map { meta, bw -> [ [ id: meta.id ], bw ] }
+                .groupTuple(by: 0)
+                .map { meta, files -> [ meta, files ] }
+
+            // Gate by QC decision: selected_for_translon must be true
+            def selected_ids = QC_GATE.out.qc_json
+                .map { meta, qcjson ->
+                    def js = new groovy.json.JsonSlurper().parse(qcjson.toFile())
+                    js.selected_for_translon ? meta.id : null
+                }
+                .filter { it != null }
+
+            // Key join on sample id
+            def keyed_bw = bigwigs_per_sample.map { meta, files -> [ meta.id, [meta, files] ] }
+            def keyed_sel = selected_ids.map { id -> [ id, true ] }
+            allowed = keyed_bw.join(keyed_sel).map { id, pair, _ -> pair }
+
+            TRANSLONSCORER(
+                allowed,
+                gtf_ch,
+                fasta_ch
             )
         }
     }

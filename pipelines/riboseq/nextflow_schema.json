@@ -346,6 +346,34 @@
     "emit_both_offsets": {
       "type": "boolean",
       "description": "If true, also build tracks using all-length offsets"
+    },
+    "run_translonscorer": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable TranslonScorer scoring for QC-passing samples"
+    },
+    "translonscorer_bam_type": {
+      "type": "string",
+      "default": "unique_no_junction",
+      "description": "Which filtered BAM-derived bigwig to use (matches bam_type meta)"
+    },
+    "translonscorer_scoring_method": {
+      "type": "string",
+      "default": "modern",
+      "enum": [
+        "modern",
+        "classic"
+      ],
+      "description": "TranslonScorer scoring method"
+    },
+    "translonscorer_plot_range": {
+      "type": "integer",
+      "default": 30,
+      "description": "Plot range around start for reports"
+    },
+    "translonscorer_pip_spec": {
+      "type": "string",
+      "description": "Custom pip spec for installing TranslonScorer"
     }
   },
   "required": []

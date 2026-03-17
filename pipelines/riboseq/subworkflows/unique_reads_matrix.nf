@@ -41,6 +41,10 @@ workflow UNIQUE_READS_MATRIX {
             tuple(study_id, sample_ids, tsv_files)
         }
 
+    study_grouped.view { study_id, sample_ids, tsv_files ->
+        println "Study: ${study_id}, Samples: ${sample_ids.size()}, TSVs: ${tsv_files.size()}"
+    }    
+
     BUILD_STUDY_MATRIX(study_grouped)
 
     //

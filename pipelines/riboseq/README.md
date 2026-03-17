@@ -1,15 +1,12 @@
-# Example Pipeline
+# RiboSeq Pipeline
 
-Minimal Nextflow pipeline demonstrating subworkflow patterns.
+Ribosome profiling pipeline: organism setup, data acquisition/collapsing, QC, STAR alignment (genome+transcriptome), RiboMetric + RiboWaltz, BEDGraph/BigWig, optional TrackHub, and optional TranslonScorer scoring.
 
 ## Quick Start
 
 ```bash
-# Run the main workflow (2 tools + combine + count)
 nextflow run main.nf -stub --outdir results
 ```
-
-This runs two tools in parallel, combines their outputs, and counts lines.
 
 ## Structure
 
@@ -20,7 +17,7 @@ This runs two tools in parallel, combines their outputs, and counts lines.
 │   ├── simple_workflow.nf       # Simplest: 1 process only
 │   └── subworkflow_example.nf   # Same as main.nf (for reference)
 ├── subworkflows/                 # 2 reusable subworkflow examples
-├── modules/                      # 7 example processes
+├── modules/                      # Pipeline processes (including TranslonScorer)
 ├── advanced_entrypoints/         # Advanced: Entry point system
 └── docs/                         # All documentation
 ```
@@ -34,7 +31,7 @@ A single process workflow - demonstrates the basics.
 nextflow run workflows/simple_workflow.nf -stub --outdir results
 ```
 
-**Output**: `tool_a/` (1 tool, 2 samples)
+**Output**: standard riboseq artifacts (see below)
 
 ### Main Workflow (main.nf)
 Two subworkflows chained together (also available as `workflows/subworkflow_example.nf`).
@@ -43,7 +40,7 @@ Two subworkflows chained together (also available as `workflows/subworkflow_exam
 nextflow run main.nf -stub --outdir results
 ```
 
-**Output**: `tool_a/`, `tool_b/`, `combined/`, `line_counts/` (2 tools + processing)
+**Output**: alignment, analysis, bedgraphs/bigwigs, optional trackhub and translonscorer outputs
 
 ### Advanced Entry Points (advanced_entrypoints/)
 Dynamic entry point system with automatic workflow resumption.
@@ -54,7 +51,7 @@ nextflow run main.nf --help
 nextflow run main.nf -stub --outdir results
 ```
 
-**Output**: All 4 tools + combine + count with automatic entry point detection
+**Output**: multiple entrypoints for development
 
 ## Where to Start
 
@@ -74,3 +71,21 @@ All documentation is in **[docs/](docs/)**:
 ## Parameters
 
 - `--outdir` - Output directory (default: `'results'`)
+
+### TranslonScorer (optional)
+
+Enable per‑sample scoring after post‑processing for QC‑passing samples:
+
+```bash
+nextflow run pipelines/riboseq/main.nf \
+  --sample_sheet <samples.csv> \
+  --star_index <STAR_index> \
+  --gtf <anno.gtf> \
+  --fasta <genome.fa> \
+  --chrom_sizes_file <chrom.sizes> \
+  --run_translonscorer true \
+  --translonscorer_bam_type unique_no_junction \
+  -profile local -stub
+```
+
+Outputs per sample: `<outdir>/translonscorer/<sample>/<sample>_orfs_scored.csv`, `<sample>_report.html`.
