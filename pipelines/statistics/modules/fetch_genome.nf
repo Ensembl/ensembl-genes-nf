@@ -41,7 +41,7 @@ process FETCH_GENOME {
 
     script:
     """
-    if [[ ! -f ${params.cacheDir}/${meta.gca}/ncbi_dataset/*.fna || ! -f "${meta.genome_file}" ]]; then 
+    if [[ ! -f ${params.cacheDir}/${meta.gca}/ncbi_dataset/*.fna && ! -f "${meta.genome_file}" ]]; then 
     fetch_genome.py --output_dir ${params.cacheDir}/${meta.gca}/ncbi_dataset --gca ${meta.gca}
     fi
     # Link the appropriate genome file
