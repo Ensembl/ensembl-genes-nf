@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "repeat_masking pipeline parameters",
+  "description": "Ensembl repeat masking pipeline. Runs RepeatMasker (RepBase + optional custom library), RED, TRF, and DUST. Outputs softmasked FASTA and a merged repeat GFF3.",
+  "type": "object",
+  "properties": {
+    "genome_fasta": {
+      "type": "string",
+      "description": "Path to unmasked reference genome FASTA.",
+      "fa_icon": "fas fa-dna"
+    },
+    "outdir": {
+      "type": "string",
+      "description": "Output directory. Softmasked FASTA, repeat GFF3, and output_manifest.json written here.",
+      "fa_icon": "fas fa-folder-open"
+    },
+    "repbase_library": {
+      "type": "string",
+      "description": "Path to RepBase repeat library file for RepeatMasker (e.g. RepeatMaskerLib.h5)."
+    },
+    "custom_library": {
+      "type": "string",
+      "description": "Path to custom repeat library FASTA (e.g. from RepeatModeler). Optional."
+    },
+    "species": {
+      "type": "string",
+      "description": "Species name passed to RepeatMasker -species flag (e.g. 'homo sapiens'). Used when repbase_library is not specified.",
+      "default": "mammals"
+    },
+    "skip_repeatmodeler": {
+      "type": "boolean",
+      "default": false,
+      "description": "Skip de novo repeat library construction with RepeatModeler."
+    },
+    "skip_red": {
+      "type": "boolean",
+      "default": false,
+      "description": "Skip RED (Repeat Element Detector) masking."
+    },
+    "skip_trf": {
+      "type": "boolean",
+      "default": false,
+      "description": "Skip TRF (Tandem Repeat Finder) masking."
+    },
+    "skip_dust": {
+      "type": "boolean",
+      "default": false,
+      "description": "Skip DUST low-complexity masking."
+    },
+    "repeatmasker_threads": {
+      "type": "integer",
+      "default": 4,
+      "description": "Threads to use per RepeatMasker job."
+    },
+    "chunk_size": {
+      "type": "integer",
+      "default": 10000000,
+      "description": "Genome chunk size in bp for parallelising RepeatMasker (default: 10 Mb)."
+    }
+  },
+  "required": ["genome_fasta", "outdir"]
+}

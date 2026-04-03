@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "long_read pipeline parameters",
+  "description": "Ensembl long-read transcriptome annotation pipeline. Aligns long reads with minimap2, collapses transcript models, and classifies by protein support.",
+  "type": "object",
+  "properties": {
+    "sample_sheet": {
+      "type": "string",
+      "description": "Path to TSV sample sheet. Required columns: sample_name, fastq_file, instrument_platform (ONT|PACBIO_SMRT). Optional: url (for download).",
+      "fa_icon": "fas fa-file-csv"
+    },
+    "genome_fasta": {
+      "type": "string",
+      "description": "Path to unmasked reference genome FASTA (with .fai index).",
+      "fa_icon": "fas fa-dna"
+    },
+    "genome_index": {
+      "type": "string",
+      "description": "Path to pre-built minimap2 genome index (.mmi). If absent, one will be created from genome_fasta.",
+      "fa_icon": "fas fa-database"
+    },
+    "protein_db": {
+      "type": "string",
+      "description": "Path to directory containing a pre-built blastp BLAST database (UniProt Swiss-Prot recommended).",
+      "fa_icon": "fas fa-folder-open"
+    },
+    "outdir": {
+      "type": "string",
+      "description": "Output directory. GFF3, BAM files, and output_manifest.json are written here.",
+      "fa_icon": "fas fa-folder-open"
+    },
+    "minimap2_preset": {
+      "type": "string",
+      "default": "splice",
+      "enum": ["splice", "splice:hq", "map-ont", "map-pb"],
+      "description": "minimap2 preset. Use 'splice' for ONT cDNA, 'splice:hq' for PacBio IsoSeq, 'map-ont'/'map-pb' for genomic."
+    },
+    "collapse_min_overlap": {
+      "type": "number",
+      "default": 0.8,
+      "description": "Minimum reciprocal exon overlap fraction to collapse two transcripts into one model (0–1)."
+    },
+    "blast_evalue": {
+      "type": "number",
+      "default": 1e-5,
+      "description": "E-value cutoff for blastp classification against the protein database."
+    },
+    "max_intron_size": {
+      "type": "integer",
+      "default": 200000,
+      "description": "Maximum intron size in bp. Alignments with larger introns are filtered."
+    },
+    "skip_download": {
+      "type": "boolean",
+      "default": false,
+      "description": "Set to true if all fastq_file paths in the sample sheet are local (skip ENA/SRA download)."
+    }
+  },
+  "required": ["sample_sheet", "genome_fasta", "protein_db", "outdir"]
+}
