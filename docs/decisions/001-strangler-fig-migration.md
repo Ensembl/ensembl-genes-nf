@@ -96,7 +96,34 @@ Also fixed the `local` profile in the three pre-existing pipelines that had
 `igtr`, `long_read`, `repeat_masking` local profiles now set `singularity.enabled = false` and
 `docker.enabled = false` (matching all other pipelines since Wave 2).
 
-## Test coverage summary (as of Wave 7 completion)
+### Wave 8 — Orchestration bug-fixes + FullAnnotation_conf
+
+Fixed three critical bugs in `FullAnnotation_conf.pm` and four correctness
+issues in the Nextflow pipelines (`ensembl-analysis` commit `f4141a956`,
+`ensembl-genes-nf` commit `7febdf5`):
+
+**FullAnnotation_conf restructure** (`ensembl-analysis`):
+
+| Bug | Root cause | Fix |
+|---|---|---|
+| `RunRepeatMasking` triggered 3× | `LoadAssembly` manifest has 3 outputs; all fanned on ch-2 | `nextflow_dataflow_outputs => 0` for LoadAssembly + RepeatMasking; downstream paths hardcoded from known publishDir convention |
+| `RunConsolidate` never triggered | `CollectLayerOutputs` accumulated values but had no funnel/semaphore | `FanAnnotationLayers` now uses eHive `1->A` / `A->1` semaphore; RunConsolidate is the funnel triggered when all 9 layers complete |
+| `RunRefseqImport` ran before synonyms_tsv existed | RefseqImport was seeded in parallel with LoadAssembly | Moved to annotation fan (stage 3); synonyms_tsv path hardcoded from LoadAssembly outdir convention |
+
+New architecture: `Seed → LoadAssembly → RepeatMasking → FanAnnotationLayers (1→A→9 pipelines, A→1 RunConsolidate) → ConsumeConsolidatedOutput`
+
+**Nextflow pipeline fixes** (`ensembl-genes-nf`):
+
+| File | Bug | Fix |
+|---|---|---|
+| `refseq_import/modules/parse_refseq.nf` | `synonyms_tsv ?` always truthy for Nextflow path objects | Check `synonyms_tsv.name != 'NO_FILE'` |
+| `repeat_masking/modules/bedtools_maskfasta.nf` | Softmasked FASTA only in work dir; path unpredictable | Added `publishDir "${params.outdir}/genome"` |
+| `repeat_masking/bin/write_manifest.py` | Used `p.resolve()` (work-dir path, lost after cleanup) | Now uses `outdir/genome/<name>.softmasked.fa` matching publishDir |
+| `consolidate/main.nf` | `gff3_dir/*.gff3` only scanned one level | Changed to `gff3_dir/**/*.gff3` (recursive); repeat GFF3s excluded because MERGE_REPEATS has no publishDir |
+
+**Validation milestone**: `load_assembly` pipeline ran end-to-end locally with real GRCh38.p14 data (NCBI FTP, conda profile on macOS): 4/4 tasks ✔ in 11m 33s, valid `output_manifest.json` written.
+
+## Test coverage summary (as of Wave 8 completion)
 
 | Pipeline | Tests |
 |---|---|
