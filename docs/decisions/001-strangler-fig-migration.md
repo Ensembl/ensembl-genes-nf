@@ -44,7 +44,19 @@ Migrate subpipelines wave by wave.  Each Nextflow pipeline:
 | `refseq_import` | wget + Python GFF3 parser | GCA/GCF accession | RefSeq GFF3 | `4cc1efa` |
 | `load_assembly` | wget + samtools faidx | GCA accession | genome FASTA, synonyms TSV, metadata JSON | `b37ed74` |
 
-## Test coverage summary (as of Wave 2 completion)
+### Wave 3 — RNA-seq
+
+| Pipeline | Tool(s) | Input | Output | Commit |
+|---|---|---|---|---|
+| `rnaseq` | STAR + StringTie2 | FASTQ sample sheet + genome | merged rnaseq GFF3 | `c145218` |
+
+### Wave 4 — Projection / LASTZ
+
+| Pipeline | Tool(s) | Input | Output | Commit |
+|---|---|---|---|---|
+| `projection` | LASTZ + axtChain + Python chain projection | softmasked genomes + source GFF3 | projected_transcript GFF3 | `5b8fc76` |
+
+## Test coverage summary (as of Wave 4 completion)
 
 | Pipeline | Tests |
 |---|---|
@@ -54,21 +66,12 @@ Migrate subpipelines wave by wave.  Each Nextflow pipeline:
 | best_targeted | 44 |
 | refseq_import | 36 |
 | load_assembly | 17 |
-| **Total** | **240** |
+| rnaseq | 43 |
+| projection | 35 |
+| **Total** | **268** |
 
 (long_read and repeat_masking are convention rewrites; bin scripts are Perl
 tools wrapped in containers — Python tests not applicable.)
-
-## Pending waves
-
-### Wave 3 — RNA-seq
-
-- `rnaseq` — STAR alignment + StringTie2 assembly (redesign from scratch;
-  the existing Perl pipeline is not being wrapped)
-
-### Wave 4 — Projection / LASTZ
-
-- `projection` — LASTZ whole-genome alignment + gene projection
 
 ## Conventions reference
 
