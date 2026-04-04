@@ -56,7 +56,13 @@ Migrate subpipelines wave by wave.  Each Nextflow pipeline:
 |---|---|---|---|---|
 | `projection` | LASTZ + axtChain + Python chain projection | softmasked genomes + source GFF3 | projected_transcript GFF3 | `5b8fc76` |
 
-## Test coverage summary (as of Wave 4 completion)
+### Wave 5 — Ab initio gene prediction
+
+| Pipeline | Tool(s) | Input | Output | Commit |
+|---|---|---|---|---|
+| `ab_initio` | Augustus | softmasked genome + species model | ab_initio GFF3 | `7f4e7b5` |
+
+## Test coverage summary (as of Wave 5 completion)
 
 | Pipeline | Tests |
 |---|---|
@@ -68,7 +74,8 @@ Migrate subpipelines wave by wave.  Each Nextflow pipeline:
 | load_assembly | 17 |
 | rnaseq | 43 |
 | projection | 35 |
-| **Total** | **268** |
+| ab_initio | 35 |
+| **Total** | **303** |
 
 (long_read and repeat_masking are convention rewrites; bin scripts are Perl
 tools wrapped in containers — Python tests not applicable.)
