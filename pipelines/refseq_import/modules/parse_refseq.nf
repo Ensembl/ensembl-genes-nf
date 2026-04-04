@@ -26,7 +26,7 @@ process PARSE_REFSEQ {
     script:
     def args         = task.ext.args   ?: ''
     def out_name     = gff_gz.name.replaceAll(/\.gff\.gz$|\.gff3\.gz$/, '') + '.refseq.gff3'
-    def syn_arg      = synonyms_tsv ? "--synonyms ${synonyms_tsv}" : ''
+    def syn_arg      = (synonyms_tsv.name != 'NO_FILE') ? "--synonyms ${synonyms_tsv}" : ''
     def patches_arg  = params.keep_patches ? '--keep_patches' : ''
     """
     parse_refseq_gff3.py \\

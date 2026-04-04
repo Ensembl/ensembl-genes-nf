@@ -16,18 +16,21 @@ def main():
     parser.add_argument('--repeat-gff3',       required=True)
     args = parser.parse_args()
 
+    # Build outdir-relative paths so the manifest is stable after the
+    # Nextflow work directory is cleaned.  BEDTOOLS_MASKFASTA publishes
+    # its *.softmasked.fa to ${outdir}/genome/ via publishDir.
     outputs = []
-    for path_str, out_type in [
-        (args.softmasked_fasta, 'softmasked_fasta'),
-        (args.repeat_gff3,      'repeat_gff3'),
+    for path_str, out_type, subdir in [
+        (args.softmasked_fasta, 'softmasked_fasta', 'genome'),
+        (args.repeat_gff3,      'repeat_gff3',      'repeats'),
     ]:
         p = Path(path_str)
-        if p.exists():
-            outputs.append({
-                'type': out_type,
-                'path': str(p.resolve()),
-                'meta': {'id': p.stem.split('.')[0]}
-            })
+        published = Path(args.outdir) / subdir / p.name
+        outputs.append({
+            'type': out_type,
+            'path': str(published),
+            'meta': {'id': p.stem.split('.')[0]}
+        })
 
     manifest = {
         'pipeline':     args.pipeline,

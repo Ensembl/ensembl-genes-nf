@@ -7,6 +7,8 @@ process BEDTOOLS_MASKFASTA {
         'https://depot.galaxyproject.org/singularity/bedtools:2.31.1--hf5e1c6e_1' :
         'biocontainers/bedtools:2.31.1--hf5e1c6e_1' }"
 
+    publishDir "${params.outdir}/genome", mode: 'copy', pattern: "*.softmasked.fa"
+
     input:
     tuple val(meta),  path(bed)
     tuple val(meta2), path(fasta)

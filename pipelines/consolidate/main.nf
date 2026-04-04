@@ -62,8 +62,11 @@ workflow {
     if (params.gff3_files) {
         ch_gff3 = Channel.fromPath(params.gff3_files, checkIfExists: true).collect()
     } else {
+        // Recursive glob — each annotation pipeline writes its GFF3 one or
+        // two levels below outdir (e.g. outdir/rnaseq/rnaseq.gff3).
+        // Repeat GFF3s are NOT published to the outdir so they won't appear.
         ch_gff3 = Channel
-            .fromPath("${params.gff3_dir}/*.gff3", checkIfExists: true)
+            .fromPath("${params.gff3_dir}/**/*.gff3", checkIfExists: true)
             .collect()
     }
 
