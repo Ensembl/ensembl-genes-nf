@@ -68,7 +68,35 @@ Migrate subpipelines wave by wave.  Each Nextflow pipeline:
 |---|---|---|---|---|
 | `consolidate` | Python layer-annotation | multiple GFF3 + priority map | consolidated GFF3 | `c745ca2` |
 
-## Test coverage summary (as of Wave 6 completion)
+### Wave 7 — eHive PipeConfig glue + local profile fixes
+
+Added eHive `PipeConfig` modules for all 11 completed Nextflow pipelines so
+each can be launched by `init_pipeline.pl` without any bespoke Perl wrapper.
+Also fixed the `local` profile in the three pre-existing pipelines that had
+`singularity { cacheDir = '...' }` instead of `singularity.enabled = false`.
+
+**PipeConfigs added** (`ensembl-analysis` branch `feature/NextflowRunnable`, commits `89933b1b8`, `1ec2316a6`):
+
+| PipeConfig | Nextflow pipeline | Notable params |
+|---|---|---|
+| `LoadAssembly_conf` | `load_assembly` | `assembly_accession`, `assembly_name` |
+| `RnaSeq_conf` | `rnaseq` | `genome_fasta`, `sample_sheet`; optional `star_index`, `annotation_gtf` |
+| `BestTargeted_conf` | `best_targeted` | `genome_fasta`; optional `cdna_fasta`, `protein_fasta` |
+| `Projection_conf` | `projection` | `source_fasta`, `query_fasta`, `source_gff3`; optional `chain` |
+| `AbInitio_conf` | `ab_initio` | `genome_fasta`, `species`; optional `augustus_config_path`, `extrinsic_cfg` |
+| `Consolidate_conf` | `consolidate` | `gff3_dir` or `gff3_files` |
+| `GenblastHomology_conf` | `genblast_homology` | `genome_fasta`, `uniprot_fasta` |
+| `RefseqImport_conf` | `refseq_import` | `assembly_refseq_accession`, `assembly_name`; optional `synonyms_tsv` |
+| `ShortNcrna_conf` | `short_ncrna` | `genome_fasta`, `rfam_cm`; optional `mirna_fasta`, `mirna_blast_db` |
+| `Igtr_conf` | `igtr` | `genome_fasta`, `igtr_proteins` |
+| `LongRead_conf` | `long_read` | `sample_sheet`, `genome_fasta`, `protein_db`; optional `genome_index`; `large_long` RC |
+| `RepeatMasking_conf` | `repeat_masking` | `genome_fasta`; optional library paths; `large_long` RC (120 h) |
+
+**Local profile singularity fix** (`ensembl-genes-nf` branch `dev`, commit `30c5aa2`):
+`igtr`, `long_read`, `repeat_masking` local profiles now set `singularity.enabled = false` and
+`docker.enabled = false` (matching all other pipelines since Wave 2).
+
+## Test coverage summary (as of Wave 7 completion)
 
 | Pipeline | Tests |
 |---|---|
@@ -82,10 +110,9 @@ Migrate subpipelines wave by wave.  Each Nextflow pipeline:
 | projection | 35 |
 | ab_initio | 35 |
 | consolidate | 26 |
-| **Total** | **329** |
-
-(long_read and repeat_masking are convention rewrites; bin scripts are Perl
-tools wrapped in containers — Python tests not applicable.)
+| long_read | 38 |
+| repeat_masking | 12 |
+| **Total** | **379** |
 
 ## Conventions reference
 
