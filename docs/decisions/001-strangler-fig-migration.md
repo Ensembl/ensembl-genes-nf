@@ -62,7 +62,13 @@ Migrate subpipelines wave by wave.  Each Nextflow pipeline:
 |---|---|---|---|---|
 | `ab_initio` | Augustus | softmasked genome + species model | ab_initio GFF3 | `7f4e7b5` |
 
-## Test coverage summary (as of Wave 5 completion)
+### Wave 6 — Geneset consolidation
+
+| Pipeline | Tool(s) | Input | Output | Commit |
+|---|---|---|---|---|
+| `consolidate` | Python layer-annotation | multiple GFF3 + priority map | consolidated GFF3 | `c745ca2` |
+
+## Test coverage summary (as of Wave 6 completion)
 
 | Pipeline | Tests |
 |---|---|
@@ -75,7 +81,8 @@ Migrate subpipelines wave by wave.  Each Nextflow pipeline:
 | rnaseq | 43 |
 | projection | 35 |
 | ab_initio | 35 |
-| **Total** | **303** |
+| consolidate | 26 |
+| **Total** | **329** |
 
 (long_read and repeat_masking are convention rewrites; bin scripts are Perl
 tools wrapped in containers — Python tests not applicable.)
