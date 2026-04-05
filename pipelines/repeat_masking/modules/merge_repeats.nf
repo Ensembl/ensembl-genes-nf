@@ -6,6 +6,8 @@ process MERGE_REPEATS {
     tag "${meta.id}"
     label 'process_medium'
 
+    publishDir "${params.outdir}/repeats", mode: 'copy', pattern: "*.repeats.gff3"
+
     conda "conda-forge::python=3.11 bioconda::pybedtools=0.10"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/pybedtools:0.10.0--py311h18e979d_0' :
