@@ -123,7 +123,37 @@ New architecture: `Seed → LoadAssembly → RepeatMasking → FanAnnotationLaye
 
 **Validation milestone**: `load_assembly` pipeline ran end-to-end locally with real GRCh38.p14 data (NCBI FTP, conda profile on macOS): 4/4 tasks ✔ in 11m 33s, valid `output_manifest.json` written.
 
-## Test coverage summary (as of Wave 8 completion)
+### Wave 9 — UTR addition (`utr_addition`)
+
+Adds UTR regions to consolidated coding gene models by matching donor transcripts.
+
+| Step | Logic |
+|---|---|
+| GFF3 parsing | Hand-written parser into Gene/Transcript dataclasses (no gffutils dependency) |
+| Donor matching | `cds_matches_donor()`: all internal CDS splice junctions must be present as exon boundaries in donor; only UTR-facing boundaries may differ |
+| UTR extension | `add_utr_to_transcript()`: replaces acceptor exon structure with donor UTR + original CDS; clips to max_5prime_utr/max_3prime_utr limits |
+| Priority | Donor files searched in order: long_read first, then best_targeted (cDNA), then rnaseq |
+
+Unmatched acceptors keep their original exon structure. 60 pytest tests passing.
+
+### Wave 10 — Gene set finalisation (`finalise_geneset`)
+
+Post-UTR-addition QC pipeline replacing several Ensembl eHive modules.
+
+| Process | eHive equivalent | Logic |
+|---|---|---|
+| FILTER_GENESET | HiveCleanGeneset | Short ORFs (<100aa), tiny introns (<10bp frameshifts) |
+| DETECT_PSEUDOGENES | HivePseudogenes | Single-exon + >80% CDS repeat coverage → processed_pseudogene; all introns <60bp → pseudogene |
+| DETECT_READTHROUGH | GeneUtils.pm | Transcripts overlapping CDSs of 2+ genes → readthrough_transcript |
+| FLAG_SELENOPROTEINS | HiveSelenocysteineFinder | Name match against selenoprotein FASTA; optional (NO_FILE passthrough) |
+| SELECT_CANONICAL | post-processing scripts | Longest CDS, tie-break span; adds canonical_transcript=1 attribute |
+
+46 pytest tests passing. Also: MERGE_REPEATS now publishes `*.repeats.gff3` to `outdir/repeats/` (needed by finalise_geneset for pseudogene repeat-coverage calculation).
+
+New PipeConfigs: `UtrAddition_conf`, `FinaliseGeneset_conf` (`ensembl-analysis` commit `4d00b3bc1`).
+FullAnnotation_conf extended to 7 stages: Consolidate → UtrAddition → FinaliseGeneset → ConsumeFinalGeneset.
+
+## Test coverage summary (as of Wave 10 completion)
 
 | Pipeline | Tests |
 |---|---|
@@ -139,7 +169,9 @@ New architecture: `Seed → LoadAssembly → RepeatMasking → FanAnnotationLaye
 | consolidate | 26 |
 | long_read | 38 |
 | repeat_masking | 12 |
-| **Total** | **379** |
+| utr_addition | 60 |
+| finalise_geneset | 46 |
+| **Total** | **485** |
 
 ## Conventions reference
 
