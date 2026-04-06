@@ -1,0 +1,8 @@
+##gff-version 3
+##sequence-region chr1 1 1000
+chr1	rnaseq	gene	80	520	.	+	.	ID=donor_gene1;Name=GENE1;biotype=protein_coding
+chr1	rnaseq	mRNA	80	520	.	+	.	ID=donor_tx1;Parent=donor_gene1;biotype=protein_coding
+chr1	rnaseq	exon	80	200	.	+	.	ID=donor_exon1.1;Parent=donor_tx1
+chr1	rnaseq	exon	300	520	.	+	.	ID=donor_exon1.2;Parent=donor_tx1
+chr1	rnaseq	CDS	150	200	.	+	0	ID=donor_cds1.1;Parent=donor_tx1
+chr1	rnaseq	CDS	300	450	.	+	0	ID=donor_cds1.2;Parent=donor_tx1

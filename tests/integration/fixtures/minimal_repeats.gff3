@@ -1,0 +1,4 @@
+##gff-version 3
+##sequence-region chr1 1 1000
+chr1	RepeatMasker	repeat_region	50	90	.	+	.	ID=rep1;Name=SINE/Alu
+chr1	TRF	tandem_repeat	550	580	.	+	.	ID=rep2;Name=TRF
