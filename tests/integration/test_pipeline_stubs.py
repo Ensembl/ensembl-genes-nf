@@ -227,3 +227,92 @@ class TestPipelineChainIntegrity:
         assert fg_dir.exists()
         final_gff3_files = list(fg_dir.glob("*.gff3"))
         assert len(final_gff3_files) >= 1, "finalise_geneset produced no output"
+
+
+# ---------------------------------------------------------------------------
+# gff3_to_core
+# ---------------------------------------------------------------------------
+
+class TestGff3ToCoreStub:
+    """Stub-mode tests for the gff3_to_core pipeline."""
+
+    _DB_PARAMS = {
+        "db_host":     "localhost",
+        "db_user":     "ensadmin",
+        "db_name":     "test_core_db",
+        "assembly":    "GRCh38",
+    }
+
+    def _run(self, minimal_gff3, tmp_path, extra=None):
+        params = {**self._DB_PARAMS, "input_gff3": str(minimal_gff3)}
+        if extra:
+            params.update(extra)
+        return run_nextflow_stub("gff3_to_core", params=params, tmp_path=tmp_path)
+
+    def test_pipeline_completes_in_stub_mode(self, nextflow_available, minimal_gff3, tmp_path):
+        """Pipeline exits 0 in stub mode without a real database."""
+        manifest = self._run(minimal_gff3, tmp_path)
+        assert isinstance(manifest, dict)
+
+    def test_manifest_is_valid_json(self, nextflow_available, minimal_gff3, tmp_path):
+        """output_manifest.json exists and has pipeline == 'gff3_to_core'."""
+        manifest_path = tmp_path / "output" / "output_manifest.json"
+        self._run(minimal_gff3, tmp_path)
+        assert manifest_path.exists(), "output_manifest.json not found"
+        data = json.loads(manifest_path.read_text())
+        assert data.get("pipeline") == "gff3_to_core"
+
+    def test_load_stats_published_to_gff3_to_core_subdir(self, nextflow_available, minimal_gff3, tmp_path):
+        """LOAD_GFF3_TO_CORE publishes load_stats.json to outdir/gff3_to_core/."""
+        self._run(minimal_gff3, tmp_path)
+        core_dir = tmp_path / "output" / "gff3_to_core"
+        assert core_dir.exists(), f"gff3_to_core publishDir not found under {tmp_path / 'output'}"
+        stats_files = list(core_dir.glob("load_stats.json"))
+        assert len(stats_files) == 1, f"load_stats.json not found in {core_dir}"
+
+    def test_stub_load_stats_is_valid_json(self, nextflow_available, minimal_gff3, tmp_path):
+        """Stub load_stats.json is parseable JSON with gene count field."""
+        self._run(minimal_gff3, tmp_path)
+        stats_path = tmp_path / "output" / "gff3_to_core" / "load_stats.json"
+        data = json.loads(stats_path.read_text())
+        assert "genes" in data, f"load_stats.json missing 'genes' key: {data}"
+        assert data["genes"] > 0
+
+    def test_pipeline_runs_without_optional_fai(self, nextflow_available, minimal_gff3, tmp_path):
+        """Pipeline runs when genome_fai and synonyms_tsv are not provided (NO_FILE sentinel)."""
+        # default params have no genome_fai or synonyms_tsv
+        self._run(minimal_gff3, tmp_path)
+
+    def test_finalise_output_feeds_gff3_to_core(
+        self, nextflow_available, minimal_gff3, minimal_repeats_gff3, tmp_path
+    ):
+        """
+        Run finalise_geneset in stub mode, take its output GFF3, and feed
+        directly into gff3_to_core stub mode. Both should succeed.
+        """
+        # Stage 1: finalise_geneset
+        fg_tmp = tmp_path / "fg"
+        fg_tmp.mkdir()
+        run_nextflow_stub(
+            "finalise_geneset",
+            params={
+                "input_gff3":  str(minimal_gff3),
+                "repeat_gff3": str(minimal_repeats_gff3),
+            },
+            tmp_path=fg_tmp,
+        )
+        fg_dir = fg_tmp / "output" / "finalise_geneset"
+        final_gff3 = next(fg_dir.glob("*.gff3"))
+
+        # Stage 2: gff3_to_core
+        core_tmp = tmp_path / "core"
+        core_tmp.mkdir()
+        run_nextflow_stub(
+            "gff3_to_core",
+            params={**self._DB_PARAMS, "input_gff3": str(final_gff3)},
+            tmp_path=core_tmp,
+        )
+        manifest_path = core_tmp / "output" / "output_manifest.json"
+        assert manifest_path.exists()
+        data = json.loads(manifest_path.read_text())
+        assert data.get("pipeline") == "gff3_to_core"
