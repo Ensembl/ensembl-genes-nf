@@ -18,7 +18,7 @@ limitations under the License.
 
 process BUSCO_DATASET {
 
-    label 'python'
+    label 'default'
     tag "$taxon_id:$dbname"
 
     input:

@@ -58,11 +58,13 @@ def get_dataset_match(ncbi_url: str, dataset: list) -> List[Any]:
                 parent_id_str = str(parent_id)
                 if parent_id_str in dataset:
                     matched_value = dataset[parent_id_str]
-                    break       
+                    break
     except urllib.error.URLError as url_err:
         print(f"URL error occurred: {url_err}")
     except json.JSONDecodeError as json_err:
         print(f"Error decoding JSON: {json_err}")
+    except (KeyError, IndexError) as parse_err:
+        print(f"Error parsing NCBI taxonomy response: {parse_err}")
     #print (matched_value)    
     return matched_value
 
@@ -83,7 +85,7 @@ def parse_args():
         "--ncbi_url",
         type=str,
         help="NCBI dataset url",
-        default="https://api.ncbi.nlm.nih.gov/datasets/v2alpha/taxonomy/taxon/",
+        default="https://api.ncbi.nlm.nih.gov/datasets/v2/taxonomy/taxon/",
     )
     return parser.parse_args()
 
@@ -92,7 +94,7 @@ def main():
     """Entry-point."""
     args = parse_args()
 
-    ncbi_url = f"{args.ncbi_url}/{args.taxon_id}/dataset_report"
+    ncbi_url = f"{args.ncbi_url.rstrip('/')}/{args.taxon_id}/dataset_report"
 
     with open(Path(args.datasets), "r") as file:
         #datasets = [line[: max(line.find(" "), 0) or None] for line in file]
