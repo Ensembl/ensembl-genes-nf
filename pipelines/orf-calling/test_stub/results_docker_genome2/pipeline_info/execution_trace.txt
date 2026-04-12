@@ -1,4 +1,0 @@
-task_id	hash	native_id	name	status	exit	submit	duration	realtime	%cpu	peak_rss	peak_vmem	rchar	wchar
-1	12/8022e8	95393	PREP_RPBP (SRR000001)	COMPLETED	0	2026-03-09 16:00:00.903	325ms	4ms	0.0%	0	0	35.8 KB	185 B
-2	63/e7cc7d	95424	RUN_RPBP (SRR000001)	COMPLETED	0	2026-03-09 16:00:01.246	279ms	3ms	0.0%	0	0	43.1 KB	185 B
-3	af/0e5559	95449	PARSE_RPBP (SRR000001)	COMPLETED	0	2026-03-09 16:00:01.538	231ms	5ms	0.0%	0	0	34 KB	336 B
