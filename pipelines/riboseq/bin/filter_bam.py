@@ -11,6 +11,12 @@ Output files:
 - unique_with_junction.bam: Maps to 1 genomic location, crosses junction(s)
 - multi_no_junction.bam: Maps to 2-X locations, no splicing
 - multi_with_junction.bam: Maps to 2-X locations, crosses junction(s)
+
+Optional equal-quality mode:
+- With --eq-delta N, include all alignments for a read whose alignment score
+  (by default AS:i, fallback to MAPQ) is within N points of that read's best
+  alignment. Combine with --keep-all-hits to allow secondary alignments.
+  Supplementary (chimeric) alignments remain excluded.
 """
 
 import sys
@@ -86,8 +92,11 @@ def passes_basic_filters(read: pysam.AlignedSegment,
     if read.is_unmapped:
         return False
 
-    # Skip secondary alignments (0x100) and supplementary alignments (0x800)
-    if read.is_secondary or read.is_supplementary:
+    # Skip supplementary alignments (0x800). Secondary are allowed if
+    # keep_primary_only is False (equal-quality mode typically sets this).
+    if read.is_supplementary:
+        return False
+    if keep_primary_only and read.is_secondary:
         return False
 
     # Optional: keep only primary hit (HI:i:1)
@@ -133,6 +142,50 @@ def classify_read(read: pysam.AlignedSegment,
         return 'unique_with_junction' if has_junc else 'unique_no_junction'
     else:  # 2 <= nh <= max_multimappers
         return 'multi_with_junction' if has_junc else 'multi_no_junction'
+
+
+def get_alignment_score(read: pysam.AlignedSegment, tag: str = "AS") -> int:
+    """
+    Return an alignment score for a read.
+
+    Preference order:
+    1) Tag specified by `tag` (default AS:i)
+    2) MAPQ (mapping_quality) if tag not present
+
+    Notes:
+    - Some aligners (e.g., bowtie2) set MAPQ=255 to mean "not available". We
+      still use the integer value; equal-quality logic with MAPQ-only inputs
+      will treat identical MAPQs as equal.
+    """
+    try:
+        return int(read.get_tag(tag))
+    except KeyError:
+        return int(read.mapping_quality)
+
+
+def compute_best_scores(input_bam: str,
+                        score_tag: str,
+                        min_mapq: int) -> Dict[str, int]:
+    """
+    First pass over BAM to compute the best alignment score per read name.
+
+    Secondary alignments are considered here (so we don't miss equal-best hits),
+    but supplementary alignments are ignored.
+    """
+    best: Dict[str, int] = {}
+    inbam = pysam.AlignmentFile(input_bam, "rb")
+    for read in inbam:
+        # Apply basic filters except primary-only requirement
+        if read.is_unmapped or read.is_supplementary:
+            continue
+        if min_mapq > 0 and read.mapping_quality < min_mapq:
+            continue
+        qname = read.query_name
+        score = get_alignment_score(read, score_tag)
+        if qname not in best or score > best[qname]:
+            best[qname] = score
+    inbam.close()
+    return best
 
 
 def open_output_bams(prefix: str, header: pysam.AlignmentHeader) -> Dict[str, pysam.AlignmentFile]:
@@ -189,7 +242,9 @@ def filter_bam(input_bam: str,
                max_multimappers: int = 10,
                keep_primary_only: bool = True,
                min_mapq: int = 0,
-               create_index: bool = False) -> Dict[str, int]:
+               create_index: bool = False,
+               eq_delta: Optional[int] = None,
+               score_tag: str = "AS") -> Dict[str, int]:
     """
     Filter BAM file into 4 categories based on mapping and junction status.
 
@@ -210,7 +265,12 @@ def filter_bam(input_bam: str,
     Returns:
         Dictionary with read counts for each category
     """
-    # Open input BAM
+    # Optional equal-quality first pass
+    best_scores: Optional[Dict[str, int]] = None
+    if eq_delta is not None and eq_delta >= 0:
+        best_scores = compute_best_scores(input_bam, score_tag, min_mapq)
+
+    # Open input BAM (second pass / regular pass)
     inbam = pysam.AlignmentFile(input_bam, "rb")
 
     # Open output BAMs
@@ -228,6 +288,18 @@ def filter_bam(input_bam: str,
         if not passes_basic_filters(read, keep_primary_only, min_mapq):
             stats['filtered'] += 1
             continue
+
+        # Equal-quality filter: keep only alignments within delta of the
+        # best score for this read (if enabled).
+        if best_scores is not None:
+            try:
+                best = best_scores[read.query_name]
+            except KeyError:
+                best = None
+            score = get_alignment_score(read, score_tag)
+            if best is not None and score < best - eq_delta:
+                stats['filtered'] += 1
+                continue
 
         # Classify read
         category = classify_read(read, max_multimappers)
@@ -333,6 +405,18 @@ def main():
         help='Keep all hits (HI:i:1,2,3...), not just primary (default: keep primary only)'
     )
     parser.add_argument(
+        '--eq-delta',
+        type=int,
+        default=None,
+        help='Include all alignments for a read whose score is within DELTA of the best (default: disabled)'
+    )
+    parser.add_argument(
+        '--score-tag',
+        type=str,
+        default='AS',
+        help='Tag to use as alignment score (default: AS; falls back to MAPQ when missing)'
+    )
+    parser.add_argument(
         '--create-index',
         action='store_true',
         help='Create BAI index files after filtering'
@@ -347,7 +431,9 @@ def main():
         max_multimappers=args.max_multimappers,
         keep_primary_only=not args.keep_all_hits,
         min_mapq=args.min_mapq,
-        create_index=args.create_index
+        create_index=args.create_index,
+        eq_delta=args.eq_delta,
+        score_tag=args.score_tag
     )
 
     # Print statistics

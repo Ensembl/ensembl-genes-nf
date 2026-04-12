@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ORF Calling Pipeline Parameters",
+  "type": "object",
+  "properties": {
+    "outdir": {"type":"string","default":"./results"},
+    "tool": {"type":"string","enum":[
+      "ribocode","ribotricer","ribotaper","orfquant","rpbp",
+      "iribo","orfrater","price","riborf","ribotish","ribotie",
+      "all","all-wave1","all-wave2"
+    ]},
+    "manifest": {"type":"string","description":"CSV: sample_id,bam,bam_type(transcriptome|genome)"},
+    "transcriptome_bam_dir": {"type":"string"},
+    "genome_bam_dir": {"type":"string"},
+    "gtf": {"type":"string"},
+    "fasta": {"type":"string"},
+    "chrom_sizes": {"type":"string"},
+    "qc_pass_lengths_dir": {"type":"string"},
+    "threads_ribocode": {"type":"integer","default":4},
+    "threads_ribotricer": {"type":"integer","default":4},
+    "threads_ribotaper": {"type":"integer","default":4},
+    "threads_orfquant": {"type":"integer","default":4},
+    "threads_rpbp": {"type":"integer","default":4},
+    "threads_iribo": {"type":"integer","default":4},
+    "threads_orfrater": {"type":"integer","default":4},
+    "threads_price": {"type":"integer","default":4},
+    "threads_riborf": {"type":"integer","default":4},
+    "threads_ribotish": {"type":"integer","default":4},
+    "threads_ribotie": {"type":"integer","default":4},
+    "args_ribocode": {"type":"string","default":""},
+    "args_ribotricer": {"type":"string","default":""},
+    "args_ribotaper": {"type":"string","default":""},
+    "args_orfquant": {"type":"string","default":""},
+    "args_rpbp": {"type":"string","default":""},
+    "args_iribo": {"type":"string","default":""},
+    "args_orfrater": {"type":"string","default":""},
+    "args_price": {"type":"string","default":""},
+    "args_riborf": {"type":"string","default":""},
+    "args_ribotish": {"type":"string","default":""},
+    "args_ribotie": {"type":"string","default":""}
+  },
+  "required": ["gtf","fasta"]
+}

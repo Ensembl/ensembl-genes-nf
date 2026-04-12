@@ -1,4 +1,3 @@
-// TODO: Rename this process to match your tool/module name (e.g., MY_TOOL)
 process REPORT_CONSENSUS {
     label 'process_high'
 

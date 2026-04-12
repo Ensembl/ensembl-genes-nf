@@ -1,0 +1,6 @@
+# Placeholder Dockerfile for iRibo (Wave 2)
+FROM ubuntu:22.04
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates curl git build-essential python3 python3-pip r-base && \
+    rm -rf /var/lib/apt/lists/*
+# TODO: compile iRibo (C++), install required R packages; pin versions

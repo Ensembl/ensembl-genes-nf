@@ -28,6 +28,9 @@ process FILTER_BAM {
     def args = task.ext.args ?: ''
     def max_mm = params.max_multimappers ?: 10
     def min_mapq = params.min_mapq ?: 0
+    def eq_delta = params.eq_delta ?: null
+    def score_tag = params.score_tag ?: 'AS'
+    def eq_args = (eq_delta != null) ? "--keep-all-hits --eq-delta ${eq_delta} --score-tag ${score_tag}" : ''
 
     """
     python3 $projectDir/bin/filter_bam.py \\
@@ -35,6 +38,7 @@ process FILTER_BAM {
         --prefix ${prefix} \\
         --max-multimappers ${max_mm} \\
         --min-mapq ${min_mapq} \\
+        ${eq_args} \\
         ${args}
 
     cat <<-END_VERSIONS > versions.yml

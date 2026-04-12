@@ -197,3 +197,18 @@ head test_output/ribotie_sample.bed12
 - Coordinate conversion is handled automatically (1-based → 0-based)
 - Duplicate entries with same genomic location will be merged by the consensus pipeline
 - Feature names are preserved from input where possible
+
+#### TranslonScorer (CSV → BED12)
+```bash
+translonscorer_to_bed12.py sample_orfs_scored.csv output_dir/
+# Creates: output_dir/sample_orfs_scored.bed12
+```
+
+**Input format:**
+```
+chrom,start,end,orf_id,score,strand,...
+```
+
+**Notes:**
+- Produces single-exon BED12 per ORF (thickStart/thickEnd = bounds).
+- Score is scaled to 0–1000 for browser compatibility.

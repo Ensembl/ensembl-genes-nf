@@ -18,8 +18,23 @@ process STANDARDISE_BED12 {
 
     script:    
     """
+    mkdir -p out
+    # Ensure converter is available on PATH
+    if ! command -v translonscorer_to_bed12.py >/dev/null 2>&1; then
+        cp ${projectDir}/pipelines/translon-consensus/bin/translonscorer_to_bed12.py /usr/local/bin/
+        chmod +x /usr/local/bin/translonscorer_to_bed12.py || true
+    fi
+
+    # If input is a TranslonScorer CSV, convert first
+    if echo "${bed_file}" | grep -qi '\\.csv$'; then
+        translonscorer_to_bed12.py ${bed_file} out/
+        inbed=$(ls out/*.bed12 | head -n1)
+    else
+        inbed=${bed_file}
+    fi
+
     standardise_bed12.py \\
-        -i ${bed_file} \\
+        -i ${inbed} \\
         -f ${genome_fasta} \\
         --output_prefix ${meta.id} --verbose
     """

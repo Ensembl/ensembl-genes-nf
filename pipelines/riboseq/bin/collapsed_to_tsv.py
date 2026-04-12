@@ -213,7 +213,11 @@ def main():
     # Summary stats
     total_counts = sum(reads.values())
     print(f"Total read counts: {total_counts:,}", file=sys.stderr)
-    print(f"Compression ratio: {total_counts / len(reads):.1f}x", file=sys.stderr)
+    # Guard division by zero when input contained no sequences
+    if len(reads) > 0:
+        print(f"Compression ratio: {total_counts / len(reads):.1f}x", file=sys.stderr)
+    else:
+        print("Compression ratio: N/A (no sequences)", file=sys.stderr)
 
 
 if __name__ == '__main__':

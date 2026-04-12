@@ -1,0 +1,2 @@
+sample_id,bam,bam_type
+SRR000001,/Users/jackt/projects/all-RiboSeq/ensembl-genes-nf/test_stub/results/star_align/bam/SRR000001.Aligned.sortedByCoord.out.bam,genome

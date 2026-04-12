@@ -12,7 +12,7 @@ include { MOVE_TO_FTP } from '../../../modules/move_to_ftp.nf'
 
 workflow TRANSLON_CONSENSUS {
     bed_files_ch = Channel
-        .fromPath("${params.bed_results_dir}/*/*.{bed12,bed}")
+        .fromPath("${params.bed_results_dir}/*/*.{bed12,bed,csv}")
         .map { bed_file ->
             def tool = bed_file.parent.name
             def sample_name = bed_file.baseName

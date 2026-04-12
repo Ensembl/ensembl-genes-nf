@@ -1,0 +1,6 @@
+# Placeholder Dockerfile for Ribo-TISH
+FROM ubuntu:22.04
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates python3 python3-pip samtools bedtools && \
+    pip3 install ribotish && \
+    rm -rf /var/lib/apt/lists/*
