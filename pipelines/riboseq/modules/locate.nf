@@ -14,8 +14,8 @@ process LOCATE {
 
     script:
     """
-    collapsed_file="${params.collapsed_read_path}/${run[0..5]}/${run}.collapsed.fa.gz"
-    collapsed_file_1="${params.collapsed_read_path}/${run[0..5]}/${run}_1.collapsed.fa.gz"
+    collapsed_file="${params.collapsed_read_path}/${run}_rpfs.collapsed.fa"
+    collapsed_file_1="${params.collapsed_read_path}/${run}_1.collapsed.fa.gz"
 
     if [ -f "\$collapsed_file" ]; then
         ln -s "\$collapsed_file" "${run}.collapsed.fa.gz"
