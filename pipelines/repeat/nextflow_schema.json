@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com///nextflow_schema.json",
+  "title": "pipeline parameters",
+  "description": "",
+  "type": "object",
+  "$defs": {
+    "main_parameters": {
+      "title": "Input/output options",
+      "type": "object",
+      "fa_icon": "fas fa-terminal",
+      "description": "Define where the pipeline should find input data and save output data.",
+            "required": ["csvFile", "outdir"],
+  "properties": {
+    "run_repeatmasker": {
+      "type": "boolean",
+      "description":"Run RepeatMasker given a repeat library"
+    },
+    "run_trf": {
+      "type": "boolean",
+      "description":"Run TRF given a genome assembly"
+    },
+    "run_dustmasker": {
+      "type": "boolean",
+      "description":"Run DustMasker given a genome assembly"
+    },
+    "check_rmlibrary": {
+      "type": "boolean",
+      "description":"Check if a RepeatModeler library is available for a given genome assembly and download it. If not available, run RepeatModeler to generate a library."
+    },
+    
+    
+    "csvFile": {
+      "type": "string",
+      "format": "file-path",
+            "exists": true,
+            "mimetype": "text/csv",
+            "schema": "assets/schema_input.json",
+            "description": "Path to the input CSV metadata file."
+    },
+    "enscode": {
+      "type": "string",
+      "description":"Enscode path"
+    },
+    "bioperl": {
+      "type": "string",
+      "default": "/bioperl-1.6.924",
+      "description":"BioPerl path"
+    },
+    "cacheDir": {
+      "type": "string",
+      "default": "/cache",
+      "description": "Directory for caching files."
+    },
+    "outdir": {
+      "type": "string",
+      "default": "./results",
+      "description": "Output directory."
+    },
+    "tracedir": {
+      "type": "string",
+      "default": "./results/pipeline_info",
+      "description": "Directory for tracing pipeline."
+    },
+    "files_latency": {
+      "type": "integer",
+      "default": 60,
+      "description": "Latency in seconds for file operations."
+    },
+    "cleanCache": {
+      "type": "boolean",
+      "default": true,
+      "description": "Option to clean the cache directory after running the pipeline."
+    },
+    "busco_version": {
+      "type": "string",
+      "default": "v6.0.0_cv1",
+      "description":"BUSCO image version"
+    },
+    "download_path": {
+      "type": "string",
+      "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data_odb12/",
+      "description":"BUSCO lineages path"
+    },
+    "busco_mode": {
+      "type": "string",
+      "default": "protein",
+      "enum": ["protein", "genome", "both"],
+      "description":"Busco mode: genome, protein or both"
+    },
+    "busco_datasets_file": {
+      "type": "string",
+      "default": "../data/busco_lineage.json"
+    },
+    "dump_params": {
+      "type": "string",
+      "default": "--canonical_only"
+    },
+    "omamer_database": {
+      "type": "string",
+      "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/omamer_db/LUCA_MinFamSize6_OR_MinFamComp05_A21_k6.h5"
+    },
+    "omark_singularity_path": {
+      "type": "string",
+      "default": "/hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif"
+    },
+    "meta_query_file": {
+      "type": "string",
+      "default": "../bin/meta.sql"
+    }
+  }
+}
+  },
+"allOf": [
+        {
+            "$ref": "#/$defs/main_parameters"
+        }
+    ]
+}  

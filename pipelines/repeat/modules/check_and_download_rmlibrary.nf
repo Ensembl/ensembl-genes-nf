@@ -26,7 +26,7 @@ process CHECK_AND_DOWNLOAD_RMLIBRARY {
     tuple val(url),val(meta)
 
     output:
-    tuple val(meta), path("${meta.gca}.repeatmodeler.fa")
+    tuple val(meta), path("${meta.gca}.repeatmodeler.fa"), emit: repeatmodeler_library_download_out
     path "versions.yml", emit: versions_file
 
     script:

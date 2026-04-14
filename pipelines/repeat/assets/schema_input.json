@@ -7,12 +7,12 @@
     "items": {
         "type": "object",
         "properties": {
-            "taxon_id": {
-                "type": "integer",
-                "description": "NCBI taxon ID",
-                "pattern": "^\\d+$",
-                "errorMessage": "Taxon ID must be a number",
-                "meta": ["taxon_id"]
+            "species_name": {
+                "type": "string",
+                "description": "Species name ",
+                "pattern": "^\\S+$",
+                "errorMessage": "Please provide the species name",
+                "meta": ["species_name"]
             },
             "gca": {
                 "type": "string",
@@ -21,36 +21,14 @@
                 "errorMessage": "GCA must be in the format GCA_000000000.0",
                 "meta": ["gca"]
             },
-            "dbname": {
-                    "type": "string",
-                    "pattern": "^\\S+$",
-                    "errorMessage": "Core(s) must be provided and db names cannot contain or have trailing spaces",
-                    "meta": ["dbname"]
-                },
-            "species_id": {
-                    "type": "integer",
-                    "pattern": "^\\d+$",
-                    "errorMessage": "Species id to identify the right assembly in the core",
-                    "meta": "species_id"
-                },
-            "busco_dataset": {
-                    "type": "string",
-                    "pattern": "^\\S+$",
-                    "errorMessage": "Busco dataset odb12 cannot contain or have trailing spaces",
-                    "meta": ["busco_dataset"]
-                },
+            
             "genome_file": {
                     "type": "string",
                     "pattern": "^\\S+$",
                     "errorMessage": "Genome file path must be provided and cannot contain or have trailing spaces",
                     "meta": ["genome_file"]
-                },
-            "protein_file": {
-                    "type": "string",
-                    "pattern": "^\\S+$",
-                    "errorMessage": "Protein file path must be provided and cannot contain or have trailing spaces",
-                    "meta": ["protein_file"]
-                }            
+                }
+
         }
     }
 }

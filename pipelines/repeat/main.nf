@@ -21,8 +21,15 @@ limitations under the License.
     REPEAT ANNOTATION PIPELINE
 ========================================================================================
     This workflow performs comprehensive repeat annotation on genome assemblies using
-    RepeatModeler for library generation and RepeatMasker for repeat identification.
+    RepeatModeler for library generation and RepeatMasker/DustMasker/TRF for repeat identification.
     
+
+
+
+
+
+
+
     Pipeline Stages:
     1. FETCH_GENOME           - Download genome assemblies from NCBI
     2. FETCH_REPEAT_MODEL     - Check for existing RepeatModeler libraries
@@ -45,14 +52,14 @@ include { validateParameters ; paramsSummaryLog } from 'plugin/nf-schema'
 
 
 // Import process modules
-include { FETCH_GENOME }                     from '../modules/fetch_genome.nf'
-include { FETCH_REPEAT_MODEL }               from '../modules/fetch_repeat_model.nf'
-include { GENERATE_REPEATMODELER_LIBRARY }   from '../modules/generate_repeatmodeler_library.nf'
-include { CHECK_AND_DOWNLOAD_RMLIBRARY }     from '../modules/check_and_download_rmlibrary.nf'
-include { RUN_REPEATMASKER }                 from '../modules/run_repeatmasker.nf'
-include { RUN_RED }                          from '../modules/run_red.nf'
-include { RUN_DUST }                         from '../modules/run_dust.nf'
-include { RUN_TRF }                          from '../modules/run_trf.nf'
+include { FETCH_GENOME }                     from './modules/fetch_genome.nf'
+include { FETCH_REPEAT_MODEL }               from './modules/fetch_repeat_model.nf'
+include { GENERATE_REPEATMODELER_LIBRARY }   from './modules/generate_repeatmodeler_library.nf'
+include { CHECK_AND_DOWNLOAD_RMLIBRARY }     from './modules/check_and_download_rmlibrary.nf'
+include { RUN_REPEATMASKER }                 from './modules/run_repeatmasker.nf'
+include { RUN_RED }                          from './modules/run_red.nf'
+include { RUN_DUST }                         from './modules/run_dust.nf'
+include { RUN_TRF }                          from './modules/run_trf.nf'
 
 /*
 ========================================================================================
@@ -64,11 +71,7 @@ workflow REPEAT_ANNOTATION {
     take:
     csv_file
     main:
-    log.info("Pipeline started at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
-    // Validate input parameters
-    validateParameters()
-    // Print summary of supplied parameters
-    log.info(paramsSummaryLog(workflow))
+    
         // Initialize versions channel
         ch_versions_file = channel.empty()
         data = channel.fromPath(csv_file, type: 'file', checkIfExists: true)
@@ -101,7 +104,7 @@ workflow REPEAT_ANNOTATION {
         ch_versions_file = ch_versions_file.mix(FETCH_REPEAT_MODEL.out.versions_file)
         // Separate genomes based on library availability
         FETCH_REPEAT_MODEL.rep_library_file_output
-            .branch { meta, library_file ->
+            .branch { _meta, library_file ->
                 // Check if library file contains error message
                 available: !library_file.text.contains("No repeatmodeler file available")
                 missing: library_file.text.contains("No repeatmodeler file available")
@@ -110,8 +113,14 @@ workflow REPEAT_ANNOTATION {
         
         // Stage 3a: Generate de novo RepeatModeler libraries for genomes without existing libraries
         library_status.missing
-            | GENERATE_REPEATMODELER_LIBRARY
+            | GENERATE_REPEATMODELER_LIBRARY.repeatmodeler_library_out
+            .map { meta, library_file, stk_file, log_file ->
+
+                return tuple(meta, library_file, stk_file, log_file)
+            }
         ch_versions_file = ch_versions_file.mix(GENERATE_REPEATMODELER_LIBRARY.out.versions_file)
+        
+        
         // Stage 3b: Download pre-computed libraries for genomes that have them
         // Transform to [url, gca] format expected by CHECK_AND_DOWNLOAD_RMLIBRARY
         downloadInput = library_status.available
@@ -124,8 +133,8 @@ workflow REPEAT_ANNOTATION {
                 
         // Merge both library sources (generated + downloaded)
         // Assuming both outputs have format: tuple val(meta), path(library_file)
-        allLibraries = GENERATE_REPEATMODELER_LIBRARY.out
-            .mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out)
+        allLibraries = GENERATE_REPEATMODELER_LIBRARY.out.repeatmodeler_library_download_out
+            .mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.repeatmodeler_library_out)
             .view { meta, library -> "Library ready for ${meta.gca}: ${library}" }
         
         if(params.run_repeatmasker) {
@@ -139,19 +148,19 @@ workflow REPEAT_ANNOTATION {
         if (params.run_red) {
             // Run RED for repeat annotation
             // Similar approach: join genome files with RED results
-            RUN_RED(rep_library_out)
+            RUN_RED(genomeData)
             ch_versions_file = ch_versions_file.mix(RUN_RED.out.versions_file)
         }
         if (params.run_dust) {
             // Run DUST for repeat annotation
             // Similar approach: join genome files with DUST results
-            RUN_DUST(rep_library_out) 
+            RUN_DUST(genomeData) 
             ch_versions_file = ch_versions_file.mix(RUN_DUST.out.versions_file)          
         }
         if (params.run_trf) {
             // Run TRF for repeat annotation
             // Similar approach: join genome files with TRF results
-            RUN_TRF(rep_library_out)
+            RUN_TRF(genomeData)
             ch_versions_file = ch_versions_file.mix(RUN_TRF.out.versions_file)  
         }
 
@@ -164,38 +173,42 @@ workflow REPEAT_ANNOTATION {
 */
 
 workflow {
-    
+    log.info("Pipeline started at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
+    // Validate input parameters
+    validateParameters()
+    // Print summary of supplied parameters
+    log.info(paramsSummaryLog(workflow))
     // Workflow execution handlers
-    workflow.onStart {
-        log.info """
-        ================================================================================
-        REPEAT ANNOTATION PIPELINE
-        ================================================================================
-        Output directory : ${params.outDir}
-        CSV input file   : ${params.csvFile ?: 'NOT PROVIDED'}
-        NCBI base URL    : ${params.ncbiBaseUrl}
-        Repeats FTP base : ${params.repeats_ftp_base}
-        RepeatModeler    : ${params.repeatmodeler_path}
-        RepeatMasker     : ${params.repeatmasker_path}
-        ================================================================================
-        """.stripIndent()
+    //workflow.onStart {
+    //    log.info """
+    //    ================================================================================
+    //    REPEAT ANNOTATION PIPELINE
+     //   ================================================================================
+    //    Output directory : ${params.outDir}
+     //   CSV input file   : ${params.csvFile ?: 'NOT PROVIDED'}
+    //    NCBI base URL    : ${params.ncbiBaseUrl}
+    //    Repeats FTP base : ${params.repeats_ftp_base}
+    //    RepeatModeler    : ${params.repeatmodeler_path}
+     //   RepeatMasker     : ${params.repeatmasker_path}
+     //   ================================================================================
+    //    """.stripIndent()
         
         // Validate required parameters
-        if (!params.outDir) {
-            error "❌ ERROR: --outDir parameter is required. Please provide the output directory path."
-        }
+    //    if (!params.outDir) {
+    //        error "❌ ERROR: --outDir parameter is required. Please provide the output directory path."
+    //    }
         
-        if (!params.csvFile) {
-            error "❌ ERROR: --csvFile parameter is required. Please provide the path to the CSV file."
-        }
+    //    if (!params.csvFile) {
+    //        error "❌ ERROR: --csvFile parameter is required. Please provide the path to the CSV file."
+    //    }
         
         // Check if CSV file exists
-        if (!file(params.csvFile).exists()) {
-            error "❌ ERROR: CSV file does not exist: ${params.csvFile}"
-        }
+    //    if (!file(params.csvFile).exists()) {
+    //        error "❌ ERROR: CSV file does not exist: ${params.csvFile}"
+    //    }
         
-        log.info "✅ Parameters validated successfully"
-    }
+    //    log.info "✅ Parameters validated successfully"
+    //}
     
     workflow.onComplete {
         log.info """

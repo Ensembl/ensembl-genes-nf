@@ -19,7 +19,6 @@ process RUN_TRF {
     label "python"
     tag "${meta.gca}:genome"
 
-
     publishDir "${params.outDir}/trf/", pattern: "*.gtf", mode: "move"
 
     input:
