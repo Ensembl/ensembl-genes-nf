@@ -84,8 +84,8 @@ Published outputs are written to:
 
 Per sample, the pipeline currently produces:
 
-- `<gff_stem>_agat_stats.txt`: raw AGAT statistics output
-- `<gff_stem>_agat_stats_genebuild.csv`: parsed metrics in CSV format
+- `<sample>_agat_stats.txt`: raw AGAT statistics output
+- `<sample>_agat_stats_genebuild.csv`: parsed metrics in CSV format
 
 ## Validation
 
