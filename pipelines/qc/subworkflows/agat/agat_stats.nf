@@ -1,4 +1,3 @@
-nextflow.enable.dsl=2
 
 include { AGAT_RUN_STATS } from '../../modules/agat/run_agat_stats.nf'
 include { AGAT_PARSE     } from '../../modules/agat/parse_agat.nf'
