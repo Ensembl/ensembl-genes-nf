@@ -1,4 +1,3 @@
-nextflow.enable.dsl=2
 
 process AGAT_RUN_STATS {
 
