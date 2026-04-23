@@ -4,7 +4,13 @@ process AGAT_RUN_STATS {
     tag { meta.id }
     publishDir "${params.outdir}/qc/agat", mode: 'copy', overwrite: true,
         pattern: "*_agat_stats.txt"
-
+    container 'biocontainers/agat:1.7.0--pl5321hdfd78af_0'
+    
+    containerOptions = {
+        feature_levels_yaml
+            ? "-B ${feature_levels_yaml.resolve()}:/usr/local/lib/perl5/site_perl/auto/share/dist/AGAT/feature_levels.yaml:ro"
+            : ""
+    }
     input:
         tuple val(meta), path(gff3)
         val  feature_levels_yaml
