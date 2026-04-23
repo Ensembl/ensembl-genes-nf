@@ -1,4 +1,3 @@
-nextflow.enable.dsl=2
 
 include { AGAT_METRICS } from './subworkflows/agat/agat_stats.nf'
 
