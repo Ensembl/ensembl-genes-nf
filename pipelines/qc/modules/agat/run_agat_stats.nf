@@ -26,8 +26,6 @@ process AGAT_RUN_STATS {
             : ""
 
         """
-        singularity exec --cleanenv ${bind_opt} \\
-            ${agat_sif} \\
             agat_sp_statistics.pl \\
               --gff ${gff3} \\
               -o ${stem}_agat_stats.txt
