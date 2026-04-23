@@ -3,8 +3,8 @@ process AGAT_RUN_STATS {
     tag { meta.id }
     publishDir "${params.outdir}/qc/agat", mode: 'copy', overwrite: true,
         pattern: "*_agat_stats.txt"
-    container 'docker://quay.io/biocontainers/agat:1.4.2--pl5321hdfd78af_0'
-    
+    container 'docker://quay.io/biocontainers/agat:1.7.0--pl5321hdfd78af_0'
+
     
     containerOptions {
         feature_levels_yaml ?
