@@ -1,4 +1,6 @@
+#!/usr/bin/env nextflow
 
+include { validateParameters } from 'plugin/nf-schema'
 include { AGAT_METRICS } from './subworkflows/agat/agat_stats.nf'
 
 def validate_params() {
@@ -44,6 +46,7 @@ def validate_params() {
 
 workflow {
 
+    validateParameters()
     validate_params()
 
     /*
