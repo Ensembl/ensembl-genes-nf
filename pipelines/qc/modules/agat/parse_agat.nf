@@ -14,6 +14,7 @@ process AGAT_PARSE {
         val ensembl_genes_repo
         // optional explicit parser path
         val agat_parser
+        val  feature_levels_yaml
 
     output:
         tuple val(meta), path("${meta.sample ?: meta.id ?: stats_txt.simpleName.replaceFirst(/_agat_stats$/, '')}_agat_stats_genebuild.csv"), emit: genebuild_csv

@@ -18,7 +18,6 @@ The workflow processes all listed samples in parallel.
 
 - Nextflow with DSL2 enabled
 - Singularity or Apptainer available on the execution host
-- Access to the AGAT container image defined by `--agat_sif`
 - A local checkout of `ensembl-genes` containing:
   - `src/python/ensembl/genes/annotation-qc/parsers/parse_agat.py`
   - `src/python/ensembl/genes/annotation-qc/metrics/config/feature_levels.yaml`
@@ -46,7 +45,6 @@ sample_2,/path/to/sample_2.gff3
 | `--ensembl_genes_repo` | yes | none | Path to a local `ensembl-genes` checkout |
 | `--feature_levels` | no | derived from `ensembl_genes_repo` | Path to `feature_levels.yaml` |
 | `--agat_parser` | no | derived from `ensembl_genes_repo` | Path to `parse_agat.py` |
-| `--agat_sif` | no | `docker://quay.io/biocontainers/agat:1.4.2--pl5321hdfd78af_0` | AGAT container image |
 | `--run_agat_metrics` | no | `true` | Enable the AGAT metrics branch |
 | `--outdir` | no | `./results` | Output directory |
 
@@ -82,6 +80,7 @@ Published outputs are written to:
 <outdir>/qc/agat/
 ```
 
+        val  feature_levels_yaml
 Per sample, the pipeline currently produces:
 
 - `<sample>_agat_stats.txt`: raw AGAT statistics output

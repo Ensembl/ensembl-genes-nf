@@ -9,8 +9,6 @@ workflow AGAT_METRICS {
         gff3_ch
         // feature_levels yaml (may be empty)
         feature_levels_yaml
-        // single value with AGAT SIF path
-        agat_sif
         // path to ensembl-genes checkout
         ensembl_genes_repo
         // optional explicit parse_agat.py path
@@ -19,14 +17,14 @@ workflow AGAT_METRICS {
     main:
         agat_txt = AGAT_RUN_STATS(
             gff3_ch,
-            feature_levels_yaml,
-            agat_sif
+            feature_levels_yaml
         )
 
         genebuild = AGAT_PARSE(
             agat_txt.stats_txt,
             ensembl_genes_repo,
-            agat_parser
+            agat_parser,
+            feature_levels_yaml
         )
 
     emit:

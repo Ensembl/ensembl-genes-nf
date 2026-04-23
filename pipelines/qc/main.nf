@@ -67,7 +67,6 @@ workflow {
     /*
      * Singletons
      */
-    agat_sif           = params.agat_sif
     ensembl_genes_repo = file(params.ensembl_genes_repo)
     agat_parser        = params.agat_parser ? file(params.agat_parser) : ''
 
@@ -85,7 +84,6 @@ workflow {
         agat = AGAT_METRICS(
             gff_ch,
             feature_levels_yaml,
-            agat_sif,
             ensembl_genes_repo,
             agat_parser
         )
