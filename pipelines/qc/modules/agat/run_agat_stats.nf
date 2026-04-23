@@ -21,9 +21,6 @@ process AGAT_RUN_STATS {
 
     script:
         def stem     = meta.sample ?: meta.id ?: gff3.simpleName
-        def bind_opt = feature_levels_yaml \
-            ? "-B ${feature_levels_yaml.resolve()}:${'/usr/local/lib/perl5/site_perl/auto/share/dist/AGAT/feature_levels.yaml'}" \
-            : ""
 
         """
             agat_sp_statistics.pl \\
