@@ -26,13 +26,21 @@
 
 nextflow.enable.dsl = 2
 
+include { FETCH_UNIPROT  } from './modules/fetch_uniprot.nf'
 include { WRITE_MANIFEST } from './modules/write_manifest.nf'
 include { RUN_HOMOLOGY   } from './subworkflows/run_homology.nf'
 
+params.uniprot_fasta    = null
+params.uniprot_taxon_id = null
+params.protein_batch_size = 100
+params.genblast_max_rank  = 5
+
 def validate_params() {
     def errors = []
-    if (!params.genome_fasta)   errors << "  --genome_fasta is required"
-    if (!params.uniprot_fasta)  errors << "  --uniprot_fasta is required"
+    if (!params.genome_fasta)
+        errors << "  --genome_fasta is required"
+    if (!params.uniprot_fasta && !params.uniprot_taxon_id)
+        errors << "  --uniprot_fasta or --uniprot_taxon_id is required"
     if (!params.outdir)         errors << "  --outdir is required"
     if (errors) {
         log.error "Missing required parameters:\n${errors.join('\n')}"
@@ -46,9 +54,16 @@ workflow {
 
     ch_genome = file(params.genome_fasta, checkIfExists: true)
 
+    // Resolve UniProt FASTA: use local file or fetch by taxon ID
+    if (params.uniprot_fasta) {
+        ch_uniprot_fasta = Channel.of(file(params.uniprot_fasta, checkIfExists: true))
+    } else {
+        FETCH_UNIPROT(params.uniprot_taxon_id)
+        ch_uniprot_fasta = FETCH_UNIPROT.out.fasta
+    }
+
     // Split UniProt FASTA into parallel batches
-    ch_protein_batches = Channel
-        .fromPath(params.uniprot_fasta, checkIfExists: true)
+    ch_protein_batches = ch_uniprot_fasta
         .splitFasta(by: params.protein_batch_size, file: true)
         .map { fa ->
             def batch_id = fa.name.replaceAll(/\.fasta$|\.fa$/, '')

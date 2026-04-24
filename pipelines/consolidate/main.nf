@@ -58,9 +58,21 @@ workflow {
 
     //
     // Collect GFF3 files
+    // --gff3_files accepts:
+    //   • a single path
+    //   • a comma-separated list of paths (used when master pipeline collects outputs)
+    //   • a glob pattern
+    // --gff3_dir triggers a recursive glob over the directory.
     //
     if (params.gff3_files) {
-        ch_gff3 = Channel.fromPath(params.gff3_files, checkIfExists: true).collect()
+        def gff3_list = params.gff3_files instanceof String
+            ? params.gff3_files.split(',').collect { it.trim() }.findAll { it }
+            : [params.gff3_files.toString()]
+
+        ch_gff3 = Channel
+            .fromList(gff3_list)
+            .map { p -> file(p, checkIfExists: true) }
+            .collect()
     } else {
         // Recursive glob — each annotation pipeline writes its GFF3 one or
         // two levels below outdir (e.g. outdir/rnaseq/rnaseq.gff3).
