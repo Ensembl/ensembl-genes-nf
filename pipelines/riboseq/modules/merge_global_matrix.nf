@@ -61,9 +61,9 @@ process MERGE_GLOBAL_MATRIX {
     stub:
     """
     mkdir -p global_matrix.zarr
-    touch unique_reads.fasta
-    touch read_metadata.parquet
-    echo '{"version": "1.0", "n_reads": 0, "n_samples": 0}' > index_config.json
+    touch global_reads.fasta
+    touch global_metadata.parquet
+    echo '{"version": "1.0", "n_reads": 0, "n_samples": 0}' > global_config.json
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

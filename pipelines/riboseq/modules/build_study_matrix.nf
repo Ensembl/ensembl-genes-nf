@@ -49,7 +49,7 @@ process BUILD_STUDY_MATRIX {
     """
     touch ${study_id}_matrix.npz
     touch ${study_id}_vocab.pkl
-    gzip -c /dev/null > ${study_id}_sequences.txt.gz
+    printf '' | gzip -c > ${study_id}_sequences.txt.gz
     echo '{}' > ${study_id}_metadata.json
 
     cat <<-END_VERSIONS > versions.yml
