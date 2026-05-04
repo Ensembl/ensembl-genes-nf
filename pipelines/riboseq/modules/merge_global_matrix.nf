@@ -29,7 +29,7 @@ process MERGE_GLOBAL_MATRIX {
 
     script:
     def chunk_size = task.ext.chunk_size ?: 10000
-    def partition_flag = task.ext.partition ? '--partition' : ''
+    def partition_flag = task.ext.partition ? "--partition ${task.ext.partition}" : ''
     """
     # Organize flat files into study directories
     # Files are named: {study_id}_matrix.npz, {study_id}_vocab.pkl, {study_id}_sequences.txt.gz

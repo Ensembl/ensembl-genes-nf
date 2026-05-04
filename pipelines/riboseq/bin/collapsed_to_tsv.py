@@ -1,25 +1,20 @@
 #!/usr/bin/env python3
-"""
-Convert collapsed FASTA to TSV format, optionally partitioned by dinucleotide.
-
-Input: Collapsed FASTA with counts in header (>read_x{count})
-Output: TSV with sequence and count columns (sorted by sequence)
-        When --partition is used, outputs 16 files: {sample_id}.{dinuc}.tsv
-
-This is a simple transformation step that prepares data for study matrix building.
-Partitioning at this stage means all downstream operations work within partitions,
-giving ~1/16th memory usage throughout the pipeline.
-"""
-
 import argparse
+import contextlib
 import gzip
+import heapq
+import os
+import re
 import sys
+import tempfile
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, Iterator, List, Optional, Tuple
 
 
 # All possible dinucleotide prefixes (sorted for consistent ordering)
 DINUCLEOTIDES = sorted([f"{a}{b}" for a in "ACGT" for b in "ACGT"])
+PARTITIONS = DINUCLEOTIDES + ["NN"]
+COUNT_PATTERN = re.compile(r"_x(\d+)(?:\s|$)")
 
 
 def get_dinucleotide(seq: str) -> str:
@@ -28,112 +23,223 @@ def get_dinucleotide(seq: str) -> str:
         prefix = seq[:2].upper()
         if prefix in DINUCLEOTIDES:
             return prefix
-    return 'NN'
+    return "NN"
 
 
-def parse_collapsed_fasta(fasta_path: Path) -> Dict[str, int]:
+def open_text(path: Path):
+    """Open plain or gzipped text input."""
+    if str(path).endswith(".gz"):
+        return gzip.open(path, "rt")
+    return open(path, "r")
+
+
+def parse_count(header: str) -> int:
+    """Parse collapsed FASTA count from a header such as >read_x1234."""
+    match = COUNT_PATTERN.search(header)
+    if match:
+        return int(match.group(1))
+
+    print(f"Warning: Could not parse count from header: {header}", file=sys.stderr)
+    return 1
+
+
+def iter_collapsed_fasta(fasta_path: Path) -> Iterator[Tuple[str, int]]:
     """
-    Parse collapsed FASTA file and extract sequence counts.
+    Stream collapsed FASTA records as (sequence, count).
 
-    Expected format:
-        >read_x1234
-        ATCGATCG...
-
-    Returns dict mapping sequence -> count
+    Multi-line FASTA records are accepted. Duplicate sequences are deliberately
+    handled later by the sorter, so this iterator never retains the whole sample.
     """
-    reads = {}
+    count: Optional[int] = None
+    sequence_parts: List[str] = []
 
-    # Handle gzipped or plain files
-    if str(fasta_path).endswith('.gz'):
-        handle = gzip.open(fasta_path, 'rt')
-    else:
-        handle = open(fasta_path, 'r')
+    def flush_record() -> Optional[Tuple[str, int]]:
+        if count is None or not sequence_parts:
+            return None
+        sequence = "".join(sequence_parts).upper()
+        if not sequence:
+            return None
+        return sequence, count
 
-    with handle:
-        sequence = None
-        count = None
-
+    with open_text(fasta_path) as handle:
         for line in handle:
             line = line.strip()
             if not line:
                 continue
 
-            if line.startswith('>'):
-                # Parse count from header
-                # Format: >read_x{count} or >anything_x{count}
-                try:
-                    count = int(line.split('_x')[-1])
-                except (ValueError, IndexError):
-                    print(f"Warning: Could not parse count from header: {line}",
-                          file=sys.stderr)
-                    count = 1
+            if line.startswith(">"):
+                record = flush_record()
+                if record is not None:
+                    yield record
+                count = parse_count(line)
+                sequence_parts = []
             else:
-                # This is the sequence line
-                sequence = line.upper()
+                sequence_parts.append(line)
 
-                if sequence and count is not None:
-                    # Accumulate counts for duplicate sequences (shouldn't happen but safe)
-                    reads[sequence] = reads.get(sequence, 0) + count
-
-                sequence = None
-                count = None
-
-    return reads
+    record = flush_record()
+    if record is not None:
+        yield record
 
 
-def write_sorted_tsv(reads: Dict[str, int], output_path: Path):
+def read_sorted_tsv(path: Path) -> Iterator[Tuple[str, int]]:
+    """Read a sorted temporary TSV chunk."""
+    with open(path, "r") as handle:
+        for line_num, line in enumerate(handle, start=1):
+            line = line.rstrip("\n")
+            if not line:
+                continue
+            try:
+                sequence, count = line.split("\t", 1)
+                yield sequence, int(count)
+            except ValueError as exc:
+                raise ValueError(f"Malformed TSV line in {path}:{line_num}: {line}") from exc
+
+
+def write_atomic_sorted_merge(chunk_paths: List[Path], output_path: Path) -> int:
     """
-    Write reads to TSV, sorted by sequence for efficient downstream merging.
+    Merge sorted chunk files into output_path and coalesce duplicate sequences.
 
-    Output format:
-        SEQUENCE\tCOUNT
+    Returns the number of unique output sequences.
     """
-    # Sort by sequence for merge efficiency
-    sorted_reads = sorted(reads.items(), key=lambda x: x[0])
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_handle = tempfile.NamedTemporaryFile(
+        "w",
+        delete=False,
+        dir=output_path.parent,
+        prefix=f".{output_path.name}.",
+        suffix=".tmp",
+    )
+    tmp_output = Path(output_handle.name)
+    unique_count = 0
 
-    with open(output_path, 'w') as f:
-        for sequence, count in sorted_reads:
-            f.write(f"{sequence}\t{count}\n")
+    try:
+        with output_handle, contextlib.ExitStack() as stack:
+            iterators = [stack.enter_context(open(path, "r")) for path in chunk_paths]
+            parsed_iterators = (
+                (tuple(line.rstrip("\n").split("\t", 1)) for line in handle if line.strip())
+                for handle in iterators
+            )
+
+            current_seq: Optional[str] = None
+            current_count = 0
+
+            for sequence, count_text in heapq.merge(*parsed_iterators, key=lambda item: item[0]):
+                count = int(count_text)
+                if current_seq is None:
+                    current_seq = sequence
+                    current_count = count
+                elif sequence == current_seq:
+                    current_count += count
+                else:
+                    output_handle.write(f"{current_seq}\t{current_count}\n")
+                    unique_count += 1
+                    current_seq = sequence
+                    current_count = count
+
+            if current_seq is not None:
+                output_handle.write(f"{current_seq}\t{current_count}\n")
+                unique_count += 1
+
+        os.replace(tmp_output, output_path)
+        return unique_count
+    except Exception:
+        try:
+            tmp_output.unlink()
+        except FileNotFoundError:
+            pass
+        raise
 
 
-def write_partitioned_tsvs(reads: Dict[str, int], output_dir: Path, sample_id: str) -> List[Path]:
-    """
-    Write reads to 16 partition TSV files based on dinucleotide prefix.
+class SpillSorter:
+    """Memory-bounded sequence/count sorter backed by temporary sorted chunks."""
 
-    Output files: {sample_id}.{dinuc}.tsv (e.g., SRR123.AA.tsv, SRR123.AC.tsv, ...)
+    def __init__(
+        self,
+        output_path: Path,
+        temp_dir: Path,
+        max_records_in_memory: int,
+        merge_fan_in: int,
+    ):
+        self.output_path = output_path
+        self.temp_dir = temp_dir
+        self.max_records_in_memory = max(1, max_records_in_memory)
+        self.merge_fan_in = max(2, merge_fan_in)
+        self.buffer: Dict[str, int] = {}
+        self.chunk_paths: List[Path] = []
+        self.total_records = 0
+        self.total_counts = 0
+        self.unique_records = 0
 
-    Returns list of output paths.
-    """
-    # Partition reads by dinucleotide
-    partitions: Dict[str, Dict[str, int]] = {di: {} for di in DINUCLEOTIDES}
-    nn_partition: Dict[str, int] = {}  # For sequences that don't start with valid dinuc
+    def add(self, sequence: str, count: int):
+        self.total_records += 1
+        self.total_counts += count
+        self.buffer[sequence] = self.buffer.get(sequence, 0) + count
+        if len(self.buffer) >= self.max_records_in_memory:
+            self.flush()
 
-    for seq, count in reads.items():
-        dinuc = get_dinucleotide(seq)
-        if dinuc in partitions:
-            partitions[dinuc][seq] = count
-        else:
-            nn_partition[seq] = count
+    def flush(self):
+        if not self.buffer:
+            return
 
-    # Warn about NN sequences (shouldn't happen with valid RNA/DNA)
-    if nn_partition:
-        print(f"Warning: {len(nn_partition)} sequences with invalid dinucleotide prefix (skipped)",
-              file=sys.stderr)
+        chunk = tempfile.NamedTemporaryFile(
+            "w",
+            delete=False,
+            dir=self.temp_dir,
+            prefix="collapsed_to_tsv.",
+            suffix=".chunk.tsv",
+        )
+        chunk_path = Path(chunk.name)
+        with chunk:
+            for sequence, count in sorted(self.buffer.items()):
+                chunk.write(f"{sequence}\t{count}\n")
 
-    output_paths = []
-    for dinuc in DINUCLEOTIDES:
-        output_path = output_dir / f"{sample_id}.{dinuc}.tsv"
-        partition_reads = partitions[dinuc]
+        self.chunk_paths.append(chunk_path)
+        self.buffer.clear()
 
-        # Always write the file, even if empty (simplifies downstream)
-        sorted_reads = sorted(partition_reads.items(), key=lambda x: x[0])
-        with open(output_path, 'w') as f:
-            for sequence, count in sorted_reads:
-                f.write(f"{sequence}\t{count}\n")
+    def _compact_chunks(self) -> List[Path]:
+        chunks = self.chunk_paths
+        while len(chunks) > self.merge_fan_in:
+            next_round: List[Path] = []
+            for start in range(0, len(chunks), self.merge_fan_in):
+                group = chunks[start:start + self.merge_fan_in]
+                merged = tempfile.NamedTemporaryFile(
+                    "w",
+                    delete=False,
+                    dir=self.temp_dir,
+                    prefix="collapsed_to_tsv.merge.",
+                    suffix=".chunk.tsv",
+                )
+                merged_path = Path(merged.name)
+                merged.close()
+                write_atomic_sorted_merge(group, merged_path)
+                next_round.append(merged_path)
+                for chunk in group:
+                    try:
+                        chunk.unlink()
+                    except FileNotFoundError:
+                        pass
+            chunks = next_round
+        return chunks
 
-        output_paths.append(output_path)
+    def finish(self) -> int:
+        self.flush()
 
-    return output_paths
+        if not self.chunk_paths:
+            self.output_path.parent.mkdir(parents=True, exist_ok=True)
+            self.output_path.write_text("")
+            self.unique_records = 0
+            return 0
+
+        chunks = self._compact_chunks()
+        try:
+            self.unique_records = write_atomic_sorted_merge(chunks, self.output_path)
+            return self.unique_records
+        finally:
+            for chunk in chunks:
+                try:
+                    chunk.unlink()
+                except FileNotFoundError:
+                    pass
 
 
 def main():
@@ -164,7 +270,25 @@ def main():
     parser.add_argument(
         '--partition',
         action='store_true',
-        help='Output 16 partition files by dinucleotide prefix (AA, AC, ..., TT)'
+        help='Output partition files by dinucleotide prefix (AA, AC, ..., TT, NN)'
+    )
+    parser.add_argument(
+        '--chunk-size',
+        type=int,
+        default=500_000,
+        help='Maximum unique sequences to sort in memory per chunk (default: 500000)'
+    )
+    parser.add_argument(
+        '--merge-fan-in',
+        type=int,
+        default=256,
+        help='Maximum temporary chunk files to merge at once (default: 256)'
+    )
+    parser.add_argument(
+        '--temp-dir',
+        type=Path,
+        default=None,
+        help='Directory for temporary sort chunks (default: output directory)'
     )
 
     args = parser.parse_args()
@@ -180,42 +304,64 @@ def main():
             stem = stem.rsplit('.', 1)[0]
         sample_id = stem
 
-    # Process
     print(f"Reading: {args.input}", file=sys.stderr)
-    reads = parse_collapsed_fasta(args.input)
-    print(f"Found {len(reads):,} unique sequences", file=sys.stderr)
+    temp_dir = args.temp_dir or args.output_dir
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
     if args.partition:
-        # Write 16 partition files
         args.output_dir.mkdir(parents=True, exist_ok=True)
-        print(f"Writing 16 partition files to: {args.output_dir}", file=sys.stderr)
-        output_paths = write_partitioned_tsvs(reads, args.output_dir, sample_id)
+        print(f"Writing {len(PARTITIONS)} partition files to: {args.output_dir}", file=sys.stderr)
+        per_partition_chunk_size = max(1, args.chunk_size // len(PARTITIONS))
+        sorters = {
+            partition: SpillSorter(
+                args.output_dir / f"{sample_id}.{partition}.tsv",
+                temp_dir,
+                per_partition_chunk_size,
+                args.merge_fan_in,
+            )
+            for partition in PARTITIONS
+        }
 
-        # Report partition sizes
+        for sequence, count in iter_collapsed_fasta(args.input):
+            sorters[get_dinucleotide(sequence)].add(sequence, count)
+
         partition_sizes = []
-        for path in output_paths:
-            with open(path, 'r') as f:
-                size = sum(1 for _ in f)
-            partition_sizes.append(size)
+        total_records = 0
+        total_counts = 0
+        total_unique = 0
+        for partition in PARTITIONS:
+            sorter = sorters[partition]
+            unique_count = sorter.finish()
+            partition_sizes.append(unique_count)
+            total_records += sorter.total_records
+            total_counts += sorter.total_counts
+            total_unique += unique_count
 
+        print(f"Read {total_records:,} FASTA records", file=sys.stderr)
+        print(f"Found {total_unique:,} unique sequences", file=sys.stderr)
         print(f"Partition sizes: min={min(partition_sizes):,}, max={max(partition_sizes):,}, "
               f"mean={sum(partition_sizes)/len(partition_sizes):,.0f}", file=sys.stderr)
     else:
-        # Write single TSV
         if args.output:
             output_path = args.output
         else:
             output_path = args.output_dir / f"{sample_id}.tsv"
 
         print(f"Writing: {output_path}", file=sys.stderr)
-        write_sorted_tsv(reads, output_path)
+        sorter = SpillSorter(output_path, temp_dir, args.chunk_size, args.merge_fan_in)
+        for sequence, count in iter_collapsed_fasta(args.input):
+            sorter.add(sequence, count)
+        unique_count = sorter.finish()
+
+        print(f"Read {sorter.total_records:,} FASTA records", file=sys.stderr)
+        print(f"Found {unique_count:,} unique sequences", file=sys.stderr)
+        total_counts = sorter.total_counts
+        total_unique = unique_count
 
     # Summary stats
-    total_counts = sum(reads.values())
     print(f"Total read counts: {total_counts:,}", file=sys.stderr)
-    # Guard division by zero when input contained no sequences
-    if len(reads) > 0:
-        print(f"Compression ratio: {total_counts / len(reads):.1f}x", file=sys.stderr)
+    if total_unique > 0:
+        print(f"Compression ratio: {total_counts / total_unique:.1f}x", file=sys.stderr)
     else:
         print("Compression ratio: N/A (no sequences)", file=sys.stderr)
 

@@ -326,6 +326,28 @@
       "type": "string",
       "description": "Path to previous unique reads index (for progressive mode)"
     },
+    "run_matrix_mode": {
+      "type": "boolean",
+      "default": false,
+      "description": "Build a global unique-reads matrix instead of running per-sample alignment"
+    },
+    "matrix_chunk_size": {
+      "type": "integer",
+      "default": 10000,
+      "minimum": 1,
+      "description": "Rows per chunk in the global matrix output"
+    },
+    "matrix_tsv_chunk_size": {
+      "type": "integer",
+      "default": 500000,
+      "minimum": 1,
+      "description": "Maximum unique sequences sorted in memory per FASTA-to-TSV chunk"
+    },
+    "matrix_use_partitioning": {
+      "type": "boolean",
+      "default": false,
+      "description": "Reserved flag for future partitioned unique-read matrix construction"
+    },
     "metrics_db": {
       "type": "string",
       "description": "Path to DuckDB metrics store (default: results/pipeline_info/qc.duckdb)"

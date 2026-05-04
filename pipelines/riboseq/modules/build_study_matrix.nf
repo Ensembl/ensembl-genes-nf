@@ -28,7 +28,7 @@ process BUILD_STUDY_MATRIX {
 
     script:
     def sample_ids_arg = sample_ids.join(',')
-    def partition_flag = task.ext.partition ? '--partition' : ''
+    def partition_flag = task.ext.partition ? "--partition ${task.ext.partition}" : ''
     """
     build_study_matrix.py \\
         ${tsv_files} \\

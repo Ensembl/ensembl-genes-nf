@@ -21,7 +21,7 @@ import struct
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import numpy as np
 import scipy.sparse as sp
@@ -54,6 +54,29 @@ def hash_sequence(seq: str) -> int:
         return xxhash.xxh64(seq.encode()).intdigest()
     else:
         return int(hashlib.md5(seq.encode()).hexdigest()[:16], 16)
+
+
+VocabEntry = Union[int, List[Tuple[str, int]]]
+
+
+def resolve_local_id(seq_to_id: Dict[int, VocabEntry], seq: str) -> Optional[int]:
+    """
+    Resolve a study-local row ID for a sequence.
+
+    New vocab files store collision buckets when multiple sequences share the
+    same 64-bit hash. Older vocab files store hash -> int only; those still load,
+    but cannot disambiguate a hash collision that was not recorded at build time.
+    """
+    entry = seq_to_id.get(hash_sequence(seq))
+    if entry is None:
+        return None
+    if isinstance(entry, int):
+        return entry
+
+    for candidate_seq, local_id in entry:
+        if candidate_seq == seq:
+            return local_id
+    return None
 
 
 # =============================================================================
@@ -285,7 +308,6 @@ class GlobalMatrixMerger:
 
         # Global sequence tracking
         self.sequences: List[str] = []  # In sorted order from tournament merge
-        self.seq_to_global_id: Dict[str, int] = {}  # sequence -> global_id
 
         # Per-study info
         self.study_local_to_global: Dict[str, Dict[int, int]] = {}  # study -> {local_id: global_id}
@@ -294,7 +316,7 @@ class GlobalMatrixMerger:
         self.studies: List[str] = []
 
         # Study vocabs (loaded once, used for remapping)
-        self.study_vocabs: Dict[str, Dict[int, int]] = {}  # study_id -> {seq_hash: local_id}
+        self.study_vocabs: Dict[str, Dict[int, VocabEntry]] = {}  # study_id -> {seq_hash: local_id}
 
     def _load_study_vocabs(self, study_inputs: List[Tuple[str, Path, Path, Path]]):
         """Load all study vocabularies and record sample offsets."""
@@ -304,6 +326,13 @@ class GlobalMatrixMerger:
 
             self.study_vocabs[study_id] = vocab_data['seq_to_id']
             study_samples = vocab_data['samples']
+
+            duplicate_samples = set(study_samples).intersection(self.all_samples)
+            if duplicate_samples:
+                examples = ', '.join(sorted(duplicate_samples)[:5])
+                raise ValueError(
+                    f"Duplicate sample IDs across study matrices before {study_id}: {examples}"
+                )
 
             # Record sample offset
             self.study_sample_offsets[study_id] = len(self.all_samples)
@@ -315,18 +344,24 @@ class GlobalMatrixMerger:
 
     def _process_merged_file(self, merged_file: Path):
         """Process merged file and build global structures."""
+        unresolved = 0
         for seq, studies_containing in read_intermediate_file(merged_file):
             global_id = len(self.sequences)
             self.sequences.append(seq)
-            self.seq_to_global_id[seq] = global_id
 
             # Build remapping for each study that has this sequence
-            seq_hash = hash_sequence(seq)
             for study_id in studies_containing:
                 if study_id in self.study_vocabs:
-                    local_id = self.study_vocabs[study_id].get(seq_hash)
+                    local_id = resolve_local_id(self.study_vocabs[study_id], seq)
                     if local_id is not None:
                         self.study_local_to_global[study_id][local_id] = global_id
+                    else:
+                        unresolved += 1
+
+        if unresolved:
+            raise RuntimeError(
+                f"Could not resolve {unresolved:,} study-local sequence IDs from vocab files"
+            )
 
     def build_global_vocabulary(self, study_inputs: List[Tuple[str, Path, Path, Path]],
                                 temp_dir: Path):
@@ -423,11 +458,26 @@ class GlobalMatrixMerger:
             remap = self.study_local_to_global[study_id]
             sample_offset = self.study_sample_offsets[study_id]
 
-            # Convert to COO for iteration
-            coo = study_matrix.tocoo()
+            # CSR -> COO gives row-major traversal. Since each study sequence
+            # list is a sorted subset of the global sequence list, global row
+            # chunks are non-decreasing and can be flushed one at a time.
+            coo = study_matrix.tocsr().tocoo()
 
-            # Group by chunk for efficient writing
-            chunk_data = {}  # chunk_idx -> list of (global_row, global_col, val)
+            current_chunk_idx: Optional[int] = None
+            current_entries: List[Tuple[int, int, int]] = []
+            missing_remaps = 0
+
+            def flush_entries(chunk_idx: int, entries: List[Tuple[int, int, int]]):
+                if not entries:
+                    return
+                chunk_start = chunk_idx * self.chunk_size
+                chunk_end = min(chunk_start + self.chunk_size, n_reads)
+
+                chunk = counts[chunk_start:chunk_end, :]
+                for global_row, global_col, val in entries:
+                    local_row = global_row - chunk_start
+                    chunk[local_row, global_col] = val
+                counts[chunk_start:chunk_end, :] = chunk
 
             for i in range(len(coo.data)):
                 local_row = coo.row[i]
@@ -436,30 +486,33 @@ class GlobalMatrixMerger:
 
                 global_row = remap.get(local_row)
                 if global_row is None:
-                    continue  # Sequence not in global vocab (shouldn't happen)
+                    missing_remaps += 1
+                    continue
 
                 global_col = col + sample_offset
                 chunk_idx = global_row // self.chunk_size
 
-                if chunk_idx not in chunk_data:
-                    chunk_data[chunk_idx] = []
-                chunk_data[chunk_idx].append((global_row, global_col, val))
+                if current_chunk_idx is None:
+                    current_chunk_idx = chunk_idx
+                elif chunk_idx != current_chunk_idx:
+                    if chunk_idx < current_chunk_idx:
+                        raise RuntimeError(
+                            f"Global row mapping for {study_id} is not monotonic; "
+                            "study sequences may not be sorted"
+                        )
+                    flush_entries(current_chunk_idx, current_entries)
+                    current_entries = []
+                    current_chunk_idx = chunk_idx
 
-            # Write chunks
-            for chunk_idx, entries in chunk_data.items():
-                chunk_start = chunk_idx * self.chunk_size
-                chunk_end = min(chunk_start + self.chunk_size, n_reads)
+                current_entries.append((global_row, global_col, int(val)))
 
-                # Read current chunk
-                chunk = counts[chunk_start:chunk_end, :]
+            if current_chunk_idx is not None:
+                flush_entries(current_chunk_idx, current_entries)
 
-                # Apply updates
-                for global_row, global_col, val in entries:
-                    local_row = global_row - chunk_start
-                    chunk[local_row, global_col] = val
-
-                # Write back
-                counts[chunk_start:chunk_end, :] = chunk
+            if missing_remaps:
+                raise RuntimeError(
+                    f"{study_id}: {missing_remaps:,} matrix rows were missing from global remap"
+                )
 
         return matrix_path
 
@@ -481,16 +534,23 @@ class GlobalMatrixMerger:
             sample_offset = self.study_sample_offsets[study_id]
 
             coo = study_matrix.tocoo()
+            missing_remaps = 0
 
             for i in range(len(coo.data)):
                 global_row = remap.get(coo.row[i])
                 if global_row is None:
+                    missing_remaps += 1
                     continue
                 global_col = coo.col[i] + sample_offset
 
                 all_rows.append(global_row)
                 all_cols.append(global_col)
                 all_data.append(coo.data[i])
+
+            if missing_remaps:
+                raise RuntimeError(
+                    f"{study_id}: {missing_remaps:,} matrix rows were missing from global remap"
+                )
 
         # Build global matrix
         global_matrix = sp.coo_matrix(

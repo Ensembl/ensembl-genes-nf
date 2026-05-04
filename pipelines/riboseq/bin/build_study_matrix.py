@@ -13,13 +13,14 @@ Designed for 20-50 samples per study.
 """
 
 import argparse
+from array import array
 import gzip
 import json
 import pickle
 import sys
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Tuple, Iterator, Optional
+from typing import Dict, Iterator, List, Optional, Tuple, Union
 
 import numpy as np
 import scipy.sparse as sp
@@ -42,21 +43,53 @@ def hash_sequence(seq: str) -> int:
         return int(hashlib.md5(seq.encode()).hexdigest()[:16], 16)
 
 
+VocabEntry = Union[int, List[Tuple[str, int]]]
+
+
 def read_sorted_tsv(tsv_path: Path) -> Iterator[Tuple[str, int]]:
     """
     Stream sorted TSV file, yielding (sequence, count) tuples.
-    Assumes file is already sorted by sequence.
+    Validates lexical order and coalesces duplicate adjacent sequence rows.
     """
     with open(tsv_path, 'r') as f:
-        for line in f:
+        previous_seq: Optional[str] = None
+        previous_count = 0
+
+        for line_num, line in enumerate(f, start=1):
             line = line.strip()
             if not line:
                 continue
             parts = line.split('\t')
-            if len(parts) >= 2:
-                seq = parts[0]
+            if len(parts) < 2:
+                raise ValueError(f"Malformed TSV line in {tsv_path}:{line_num}: {line}")
+
+            seq = parts[0]
+            try:
                 count = int(parts[1])
-                yield seq, count
+            except ValueError as exc:
+                raise ValueError(
+                    f"Invalid count in {tsv_path}:{line_num}: {parts[1]}"
+                ) from exc
+
+            if count < 0:
+                raise ValueError(f"Negative count in {tsv_path}:{line_num}: {count}")
+
+            if previous_seq is not None and seq < previous_seq:
+                raise ValueError(
+                    f"Input TSV is not sorted by sequence at {tsv_path}:{line_num}: "
+                    f"{seq!r} follows {previous_seq!r}"
+                )
+
+            if seq == previous_seq:
+                previous_count += count
+            else:
+                if previous_seq is not None:
+                    yield previous_seq, previous_count
+                previous_seq = seq
+                previous_count = count
+
+        if previous_seq is not None:
+            yield previous_seq, previous_count
 
 
 def read_intermediate_file(path: Path) -> Iterator[Tuple[str, List[Tuple[int, int]]]]:
@@ -269,13 +302,46 @@ class StudyMatrixBuilder:
 
         # Will be populated after merge
         self.sequences: List[str] = []
-        self.seq_to_id: Dict[int, int] = {}
+        self.seq_to_id: Dict[int, VocabEntry] = {}
         self.samples: List[str] = []
 
-        # COO format data
-        self.rows: List[int] = []
-        self.cols: List[int] = []
-        self.data: List[int] = []
+        # COO format data. array('I') keeps large studies much smaller than
+        # Python integer lists while still converting cleanly to NumPy/SciPy.
+        self.rows = array('I')
+        self.cols = array('I')
+        self.data = array('I')
+
+    def _add_vocab_entry(self, seq: str, local_id: int):
+        """
+        Record sequence -> local row mapping by hash, preserving collision buckets.
+
+        A bare 64-bit hash is not a stable row identity. Collisions are rare, but
+        if one occurs we store the colliding sequences explicitly so the global
+        merge can compare the actual sequence before remapping rows.
+        """
+        seq_hash = hash_sequence(seq)
+        existing = self.seq_to_id.get(seq_hash)
+
+        if existing is None:
+            self.seq_to_id[seq_hash] = local_id
+            return
+
+        if isinstance(existing, int):
+            existing_seq = self.sequences[existing]
+            if existing_seq == seq:
+                return
+            self.seq_to_id[seq_hash] = [(existing_seq, existing), (seq, local_id)]
+            return
+
+        for existing_seq, _ in existing:
+            if existing_seq == seq:
+                return
+        existing.append((seq, local_id))
+
+    @staticmethod
+    def _check_uint32(value: int, label: str):
+        if value > np.iinfo(np.uint32).max:
+            raise OverflowError(f"{label} value exceeds uint32 range: {value}")
 
     def build_from_tsvs(self, sample_ids: List[str], tsv_paths: List[Path]):
         """
@@ -296,12 +362,19 @@ class StudyMatrixBuilder:
             print(f"  Building final matrix from merged data", file=sys.stderr)
             for seq, counts in read_intermediate_file(final_file):
                 local_id = len(self.sequences)
-                seq_hash = hash_sequence(seq)
 
                 self.sequences.append(seq)
-                self.seq_to_id[seq_hash] = local_id
+                self._add_vocab_entry(seq, local_id)
 
                 for sample_idx, count in counts:
+                    if sample_idx < 0 or sample_idx >= n_samples:
+                        raise ValueError(
+                            f"Sample index out of range for {seq}: {sample_idx} "
+                            f"(n_samples={n_samples})"
+                        )
+                    self._check_uint32(local_id, "row")
+                    self._check_uint32(sample_idx, "column")
+                    self._check_uint32(count, "count")
                     self.rows.append(local_id)
                     self.cols.append(sample_idx)
                     self.data.append(count)
@@ -321,8 +394,12 @@ class StudyMatrixBuilder:
               file=sys.stderr)
 
         # 1. Save sparse matrix (CSR format)
+        row_array = np.asarray(self.rows, dtype=np.int64)
+        col_array = np.asarray(self.cols, dtype=np.int64)
+        data_array = np.asarray(self.data, dtype=np.uint32)
+
         matrix = sp.coo_matrix(
-            (self.data, (self.rows, self.cols)),
+            (data_array, (row_array, col_array)),
             shape=(n_reads, n_samples),
             dtype=np.uint32
         ).tocsr()
@@ -334,6 +411,7 @@ class StudyMatrixBuilder:
         vocab_path = self.output_dir / f"{self.prefix}_vocab.pkl"
         with open(vocab_path, 'wb') as f:
             pickle.dump({
+                'vocab_format_version': 2,
                 'seq_to_id': self.seq_to_id,
                 'samples': self.samples,
                 'n_reads': n_reads,

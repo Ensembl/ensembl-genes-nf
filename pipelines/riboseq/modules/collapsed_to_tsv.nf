@@ -24,11 +24,15 @@ process COLLAPSED_TO_TSV {
     task.ext.when == null || task.ext.when
 
     script:
+    def chunk_size = task.ext.chunk_size ?: 500000
+    def extra_args = task.ext.args ?: ''
     """
     collapsed_to_tsv.py \\
         ${collapsed_fasta} \\
         --output ${meta.id}.tsv \\
-        --sample-id ${meta.id}
+        --sample-id ${meta.id} \\
+        --chunk-size ${chunk_size} \\
+        ${extra_args}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
