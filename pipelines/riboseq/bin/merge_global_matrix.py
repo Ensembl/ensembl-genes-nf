@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 """
-Merge study matrices into a global matrix with Zarr output using tournament-style merge.
+Merge study matrices into a global matrix with Zarr output using streaming merge.
 
 Takes all study matrix outputs (optionally for a single partition) and produces:
 1. Global Zarr matrix (chunked by reads for efficient locus queries)
 2. Global unique reads FASTA (for single-pass alignment)
 3. Metadata parquet (read_id, length, etc.)
 
-Uses tournament-style pairwise merging for O(n log k) complexity.
+Uses k-way sequence streaming for O(n log k) complexity.
 When used with partitioned inputs, each invocation handles one dinucleotide partition.
 Designed for 100-250 studies, ~100-200M total unique reads.
 """
 
 import argparse
+import contextlib
 import gzip
+import heapq
 import json
-import os
-import pickle
-import struct
 import sys
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 
@@ -59,6 +59,16 @@ def hash_sequence(seq: str) -> int:
 VocabEntry = Union[int, List[Tuple[str, int]]]
 
 
+@dataclass
+class StudyInput:
+    study_id: str
+    sequences_path: Path
+    matrix_path: Path
+    metadata_path: Path
+    n_reads: int
+    samples: List[str]
+
+
 def resolve_local_id(seq_to_id: Dict[int, VocabEntry], seq: str) -> Optional[int]:
     """
     Resolve a study-local row ID for a sequence.
@@ -83,24 +93,36 @@ def resolve_local_id(seq_to_id: Dict[int, VocabEntry], seq: str) -> Optional[int
 # Streaming merge helpers
 # =============================================================================
 
-def read_study_sequences(sequences_path: Path, study_id: str) -> Iterator[Tuple[str, str]]:
+def read_study_sequences(sequences_path: Path, study_id: str) -> Iterator[Tuple[str, int]]:
     """
     Stream sorted sequences from a study's gzipped sequences file.
-    Yields: (sequence, study_id)
+    Yields: (sequence, local_id)
     """
+    previous_seq: Optional[str] = None
+    local_id = 0
+
     with gzip.open(sequences_path, 'rt') as f:
-        for line in f:
+        for line_num, line in enumerate(f, start=1):
             seq = line.strip()
-            if seq:
-                yield (seq, study_id)
+            if not seq:
+                raise ValueError(f"Empty sequence in {sequences_path}:{line_num}")
+            if previous_seq is not None and seq <= previous_seq:
+                raise ValueError(
+                    f"Study sequence file is not strictly sorted for {study_id} "
+                    f"at {sequences_path}:{line_num}: {seq!r} follows {previous_seq!r}"
+                )
+
+            yield seq, local_id
+            previous_seq = seq
+            local_id += 1
 
 
-def read_intermediate_file(path: Path) -> Iterator[Tuple[str, List[str]]]:
+def read_intermediate_file(path: Path) -> Iterator[Tuple[str, List[Tuple[str, int]]]]:
     """
     Read intermediate merge file.
-    Format: sequence\tstudy1,study2,...
+    Format: sequence\tstudy1:local_id,study2:local_id,...
 
-    Yields: (sequence, [study_ids])
+    Yields: (sequence, [(study_id, local_id), ...])
     """
     with open(path, 'r') as f:
         for line in f:
@@ -109,33 +131,39 @@ def read_intermediate_file(path: Path) -> Iterator[Tuple[str, List[str]]]:
                 continue
             parts = line.split('\t')
             seq = parts[0]
-            studies = parts[1].split(',') if len(parts) > 1 and parts[1] else []
-            yield seq, studies
+            occurrences = []
+            if len(parts) > 1 and parts[1]:
+                for item in parts[1].split(','):
+                    study_id, local_id = item.rsplit(':', 1)
+                    occurrences.append((study_id, int(local_id)))
+            yield seq, occurrences
 
 
-def write_intermediate_file(path: Path, data: Iterator[Tuple[str, List[str]]]):
+def write_intermediate_file(path: Path, data: Iterator[Tuple[str, List[Tuple[str, int]]]]):
     """
     Write intermediate merge file.
-    Format: sequence\tstudy1,study2,...
+    Format: sequence\tstudy1:local_id,study2:local_id,...
     """
     with open(path, 'w') as f:
-        for seq, studies in data:
-            studies_str = ','.join(studies)
-            f.write(f"{seq}\t{studies_str}\n")
+        for seq, occurrences in data:
+            occurrences_str = ','.join(
+                f"{study_id}:{local_id}" for study_id, local_id in occurrences
+            )
+            f.write(f"{seq}\t{occurrences_str}\n")
 
 
 def merge_two_sources(
-    source1: Iterator[Tuple[str, List[str]]],
-    source2: Iterator[Tuple[str, List[str]]]
-) -> Iterator[Tuple[str, List[str]]]:
+    source1: Iterator[Tuple[str, List[Tuple[str, int]]]],
+    source2: Iterator[Tuple[str, List[Tuple[str, int]]]]
+) -> Iterator[Tuple[str, List[Tuple[str, int]]]]:
     """
     Two-pointer merge of two sorted sources.
     Each source yields (sequence, [study_ids])
 
     This is the core merge operation - O(n) for two sorted lists.
     """
-    item1: Optional[Tuple[str, List[str]]] = None
-    item2: Optional[Tuple[str, List[str]]] = None
+    item1: Optional[Tuple[str, List[Tuple[str, int]]]] = None
+    item2: Optional[Tuple[str, List[Tuple[str, int]]]] = None
 
     # Get first items
     try:
@@ -163,8 +191,8 @@ def merge_two_sources(
             break
         else:
             # Compare sequences
-            seq1, studies1 = item1
-            seq2, studies2 = item2
+            seq1, occurrences1 = item1
+            seq2, occurrences2 = item2
 
             if seq1 < seq2:
                 yield item1
@@ -179,9 +207,9 @@ def merge_two_sources(
                 except StopIteration:
                     item2 = None
             else:
-                # Same sequence - merge study lists
-                merged_studies = studies1 + studies2
-                yield (seq1, merged_studies)
+                # Same sequence - merge occurrence lists
+                merged_occurrences = occurrences1 + occurrences2
+                yield (seq1, merged_occurrences)
                 try:
                     item1 = next(source1)
                 except StopIteration:
@@ -192,10 +220,10 @@ def merge_two_sources(
                     item2 = None
 
 
-def study_to_intermediate(sequences_path: Path, study_id: str) -> Iterator[Tuple[str, List[str]]]:
+def study_to_intermediate(sequences_path: Path, study_id: str) -> Iterator[Tuple[str, List[Tuple[str, int]]]]:
     """Convert a study's sequences to intermediate format."""
-    for seq, sid in read_study_sequences(sequences_path, study_id):
-        yield (seq, [sid])
+    for seq, local_id in read_study_sequences(sequences_path, study_id):
+        yield (seq, [(study_id, local_id)])
 
 
 class TournamentMerger:
@@ -306,96 +334,179 @@ class GlobalMatrixMerger:
         # Output file prefix
         self.prefix = f"global.{partition}" if partition else "global"
 
-        # Global sequence tracking
-        self.sequences: List[str] = []  # In sorted order from tournament merge
-
         # Per-study info
-        self.study_local_to_global: Dict[str, Dict[int, int]] = {}  # study -> {local_id: global_id}
+        self.study_remaps: Dict[str, np.ndarray] = {}  # study -> disk-backed local_id -> global_id
+        self.study_n_reads: Dict[str, int] = {}
+        self.study_remap_counts: Dict[str, int] = {}
         self.all_samples: List[str] = []
         self.study_sample_offsets: Dict[str, int] = {}  # study -> sample column offset
         self.studies: List[str] = []
+        self.n_reads = 0
 
-        # Study vocabs (loaded once, used for remapping)
-        self.study_vocabs: Dict[str, Dict[int, VocabEntry]] = {}  # study_id -> {seq_hash: local_id}
+        self.fasta_path = self.output_dir / f'{self.prefix}_reads.fasta'
+        self.metadata_path = self.output_dir / f'{self.prefix}_metadata.parquet'
 
-    def _load_study_vocabs(self, study_inputs: List[Tuple[str, Path, Path, Path]]):
-        """Load all study vocabularies and record sample offsets."""
-        for study_id, vocab_path, _, _ in study_inputs:
-            with open(vocab_path, 'rb') as f:
-                vocab_data = pickle.load(f)
-
-            self.study_vocabs[study_id] = vocab_data['seq_to_id']
-            study_samples = vocab_data['samples']
-
-            duplicate_samples = set(study_samples).intersection(self.all_samples)
+    def _prepare_study_remaps(self, study_inputs: List[StudyInput], temp_dir: Path):
+        """Create disk-backed remap arrays and record sample offsets."""
+        for study_idx, study in enumerate(study_inputs):
+            duplicate_samples = set(study.samples).intersection(self.all_samples)
             if duplicate_samples:
                 examples = ', '.join(sorted(duplicate_samples)[:5])
                 raise ValueError(
-                    f"Duplicate sample IDs across study matrices before {study_id}: {examples}"
+                    f"Duplicate sample IDs across study matrices before {study.study_id}: {examples}"
                 )
 
-            # Record sample offset
-            self.study_sample_offsets[study_id] = len(self.all_samples)
-            self.all_samples.extend(study_samples)
-            self.studies.append(study_id)
+            self.study_sample_offsets[study.study_id] = len(self.all_samples)
+            self.all_samples.extend(study.samples)
+            self.studies.append(study.study_id)
+            self.study_n_reads[study.study_id] = study.n_reads
+            self.study_remap_counts[study.study_id] = 0
 
-            # Initialize remap dict
-            self.study_local_to_global[study_id] = {}
+            if study.n_reads == 0:
+                self.study_remaps[study.study_id] = np.asarray([], dtype=np.uint64)
+                continue
 
-    def _process_merged_file(self, merged_file: Path):
-        """Process merged file and build global structures."""
-        unresolved = 0
-        for seq, studies_containing in read_intermediate_file(merged_file):
-            global_id = len(self.sequences)
-            self.sequences.append(seq)
-
-            # Build remapping for each study that has this sequence
-            for study_id in studies_containing:
-                if study_id in self.study_vocabs:
-                    local_id = resolve_local_id(self.study_vocabs[study_id], seq)
-                    if local_id is not None:
-                        self.study_local_to_global[study_id][local_id] = global_id
-                    else:
-                        unresolved += 1
-
-        if unresolved:
-            raise RuntimeError(
-                f"Could not resolve {unresolved:,} study-local sequence IDs from vocab files"
+            remap_path = temp_dir / f"study_{study_idx}.local_to_global.u64"
+            self.study_remaps[study.study_id] = np.memmap(
+                remap_path,
+                dtype=np.uint64,
+                mode='w+',
+                shape=(study.n_reads,)
             )
 
-    def build_global_vocabulary(self, study_inputs: List[Tuple[str, Path, Path, Path]],
+    def _write_metadata_parquet_from_tsv(self, metadata_tsv: Path):
+        """Convert streamed read metadata TSV to parquet without materializing it."""
+        if not HAVE_POLARS:
+            raise RuntimeError("polars is required to stream global metadata parquet")
+
+        if self.n_reads == 0:
+            pl.DataFrame(
+                {
+                    'read_id': pl.Series([], dtype=pl.UInt64),
+                    'length': pl.Series([], dtype=pl.UInt32),
+                }
+            ).write_parquet(self.metadata_path)
+            return
+
+        scan_kwargs = {'separator': '\t'}
+        try:
+            lazy = pl.scan_csv(
+                metadata_tsv,
+                **scan_kwargs,
+                schema_overrides={'read_id': pl.UInt64, 'length': pl.UInt32},
+            )
+        except TypeError:
+            lazy = pl.scan_csv(
+                metadata_tsv,
+                **scan_kwargs,
+                dtypes={'read_id': pl.UInt64, 'length': pl.UInt32},
+            )
+        lazy.sink_parquet(self.metadata_path, compression='zstd')
+
+    def _stream_global_vocabulary(self, study_inputs: List[StudyInput]):
+        """
+        K-way merge study sequence files and write outputs/remaps as a stream.
+
+        This replaces the old all-vocab load. Memory now scales with number of
+        studies, not number of study-local or global unique sequences.
+        """
+        heap: List[Tuple[str, int, int]] = []  # sequence, study_index, local_id
+        iterators: List[Iterator[Tuple[str, int]]] = []
+        metadata_tsv = self.output_dir / f'.{self.prefix}_metadata.tsv'
+
+        def advance(study_index: int):
+            try:
+                seq, local_id = next(iterators[study_index])
+            except StopIteration:
+                return
+            heapq.heappush(heap, (seq, study_index, local_id))
+
+        with contextlib.ExitStack() as stack:
+            fasta = stack.enter_context(open(self.fasta_path, 'w'))
+            metadata_handle = stack.enter_context(open(metadata_tsv, 'w'))
+            metadata_handle.write("read_id\tlength\n")
+
+            for study in study_inputs:
+                iterators.append(read_study_sequences(study.sequences_path, study.study_id))
+            for study_index in range(len(study_inputs)):
+                advance(study_index)
+
+            global_id = 0
+            while heap:
+                seq = heap[0][0]
+                occurrences: List[Tuple[int, int]] = []
+
+                while heap and heap[0][0] == seq:
+                    _, study_index, local_id = heapq.heappop(heap)
+                    occurrences.append((study_index, local_id))
+                    advance(study_index)
+
+                seen_studies = set()
+                for study_index, local_id in occurrences:
+                    study = study_inputs[study_index]
+                    if study.study_id in seen_studies:
+                        raise ValueError(
+                            f"Duplicate sequence {seq!r} within study {study.study_id}; "
+                            "study sequence files must contain one row per unique sequence"
+                        )
+                    seen_studies.add(study.study_id)
+
+                    if local_id >= study.n_reads:
+                        raise ValueError(
+                            f"Local row {local_id} for {study.study_id} exceeds "
+                            f"metadata n_reads={study.n_reads}"
+                        )
+
+                    self.study_remaps[study.study_id][local_id] = global_id
+                    self.study_remap_counts[study.study_id] += 1
+
+                fasta.write(f">read_{global_id}\n{seq}\n")
+                metadata_handle.write(f"{global_id}\t{len(seq)}\n")
+                global_id += 1
+
+            self.n_reads = global_id
+
+        for remap in self.study_remaps.values():
+            if hasattr(remap, 'flush'):
+                remap.flush()
+
+        for study in study_inputs:
+            observed = self.study_remap_counts[study.study_id]
+            if observed != study.n_reads:
+                raise RuntimeError(
+                    f"{study.study_id}: sequence file/remap count mismatch; "
+                    f"metadata n_reads={study.n_reads}, observed={observed}"
+                )
+
+        self._write_metadata_parquet_from_tsv(metadata_tsv)
+        try:
+            metadata_tsv.unlink()
+        except FileNotFoundError:
+            pass
+
+    def build_global_vocabulary(self, study_inputs: List[StudyInput],
                                 temp_dir: Path):
         """
         Build global vocabulary using tournament merge.
 
         Args:
-            study_inputs: List of (study_id, vocab_path, sequences_path, matrix_path)
+            study_inputs: Study matrix inputs with paths and metadata
             temp_dir: Temporary directory for merge files
         """
         partition_str = f" [{self.partition}]" if self.partition else ""
-        print(f"\nPhase 1: Building global vocabulary{partition_str} via tournament merge", file=sys.stderr)
+        print(f"\nPhase 1: Building global vocabulary{partition_str} via k-way stream", file=sys.stderr)
 
-        # Load all study vocabs first
-        self._load_study_vocabs(study_inputs)
+        self._prepare_study_remaps(study_inputs, temp_dir)
+        self._stream_global_vocabulary(study_inputs)
 
-        # Prepare inputs for tournament
-        merge_inputs = [(study_id, seq_path) for study_id, _, seq_path, _ in study_inputs]
-
-        merger = TournamentMerger(temp_dir)
-        final_file = merger.merge_studies(merge_inputs)
-
-        print(f"\n  Building global ID mappings from merged sequences", file=sys.stderr)
-        self._process_merged_file(final_file)
-        merger.cleanup(keep_final=False)
-
-        print(f"  Global vocabulary: {len(self.sequences):,} unique sequences", file=sys.stderr)
+        print(f"  Global vocabulary: {self.n_reads:,} unique sequences", file=sys.stderr)
         print(f"  Total samples: {len(self.all_samples):,}", file=sys.stderr)
 
     def build_global_matrix(self, study_matrices: Dict[str, Path]) -> Path:
         """
         Build the global matrix by merging all study matrices.
         """
-        n_reads = len(self.sequences)
+        n_reads = self.n_reads
         n_samples = len(self.all_samples)
 
         partition_str = f" [{self.partition}]" if self.partition else ""
@@ -454,18 +565,20 @@ class GlobalMatrixMerger:
         for study_id, matrix_path_study in study_matrices.items():
             print(f"  Merging study: {study_id}", file=sys.stderr)
 
-            study_matrix = sp.load_npz(matrix_path_study)
-            remap = self.study_local_to_global[study_id]
+            study_matrix = sp.load_npz(matrix_path_study).tocsr()
+            remap = self.study_remaps[study_id]
             sample_offset = self.study_sample_offsets[study_id]
+            if study_matrix.shape[0] != len(remap):
+                raise RuntimeError(
+                    f"{study_id}: matrix row count ({study_matrix.shape[0]:,}) does not match "
+                    f"sequence metadata/remap count ({len(remap):,})"
+                )
 
-            # CSR -> COO gives row-major traversal. Since each study sequence
-            # list is a sorted subset of the global sequence list, global row
-            # chunks are non-decreasing and can be flushed one at a time.
-            coo = study_matrix.tocsr().tocoo()
-
+            # Study local rows and global rows are both sorted by sequence, so
+            # remapped global chunks are non-decreasing and can be flushed
+            # incrementally without a full COO row array.
             current_chunk_idx: Optional[int] = None
             current_entries: List[Tuple[int, int, int]] = []
-            missing_remaps = 0
 
             def flush_entries(chunk_idx: int, entries: List[Tuple[int, int, int]]):
                 if not entries:
@@ -479,17 +592,8 @@ class GlobalMatrixMerger:
                     chunk[local_row, global_col] = val
                 counts[chunk_start:chunk_end, :] = chunk
 
-            for i in range(len(coo.data)):
-                local_row = coo.row[i]
-                col = coo.col[i]
-                val = coo.data[i]
-
-                global_row = remap.get(local_row)
-                if global_row is None:
-                    missing_remaps += 1
-                    continue
-
-                global_col = col + sample_offset
+            for local_row in range(study_matrix.shape[0]):
+                global_row = int(remap[local_row])
                 chunk_idx = global_row // self.chunk_size
 
                 if current_chunk_idx is None:
@@ -504,15 +608,18 @@ class GlobalMatrixMerger:
                     current_entries = []
                     current_chunk_idx = chunk_idx
 
-                current_entries.append((global_row, global_col, int(val)))
+                row_start = study_matrix.indptr[local_row]
+                row_end = study_matrix.indptr[local_row + 1]
+                for data_idx in range(row_start, row_end):
+                    global_col = int(study_matrix.indices[data_idx]) + sample_offset
+                    current_entries.append((
+                        global_row,
+                        global_col,
+                        int(study_matrix.data[data_idx]),
+                    ))
 
             if current_chunk_idx is not None:
                 flush_entries(current_chunk_idx, current_entries)
-
-            if missing_remaps:
-                raise RuntimeError(
-                    f"{study_id}: {missing_remaps:,} matrix rows were missing from global remap"
-                )
 
         return matrix_path
 
@@ -530,17 +637,18 @@ class GlobalMatrixMerger:
             print(f"  Merging study: {study_id}", file=sys.stderr)
 
             study_matrix = sp.load_npz(matrix_path_study)
-            remap = self.study_local_to_global[study_id]
+            remap = self.study_remaps[study_id]
             sample_offset = self.study_sample_offsets[study_id]
 
             coo = study_matrix.tocoo()
             missing_remaps = 0
 
             for i in range(len(coo.data)):
-                global_row = remap.get(coo.row[i])
-                if global_row is None:
+                local_row_int = int(coo.row[i])
+                if local_row_int >= len(remap):
                     missing_remaps += 1
                     continue
+                global_row = int(remap[local_row_int])
                 global_col = coo.col[i] + sample_offset
 
                 all_rows.append(global_row)
@@ -569,36 +677,10 @@ class GlobalMatrixMerger:
 
     def save_outputs(self) -> Dict[str, Path]:
         """Save all outputs and return paths."""
-        n_reads = len(self.sequences)
+        n_reads = self.n_reads
 
-        # Write FASTA
-        fasta_path = self.output_dir / f'{self.prefix}_reads.fasta'
-        print(f"Writing FASTA: {fasta_path}", file=sys.stderr)
-        with open(fasta_path, 'w') as fasta:
-            for global_id, seq in enumerate(self.sequences):
-                fasta.write(f">read_{global_id}\n{seq}\n")
-
-        # Write metadata
-        metadata_path = self.output_dir / f'{self.prefix}_metadata.parquet'
-        print(f"Writing metadata: {metadata_path}", file=sys.stderr)
-
-        if HAVE_POLARS:
-            read_ids = list(range(n_reads))
-            lengths = [len(seq) for seq in self.sequences]
-
-            df = pl.DataFrame({
-                'read_id': read_ids,
-                'length': lengths
-            })
-            df.write_parquet(metadata_path)
-        else:
-            # Fallback to JSON
-            metadata = [
-                {'read_id': i, 'length': len(seq)}
-                for i, seq in enumerate(self.sequences)
-            ]
-            with open(metadata_path.with_suffix('.json'), 'w') as f:
-                json.dump(metadata, f)
+        print(f"Unique reads FASTA: {self.fasta_path}", file=sys.stderr)
+        print(f"Read metadata: {self.metadata_path}", file=sys.stderr)
 
         # Write config
         config = {
@@ -616,16 +698,42 @@ class GlobalMatrixMerger:
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
 
+        with open(self.output_dir / f'{self.prefix}_samples.json', 'w') as f:
+            json.dump(self.all_samples, f)
+
         return {
-            'fasta': fasta_path,
-            'metadata': metadata_path,
+            'fasta': self.fasta_path,
+            'metadata': self.metadata_path,
             'config': config_path
         }
 
 
+def load_study_metadata(metadata_path: Path, study_id: str) -> Tuple[int, List[str]]:
+    """Load the small per-study metadata JSON needed for global matrix layout."""
+    with open(metadata_path, 'r') as handle:
+        metadata = json.load(handle)
+
+    if 'n_reads' not in metadata:
+        raise ValueError(f"{metadata_path} is missing required field 'n_reads'")
+    if 'samples' not in metadata:
+        raise ValueError(f"{metadata_path} is missing required field 'samples'")
+
+    n_reads = int(metadata['n_reads'])
+    samples = list(metadata['samples'])
+    if n_reads < 0:
+        raise ValueError(f"{metadata_path} has negative n_reads for {study_id}: {n_reads}")
+    return n_reads, samples
+
+
+def strip_suffix(value: str, suffix: str) -> str:
+    if not value.endswith(suffix):
+        raise ValueError(f"Expected {value!r} to end with {suffix!r}")
+    return value[:-len(suffix)]
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description='Merge study matrices into global Zarr matrix using tournament merge'
+        description='Merge study matrices into global Zarr matrix using streaming merge'
     )
     parser.add_argument(
         '--study-dirs',
@@ -659,51 +767,54 @@ def main():
     print(f"Merging {len(args.study_dirs)} studies{partition_str} using tournament merge", file=sys.stderr)
 
     # Discover all study files
-    study_inputs = []
-    study_matrices = {}
-
-    # File pattern depends on whether partitioned
-    if args.partition:
-        suffix = f".{args.partition}"
-    else:
-        suffix = ""
+    study_inputs: List[StudyInput] = []
+    study_matrices: Dict[str, Path] = {}
 
     for study_dir in args.study_dirs:
-        # Find study files - look for vocab to determine study_id
+        # Find study files - look for metadata to determine study_id without
+        # loading the large vocab pickle.
         if args.partition:
-            vocab_files = list(study_dir.glob(f'*.{args.partition}_vocab.pkl'))
+            metadata_files = list(study_dir.glob(f'*.{args.partition}_metadata.json'))
         else:
-            vocab_files = list(study_dir.glob('*_vocab.pkl'))
+            metadata_files = list(study_dir.glob('*_metadata.json'))
             # Filter out partitioned files
-            vocab_files = [f for f in vocab_files if not any(
-                f'.{di}_vocab.pkl' in str(f) for di in
+            metadata_files = [f for f in metadata_files if not any(
+                f'.{di}_metadata.json' in str(f) for di in
                 [f"{a}{b}" for a in "ACGT" for b in "ACGT"]
             )]
 
-        if not vocab_files:
-            print(f"Warning: No vocab file in {study_dir} for partition={args.partition}, skipping", file=sys.stderr)
+        if not metadata_files:
+            print(f"Warning: No metadata file in {study_dir} for partition={args.partition}, skipping", file=sys.stderr)
             continue
 
         # Extract study_id from filename
-        vocab_file = vocab_files[0]
-        stem = vocab_file.stem  # e.g., "PRJNA123.AA_vocab" or "PRJNA123_vocab"
+        metadata_path = metadata_files[0]
+        stem = metadata_path.stem  # e.g., "PRJNA123.AA_metadata" or "PRJNA123_metadata"
         if args.partition:
-            # Remove ".{partition}_vocab" suffix
-            study_id = stem.replace(f'.{args.partition}_vocab', '')
+            # Remove ".{partition}_metadata" suffix
+            study_id = strip_suffix(stem, f'.{args.partition}_metadata')
             prefix = f'{study_id}.{args.partition}'
         else:
-            study_id = stem.replace('_vocab', '')
+            study_id = strip_suffix(stem, '_metadata')
             prefix = study_id
 
-        vocab_path = study_dir / f'{prefix}_vocab.pkl'
         seq_path = study_dir / f'{prefix}_sequences.txt.gz'
         matrix_path = study_dir / f'{prefix}_matrix.npz'
+        metadata_path = study_dir / f'{prefix}_metadata.json'
 
-        if not all(p.exists() for p in [vocab_path, seq_path, matrix_path]):
+        if not all(p.exists() for p in [metadata_path, seq_path, matrix_path]):
             print(f"Warning: Incomplete study files for {study_id}, skipping", file=sys.stderr)
             continue
 
-        study_inputs.append((study_id, vocab_path, seq_path, matrix_path))
+        n_reads, samples = load_study_metadata(metadata_path, study_id)
+        study_inputs.append(StudyInput(
+            study_id=study_id,
+            sequences_path=seq_path,
+            matrix_path=matrix_path,
+            metadata_path=metadata_path,
+            n_reads=n_reads,
+            samples=samples,
+        ))
         study_matrices[study_id] = matrix_path
 
     if not study_inputs:
@@ -713,8 +824,8 @@ def main():
     # Create merger and run
     merger = GlobalMatrixMerger(args.output_dir, chunk_size=args.chunk_size, partition=args.partition)
 
-    with tempfile.TemporaryDirectory(prefix="global_merge_") as temp_dir:
-        # Phase 1: Build global vocabulary via tournament merge
+    with tempfile.TemporaryDirectory(prefix="global_merge_", dir=args.output_dir) as temp_dir:
+        # Phase 1: Build global vocabulary via streaming merge
         merger.build_global_vocabulary(study_inputs, Path(temp_dir))
 
         # Phase 2: Build global matrix

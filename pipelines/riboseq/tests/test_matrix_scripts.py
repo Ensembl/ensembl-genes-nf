@@ -164,6 +164,9 @@ def test_merge_global_matrix_preserves_counts_across_studies(tmp_path):
         check=True,
     )
 
+    for vocab in list(study1.glob("*_vocab.pkl")) + list(study2.glob("*_vocab.pkl")):
+        vocab.unlink()
+
     subprocess.run(
         [
             sys.executable,
