@@ -24,6 +24,7 @@ process AGAT_RUN_STATS {
         """
             agat_sp_statistics.pl \\
               --gff ${gff3} \\
-              -o ${stem}_agat_stats.txt
+              -o ${stem}_agat_stats.txt \\
+              --cpu 10
         """
 }
