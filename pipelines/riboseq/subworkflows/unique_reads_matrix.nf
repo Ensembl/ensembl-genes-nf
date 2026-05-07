@@ -51,12 +51,12 @@ workflow UNIQUE_READS_MATRIX {
     // STAGE 3: Collect all study outputs and merge into global matrix
     //
     // Collect all study files (staged flat, script reorganizes by study_id prefix)
-    // Files named: {study_id}_matrix.npz, {study_id}_vocab.pkl, etc.
+    // Files named: {study_id}_matrix.npz,  etc.
     study_files = BUILD_STUDY_MATRIX.out.matrix
         .join(BUILD_STUDY_MATRIX.out.sequences)
         .join(BUILD_STUDY_MATRIX.out.metadata)
-        .map { study_id, matrix, vocab, sequences, metadata ->
-            [matrix, vocab, sequences, metadata]
+        .map { study_id, matrix, sequences, metadata ->
+            [matrix, sequences, metadata]
         }
         .flatten()
         .collect()
@@ -77,7 +77,6 @@ workflow UNIQUE_READS_MATRIX {
 
     // Per-study outputs
     study_matrices = BUILD_STUDY_MATRIX.out.matrix      // tuple: [ study_id, matrix.npz ]
-    study_vocab = BUILD_STUDY_MATRIX.out.vocab          // tuple: [ study_id, vocab.pkl ]
     study_sequences = BUILD_STUDY_MATRIX.out.sequences  // tuple: [ study_id, sequences.txt.gz ]
     study_metadata = BUILD_STUDY_MATRIX.out.metadata    // tuple: [ study_id, metadata.json ]
 
