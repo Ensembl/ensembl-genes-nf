@@ -53,7 +53,6 @@ workflow UNIQUE_READS_MATRIX {
     // Collect all study files (staged flat, script reorganizes by study_id prefix)
     // Files named: {study_id}_matrix.npz, {study_id}_vocab.pkl, etc.
     study_files = BUILD_STUDY_MATRIX.out.matrix
-        .join(BUILD_STUDY_MATRIX.out.vocab)
         .join(BUILD_STUDY_MATRIX.out.sequences)
         .join(BUILD_STUDY_MATRIX.out.metadata)
         .map { study_id, matrix, vocab, sequences, metadata ->
