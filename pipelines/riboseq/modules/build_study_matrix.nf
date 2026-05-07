@@ -18,7 +18,6 @@ process BUILD_STUDY_MATRIX {
 
     output:
     tuple val(study_id), path("${study_id}_matrix.npz"), emit: matrix
-    tuple val(study_id), path("${study_id}_vocab.pkl"), emit: vocab
     tuple val(study_id), path("${study_id}_sequences.txt.gz"), emit: sequences
     tuple val(study_id), path("${study_id}_metadata.json"), emit: metadata
     path "versions.yml", emit: versions
