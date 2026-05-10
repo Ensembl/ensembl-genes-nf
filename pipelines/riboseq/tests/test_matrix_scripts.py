@@ -1,6 +1,6 @@
 import gzip
 import importlib.util
-import pickle
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -97,32 +97,6 @@ def test_build_study_matrix_preserves_sample_columns_and_coalesces_rows(tmp_path
     ]
 
 
-def test_hash_collision_vocab_entries_resolve_by_sequence(tmp_path):
-    build_study_matrix = load_script("build_study_matrix.py")
-    merge_global_matrix = load_script("merge_global_matrix.py")
-
-    old_build_hash = build_study_matrix.hash_sequence
-    old_merge_hash = merge_global_matrix.hash_sequence
-    build_study_matrix.hash_sequence = lambda seq: 1
-    merge_global_matrix.hash_sequence = lambda seq: 1
-    try:
-        tsv = tmp_path / "s1.tsv"
-        tsv.write_text("AA\t2\nCC\t3\n")
-
-        builder = build_study_matrix.StudyMatrixBuilder("STUDY", tmp_path)
-        builder.build_from_tsvs(["s1"], [tsv])
-        _, vocab_path, _ = builder.save()
-
-        with open(vocab_path, "rb") as handle:
-            vocab = pickle.load(handle)
-
-        assert merge_global_matrix.resolve_local_id(vocab["seq_to_id"], "AA") == 0
-        assert merge_global_matrix.resolve_local_id(vocab["seq_to_id"], "CC") == 1
-    finally:
-        build_study_matrix.hash_sequence = old_build_hash
-        merge_global_matrix.hash_sequence = old_merge_hash
-
-
 def test_merge_global_matrix_preserves_counts_across_studies(tmp_path):
     study1 = tmp_path / "study1"
     study2 = tmp_path / "study2"
@@ -178,10 +152,18 @@ def test_merge_global_matrix_preserves_counts_across_studies(tmp_path):
             str(outdir),
             "--chunk-size",
             "2",
+            "--metadata-shard-rows",
+            "2",
         ],
         check=True,
     )
 
+    metadata_dir = outdir / "global_metadata.parquet"
+    assert metadata_dir.is_dir()
+    assert sorted(path.name for path in metadata_dir.glob("part-*.parquet")) == [
+        "part-00000.parquet",
+        "part-00001.parquet",
+    ]
     assert (outdir / "global_reads.fasta").read_text().splitlines() == [
         ">read_0",
         "AA",
@@ -195,3 +177,26 @@ def test_merge_global_matrix_preserves_counts_across_studies(tmp_path):
         [3, 0],
         [0, 7],
     ]
+
+    outdir_no_fasta = tmp_path / "global_no_fasta"
+    subprocess.run(
+        [
+            sys.executable,
+            str(BIN_DIR / "merge_global_matrix.py"),
+            "--study-dirs",
+            str(study1),
+            str(study2),
+            "--output-dir",
+            str(outdir_no_fasta),
+            "--chunk-size",
+            "2",
+            "--metadata-shard-rows",
+            "2",
+            "--no-write-fasta",
+        ],
+        check=True,
+    )
+
+    assert (outdir_no_fasta / "global_reads.fasta").read_text() == ""
+    config = json.loads((outdir_no_fasta / "global_config.json").read_text())
+    assert config["write_fasta"] is False

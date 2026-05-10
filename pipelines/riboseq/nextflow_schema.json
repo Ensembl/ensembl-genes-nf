@@ -331,6 +331,11 @@
       "default": false,
       "description": "Build a global unique-reads matrix instead of running per-sample alignment"
     },
+    "matrix_align_unique_reads": {
+      "type": "boolean",
+      "default": true,
+      "description": "Align the global unique-read FASTA after matrix merge; disable for very large matrix-only runs"
+    },
     "matrix_chunk_size": {
       "type": "integer",
       "default": 10000,
@@ -342,6 +347,12 @@
       "default": 500000,
       "minimum": 1,
       "description": "Maximum unique sequences sorted in memory per FASTA-to-TSV chunk"
+    },
+    "matrix_metadata_shard_rows": {
+      "type": "integer",
+      "default": 100000000,
+      "minimum": 1,
+      "description": "Maximum rows per global metadata parquet shard"
     },
     "matrix_use_partitioning": {
       "type": "boolean",

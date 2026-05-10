@@ -17,7 +17,7 @@ process MERGE_GLOBAL_MATRIX {
     path study_files  // Collected study files (flat: *_matrix.npz, *_vocab.pkl, *_sequences.txt.gz)
 
     output:
-    path "global_matrix.zarr", emit: matrix, type: 'dir'
+    path "global_matrix.*", emit: matrix
     path "global_reads.fasta", emit: fasta
     path "global_metadata.parquet", emit: metadata
     path "global_config.json", emit: config
@@ -29,10 +29,12 @@ process MERGE_GLOBAL_MATRIX {
 
     script:
     def chunk_size = task.ext.chunk_size ?: 10000
+    def metadata_shard_rows = task.ext.metadata_shard_rows ?: 100000000
+    def fasta_flag = task.ext.write_fasta == false ? '--no-write-fasta' : ''
     def partition_flag = task.ext.partition ? "--partition ${task.ext.partition}" : ''
     """
     # Organize flat files into study directories
-    # Files are named: {study_id}_matrix.npz, {study_id}_vocab.pkl, {study_id}_sequences.txt.gz
+    # Files are named: {study_id}_matrix.npz, {study_id}_sequences.txt.gz, {study_id}_metadata.json
     for matrix in *_matrix.npz; do
         study_id=\$(basename \$matrix _matrix.npz)
         mkdir -p studies/\$study_id
@@ -46,6 +48,8 @@ process MERGE_GLOBAL_MATRIX {
         --study-dirs studies/* \\
         --output-dir . \\
         --chunk-size ${chunk_size} \\
+        --metadata-shard-rows ${metadata_shard_rows} \\
+        ${fasta_flag} \\
         ${partition_flag}
 
     cat <<-END_VERSIONS > versions.yml

@@ -4,8 +4,8 @@
  * Builds a global count matrix from collapsed FASTA files:
  * 1. Convert collapsed FASTA -> sorted TSV (per sample)
  * 2. Build study matrices (per study, groups of samples)
- * 3. Merge into global matrix (Zarr format)
- * 4. Align unique reads once (single BAM for all)
+ * 3. Merge into global matrix (Zarr when available, NPZ fallback)
+ * 4. Optionally align unique reads once (single BAM for all)
  *
  * Designed for scale: 5k+ samples across 100-250 studies
  */
@@ -64,7 +64,7 @@ workflow UNIQUE_READS_MATRIX {
     MERGE_GLOBAL_MATRIX(study_files)
 
     //
-    // STAGE 4: Align unique reads FASTA
+    // STAGE 4: Optionally align unique reads FASTA
     //
     STAR_ALIGN_UNIQUE_READS(
         MERGE_GLOBAL_MATRIX.out.fasta,
@@ -81,14 +81,15 @@ workflow UNIQUE_READS_MATRIX {
     study_metadata = BUILD_STUDY_MATRIX.out.metadata    // tuple: [ study_id, metadata.json ]
 
     // Global outputs
-    global_matrix = MERGE_GLOBAL_MATRIX.out.matrix      // path: global_matrix.zarr
+    global_matrix = MERGE_GLOBAL_MATRIX.out.matrix      // path: global_matrix.zarr or global_matrix.npz
     global_fasta = MERGE_GLOBAL_MATRIX.out.fasta        // path: unique_reads.fasta
     global_metadata = MERGE_GLOBAL_MATRIX.out.metadata  // path: read_metadata.parquet
     global_config = MERGE_GLOBAL_MATRIX.out.config      // path: index_config.json
 
     // Alignment outputs
-    unique_reads_bam = STAR_ALIGN_UNIQUE_READS.out.bam  // path: unique_reads.bam
-    unique_reads_bai = STAR_ALIGN_UNIQUE_READS.out.bai  // path: unique_reads.bam.bai
+    unique_reads_bam = STAR_ALIGN_UNIQUE_READS.out.bam  // path: unique_reads.bam, empty when alignment disabled
+    unique_reads_bai = STAR_ALIGN_UNIQUE_READS.out.bai  // path: unique_reads.bam.bai, empty when alignment disabled
+    unique_reads_log = STAR_ALIGN_UNIQUE_READS.out.log  // path: unique_reads_Log.final.out, empty when alignment disabled
 
     // Version tracking
     versions = COLLAPSED_TO_TSV.out.versions.first()

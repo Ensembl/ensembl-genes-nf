@@ -183,7 +183,7 @@ workflow {
     //
     // MODE SELECTION: Matrix-based vs Per-sample analysis
     //
-    // matrix_mode: Build global unique reads matrix, align once, then downstream analysis
+    // matrix_mode: Build global unique reads matrix, optionally align once, then downstream analysis
     // per_sample_mode: Traditional per-sample alignment with RiboMetric/RiboWaltz (default)
     //
     def use_matrix_mode = params.run_matrix_mode ?: false
@@ -193,8 +193,8 @@ workflow {
         // MATRIX MODE: Unique reads matrix pipeline
         // - Groups samples by study
         // - Builds study-level matrices
-        // - Merges into global matrix (Zarr)
-        // - Single alignment of unique reads
+        // - Merges into global matrix (Zarr when available, NPZ fallback)
+        // - Optional single alignment of unique reads
         //
         log.info "Running in MATRIX MODE: Building global unique reads matrix"
 
@@ -204,8 +204,8 @@ workflow {
         )
 
         // Downstream analysis will use:
-        // - UNIQUE_READS_MATRIX.out.global_matrix (Zarr)
-        // - UNIQUE_READS_MATRIX.out.unique_reads_bam (single BAM)
+        // - UNIQUE_READS_MATRIX.out.global_matrix (Zarr or NPZ)
+        // - UNIQUE_READS_MATRIX.out.unique_reads_bam (single BAM, if alignment enabled)
         // - UNIQUE_READS_MATRIX.out.global_metadata (read info)
 
         log.info "Matrix mode complete. Outputs in: ${params.outdir}/global/"

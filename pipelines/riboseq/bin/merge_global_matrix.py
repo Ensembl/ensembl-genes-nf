@@ -5,7 +5,7 @@ Merge study matrices into a global matrix with Zarr output using streaming merge
 Takes all study matrix outputs (optionally for a single partition) and produces:
 1. Global Zarr matrix (chunked by reads for efficient locus queries)
 2. Global unique reads FASTA (for single-pass alignment)
-3. Metadata parquet (read_id, length, etc.)
+3. Metadata parquet dataset (read_id, length, etc.)
 
 Uses k-way sequence streaming for O(n log k) complexity.
 When used with partitioned inputs, each invocation handles one dinucleotide partition.
@@ -17,6 +17,7 @@ import contextlib
 import gzip
 import heapq
 import json
+import shutil
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -67,6 +68,131 @@ class StudyInput:
     metadata_path: Path
     n_reads: int
     samples: List[str]
+
+
+class MetadataShardWriter:
+    """Write read metadata as bounded TSV shards, then convert to parquet."""
+
+    def __init__(self, output_path: Path, temp_dir: Path, shard_rows: int):
+        self.output_path = Path(output_path)
+        self.temp_dir = Path(temp_dir)
+        self.shard_rows = max(1, shard_rows)
+        self.shard_index = 0
+        self.rows_in_shard = 0
+        self.total_rows = 0
+        self.current_handle = None
+        self.current_path: Optional[Path] = None
+        self.parquet_parts: List[Path] = []
+
+    def __enter__(self):
+        self._open_next_shard()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
+
+    def _open_next_shard(self):
+        self._convert_current_shard()
+        shard_name = f"metadata_part_{self.shard_index:05d}"
+        self.current_path = self.temp_dir / f"{shard_name}.tsv"
+        self.current_handle = open(self.current_path, 'w')
+        self.current_handle.write("read_id\tlength\n")
+        self.rows_in_shard = 0
+        self.shard_index += 1
+
+    def _close_handle(self):
+        self.close()
+
+    def _convert_current_shard(self):
+        if self.current_path is None:
+            return
+
+        self._close_handle()
+        if self.rows_in_shard == 0:
+            try:
+                self.current_path.unlink()
+            except FileNotFoundError:
+                pass
+            self.current_path = None
+            return
+
+        if not HAVE_POLARS:
+            raise RuntimeError("polars is required to stream global metadata parquet")
+
+        parquet_path = self.temp_dir / f"metadata_part_{len(self.parquet_parts):05d}.parquet"
+        self._scan_tsv(self.current_path).sink_parquet(
+            parquet_path,
+            compression='zstd',
+        )
+        try:
+            self.current_path.unlink()
+        except FileNotFoundError:
+            pass
+        self.parquet_parts.append(parquet_path)
+        self.current_path = None
+        self.rows_in_shard = 0
+
+    def write(self, read_id: int, length: int):
+        if self.current_handle is None:
+            self._open_next_shard()
+        if self.rows_in_shard >= self.shard_rows:
+            self._open_next_shard()
+
+        self.current_handle.write(f"{read_id}\t{length}\n")
+        self.rows_in_shard += 1
+        self.total_rows += 1
+
+    def close(self):
+        if self.current_handle is not None:
+            self.current_handle.close()
+            self.current_handle = None
+
+    def _scan_tsv(self, tsv_path: Path):
+        scan_kwargs = {'separator': '\t'}
+        try:
+            return pl.scan_csv(
+                tsv_path,
+                **scan_kwargs,
+                schema_overrides={'read_id': pl.UInt64, 'length': pl.UInt32},
+            )
+        except TypeError:
+            return pl.scan_csv(
+                tsv_path,
+                **scan_kwargs,
+                dtypes={'read_id': pl.UInt64, 'length': pl.UInt32},
+            )
+
+    def finalize(self) -> str:
+        """Convert shards to parquet. Returns 'file' or 'dataset'."""
+        self._convert_current_shard()
+        if not HAVE_POLARS:
+            raise RuntimeError("polars is required to stream global metadata parquet")
+
+        if self.output_path.exists():
+            if self.output_path.is_dir():
+                shutil.rmtree(self.output_path)
+            else:
+                self.output_path.unlink()
+
+        if self.total_rows == 0:
+            pl.DataFrame(
+                {
+                    'read_id': pl.Series([], dtype=pl.UInt64),
+                    'length': pl.Series([], dtype=pl.UInt32),
+                }
+            ).write_parquet(self.output_path)
+            return 'file'
+
+        if len(self.parquet_parts) == 1:
+            shutil.move(str(self.parquet_parts[0]), self.output_path)
+            metadata_format = 'file'
+        else:
+            self.output_path.mkdir(parents=True, exist_ok=True)
+            for idx, parquet_path in enumerate(self.parquet_parts):
+                shutil.move(str(parquet_path), self.output_path / f"part-{idx:05d}.parquet")
+            metadata_format = 'dataset'
+
+        return metadata_format
 
 
 def resolve_local_id(seq_to_id: Dict[int, VocabEntry], seq: str) -> Optional[int]:
@@ -324,12 +450,22 @@ class GlobalMatrixMerger:
     3. Stream study matrices into global Zarr array
     """
 
-    def __init__(self, output_dir: Path, chunk_size: int = 10000, partition: str = None):
+    def __init__(
+        self,
+        output_dir: Path,
+        chunk_size: int = 10000,
+        partition: str = None,
+        metadata_shard_rows: int = 100_000_000,
+        write_fasta: bool = True,
+    ):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.chunk_size = chunk_size
         self.partition = partition  # e.g., "AA", "AC", etc. or None
+        self.metadata_shard_rows = metadata_shard_rows
+        self.metadata_format = 'file'
+        self.write_fasta = write_fasta
 
         # Output file prefix
         self.prefix = f"global.{partition}" if partition else "global"
@@ -374,36 +510,7 @@ class GlobalMatrixMerger:
                 shape=(study.n_reads,)
             )
 
-    def _write_metadata_parquet_from_tsv(self, metadata_tsv: Path):
-        """Convert streamed read metadata TSV to parquet without materializing it."""
-        if not HAVE_POLARS:
-            raise RuntimeError("polars is required to stream global metadata parquet")
-
-        if self.n_reads == 0:
-            pl.DataFrame(
-                {
-                    'read_id': pl.Series([], dtype=pl.UInt64),
-                    'length': pl.Series([], dtype=pl.UInt32),
-                }
-            ).write_parquet(self.metadata_path)
-            return
-
-        scan_kwargs = {'separator': '\t'}
-        try:
-            lazy = pl.scan_csv(
-                metadata_tsv,
-                **scan_kwargs,
-                schema_overrides={'read_id': pl.UInt64, 'length': pl.UInt32},
-            )
-        except TypeError:
-            lazy = pl.scan_csv(
-                metadata_tsv,
-                **scan_kwargs,
-                dtypes={'read_id': pl.UInt64, 'length': pl.UInt32},
-            )
-        lazy.sink_parquet(self.metadata_path, compression='zstd')
-
-    def _stream_global_vocabulary(self, study_inputs: List[StudyInput]):
+    def _stream_global_vocabulary(self, study_inputs: List[StudyInput], temp_dir: Path):
         """
         K-way merge study sequence files and write outputs/remaps as a stream.
 
@@ -412,7 +519,6 @@ class GlobalMatrixMerger:
         """
         heap: List[Tuple[str, int, int]] = []  # sequence, study_index, local_id
         iterators: List[Iterator[Tuple[str, int]]] = []
-        metadata_tsv = self.output_dir / f'.{self.prefix}_metadata.tsv'
 
         def advance(study_index: int):
             try:
@@ -422,9 +528,16 @@ class GlobalMatrixMerger:
             heapq.heappush(heap, (seq, study_index, local_id))
 
         with contextlib.ExitStack() as stack:
-            fasta = stack.enter_context(open(self.fasta_path, 'w'))
-            metadata_handle = stack.enter_context(open(metadata_tsv, 'w'))
-            metadata_handle.write("read_id\tlength\n")
+            if self.write_fasta:
+                fasta = stack.enter_context(open(self.fasta_path, 'w'))
+            else:
+                self.fasta_path.write_text("")
+                fasta = None
+            metadata_writer = stack.enter_context(MetadataShardWriter(
+                self.metadata_path,
+                temp_dir,
+                self.metadata_shard_rows,
+            ))
 
             for study in study_inputs:
                 iterators.append(read_study_sequences(study.sequences_path, study.study_id))
@@ -460,11 +573,13 @@ class GlobalMatrixMerger:
                     self.study_remaps[study.study_id][local_id] = global_id
                     self.study_remap_counts[study.study_id] += 1
 
-                fasta.write(f">read_{global_id}\n{seq}\n")
-                metadata_handle.write(f"{global_id}\t{len(seq)}\n")
+                if fasta is not None:
+                    fasta.write(f">read_{global_id}\n{seq}\n")
+                metadata_writer.write(global_id, len(seq))
                 global_id += 1
 
             self.n_reads = global_id
+            self.metadata_format = metadata_writer.finalize()
 
         for remap in self.study_remaps.values():
             if hasattr(remap, 'flush'):
@@ -477,12 +592,6 @@ class GlobalMatrixMerger:
                     f"{study.study_id}: sequence file/remap count mismatch; "
                     f"metadata n_reads={study.n_reads}, observed={observed}"
                 )
-
-        self._write_metadata_parquet_from_tsv(metadata_tsv)
-        try:
-            metadata_tsv.unlink()
-        except FileNotFoundError:
-            pass
 
     def build_global_vocabulary(self, study_inputs: List[StudyInput],
                                 temp_dir: Path):
@@ -497,7 +606,7 @@ class GlobalMatrixMerger:
         print(f"\nPhase 1: Building global vocabulary{partition_str} via k-way stream", file=sys.stderr)
 
         self._prepare_study_remaps(study_inputs, temp_dir)
-        self._stream_global_vocabulary(study_inputs)
+        self._stream_global_vocabulary(study_inputs, temp_dir)
 
         print(f"  Global vocabulary: {self.n_reads:,} unique sequences", file=sys.stderr)
         print(f"  Total samples: {len(self.all_samples):,}", file=sys.stderr)
@@ -686,7 +795,10 @@ class GlobalMatrixMerger:
         config = {
             'version': '1.0',
             'matrix_format': 'zarr' if HAVE_ZARR else 'npz',
+            'metadata_format': self.metadata_format,
             'chunk_size': self.chunk_size,
+            'metadata_shard_rows': self.metadata_shard_rows,
+            'write_fasta': self.write_fasta,
             'partition': self.partition,
             'n_reads': n_reads,
             'n_samples': len(self.all_samples),
@@ -706,6 +818,13 @@ class GlobalMatrixMerger:
             'metadata': self.metadata_path,
             'config': config_path
         }
+
+    def close_remaps(self):
+        """Flush and release memmap handles before temporary directory cleanup."""
+        for remap in self.study_remaps.values():
+            if hasattr(remap, 'flush'):
+                remap.flush()
+        self.study_remaps.clear()
 
 
 def load_study_metadata(metadata_path: Path, study_id: str) -> Tuple[int, List[str]]:
@@ -729,6 +848,18 @@ def strip_suffix(value: str, suffix: str) -> str:
     if not value.endswith(suffix):
         raise ValueError(f"Expected {value!r} to end with {suffix!r}")
     return value[:-len(suffix)]
+
+
+def make_tempdir(prefix: str, directory: Path):
+    """Create a TemporaryDirectory with cleanup-error tolerance when available."""
+    try:
+        return tempfile.TemporaryDirectory(
+            prefix=prefix,
+            dir=directory,
+            ignore_cleanup_errors=True,
+        )
+    except TypeError:
+        return tempfile.TemporaryDirectory(prefix=prefix, dir=directory)
 
 
 def main():
@@ -755,16 +886,28 @@ def main():
         help='Zarr chunk size (rows per chunk, default: 10000)'
     )
     parser.add_argument(
+        '--metadata-shard-rows',
+        type=int,
+        default=100_000_000,
+        help='Maximum rows per metadata parquet shard (default: 100000000)'
+    )
+    parser.add_argument(
         '--partition',
         type=str,
         default=None,
         help='Partition identifier (e.g., AA, AC, ..., TT). Looks for {study_id}.{partition}_* files.'
     )
+    parser.add_argument(
+        '--no-write-fasta',
+        action='store_false',
+        dest='write_fasta',
+        help='Create an empty FASTA placeholder instead of writing global read sequences'
+    )
 
     args = parser.parse_args()
 
     partition_str = f" [{args.partition}]" if args.partition else ""
-    print(f"Merging {len(args.study_dirs)} studies{partition_str} using tournament merge", file=sys.stderr)
+    print(f"Merging {len(args.study_dirs)} studies{partition_str} using streaming merge", file=sys.stderr)
 
     # Discover all study files
     study_inputs: List[StudyInput] = []
@@ -822,14 +965,23 @@ def main():
         sys.exit(1)
 
     # Create merger and run
-    merger = GlobalMatrixMerger(args.output_dir, chunk_size=args.chunk_size, partition=args.partition)
+    merger = GlobalMatrixMerger(
+        args.output_dir,
+        chunk_size=args.chunk_size,
+        partition=args.partition,
+        metadata_shard_rows=args.metadata_shard_rows,
+        write_fasta=args.write_fasta,
+    )
 
-    with tempfile.TemporaryDirectory(prefix="global_merge_", dir=args.output_dir) as temp_dir:
-        # Phase 1: Build global vocabulary via streaming merge
-        merger.build_global_vocabulary(study_inputs, Path(temp_dir))
+    with make_tempdir("global_merge_", args.output_dir) as temp_dir:
+        try:
+            # Phase 1: Build global vocabulary via streaming merge
+            merger.build_global_vocabulary(study_inputs, Path(temp_dir))
 
-        # Phase 2: Build global matrix
-        matrix_path = merger.build_global_matrix(study_matrices)
+            # Phase 2: Build global matrix
+            matrix_path = merger.build_global_matrix(study_matrices)
+        finally:
+            merger.close_remaps()
 
     # Phase 3: Save outputs
     print("\nPhase 3: Saving outputs", file=sys.stderr)
