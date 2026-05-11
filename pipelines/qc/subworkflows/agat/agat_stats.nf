@@ -1,5 +1,6 @@
 
 include { AGAT_RUN_STATS } from '../../modules/agat/run_agat_stats.nf'
+include { STRIP_GFF_REGIONS } from '../../modules/agat/run_agat_stats.nf'
 include { AGAT_PARSE     } from '../../modules/agat/parse_agat.nf'
 
 workflow AGAT_METRICS {
@@ -15,8 +16,10 @@ workflow AGAT_METRICS {
         agat_parser
 
     main:
+        stripped_gff = STRIP_GFF_REGIONS(gff3_ch)
+
         agat_txt = AGAT_RUN_STATS(
-            gff3_ch,
+            stripped_gff,
             feature_levels_yaml
         )
 

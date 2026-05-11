@@ -1,3 +1,21 @@
+process STRIP_GFF_REGIONS {
+
+    tag { meta.id }
+
+    input:
+        tuple val(meta), path(gff3)
+
+    output:
+        tuple val(meta), path("${meta.sample ?: meta.id ?: gff3.simpleName}.no_region.gff3")
+
+    script:
+        def stem = meta.sample ?: meta.id ?: gff3.simpleName
+
+        """
+        awk 'BEGIN{FS=OFS="\\t"} /^#/ {print; next} \$3 != "region" {print}' ${gff3} > ${stem}.no_region.gff3
+        """
+}
+
 process AGAT_RUN_STATS {
 
     tag { meta.id }
@@ -5,12 +23,11 @@ process AGAT_RUN_STATS {
         pattern: "*_agat_stats.txt"
     container 'docker://quay.io/biocontainers/agat:1.7.0--pl5321hdfd78af_0'
 
-    
     containerOptions {
         feature_levels_yaml ?
             "-B ${feature_levels_yaml.resolve()}:/usr/local/lib/perl5/site_perl/auto/share/dist/AGAT/feature_levels.yaml:ro" :
              ""}
-    
+
     input:
         tuple val(meta), path(gff3)
         val  feature_levels_yaml
@@ -25,6 +42,7 @@ process AGAT_RUN_STATS {
             agat_sp_statistics.pl \\
               --gff ${gff3} \\
               -o ${stem}_agat_stats.txt \\
-              --cpu 10
+              --cpu 0 \\
+              --verbose 3
         """
 }
