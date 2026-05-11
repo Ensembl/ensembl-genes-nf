@@ -12,7 +12,7 @@ process STRIP_GFF_REGIONS {
         def stem = meta.sample ?: meta.id ?: gff3.simpleName
 
         """
-        awk 'BEGIN{FS=OFS="\\t"} /^#/ {print; next} \$3 != "region" {print}' ${gff3} > ${stem}.no_region.gff3
+        grep -v \$'\\tregion\\t' ${gff3} > ${stem}.no_region.gff3
         """
 }
 
