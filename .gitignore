@@ -1,4 +1,8 @@
 mirmachine 
+!MirMachine/
+!MirMachine/inputs/
+!MirMachine/inputs/lepidoptera_mir12_input.tsv
+!MirMachine/run_mir12_lepidoptera.sh
 *.csv
 *.log
 work/ 
@@ -6,6 +10,7 @@ singularity
 .nextflow.*
 *.csv
 *.tsv
+!MirMachine/inputs/lepidoptera_mir12_input.tsv
 fastas/
 .nextflow
 data/

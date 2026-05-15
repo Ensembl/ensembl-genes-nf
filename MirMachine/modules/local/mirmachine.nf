@@ -11,7 +11,7 @@ process MIRMACHINE {
     maxForks 10
 
     input:
-    tuple val(meta), path(fasta), val(node), val(model)
+    tuple val(meta), path(fasta)
 
     output:
     tuple val(meta), path("results/predictions/*"), emit: predictions
@@ -20,15 +20,18 @@ process MIRMACHINE {
 
     script:
     def species = meta.species.replace(" ", "_")
+    def long_hairpin = params.long_hairpin ? "--long" : ""
     """
     # Set Snakemake cache directory to current working directory
-    export HOME=$PWD
+    export HOME=\$PWD
 
-    MirMachine.py --node ${node} \
-                  --species ${species} \
+    MirMachine.py --species ${species} \
                   --genome ${fasta} \
-                  --model ${model} \
-                  --cpu ${task.cpus} 2> ${meta.id}_mirmachine.log
+                  --family ${params.family} \
+                  --model ${params.model} \
+                  --evalue ${params.evalue} \
+                  --cpu ${task.cpus} \
+                  ${long_hairpin} 2> ${meta.id}_mirmachine.log
 
     cp results/predictions/heatmap/*.heatmap.csv  ./${meta.id}_${species}.heatmap.csv
     """
