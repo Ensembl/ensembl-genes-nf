@@ -82,7 +82,7 @@ def build_url_rapid(species: str, assembly: str, annotation_types=['ensembl', 'r
     str
         Ensembl Rapid release URL
     '''
-    base_url = f"https://ftp.ensembl.org/pub/rapid-release/species/{species}/{assembly}"
+    base_url = f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{species}/{assembly}"
 
     tested_urls = [] 
     for annotation_type in annotation_types:
