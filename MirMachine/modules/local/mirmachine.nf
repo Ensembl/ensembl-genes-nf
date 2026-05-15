@@ -8,7 +8,15 @@ process MIRMACHINE {
     // errorStrategy { task.attempt <= 0 ? 'retry' : 'ignore' }
     maxRetries 3
 
-    maxForks 10
+    memory { 20.GB * task.attempt }
+    
+    time 24.h
+    
+    errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'ignore' }
+    
+    maxRetries 5
+
+    maxForks 100
 
     input:
     tuple val(meta), path(fasta)
