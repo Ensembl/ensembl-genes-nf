@@ -25,6 +25,69 @@
       "default": true,
       "description": "Enable the AGAT metrics branch"
     },
+    "pairwise_csv": {
+      "type": "string",
+      "description": "Path to a CSV file with sample, gff_a, and gff_b columns for pairwise annotation comparison"
+    },
+    "pairwise_cache_dir": {
+      "type": "string",
+      "description": "Directory used to cache URL inputs for pairwise annotation comparison"
+    },
+    "pairwise_ensg_lookup": {
+      "type": "string",
+      "description": "Optional lookup TSV passed to the legacy gene-presence parser"
+    },
+    "pairwise_contig_normalization": {
+      "type": "string",
+      "default": "none",
+      "enum": ["none", "basic", "cat_hash"],
+      "description": "Contig normalization mode passed to the legacy gene-pairing script"
+    },
+    "pairwise_multi_mapping_min_overlap": {
+      "type": "number",
+      "default": 0.1,
+      "description": "Minimum overlap fraction for multi-mapping summaries"
+    },
+    "run_pairwise_annotation_comparison": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable the pairwise annotation comparison branch"
+    },
+    "run_pairwise_transcript_concordance": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable transcript concordance metrics for pairwise annotation comparison"
+    },
+    "run_pairwise_coding_integrity": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable coding integrity metrics for pairwise annotation comparison"
+    },
+    "run_pairwise_gene_presence": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable gene presence metrics for pairwise annotation comparison"
+    },
+    "run_pairwise_multi_mapping": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable multi-mapping summaries for pairwise annotation comparison"
+    },
+    "run_pairwise_gff_feature_metrics": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable GFF feature-count metrics for pairwise annotation comparison"
+    },
+    "run_pairwise_transcript_counts": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable transcript-per-gene count metrics for pairwise annotation comparison"
+    },
+    "run_pairwise_gffcompare": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable optional bidirectional gffcompare transcript comparison"
+    },
     "outdir": {
       "type": "string",
       "default": "./results",
@@ -35,8 +98,5 @@
       "description": "Directory for Nextflow execution reports and trace files"
     }
   },
-  "required": [
-    "gff_csv",
-    "ensembl_genes_repo"
-  ]
+  "required": []
 }
