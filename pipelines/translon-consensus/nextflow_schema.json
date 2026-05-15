@@ -25,6 +25,11 @@
         "description": "Path to gencode FASTA FAI.",
         "format": "file-path"
       },
+      "build_canonical_db": {
+        "type": "boolean",
+        "default": true,
+        "description": "Build a canonical ORF SQLite database and sidecar TSV tables from all supported caller outputs under bed_results_dir."
+      },
       "ucsc_session_url": {
         "type": "string",
         "description": "UCSC Genome Browser session URL (without position) for generating genome browser links in reports",

@@ -26,22 +26,21 @@ process STANDARDISE_BED12 {
     fi
 
     # If input is a TranslonScorer CSV, convert first
-    if echo "${bed_file}" | grep -qi '\\.csv$'; then
+    if [[ "${bed_file}" == *.csv ]]; then
         translonscorer_to_bed12.py ${bed_file} out/
-        inbed=$(ls out/*.bed12 | head -n1)
+        inbed=\$(ls out/*.bed12 | head -n1)
     else
         inbed=${bed_file}
     fi
 
     standardise_bed12.py \\
-        -i ${inbed} \\
+        -i \${inbed} \\
         -f ${genome_fasta} \\
         --output_prefix ${meta.id} --verbose
     """
     
     stub:
     """
-    mkdir -p standardised_bed12s
-    touch standardised_bed12s/${meta.id}_0based.bed12
+    touch ${meta.id}.valid.bed12
     """
 }

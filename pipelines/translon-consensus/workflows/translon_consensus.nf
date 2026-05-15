@@ -7,12 +7,21 @@ include { STANDARDISE_BED12 } from '../modules/standardise_bed12.nf'
 include { CREATE_SAMPLESHEET } from '../modules/create_samplesheet.nf'
 include { REPORT_CONSENSUS } from '../modules/report_consensus.nf'
 include { GENERATE_HTML_REPORT } from '../modules/generate_report.nf'
+include { CANONICAL_ORF_DB } from '../modules/canonical_orf_db.nf'
 include { MOVE_TO_FTP } from '../../../modules/move_to_ftp.nf'
 
 
 workflow TRANSLON_CONSENSUS {
+    if (params.build_canonical_db) {
+        CANONICAL_ORF_DB(
+            file(params.bed_results_dir, checkIfExists: true),
+            params.gencode_fasta ?: '',
+            params.gencode_gtf ?: ''
+        )
+    }
+
     bed_files_ch = Channel
-        .fromPath("${params.bed_results_dir}/*/*.{bed12,bed,csv}")
+        .fromPath("${params.bed_results_dir}/*/*.{bed12,bed,csv,gff,gff3,gtf}")
         .map { bed_file ->
             def tool = bed_file.parent.name
             def sample_name = bed_file.baseName
