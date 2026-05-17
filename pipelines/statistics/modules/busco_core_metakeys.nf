@@ -42,7 +42,7 @@ process BUSCO_CORE_METAKEYS {
     script:
 
     """
-    busco_metakeys_patch.py \
+    ${params.enscode}/src/python/ensembl/genes/metrics/busco_metakeys_patch.py \
     -db ${meta.dbname} -file ${summary_file} \
     -output_dir "${params.outdir}/${meta.gca}/"  -host ${params.host} \
     -port ${params.port} -user ${params.user}  \

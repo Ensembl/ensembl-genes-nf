@@ -39,7 +39,7 @@ process BUSCO_DATASET {
     echo "DEBUG: meta.core=${meta.dbname}, meta.species_id=${meta.species_id}, meta.taxon_id=${meta.taxon_id}" >&2
 
     if [[ !"${meta.busco_dataset}" ]]; then
-    clade_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}  
+    ${params.enscode}/src/python/ensembl/genes/metrics/clade_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}  
     
     else 
     echo "${meta.busco_dataset}"
