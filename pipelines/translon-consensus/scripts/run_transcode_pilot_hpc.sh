@@ -11,6 +11,7 @@ set -euo pipefail
 #   export RUN_ROOT=/hps/nobackup/flicek/ensembl/genebuild/jackt/riboseq/pilot/translon_consensus_run
 #   export PIPELINE_DIR=/path/to/ensembl-genes-nf/pipelines/translon-consensus
 #   export NF_PROFILE=slurm,singularity
+#   export CONSENSUS_EXCLUDE_TOOLS=RibORF2
 #   export RUN_NEXTFLOW=0  # only stage/audit inputs
 
 PILOT_ROOT="${PILOT_ROOT:-/hps/nobackup/flicek/ensembl/genebuild/jackt/riboseq/pilot/full_pilot_results}"
@@ -21,6 +22,7 @@ GENCODE_FASTA="${GENCODE_FASTA:-}"
 GENCODE_GTF="${GENCODE_GTF:-}"
 GENCODE_FASTA_FAI="${GENCODE_FASTA_FAI:-${GENCODE_FASTA}.fai}"
 NF_PROFILE="${NF_PROFILE:-slurm,singularity}"
+CONSENSUS_EXCLUDE_TOOLS="${CONSENSUS_EXCLUDE_TOOLS:-RibORF2}"
 RUN_NEXTFLOW="${RUN_NEXTFLOW:-1}"
 
 if [[ ! -d "${PILOT_ROOT}" ]]; then
@@ -64,6 +66,7 @@ mkdir -p "${RUN_ROOT}"/{manifests,logs,results,work}
 FILE_LIST_RAW="${RUN_ROOT}/manifests/transcode_pilot_orf_inputs.raw.tsv"
 FILE_LIST="${RUN_ROOT}/manifests/transcode_pilot_orf_inputs.tsv"
 STAGE_DIR="${RUN_ROOT}/staged"
+CONSENSUS_INPUT_DIR="${RUN_ROOT}/staged/consensus_orf_inputs"
 MERGED_INPUTS="${RUN_ROOT}/manifests/merged_inputs"
 rm -rf "${MERGED_INPUTS}"
 mkdir -p "${MERGED_INPUTS}"
@@ -178,6 +181,40 @@ awk -F '\t' '
 echo "Staged tree: ${STAGE_DIR}/clean_orf_inputs"
 echo "Detailed manifest: ${STAGE_DIR}/clean_orf_inputs_manifest.tsv"
 
+rm -rf "${CONSENSUS_INPUT_DIR}"
+mkdir -p "${CONSENSUS_INPUT_DIR}"
+PYTHONPATH="${PIPELINE_DIR}/bin${PYTHONPATH:+:${PYTHONPATH}}" python3 - \
+    "${STAGE_DIR}/clean_orf_inputs" \
+    "${CONSENSUS_INPUT_DIR}" \
+    "${CONSENSUS_EXCLUDE_TOOLS}" <<'PY'
+import os
+import shutil
+import sys
+from pathlib import Path
+
+src_root = Path(sys.argv[1])
+dest_root = Path(sys.argv[2])
+excluded = {part for part in sys.argv[3].split(",") if part}
+
+included = 0
+for tool_dir in sorted(src_root.iterdir()):
+    if not tool_dir.is_dir() or tool_dir.name in excluded:
+        continue
+    out_tool = dest_root / tool_dir.name
+    out_tool.mkdir(parents=True, exist_ok=True)
+    for src in sorted(tool_dir.iterdir()):
+        dest = out_tool / src.name
+        if dest.exists() or dest.is_symlink():
+            dest.unlink()
+        target = src.resolve() if src.is_symlink() else src
+        os.symlink(target, dest)
+        included += 1
+
+print(f"Wrote consensus input tree: {dest_root}")
+print(f"Excluded consensus tools: {','.join(sorted(excluded)) or '<none>'}")
+print(f"Consensus input files: {included}")
+PY
+
 if [[ "${RUN_NEXTFLOW}" == "0" ]]; then
     echo "RUN_NEXTFLOW=0, stopping after staging."
     exit 0
@@ -189,6 +226,7 @@ nextflow run main.nf \
     -profile "${NF_PROFILE}" \
     -work-dir "${RUN_ROOT}/work" \
     --bed_results_dir "${STAGE_DIR}/clean_orf_inputs" \
+    --consensus_bed_results_dir "${CONSENSUS_INPUT_DIR}" \
     --gencode_fasta "${GENCODE_FASTA}" \
     --gencode_fasta_fai "${GENCODE_FASTA_FAI}" \
     --gencode_gtf "${GENCODE_GTF}" \

@@ -27,8 +27,9 @@ workflow TRANSLON_CONSENSUS {
         )
     }
 
+    consensus_input_dir = params.consensus_bed_results_dir ?: params.bed_results_dir
     bed_files_ch = Channel
-        .fromPath("${params.bed_results_dir}/*/*.{bed12,bed,csv,gff,gff3,gtf}")
+        .fromPath("${consensus_input_dir}/*/*.{bed12,bed,csv,gff,gff3,gtf}")
         .map { bed_file ->
             def tool = bed_file.parent.name
             def sample_name = bed_file.baseName

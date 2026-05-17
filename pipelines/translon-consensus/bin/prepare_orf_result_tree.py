@@ -149,7 +149,7 @@ def main() -> None:
             "detected_tool",
             "stage_status",
         ]
-        writer = csv.DictWriter(handle, delimiter="\t", fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, delimiter="\t", fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         writer.writerows(manifest_rows)
     print(f"Wrote {clean_root}")
