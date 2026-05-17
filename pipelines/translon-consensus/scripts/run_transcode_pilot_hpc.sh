@@ -77,6 +77,7 @@ write_rows() {
     local pattern="$3"
     local prefix_regex="$4"
     local suffix_regex="$5"
+    local source_feature_class="${6:-unknown}"
 
     [[ -d "${root}" ]] || return 0
     find "${root}" -maxdepth 1 -type f -name "${pattern}" -print0 |
@@ -85,47 +86,70 @@ write_rows() {
             name="$(basename "${path}")"
             sample="${name}"
             sample="$(printf '%s' "${sample}" | sed -E "s/${prefix_regex}//; s/${suffix_regex}//")"
-            printf '%s\t%s\t%s\n' "${path}" "${tool}" "${sample}"
+            printf '%s\t%s\t%s\t%s\n' "${path}" "${tool}" "${sample}" "${source_feature_class}"
         done
 }
 
 {
-    printf 'path\ttool\tsample_id\n'
+    printf 'path\ttool\tsample_id\tsource_feature_class\n'
 
-    # Curated processed BED outputs already produced for the pilot.
-    write_rows "iRibo" "${PILOT_ROOT}/Processed outputs/iRibo" "*.bed" '^ncORFs_' '\.bed$'
-    write_rows "ORFQuant" "${PILOT_ROOT}/Processed outputs/ORFQuant" "*.bed" '^ncORFs_' '\.bed$'
-    write_rows "RiboTIE" "${PILOT_ROOT}/Processed outputs/RiboTIE" "*.bed" '^ncORFs_' '\.bed$'
+    # Prefer raw annotated/unannotated iRibo outputs so CDS/non-CDS class remains explicit.
+    write_rows "iRibo" "${PILOT_ROOT}/iRibo_results" "annotated_orfs_*.bed" '^annotated_orfs_' '\.bed$' "cds"
+    write_rows "iRibo" "${PILOT_ROOT}/iRibo_results" "unannotated_orfs_*.bed" '^unannotated_orfs_' '\.bed$' "non_cds"
 
-    # PRICE processed directory is empty in the current pilot tree, so merge caller
-    # known+novel split files per sample before staging.
-    PRICE_MERGED="${MERGED_INPUTS}/PRICE"
-    mkdir -p "${PRICE_MERGED}"
-    if [[ -d "${PILOT_ROOT}/PRICE_results/price" ]]; then
-        find "${PILOT_ROOT}/PRICE_results/price" -maxdepth 1 -type f \( -name "*.known.bed" -o -name "*.novel.bed" \) -print0 |
+    # ORFQuant has separate annotated and novel genomic BEDs in bed_files.
+    if [[ -d "${PILOT_ROOT}/ORFQuant_results/bed_files" ]]; then
+        find "${PILOT_ROOT}/ORFQuant_results/bed_files" -maxdepth 1 -type f \( -name "annotated_orf_exon_genomic_*.bed" -o -name "novel_orf_exon_genomic_*.bed" \) -print0 |
             sort -z |
             while IFS= read -r -d '' path; do
                 name="$(basename "${path}")"
-                sample="$(printf '%s' "${name}" | sed -E 's/\.(known|novel)\.bed$//')"
-                cat "${path}" >> "${PRICE_MERGED}/${sample}.bed"
+                class="non_cds"
+                [[ "${name}" == annotated_orf_exon_genomic_* ]] && class="cds"
+                sample="$(printf '%s' "${name}" |
+                    sed -E 's/^(annotated|novel)_orf_exon_genomic_//; s/\.bed$//; s/\.Aligned\.sortedByCoord\.out$//; s/_trimmed\.Aligned\.sortedByCoord\.out$//; s/_S[0-9]+_R1_001_trimmed$//; s/Ribo_pancreas_pooled/Ribo_Pancreas_pooled/')"
+                printf '%s\t%s\t%s\t%s\n' "${path}" "ORFQuant" "${sample}" "${class}"
             done
-        write_rows "PRICE" "${PRICE_MERGED}" "*.bed" '^' '\.bed$'
     fi
 
-    # RibORF2 pancreas fastq outputs are useful but live outside Processed outputs.
-    RIBORF2_MERGED="${MERGED_INPUTS}/RibORF2"
-    mkdir -p "${RIBORF2_MERGED}"
+    # RiboTIE deliverables are split by annotated/novel when present; otherwise fall back to processed ncORFs.
+    ribotie_rows=0
+    if [[ -d "${PILOT_ROOT}/RiboTIE_results/deliverables" ]]; then
+        while IFS= read -r -d '' path; do
+            class="unknown"
+            case "${path}" in
+                */annotated/*) class="cds" ;;
+                */novel/*) class="non_cds" ;;
+            esac
+            name="$(basename "${path}")"
+            sample="$(printf '%s' "${name}" |
+                sed -E 's/^ncORFs_//; s/^(RiboTIE_Annotations_|RiboTIE-)//; s/\.(bed|bed12|gtf|gff|gff3)$//; s/GENELAB-000/GENELAB/g; s/GENELAB_000/GENELAB/g')"
+            printf '%s\t%s\t%s\t%s\n' "${path}" "RiboTIE" "${sample}" "${class}"
+            ribotie_rows=$((ribotie_rows + 1))
+        done < <(find "${PILOT_ROOT}/RiboTIE_results/deliverables" -type f \( -name "*.bed" -o -name "*.bed12" -o -name "*.gtf" -o -name "*.gff" -o -name "*.gff3" \) -print0 | sort -z)
+    fi
+    if [[ "${ribotie_rows}" -eq 0 ]]; then
+        write_rows "RiboTIE" "${PILOT_ROOT}/Processed outputs/RiboTIE" "*.bed" '^ncORFs_' '\.bed$' "non_cds"
+    fi
+
+    # PRICE caller output is split into known and novel files; keep that split for the DB.
+    if [[ -d "${PILOT_ROOT}/PRICE_results/price" ]]; then
+        write_rows "PRICE" "${PILOT_ROOT}/PRICE_results/price" "*.known.bed" '^' '\.known\.bed$' "cds"
+        write_rows "PRICE" "${PILOT_ROOT}/PRICE_results/price" "*.novel.bed" '^' '\.novel\.bed$' "non_cds"
+    fi
+
+    # RibORF2 pancreas fastq outputs are split into annotated and novel files.
     if [[ -d "${PILOT_ROOT}/fastq_RibORF2.0_ORFidentification" ]]; then
         find "${PILOT_ROOT}/fastq_RibORF2.0_ORFidentification" \
             -mindepth 2 -maxdepth 2 -type f -name "*.bed" -print0 |
             sort -z |
             while IFS= read -r -d '' path; do
                 name="$(basename "${path}")"
+                class="non_cds"
+                [[ "${name}" == *annotatedORFs.bed || "${name}" == *annotatedorfs.bed ]] && class="cds"
                 sample="$(printf '%s' "${name}" |
                     sed -E 's/_(annotatedORFs|annotatedorfs|novelsmorf|novelsmorfs)\.bed$//; s/^Pancreas_?([0-9]+)_//; s/^pooled_pancreas$/Ribo_Pancreas_pooled/')"
-                cat "${path}" >> "${RIBORF2_MERGED}/${sample}.bed"
+                printf '%s\t%s\t%s\t%s\n' "${path}" "RibORF2" "${sample}" "${class}"
             done
-        write_rows "RibORF2" "${RIBORF2_MERGED}" "*.bed" '^' '\.bed$'
     fi
 
     # Include any BED-like RibORF caller files if subdirectories contain them.
@@ -135,7 +159,7 @@ write_rows() {
             sort -z |
             while IFS= read -r -d '' path; do
                 sample="$(basename "$(dirname "${path}")" | sed -E 's/_trimmed$//')"
-                printf '%s\t%s\t%s\n' "${path}" "RibORF" "${sample}"
+                printf '%s\t%s\t%s\t%s\n' "${path}" "RibORF" "${sample}" "unknown"
             done
     fi
 } > "${FILE_LIST_RAW}"
@@ -152,7 +176,11 @@ with open(src, newline="") as in_handle, open(dest, "w", newline="") as out_hand
     writer = csv.DictWriter(out_handle, delimiter="\t", fieldnames=reader.fieldnames, lineterminator="\n")
     writer.writeheader()
     for row in reader:
-        row["sample_id"] = normalise_sample(row["sample_id"])
+        source_class = row.get("source_feature_class", "unknown")
+        sample_id = normalise_sample(row["sample_id"])
+        if source_class in {"cds", "non_cds"}:
+            sample_id = f"{sample_id}.{source_class}"
+        row["sample_id"] = sample_id
         writer.writerow(row)
 PY
 
@@ -188,9 +216,11 @@ PYTHONPATH="${PIPELINE_DIR}/bin${PYTHONPATH:+:${PYTHONPATH}}" python3 - \
     "${CONSENSUS_INPUT_DIR}" \
     "${CONSENSUS_EXCLUDE_TOOLS}" <<'PY'
 import os
-import shutil
 import sys
+from collections import defaultdict
 from pathlib import Path
+
+from translon_db_standardise import normalise_sample
 
 src_root = Path(sys.argv[1])
 dest_root = Path(sys.argv[2])
@@ -202,12 +232,22 @@ for tool_dir in sorted(src_root.iterdir()):
         continue
     out_tool = dest_root / tool_dir.name
     out_tool.mkdir(parents=True, exist_ok=True)
+    grouped = defaultdict(list)
     for src in sorted(tool_dir.iterdir()):
-        dest = out_tool / src.name
+        sample = normalise_sample(src.stem)
+        grouped[sample].append(src)
+
+    for sample, paths in sorted(grouped.items()):
+        suffix = paths[0].suffix or ".bed"
+        dest = out_tool / f"{sample}{suffix}"
         if dest.exists() or dest.is_symlink():
             dest.unlink()
-        target = src.resolve() if src.is_symlink() else src
-        os.symlink(target, dest)
+        with dest.open("wb") as out_handle:
+            for src in paths:
+                target = src.resolve() if src.is_symlink() else src
+                with target.open("rb") as in_handle:
+                    out_handle.write(in_handle.read())
+                    out_handle.write(b"\n")
         included += 1
 
 print(f"Wrote consensus input tree: {dest_root}")

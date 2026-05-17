@@ -110,6 +110,7 @@ class Candidate:
     gene_id: str = ""
     gene_name: str = ""
     native_feature_type: str = ""
+    source_feature_class: str = ""
     attributes: dict[str, str] = field(default_factory=dict)
 
 
@@ -128,9 +129,18 @@ def open_text(path: Path) -> TextIO:
 
 def normalise_sample(raw: str) -> str:
     sample = raw.replace("GENELAB-000", "GENELAB").replace("GENELAB_000", "GENELAB")
-    sample = re.sub(r"\.(known|novel)$", "", sample)
+    sample = re.sub(r"\.(known|novel|cds|non_cds|annotated|unannotated)$", "", sample)
     sample = PRICE_SAMPLE_MAP.get(sample, sample)
     return re.sub(r"_1$", "", sample)
+
+
+def infer_source_feature_class(path: Path, raw_label: str = "") -> str:
+    text = f"{path.as_posix()} {raw_label}".lower()
+    if re.search(r"(^|[_.\-/])(known|annotated|annotatedorfs|annotated_orfs|cds)([_.\-/]|$)", text):
+        return "cds"
+    if re.search(r"(^|[_.\-/])(novel|unannotated|unannotated_orfs|ncorfs|novelsmorf|novelsmorfs|non_cds)([_.\-/]|$)", text):
+        return "non_cds"
+    return "unknown"
 
 
 def chrom_to_ucsc(chrom: str) -> str:
@@ -308,6 +318,7 @@ def group_gff(path: Path, parser_name: str, source_tool: str, sample_id: str) ->
             gene_id=attrs.get("gene_id", ""),
             gene_name=attrs.get("gene_name", ""),
             native_feature_type=attrs.get("translon_type", attrs.get("type", "")),
+            source_feature_class=infer_source_feature_class(path, path.stem),
             attributes={**attrs, "conversion_rule": conversion_rule},
         )
 
@@ -344,6 +355,7 @@ def parse_bed12(path: Path, parser_name: str, source_tool: str, sample_id: str) 
                 intervals=sorted(intervals),
                 score=fields[4],
                 transcript_id=parse_enst(fields[3]),
+                source_feature_class=infer_source_feature_class(path, path.stem),
             )
 
 
@@ -381,6 +393,7 @@ def parse_translonscorer_csv(path: Path, source_tool: str, sample_id: str) -> It
                 strand=strand,
                 intervals=[(start, end)],
                 transcript_id=parse_enst(name),
+                source_feature_class=infer_source_feature_class(path, path.stem),
             )
 
 
@@ -472,6 +485,7 @@ def build_translon_tables(candidates: Iterable[Candidate], fasta: Path | None) -
                 "gene_id": candidate.gene_id,
                 "gene_name": candidate.gene_name,
                 "native_feature_type": candidate.native_feature_type,
+                "source_feature_class": candidate.source_feature_class or infer_source_feature_class(Path(candidate.raw_file), candidate.raw_label),
                 "score": candidate.score,
                 "conversion_rule": candidate.attributes.get("conversion_rule", CONVERSION_RULES.get(candidate.parser_name, "")),
                 "seq_region_name": ucsc_to_seq_region(candidate.chrom),
