@@ -35,6 +35,7 @@ include { validateParameters ; paramsSummaryLog } from 'plugin/nf-schema'
 include { RUN_BUSCO } from './subworkflows/run_busco.nf'
 include { RUN_OMARK } from './subworkflows/run_omark.nf'
 include { RUN_ENSEMBL_STATS } from './subworkflows/run_ensembl_stats.nf'
+include { COLLECT_SOFTWARE_VERSIONS } from './modules/collect_software_versions.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -114,18 +115,4 @@ workflow {
 */
 
 
-// Single process to merge all versions
-process COLLECT_SOFTWARE_VERSIONS {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
 
-    input:
-    path 'versions_*.yml'
-
-    output:
-    path "software_versions.yml"
-
-    script:
-    """
-    cat versions_*.yml > software_versions.yml
-    """
-}
