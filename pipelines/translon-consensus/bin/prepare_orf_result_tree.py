@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage messy ORF-caller outputs into a consistent tool/sample directory tree."""
+"""Stage messy translon caller outputs into a consistent tool/sample directory tree."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import re
 import shutil
 from pathlib import Path
 
-from canonical_orf_standardise import detect_parser, normalise_sample
+from translon_db_standardise import detect_parser, normalise_sample
 
 
 SUPPORTED_SUFFIXES = {".bed", ".bed12", ".gtf", ".gff", ".gff3", ".csv", ".tsv", ".txt"}

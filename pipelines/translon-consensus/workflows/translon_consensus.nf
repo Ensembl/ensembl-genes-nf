@@ -7,16 +7,23 @@ include { STANDARDISE_BED12 } from '../modules/standardise_bed12.nf'
 include { CREATE_SAMPLESHEET } from '../modules/create_samplesheet.nf'
 include { REPORT_CONSENSUS } from '../modules/report_consensus.nf'
 include { GENERATE_HTML_REPORT } from '../modules/generate_report.nf'
-include { CANONICAL_ORF_DB } from '../modules/canonical_orf_db.nf'
+include { TRANSLON_DB } from '../modules/translon_db.nf'
 include { MOVE_TO_FTP } from '../../../modules/move_to_ftp.nf'
 
 
 workflow TRANSLON_CONSENSUS {
-    if (params.build_canonical_db) {
-        CANONICAL_ORF_DB(
+    if (params.build_translon_db) {
+        translon_db_fasta_ch = params.gencode_fasta
+            ? Channel.value(file(params.gencode_fasta, checkIfExists: true))
+            : Channel.value([])
+        translon_db_gtf_ch = params.gencode_gtf
+            ? Channel.value(file(params.gencode_gtf, checkIfExists: true))
+            : Channel.value([])
+
+        TRANSLON_DB(
             file(params.bed_results_dir, checkIfExists: true),
-            params.gencode_fasta ?: '',
-            params.gencode_gtf ?: ''
+            translon_db_fasta_ch,
+            translon_db_gtf_ch
         )
     }
 

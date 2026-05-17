@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Build a canonical ORF call database from mixed ORF-caller outputs.
+Build a Translon call database from mixed translon caller outputs.
 
 The output model is deliberately database-shaped rather than BED-shaped:
-`canonical_orfs` stores one row per called ORF, `canonical_orf_blocks` stores
+`translons` stores one row per called translon, `translon_blocks` stores
 child genomic blocks, `parser_manifest` records how each input was interpreted,
 and optional CDS recall tables compare calls with CDS intervals from a GTF.
 """
@@ -101,7 +101,7 @@ class Candidate:
     raw_file: str
     raw_label: str
     sample_id: str
-    native_orf_id: str
+    native_translon_id: str
     chrom: str
     strand: str
     intervals: list[tuple[int, int]]
@@ -270,7 +270,7 @@ def group_gff(path: Path, parser_name: str, source_tool: str, sample_id: str) ->
                 continue
             attrs = parse_attrs(fields[8])
             feature = fields[2]
-            if feature not in {"CDS", "exon", "ORF", "orf"}:
+            if feature not in {"CDS", "exon", "translon", "orf"}:
                 continue
             if parser_name == "orfquant_gff":
                 native_id = fields[8].strip()
@@ -299,7 +299,7 @@ def group_gff(path: Path, parser_name: str, source_tool: str, sample_id: str) ->
             raw_file=str(path),
             raw_label=path.stem,
             sample_id=sample_id,
-            native_orf_id=native_id,
+            native_translon_id=native_id,
             chrom=next(iter(chroms)),
             strand=next(iter(strands)),
             intervals=intervals,
@@ -307,7 +307,7 @@ def group_gff(path: Path, parser_name: str, source_tool: str, sample_id: str) ->
             transcript_id=attrs.get("transcript_id", "") or parse_enst(native_id),
             gene_id=attrs.get("gene_id", ""),
             gene_name=attrs.get("gene_name", ""),
-            native_feature_type=attrs.get("ORF_type", attrs.get("type", "")),
+            native_feature_type=attrs.get("translon_type", attrs.get("type", "")),
             attributes={**attrs, "conversion_rule": conversion_rule},
         )
 
@@ -338,7 +338,7 @@ def parse_bed12(path: Path, parser_name: str, source_tool: str, sample_id: str) 
                 raw_file=str(path),
                 raw_label=path.stem,
                 sample_id=sample_id,
-                native_orf_id=fields[3] or f"{path.stem}_{idx}",
+                native_translon_id=fields[3] or f"{path.stem}_{idx}",
                 chrom=chrom_to_ucsc(fields[0]),
                 strand=fields[5],
                 intervals=sorted(intervals),
@@ -376,7 +376,7 @@ def parse_translonscorer_csv(path: Path, source_tool: str, sample_id: str) -> It
                 raw_file=str(path),
                 raw_label=path.stem,
                 sample_id=sample_id,
-                native_orf_id=name,
+                native_translon_id=name,
                 chrom=chrom_to_ucsc(row[chrom_key]),
                 strand=strand,
                 intervals=[(start, end)],
@@ -420,7 +420,7 @@ def terminal_class(codon: str) -> str:
     return "stop" if codon in STOP_CODONS else "non_stop"
 
 
-def canonicalise(candidates: Iterable[Candidate], fasta: Path | None) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def build_translon_tables(candidates: Iterable[Candidate], fasta: Path | None) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     genome = None
     if fasta:
         try:
@@ -430,7 +430,7 @@ def canonicalise(candidates: Iterable[Candidate], fasta: Path | None) -> tuple[p
         except Exception as exc:
             print(f"[WARN] Could not open FASTA with pyfaidx, skipping sequence QC: {fasta}: {exc}", file=sys.stderr)
 
-    orf_rows: list[dict[str, object]] = []
+    translon_rows: list[dict[str, object]] = []
     block_rows: list[dict[str, object]] = []
     qc_counter: Counter[tuple[str, str]] = Counter()
 
@@ -456,18 +456,18 @@ def canonicalise(candidates: Iterable[Candidate], fasta: Path | None) -> tuple[p
             reasons.append("terminal_non_stop")
         qc_status = "pass" if not reasons else "fail"
         qc_counter[(candidate.source_tool, qc_status)] += 1
-        canonical_orf_id = f"orf_{len(orf_rows):010d}"
+        translon_id = f"translon_{len(translon_rows):010d}"
         key = feature_key(candidate.chrom, bed_start, bed_end, candidate.strand, block_sizes, block_starts)
 
-        orf_rows.append(
+        translon_rows.append(
             {
-                "canonical_orf_id": canonical_orf_id,
+                "translon_id": translon_id,
                 "source_tool": candidate.source_tool,
                 "parser_name": candidate.parser_name,
                 "raw_file": candidate.raw_file,
                 "raw_label": candidate.raw_label,
                 "sample_id": candidate.sample_id,
-                "native_orf_id": candidate.native_orf_id,
+                "native_translon_id": candidate.native_translon_id,
                 "transcript_id": candidate.transcript_id,
                 "gene_id": candidate.gene_id,
                 "gene_name": candidate.gene_name,
@@ -505,7 +505,7 @@ def canonicalise(candidates: Iterable[Candidate], fasta: Path | None) -> tuple[p
             idx = genomic_rank - 1
             block_rows.append(
                 {
-                    "canonical_orf_id": canonical_orf_id,
+                    "translon_id": translon_id,
                     "source_tool": candidate.source_tool,
                     "genomic_block_rank": genomic_rank,
                     "translation_block_rank": translation_rank[idx],
@@ -524,9 +524,9 @@ def canonicalise(candidates: Iterable[Candidate], fasta: Path | None) -> tuple[p
         genome.close()
 
     qc = pd.DataFrame(
-        [{"source_tool": tool, "qc_status": status, "orfs": count} for (tool, status), count in sorted(qc_counter.items())]
+        [{"source_tool": tool, "qc_status": status, "translons": count} for (tool, status), count in sorted(qc_counter.items())]
     )
-    return pd.DataFrame(orf_rows), pd.DataFrame(block_rows), qc
+    return pd.DataFrame(translon_rows), pd.DataFrame(block_rows), qc
 
 
 def reference_cds_from_gtf(gtf: Path | None) -> pd.DataFrame:
@@ -583,13 +583,13 @@ def reference_cds_from_gtf(gtf: Path | None) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def cds_recall(orfs: pd.DataFrame, reference_cds: pd.DataFrame) -> pd.DataFrame:
-    if orfs.empty or reference_cds.empty:
+def cds_recall(translons: pd.DataFrame, reference_cds: pd.DataFrame) -> pd.DataFrame:
+    if translons.empty or reference_cds.empty:
         return pd.DataFrame()
     rows = []
     reference_keys = set(reference_cds["feature_key"])
     total = len(reference_keys)
-    for tool, group in orfs.groupby("source_tool", observed=True):
+    for tool, group in translons.groupby("source_tool", observed=True):
         called = set(group["feature_key"])
         rows.append(
             {
@@ -599,7 +599,7 @@ def cds_recall(orfs: pd.DataFrame, reference_cds: pd.DataFrame) -> pd.DataFrame:
                 "exact_cds_recall_pct": 100 * len(reference_keys & called) / total if total else 0.0,
             }
         )
-    called_any = set(orfs["feature_key"])
+    called_any = set(translons["feature_key"])
     rows.append(
         {
             "source_tool": "ANY",
@@ -621,9 +621,9 @@ def write_sqlite(path: Path, tables: dict[str, pd.DataFrame]) -> None:
             df.to_sql(name, con, index=False, if_exists="replace")
         con.executescript(
             """
-            CREATE INDEX IF NOT EXISTS idx_orfs_tool_sample ON canonical_orfs(source_tool, sample_id);
-            CREATE INDEX IF NOT EXISTS idx_orfs_feature_key ON canonical_orfs(feature_key);
-            CREATE INDEX IF NOT EXISTS idx_blocks_orf ON canonical_orf_blocks(canonical_orf_id);
+            CREATE INDEX IF NOT EXISTS idx_translons_tool_sample ON translons(source_tool, sample_id);
+            CREATE INDEX IF NOT EXISTS idx_translons_feature_key ON translons(feature_key);
+            CREATE INDEX IF NOT EXISTS idx_translon_blocks_translon ON translon_blocks(translon_id);
             CREATE INDEX IF NOT EXISTS idx_ref_cds_feature_key ON reference_cds(feature_key);
             """
         )
@@ -662,18 +662,18 @@ def main() -> None:
                 "parser_status": status,
                 "parser_name": parser_name,
                 "detected_tool": detected_tool,
-                "canonical_orfs": len(candidates) - before,
+                "translons": len(candidates) - before,
             }
         )
 
     parser_manifest = pd.DataFrame(manifest_rows)
-    orfs, blocks, qc = canonicalise(candidates, args.fasta)
+    translons, blocks, qc = build_translon_tables(candidates, args.fasta)
     reference_cds = reference_cds_from_gtf(args.gtf)
-    recall = cds_recall(orfs, reference_cds)
+    recall = cds_recall(translons, reference_cds)
 
     tables = {
-        "canonical_orfs": orfs,
-        "canonical_orf_blocks": blocks,
+        "translons": translons,
+        "translon_blocks": blocks,
         "parser_manifest": parser_manifest,
         "qc_summary": qc,
         "reference_cds": reference_cds,
@@ -681,16 +681,16 @@ def main() -> None:
     }
     for name, df in tables.items():
         df.to_csv(args.out_dir / f"{name}.tsv.gz", sep="\t", index=False, compression="gzip")
-    write_sqlite(args.out_dir / "canonical_orfs.sqlite", tables)
+    write_sqlite(args.out_dir / "translons.sqlite", tables)
 
     summary = {
         "inputs": int(len(parser_manifest)),
         "parsed_inputs": int(parser_manifest["parser_status"].eq("ok").sum()) if not parser_manifest.empty else 0,
-        "canonical_orfs": int(len(orfs)),
-        "canonical_orf_blocks": int(len(blocks)),
+        "translons": int(len(translons)),
+        "translon_blocks": int(len(blocks)),
         "reference_cds": int(len(reference_cds)),
     }
-    (args.out_dir / "canonical_orf_db_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    (args.out_dir / "translon_db_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
 
 
