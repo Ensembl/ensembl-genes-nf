@@ -39,7 +39,7 @@ process DB_METADATA {
 
     if [[ "${meta.taxon_id}" == "UNKNOWN"  &&  "${meta.gca}" == "UNKNOWN" ]]; then
         echo "DEBUG: Fetching taxon_id from database..." >&2
-        TAXON_ID=\$(utils.py \
+        TAXON_ID=\$(get_meta_value.py.py \
             --db ${meta.dbname} \
             --key species.taxonomy_id \
             --species-id ${meta.species_id} \
@@ -47,7 +47,7 @@ process DB_METADATA {
             --port ${params.port} \
             --user ${params.user_r})
         echo "DEBUG: Found TAXON_ID=\$TAXON_ID" >&2
-        GCA=\$(utils.py \
+        GCA=\$(get_meta_value.py.py \
             --db ${meta.dbname} \
             --key assembly.accession \
             --species-id ${meta.species_id} \
@@ -55,7 +55,7 @@ process DB_METADATA {
             --port ${params.port} \
             --user ${params.user_r}
             )
-        PRODUCTION_NAME=\$(utils.py \
+        PRODUCTION_NAME=\$(get_meta_value.py.py \
             --db ${meta.dbname} \
             --key species.production_name \
             --species-id ${meta.species_id} \
@@ -76,7 +76,7 @@ process DB_METADATA {
     # Create versions file
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        utils.py: \$(utils.py --version 2>&1 | grep -oP 'version \\K[0-9.]+' || echo "unknown")
+        get_meta_value.py.py: \$(get_meta_value.py.py --version 2>&1 | grep -oP 'version \\K[0-9.]+' || echo "unknown")
         python: \$(python --version | sed 's/Python //g')
     END_VERSIONS
     """
