@@ -38,11 +38,11 @@ process BUSCO_DATASET {
     """
     echo "DEBUG: meta.core=${meta.dbname}, meta.species_id=${meta.species_id}, meta.taxon_id=${meta.taxon_id}" >&2
 
-    if [[ !"${meta.busco_dataset}" ]]; then
-    ${params.enscode}/src/python/ensembl/genes/metrics/clade_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}  
+    if [[ !"${params.busco_dataset}" ]]; then
+    ${params.enscode}/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}  
     
     else 
-    echo "${meta.busco_dataset}"
+    echo "${params.busco_dataset.trim()}"
     fi
     # Create versions file
     PYTHON_VERSION=\$(python --version 2>&1 | sed 's/Python //')
