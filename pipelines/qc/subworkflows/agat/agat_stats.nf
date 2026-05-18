@@ -1,6 +1,6 @@
 
 include { AGAT_RUN_STATS } from '../../modules/agat/run_agat_stats.nf'
-include { STRIP_GFF_REGIONS } from '../../modules/agat/run_agat_stats.nf'
+include { STRIP_GFF_REGIONS } from '../../modules/agat/strip_gff_regions.nf'
 include { AGAT_PARSE     } from '../../modules/agat/parse_agat.nf'
 
 workflow AGAT_METRICS {
