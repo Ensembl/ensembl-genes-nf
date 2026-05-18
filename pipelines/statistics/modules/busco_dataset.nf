@@ -36,8 +36,6 @@ process BUSCO_DATASET {
 
     script:
     """
-    echo "DEBUG: meta.core=${meta.dbname}, meta.species_id=${meta.species_id}, meta.taxon_id=${meta.taxon_id}" >&2
-
     if [[ !"${params.busco_dataset}" ]]; then
     ${params.enscode}/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}  
     

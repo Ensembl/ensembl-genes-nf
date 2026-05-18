@@ -35,10 +35,7 @@ process DB_METADATA {
 
     script:
     """
-    echo "DEBUG: meta.core=${meta.dbname}, meta.species_id=${meta.species_id}, meta.taxon_id=${meta.taxon_id}" >&2
-
     if [[ "${meta.taxon_id}" == "UNKNOWN"  &&  "${meta.gca}" == "UNKNOWN" ]]; then
-        echo "DEBUG: Fetching taxon_id from database..." >&2
         TAXON_ID=\$(get_meta_value.py.py \
             --db ${meta.dbname} \
             --key species.taxonomy_id \
@@ -46,7 +43,6 @@ process DB_METADATA {
             --host ${params.host} \
             --port ${params.port} \
             --user ${params.user_r})
-        echo "DEBUG: Found TAXON_ID=\$TAXON_ID" >&2
         GCA=\$(get_meta_value.py.py \
             --db ${meta.dbname} \
             --key assembly.accession \
@@ -67,7 +63,6 @@ process DB_METADATA {
         GCA="${meta.gca}";
         TAXON_ID="${meta.taxon_id}";
         PRODUCTION_NAME="${meta.production_name}"
-        echo "DEBUG: Using provided TAXON_ID=\$TAXON_ID" >&2
     fi
     # Output metadata to file
     echo "taxon_id=\$TAXON_ID" >> metadata.txt
