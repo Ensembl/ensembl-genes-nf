@@ -81,10 +81,12 @@ MISC_FIXES: dict[str, str] = {
 }
 
 EXPECTED_SAMPLES: frozenset[str] = frozenset({
-    # Fibroblast individual
+    # Fibroblast individual (GENELAB dataset — named by condition)
     "Fib_24_45m", "Fib_24_bsl",
     "Fib_27_45m", "Fib_27_bsl",
     "Fib_41_45m", "Fib_41_bsl",
+    # Fibroblast individual (second dataset — named by SRR accession, PRICE Fibo_0–3)
+    "SRR15513179", "SRR15513180", "SRR15513181", "SRR15513182",
     # Fibroblast pooled
     "Ribo_Fib_pooled",
     # Endothelial individual
@@ -152,6 +154,7 @@ def collect_ribotie(results_dir: Path) -> list[dict]:
             stem = re.sub(r"^db_", "", stem)
             stem = re.sub(r"\.(annotated|novel)\.out\.gtf$", "", stem)
             stem = re.sub(r"\.Aligned\.toTranscriptome\.out$", "", stem)
+            stem = re.sub(r"_Transcriptome$", "", stem)   # pooled: Ribo_*_pooled_Transcriptome
             rows.append({"path": str(f), "tool": "RiboTIE", "sample_id": normalise(stem)})
     return rows
 
@@ -235,10 +238,11 @@ def collect_riborf2(converted_dir: Path) -> list[dict]:
 
 def _classify(path_str: str) -> str:
     lower = path_str.lower()
-    if any(x in lower for x in ("known", "annotated")):
-        return "cds"
+    # Check unannotated BEFORE annotated: "unannotated" contains the substring "annotated"
     if any(x in lower for x in ("novel", "unannotated")):
         return "non_cds"
+    if any(x in lower for x in ("known", "annotated")):
+        return "cds"
     return "unknown"
 
 
