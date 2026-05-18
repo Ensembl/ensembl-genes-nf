@@ -33,7 +33,7 @@ process BUSCO_GENOME_LINEAGE {
     publishDir "${params.cacheDir}/${meta.gca}/busco_genome", mode: 'copy', pattern: "versions_busco_genome.yml"
     afterScript "sleep ${params.files_latency}"
     // Needed because of file system latency
-    maxForks 10
+
 
     input:
     tuple val(meta), path(genome_file)
