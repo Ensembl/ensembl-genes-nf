@@ -1,5 +1,5 @@
 process TRANSLON_DB {
-    label 'process_high'
+    label 'process_ultra_high'
 
     container "community.wave.seqera.io/library/pip_duckdb_pandas_pyfaidx:2042eaa57c64430c"
 
