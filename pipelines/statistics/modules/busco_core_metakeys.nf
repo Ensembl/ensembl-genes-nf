@@ -52,7 +52,7 @@ process BUSCO_CORE_METAKEYS {
     # Create versions file
     PYTHON_VERSION=\$(python --version 2>&1 | awk '{print \$2}')
 
-    echo '"BUSCO_CORE_METAKEYS":' > versions.yml
+
     echo "  python: \$PYTHON_VERSION" >> versions.yml
     """
 }

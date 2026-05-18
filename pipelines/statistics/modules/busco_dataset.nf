@@ -46,10 +46,9 @@ process BUSCO_DATASET {
     fi
     # Create versions file
     PYTHON_VERSION=\$(python --version 2>&1 | sed 's/Python //')
-    CLADE_VERSION=\$(clade_selector.py --version 2>&1 || echo "unknown")
+
     
     echo '"BUSCO_DATASET":' > versions.yml
     echo "  python: \$PYTHON_VERSION" >> versions.yml
-    echo "  clade_selector: \$CLADE_VERSION" >> versions.yml
     """
 }
