@@ -28,8 +28,6 @@ The statistics pipeline consists of 13 modules organized into functional categor
 11. **[populate-db](populate-db.md)** - Executes SQL files to populate databases
 12. **[db-metadata](db-metadata.md)** - Manages database metadata and versioning
 
-### Data Cleanup Modules
-13. **[cleaning](cleaning.md)** - Removes intermediate files to save storage space
 
 ## Pipeline Flow
 
