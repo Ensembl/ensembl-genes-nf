@@ -9,13 +9,15 @@ process TRANSLON_DB {
     path input_root
     path genome_fasta
     path gencode_gtf
+    path manifest
 
     output:
     path("translon_db/*"), emit: outputs
 
     script:
-    def fasta_arg = genome_fasta ? "--fasta ${genome_fasta}" : ""
-    def gtf_arg = gencode_gtf ? "--gtf ${gencode_gtf}" : ""
+    def fasta_arg    = genome_fasta.name    != 'NO_FILE' ? "--fasta ${genome_fasta}"    : ""
+    def gtf_arg      = gencode_gtf.name     != 'NO_FILE' ? "--gtf ${gencode_gtf}"       : ""
+    def manifest_arg = manifest.name        != 'NO_FILE' ? "--manifest ${manifest}"     : ""
     """
     mkdir -p translon_db
 
@@ -23,7 +25,8 @@ process TRANSLON_DB {
         --input-root ${input_root} \\
         --out-dir translon_db \\
         ${fasta_arg} \\
-        ${gtf_arg}
+        ${gtf_arg} \\
+        ${manifest_arg}
     """
 
     stub:

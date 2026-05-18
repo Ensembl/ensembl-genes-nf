@@ -15,15 +15,23 @@ workflow TRANSLON_CONSENSUS {
     if (params.build_translon_db) {
         translon_db_fasta_ch = params.gencode_fasta
             ? Channel.value(file(params.gencode_fasta, checkIfExists: true))
-            : Channel.value([])
+            : Channel.value(file('NO_FILE'))
         translon_db_gtf_ch = params.gencode_gtf
             ? Channel.value(file(params.gencode_gtf, checkIfExists: true))
-            : Channel.value([])
+            : Channel.value(file('NO_FILE'))
+        // Optional manifest TSV (path / tool / sample_id).  When supplied,
+        // translon_db_standardise.py reads files from their original paths,
+        // preserving filename keywords used to infer source_feature_class.
+        // Produce with scripts/build_translon_manifest.py.
+        translon_db_manifest_ch = params.manifest_tsv
+            ? Channel.value(file(params.manifest_tsv, checkIfExists: true))
+            : Channel.value(file('NO_FILE'))
 
         TRANSLON_DB(
             file(params.bed_results_dir, checkIfExists: true),
             translon_db_fasta_ch,
-            translon_db_gtf_ch
+            translon_db_gtf_ch,
+            translon_db_manifest_ch
         )
     }
 
