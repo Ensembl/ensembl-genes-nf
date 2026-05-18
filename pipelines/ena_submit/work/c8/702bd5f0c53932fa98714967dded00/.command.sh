@@ -1,3 +1,0 @@
-#!/bin/bash -ue
-set -euo pipefail
-poll_webin.py [/Users/jackt/projects/ensembl-genes-nf/pipelines/ena_submit/work/c9/85071c894f7a0ef93f88f9e5be474a/null.queue.json, /Users/jackt/projects/ensembl-genes-nf/pipelines/ena_submit/work/2e/c4e1a103adceeeae4f2546441e4cb8/aln2_test.queue.json, /Users/jackt/projects/ensembl-genes-nf/pipelines/ena_submit/work/7d/323b1f63a93900da80c479cda08ce9/aln1_test.queue.json]       --webin-user "Webin-70684"       --webin-password "EnsemblAlignments!"       --interval 20       --max-attempts 30       --out accessions.tsv

@@ -1,0 +1,2 @@
+2026-05-13 09:05:43	-	loving_noyce	-	e1f505b6b513c905d356da7d37cac912	6251acd9-df8a-467c-bb08-03cb7a954c34	nextflow run pipelines/ena_submit/main.nf --help
+2026-05-13 09:06:56	1.6s	nauseous_saha	OK	e1f505b6b513c905d356da7d37cac912	18a76713-7790-4582-90b8-518b249d78a7	nextflow run pipelines/ena_submit/main.nf --manifest pipelines/ena_submit/examples_real/manifest.real.tsv --webin_user dummy --webin_password dummy --mode test --release 2026_05 --outdir /tmp/ena_parse_check -preview

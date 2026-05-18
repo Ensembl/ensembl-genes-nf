@@ -5,7 +5,8 @@ include { ENA_FTP_UPLOAD }    from '../modules/upload_ftp.nf'
 include { ENA_GENERATE_XML }  from '../modules/generate_xml.nf'
 include { ENA_SUBMIT_WEBIN as ENA_SUBMIT_PROJECT } from '../modules/submit_webin.nf'
 include { ENA_SUBMIT_WEBIN as ENA_SUBMIT_ANALYSIS } from '../modules/submit_webin.nf'
-include { ENA_POLL_WEBIN } from '../modules/poll_webin.nf'
+include { ENA_POLL_WEBIN as ENA_POLL_PROJECT } from '../modules/poll_webin.nf'
+include { ENA_POLL_WEBIN as ENA_POLL_ANALYSIS } from '../modules/poll_webin.nf'
 include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
 
 // Parse manifest and dispatch one analysis per row/file
@@ -44,7 +45,7 @@ workflow ENA_SUBMIT_WORKFLOW {
         .map { meta, row, f ->
             def alias = meta.project_alias
             def title = "Annotation evidence project for ${meta.assembly}, ${meta.release}"
-            def description = params.project_description ?: ''
+            def description = params.project_description ?: "Annotation evidence project for ${meta.assembly}, ${meta.release}"
             // Key by alias, carry a single meta map
             tuple(alias, [ alias: alias, name: alias, title: title, description: description, hold_until: params.hold_until ?: '' ])
         }
@@ -54,6 +55,14 @@ workflow ENA_SUBMIT_WORKFLOW {
     ENA_GENERATE_PROJECT_XML(ch_proj_rows)
     ENA_SUBMIT_PROJECT(ENA_GENERATE_PROJECT_XML.out.xml, ch_webin_base, ch_webin_user, ch_webin_password)
     def ch_proj_files = ENA_SUBMIT_PROJECT.out.queued.map { meta, f -> f }
+
+    ENA_POLL_PROJECT(
+        ch_proj_files.collect(),
+        ch_webin_user,
+        ch_webin_password,
+        Channel.value(params.poll_interval    ?: 20),
+        Channel.value(params.poll_max_attempts ?: 30)
+        )
 
     // Compute md5 per file
     md5s = ENA_COMPUTE_MD5( inputs )
@@ -66,9 +75,13 @@ workflow ENA_SUBMIT_WORKFLOW {
         ch_webin_password
         )
 
-    // Generate XMLs
+    def uploaded_after_projects = ENA_FTP_UPLOAD.out.uploaded
+        .combine(ENA_POLL_PROJECT.out.accessions)
+        .map { meta, row, f, md5, accessions -> tuple(meta, row, f, md5) }
+
+    // Generate XMLs after the derived project has been accepted by Webin.
     ENA_GENERATE_XML(
-        ENA_FTP_UPLOAD.out.uploaded,
+        uploaded_after_projects,
         params.remote_dir ?: '',
         params.hold_until ?: ''
         )
@@ -82,17 +95,13 @@ workflow ENA_SUBMIT_WORKFLOW {
         )
     def ch_analysis_files = ENA_SUBMIT_ANALYSIS.out.queued.map { meta, f -> f }
 
-    // Collect all queue responses then poll until each submission resolves
-    // Merge project and analysis queue files and poll all
-    def ch_all_queues = ch_proj_files.mix(ch_analysis_files).collect()
-
-    ENA_POLL_WEBIN(
-        ch_all_queues,
+    ENA_POLL_ANALYSIS(
+        ch_analysis_files.collect(),
         ch_webin_user,
         ch_webin_password,
         Channel.value(params.poll_interval    ?: 20),
         Channel.value(params.poll_max_attempts ?: 30)
         )
 
-    ENA_POLL_WEBIN.out.accessions.view { f -> "Accessions written to: ${f}" }
+    ENA_POLL_ANALYSIS.out.accessions.view { f -> "Accessions written to: ${f}" }
 }
