@@ -12,6 +12,7 @@ set -euo pipefail
 #   export PIPELINE_DIR=/path/to/ensembl-genes-nf/pipelines/translon-consensus
 #   export NF_PROFILE=slurm,singularity
 #   export CONSENSUS_EXCLUDE_TOOLS=RibORF2
+#   export RUN_CONSENSUS_REPORT=true
 #   export RUN_NEXTFLOW=0  # only stage/audit inputs
 
 PILOT_ROOT="${PILOT_ROOT:-/hps/nobackup/flicek/ensembl/genebuild/jackt/riboseq/pilot/full_pilot_results}"
@@ -23,6 +24,7 @@ GENCODE_GTF="${GENCODE_GTF:-}"
 GENCODE_FASTA_FAI="${GENCODE_FASTA_FAI:-${GENCODE_FASTA}.fai}"
 NF_PROFILE="${NF_PROFILE:-slurm,singularity}"
 CONSENSUS_EXCLUDE_TOOLS="${CONSENSUS_EXCLUDE_TOOLS:-RibORF2}"
+RUN_CONSENSUS_REPORT="${RUN_CONSENSUS_REPORT:-false}"
 RUN_NEXTFLOW="${RUN_NEXTFLOW:-1}"
 
 if [[ ! -d "${PILOT_ROOT}" ]]; then
@@ -267,6 +269,7 @@ nextflow run main.nf \
     -work-dir "${RUN_ROOT}/work" \
     --bed_results_dir "${STAGE_DIR}/clean_orf_inputs" \
     --consensus_bed_results_dir "${CONSENSUS_INPUT_DIR}" \
+    --run_consensus_report "${RUN_CONSENSUS_REPORT}" \
     --gencode_fasta "${GENCODE_FASTA}" \
     --gencode_fasta_fai "${GENCODE_FASTA_FAI}" \
     --gencode_gtf "${GENCODE_GTF}" \

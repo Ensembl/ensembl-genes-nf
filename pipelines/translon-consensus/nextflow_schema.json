@@ -35,6 +35,11 @@
         "default": true,
         "description": "Build a Translon SQLite database and sidecar TSV tables from all supported caller outputs under bed_results_dir."
       },
+      "run_consensus_report": {
+        "type": "boolean",
+        "default": true,
+        "description": "Run the BED12 standardisation, cross-tool consensus, and HTML report branch. Set false for Translon DB-only runs."
+      },
       "ucsc_session_url": {
         "type": "string",
         "description": "UCSC Genome Browser session URL (without position) for generating genome browser links in reports",
