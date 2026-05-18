@@ -1,7 +1,7 @@
 process TRANSLON_DB {
     label 'process_high'
 
-    container "oras://community.wave.seqera.io/library/pip_duckdb_pandas:57c3741f55d53490"
+    container "community.wave.seqera.io/library/pip_duckdb_pandas_pyfaidx:2042eaa57c64430c"
 
     publishDir "${params.outdir}/translon_db", mode: 'copy'
 
