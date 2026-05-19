@@ -150,6 +150,8 @@ def collect_ribotie(results_dir: Path) -> list[dict]:
         for f in sorted(d.glob("*.gtf")):
             if "unfiltered" in str(f):
                 continue
+            if ".Aligned.toTranscriptome.out" in f.name:
+                continue  # transcript-coordinate files — not usable with the genomic GTF parser
             stem = f.name
             stem = re.sub(r"^db_", "", stem)
             stem = re.sub(r"\.(annotated|novel)\.out\.gtf$", "", stem)

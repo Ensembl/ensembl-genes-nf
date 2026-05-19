@@ -63,8 +63,9 @@ PRICE_SAMPLE_MAP = {
     "pancreas_mymapping_5": "SRR11005900_to_04_fastq",
 }
 CONVERSION_RULES = {
-    "orfquant_gff": "orfquant_bedlike_plus_stop",
-    "ribotie_gtf": "ribotie_gff1_plus_stop",
+    "orfquant_gff":      "orfquant_bedlike_plus_stop",
+    "orfquant_bed_exon": "orfquant_bedlike_plus_stop",
+    "ribotie_gtf":       "ribotie_gff1_plus_stop",
     "iribo_gff": "iribo_bedlike",
     "generic_gff": "gff_1based",
     "bed12": "bed12_native",
@@ -206,14 +207,19 @@ def detect_parser(path: Path, tool_hint: str = "") -> tuple[str, str, str]:
                 if len(fields) >= 9:
                     if source == "RiboTIE" or "ORF_id" in attrs or "ribotie" in lower_name:
                         return "ok", "ribotie_gtf", "RiboTIE"
-                    if source == "iRibo" or "iribo" in lower_name:
+                    if source == "iRibo" or "iribo" in lower_name or tool_hint == "iRibo":
                         return "ok", "iribo_gff", "iRibo"
-                    if source == "ORFQuant" or ("ENST" in attrs and "=" not in attrs) or "orfquant" in lower_name:
+                    if (source == "ORFQuant" or ("ENST" in attrs and "=" not in attrs)
+                            or "orfquant" in lower_name or tool_hint == "ORFQuant"):
                         return "ok", "orfquant_gff", "ORFQuant"
                     return "ok", "generic_gff", tool_hint or source or "unknown"
 
                 if path.suffix.lower() == ".csv" or "," in line:
                     return "ok", "translonscorer_csv", tool_hint or "TranslonScorer"
+
+                # ORFQuant outputs per-exon BED6 (< 9 fields); detect by tool_hint or filename
+                if tool_hint == "ORFQuant" or "_orf_exon_genomic_" in lower_name:
+                    return "ok", "orfquant_bed_exon", "ORFQuant"
 
                 if name:
                     return "unsupported", "unknown", tool_hint or "unknown"
@@ -357,6 +363,49 @@ def parse_bed12(path: Path, parser_name: str, source_tool: str, sample_id: str) 
                 transcript_id=parse_enst(fields[3]),
                 source_feature_class=infer_source_feature_class(path, path.stem),
             )
+
+
+def parse_orfquant_bed_exon(path: Path, source_tool: str, sample_id: str) -> Iterable[Candidate]:
+    """Parse ORFQuant per-exon BED6 (annotated_orf_exon_genomic_*.bed).
+    Each ORF spans multiple rows, one per exon. Groups rows by name field."""
+    grouped: dict[str, list[tuple]] = defaultdict(list)
+    with open_text(path) as handle:
+        for line in handle:
+            if not line.strip() or line.startswith("#") or line.startswith("track"):
+                continue
+            fields = line.rstrip("\n").split("\t")
+            if len(fields) < 6:
+                continue
+            chrom, start, end, name, score, strand = fields[:6]
+            try:
+                start_i, end_i = int(start), int(end)
+            except ValueError:
+                continue
+            grouped[name].append((chrom_to_ucsc(chrom), strand, start_i, end_i, score))
+    for name, rows in grouped.items():
+        chroms = {row[0] for row in rows}
+        strands = {row[1] for row in rows}
+        if len(chroms) != 1 or len(strands) != 1:
+            continue
+        intervals, _conversion_rule = converted_intervals(
+            [(row[2], row[3]) for row in rows],
+            next(iter(strands)),
+            "orfquant_bed_exon",
+        )
+        yield Candidate(
+            source_tool=source_tool,
+            parser_name="orfquant_bed_exon",
+            raw_file=str(path),
+            raw_label=path.stem,
+            sample_id=sample_id,
+            native_translon_id=name,
+            chrom=next(iter(chroms)),
+            strand=next(iter(strands)),
+            intervals=intervals,
+            score=rows[0][4],
+            transcript_id=parse_enst(name),
+            source_feature_class=infer_source_feature_class(path, path.stem),
+        )
 
 
 def parse_translonscorer_csv(path: Path, source_tool: str, sample_id: str) -> Iterable[Candidate]:
@@ -666,6 +715,8 @@ def main() -> None:
             candidates.extend(parse_bed12(record.path, parser_name, detected_tool, record.sample_id))
         elif status == "ok" and parser_name.endswith(("gff", "gtf")):
             candidates.extend(group_gff(record.path, parser_name, detected_tool, record.sample_id))
+        elif status == "ok" and parser_name == "orfquant_bed_exon":
+            candidates.extend(parse_orfquant_bed_exon(record.path, detected_tool, record.sample_id))
         elif status == "ok" and parser_name == "translonscorer_csv":
             candidates.extend(parse_translonscorer_csv(record.path, detected_tool, record.sample_id))
         manifest_rows.append(
