@@ -334,6 +334,59 @@ def group_gff(path: Path, parser_name: str, source_tool: str, sample_id: str) ->
         )
 
 
+def group_iribo(path: Path, source_tool: str, sample_id: str) -> Iterable[Candidate]:
+    """Parse iRibo's non-standard 10-column BED+GFF hybrid format.
+
+    Columns: chrom, start(0-based), end, ., ., strand, source, feature, frame, attributes
+    Coordinates are already 0-based half-open — no conversion applied.
+    Annotated files use gene IDs (ENSG...) as the ORF key; novel files use candidate_orfNNN.
+    """
+    grouped: dict[str, list[tuple[str, str, int, int]]] = defaultdict(list)
+    with open_text(path) as handle:
+        for line in handle:
+            if not line.strip() or line.startswith("#"):
+                continue
+            fields = line.rstrip("\n").split("\t")
+            if len(fields) < 10:
+                continue
+            chrom = chrom_to_ucsc(fields[0])
+            start = int(fields[1])
+            end = int(fields[2])
+            strand = fields[5].strip()
+            attrs_str = fields[9].strip()
+            attrs: dict[str, str] = {}
+            for part in attrs_str.split(";"):
+                part = part.strip()
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                    attrs[k.strip()] = v.strip()
+            native_id = attrs.get("ID") or attrs.get("Name") or attrs_str
+            grouped[native_id].append((chrom, strand, start, end))
+
+    for native_id, rows in grouped.items():
+        chroms = {r[0] for r in rows}
+        strands = {r[1] for r in rows}
+        if len(chroms) != 1 or len(strands) != 1:
+            continue
+        intervals = sorted((r[2], r[3]) for r in rows)
+        yield Candidate(
+            source_tool=source_tool,
+            parser_name="iribo_gff",
+            raw_file=str(path),
+            raw_label=path.stem,
+            sample_id=sample_id,
+            native_translon_id=native_id,
+            chrom=next(iter(chroms)),
+            strand=next(iter(strands)),
+            intervals=intervals,
+            score="0",
+            transcript_id=parse_enst(native_id),
+            gene_id=native_id if native_id.startswith("ENSG") else "",
+            source_feature_class=infer_source_feature_class(path, path.stem),
+            attributes={"conversion_rule": "iribo_bedlike"},
+        )
+
+
 def parse_enst(value: str) -> str:
     match = re.search(r"(ENST\d+(?:\.\d+)?)", value)
     return match.group(1) if match else ""
@@ -747,6 +800,8 @@ def main() -> None:
         before = len(candidates)
         if status == "ok" and parser_name == "bed12":
             candidates.extend(parse_bed12(record.path, parser_name, detected_tool, record.sample_id))
+        elif status == "ok" and parser_name == "iribo_gff":
+            candidates.extend(group_iribo(record.path, detected_tool, record.sample_id))
         elif status == "ok" and parser_name.endswith(("gff", "gtf")):
             candidates.extend(group_gff(record.path, parser_name, detected_tool, record.sample_id))
         elif status == "ok" and parser_name == "orfquant_bed_exon":
