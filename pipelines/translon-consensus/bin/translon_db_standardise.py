@@ -288,6 +288,11 @@ def group_gff(path: Path, parser_name: str, source_tool: str, sample_id: str) ->
             feature = fields[2]
             if feature not in {"CDS", "exon", "translon", "orf"}:
                 continue
+            # RiboTIE GTFs contain both exon and CDS features for each interval.
+            # exon spans the full exon including UTR; CDS starts at the coding base.
+            # Collecting both duplicates intervals and reads seq[:3] from the UTR.
+            if parser_name == "ribotie_gtf" and feature != "CDS":
+                continue
             if parser_name == "orfquant_gff":
                 native_id = fields[8].strip()
             elif parser_name == "ribotie_gtf":
