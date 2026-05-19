@@ -61,6 +61,12 @@
         "type": "string",
         "description": "Optional FTP directory path for moving the HTML report. If not provided, report will only be saved locally.",
         "format": "directory-path"
+      },
+      "manifest_tsv": {
+        "type": "string",
+        "description": "Optional manifest TSV (path / tool / sample_id columns) produced by scripts/build_translon_manifest.py. When provided, translon_db_standardise.py reads files from their original paths, preserving filename keywords (known/novel/annotated/unannotated) used to infer source_feature_class.",
+        "format": "file-path",
+        "pattern": "\\.tsv$"
       }
     },
     "required": ["bed_results_dir"]
