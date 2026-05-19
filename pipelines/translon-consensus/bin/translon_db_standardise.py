@@ -674,6 +674,35 @@ def cds_recall(translons: pd.DataFrame, reference_cds: pd.DataFrame) -> pd.DataF
     return pd.DataFrame(rows)
 
 
+def classify_unknown_feature_class(translons: pd.DataFrame, reference_cds: pd.DataFrame) -> pd.DataFrame:
+    """Set source_feature_class for rows with 'unknown' class using reference_cds.
+
+    A translon whose feature_key exactly matches a reference CDS is classified
+    as 'cds'; all remaining unknowns become 'non_cds'.  Used primarily for
+    RibORF2, which does not split its output into annotated/novel files.
+    """
+    if translons.empty or reference_cds.empty:
+        return translons
+    unknown_mask = translons["source_feature_class"] == "unknown"
+    if not unknown_mask.any():
+        return translons
+    ref_keys: set[str] = set(reference_cds["feature_key"])
+    ref_tids: set[str] = set(reference_cds["transcript_id"].str.split(".").str[0]) if "transcript_id" in reference_cds.columns else set()
+    translons = translons.copy()
+    for idx in translons.index[unknown_mask]:
+        fk = translons.at[idx, "feature_key"]
+        tid_versioned = translons.at[idx, "transcript_id"] or ""
+        tid = tid_versioned.split(".")[0]
+        if fk in ref_keys or (tid and tid in ref_tids):
+            translons.at[idx, "source_feature_class"] = "cds"
+        else:
+            translons.at[idx, "source_feature_class"] = "non_cds"
+    n_classified = unknown_mask.sum()
+    n_cds = (translons.loc[unknown_mask, "source_feature_class"] == "cds").sum()
+    print(f"[INFO] Classified {n_classified} unknown translons: {n_cds} cds, {n_classified - n_cds} non_cds", file=sys.stderr)
+    return translons
+
+
 def write_sqlite(path: Path, tables: dict[str, pd.DataFrame]) -> None:
     if path.exists():
         path.unlink()
@@ -734,6 +763,7 @@ def main() -> None:
     parser_manifest = pd.DataFrame(manifest_rows)
     translons, blocks, qc = build_translon_tables(candidates, args.fasta)
     reference_cds = reference_cds_from_gtf(args.gtf)
+    translons = classify_unknown_feature_class(translons, reference_cds)
     recall = cds_recall(translons, reference_cds)
 
     tables = {
