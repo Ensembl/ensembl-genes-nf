@@ -141,3 +141,5 @@ cython_debug/
 .nextflow.log*
 .nextflow/
 work/
+
+figures
