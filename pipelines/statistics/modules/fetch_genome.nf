@@ -27,10 +27,8 @@ process FETCH_GENOME {
     tag "${meta.gca}:genome"
     label 'fetch_file'
     label 'python'
-    publishDir "${params.cacheDir}/${meta.gca}/ncbi_dataset", mode: 'copy', pattern: "versions.yml"
-    afterScript "sleep ${params.files_latency}"
-    // Needed because of file system latency
-    maxForks 10
+    storeDir "${params.cacheDir}/${meta.gca}/ncbi_dataset", mode: 'copy', pattern: "versions.yml"
+
 
     input:
     val meta
