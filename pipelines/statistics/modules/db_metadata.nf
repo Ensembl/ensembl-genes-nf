@@ -71,7 +71,7 @@ process DB_METADATA {
     # Create versions file
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        get_meta_value.py.py: \$(get_meta_value.py.py --version 2>&1 | grep -oP 'version \\K[0-9.]+' || echo "unknown")
+        get_meta_value.py.py: \$(get_meta_value.py --version 2>&1 | grep -oP 'version \\K[0-9.]+' || echo "unknown")
         python: \$(python --version | sed 's/Python //g')
     END_VERSIONS
     """

@@ -36,7 +36,7 @@ process BUSCO_DATASET {
 
     script:
     """
-    if [[ !"${params.busco_dataset}" ]]; then
+    if [[ ! "${params.busco_dataset}" ]]; then
     ${params.enscode}/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}  
     
     else 
