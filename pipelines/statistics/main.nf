@@ -86,7 +86,7 @@ workflow {
     // Collect version outputs
     def busco_versions = params.run_busco_core || params.run_busco_ncbi ? RUN_BUSCO.out.versions : channel.empty()
     def omark_versions = params.run_omark ? RUN_OMARK.out.versions : channel.empty()
-    def stats_versions = params.run_ensembl_stats ? RUN_ENSEMBL_STATS.out.versions : channel.empty()
+    def stats_versions = params.run_ensembl_stats || params.run_ensembl_beta_metakeys ? RUN_ENSEMBL_STATS.out.versions : channel.empty()
 
     // Mix all versions
     def ch_all_versions = channel.empty()
@@ -96,23 +96,24 @@ workflow {
 
     // Merge into single file and publish
     COLLECT_SOFTWARE_VERSIONS(ch_all_versions.collect())
-    }
-    // nextflow-lint-disable
-    workflow.onComplete {
+}
+
+// nextflow-lint-disable
+workflow.onComplete {
     log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
     log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
     cleanCacheDirectory()
-    }
-    // nextflow-lint-disable
-    workflow.onError{
-        log.error("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
-    }
+}
+
+// nextflow-lint-disable
+workflow.onError {
+    log.error("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
+}
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     COMPLETION HANDLERS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
 
 
