@@ -79,9 +79,6 @@ workflow RUN_ENSEMBL_STATS {
         ch_versions_file = ch_versions_file.mix(ADD_BETA_UPDATES_ON_CORE.out.versions_file)
         ch_versions_file.view { item -> "After ADD_BETA_UPDATES_ON_CORE mix: ${item}" }
     }
-    // Collect all versions to ensure they're ready before emitting
-    ch_versions_file = ch_versions_file.collect()
-
     emit:
     versions = ch_versions_file
 }
