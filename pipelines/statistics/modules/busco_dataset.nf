@@ -35,12 +35,13 @@ process BUSCO_DATASET {
     path "versions.yml", emit: versions_file
 
     script:
+    def busco_dataset = params.busco_dataset ?: meta.busco_dataset ?: ''
+    busco_dataset = busco_dataset ? busco_dataset.trim() : ''
     """
-    if [[ ! "${params.busco_dataset}" ]]; then
-    ${params.enscode}/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}  
-    
-    else 
-    echo "${params.busco_dataset.trim()}"
+    if [[ -z "${busco_dataset}" ]]; then
+        ${params.enscode}/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}
+    else
+        echo "${busco_dataset}"
     fi
     # Create versions file
     PYTHON_VERSION=\$(python --version 2>&1 | sed 's/Python //')
