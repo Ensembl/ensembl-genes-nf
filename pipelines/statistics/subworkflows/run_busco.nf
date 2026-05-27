@@ -29,10 +29,8 @@ include { DB_METADATA } from '../modules/db_metadata.nf'
 include { BUSCO_DATASET } from '../modules/busco_dataset.nf'
 include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
-include { BUSCO_GENOME_LINEAGE } from '../modules/busco_genome_lineage.nf'
-include { BUSCO_PROTEIN_LINEAGE } from '../modules/busco_protein_lineage.nf'
-include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_PROTEIN } from '../modules/busco_core_metakeys.nf'
-include { BUSCO_CORE_METAKEYS as BUSCO_CORE_METAKEYS_GENOME } from '../modules/busco_core_metakeys.nf'
+include { BUSCO_LINEAGE } from '../modules/busco_lineage.nf'
+include { BUSCO_CORE_METAKEYS } from '../modules/busco_core_metakeys.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -52,7 +50,7 @@ workflow RUN_BUSCO {
     def data
     def busco_mode = params.busco_mode == 'both' ? ['protein', 'genome'] : [params.busco_mode]
     if (params.run_busco_ncbi && !params.run_busco_core) {
-        busco_mode = 'genome'
+        busco_mode = ['genome']
         data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
             .splitCsv(sep: ',', header: true)
             .map { row ->
@@ -69,7 +67,7 @@ workflow RUN_BUSCO {
             }
     }
     else if (params.run_busco_core) {
-        data = channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
+        data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
             .splitCsv(sep: ',', header: true)
             .map { row ->
                 [
@@ -95,7 +93,7 @@ workflow RUN_BUSCO {
         def new_taxon = lines[0].split('=')[1]
         def new_gca = lines[1].split('=')[1]
         def production_name = lines[2].split('=')[1]
-        def updated_meta = meta + [taxon_id: new_taxon, gca: new_gca, production_species: production_name]
+        def updated_meta = meta + [taxon_id: new_taxon, gca: new_gca, production_name: production_name]
         updated_meta
     }
     ch_versions_file = channel.empty()
@@ -110,29 +108,34 @@ workflow RUN_BUSCO {
         }
         .view { meta -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}" }
     ch_versions_file = ch_versions_file.mix(BUSCO_DATASET.out.versions_file)
+    def buscoInput = channel.empty()
+
     // Run Busco in genome mode
     if (busco_mode.contains('genome')) {
-        def genomeData = FETCH_GENOME(dataset_db).genome_file_output
-            .map { meta, fna_file ->
-                return tuple(meta, fna_file)
+        def genomeData = FETCH_GENOME(dataset_db).fasta_file_output
+            .map { meta, fasta_file ->
+                return tuple(meta + [busco_mode: 'genome'], fasta_file)
             }
-            .view { meta, fna_file -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}, file=${fna_file}" }
+            .view { meta, fasta_file -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}, file=${fasta_file}" }
         ch_versions_file = ch_versions_file.mix(FETCH_GENOME.out.versions_file)
-        def buscoGenomeOutput = BUSCO_GENOME_LINEAGE(genomeData).busco_genome_lineage_output
-        ch_versions_file = ch_versions_file.mix(BUSCO_GENOME_LINEAGE.out.versions_file)
-        BUSCO_CORE_METAKEYS_GENOME(buscoGenomeOutput)
-        ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS_GENOME.out.versions_file)
+        buscoInput = buscoInput.mix(genomeData)
     }
 
     // Run Busco in protein mode
     if (busco_mode.contains('protein')) {
-        def proteinData = FETCH_PROTEINS(dataset_db).protein_file_output
+        def proteinData = FETCH_PROTEINS(dataset_db).fasta_file_output
+            .map { meta, fasta_file ->
+                return tuple(meta + [busco_mode: 'protein'], fasta_file)
+            }
         ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
-        def buscoProteinOutput = BUSCO_PROTEIN_LINEAGE(proteinData).busco_protein_lineage_output
-        ch_versions_file = ch_versions_file.mix(BUSCO_PROTEIN_LINEAGE.out.versions_file)
-        BUSCO_CORE_METAKEYS_PROTEIN(buscoProteinOutput)
-        ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS_PROTEIN.out.versions_file)
+        buscoInput = buscoInput.mix(proteinData)
     }
+
+    def buscoOutput = BUSCO_LINEAGE(buscoInput).busco_lineage_output
+    ch_versions_file = ch_versions_file.mix(BUSCO_LINEAGE.out.versions_file)
+
+    BUSCO_CORE_METAKEYS(buscoOutput)
+    ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS.out.versions_file)
 
     emit:
     versions = ch_versions_file
