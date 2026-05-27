@@ -302,6 +302,7 @@ def test_sparse_parquet_global_store_preserves_counts_across_studies(tmp_path):
     config = json.loads((outdir / "global_config.json").read_text())
     assert config["matrix_format"] == "sparse-parquet"
     assert config["matrix_manifest"] == "global_matrix_manifest.json"
+    assert config["retained_counts_materialized"] is False
     assert (outdir / "global_reads.parquet").exists()
     assert pl.read_parquet(outdir / "global_reads.parquet").sort("read_id").to_dicts() == [
         {"read_id": 0, "read_bucket": 0, "sequence": "AA", "length": 2},
@@ -309,7 +310,8 @@ def test_sparse_parquet_global_store_preserves_counts_across_studies(tmp_path):
         {"read_id": 2, "read_bucket": 1, "sequence": "GG", "length": 2},
     ]
     assert (outdir / "global_counts" / "generation=000001").exists()
-    assert pl.read_parquet(outdir / "global_retained_counts.parquet").height == 4
+    assert (outdir / "global_matrix.parquet").is_symlink()
+    assert not (outdir / "global_retained_counts.parquet").exists()
 
 
 def test_sparse_parquet_global_store_does_not_materialize_study_csr(tmp_path, monkeypatch):
@@ -351,6 +353,8 @@ def test_sparse_parquet_global_store_does_not_materialize_study_csr(tmp_path, mo
         finally:
             merger.close_remaps()
     merger.save_outputs()
+    assert merger.new_read_rows == []
+    assert merger.existing_reads == {}
 
     facts = (
         pl.read_parquet(str(outdir / "global_counts" / "generation=000001" / "read_bucket=*" / "*.parquet"))

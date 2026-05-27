@@ -199,6 +199,132 @@ class MetadataShardWriter:
         return metadata_format
 
 
+class GlobalReadShardWriter:
+    """Write global read lookup rows as bounded TSV shards, then convert to parquet."""
+
+    def __init__(
+        self,
+        output_path: Path,
+        temp_dir: Path,
+        shard_rows: int,
+        read_bucket_size: int,
+    ):
+        self.output_path = Path(output_path)
+        self.temp_dir = Path(temp_dir)
+        self.shard_rows = max(1, shard_rows)
+        self.read_bucket_size = max(1, read_bucket_size)
+        self.shard_index = 0
+        self.rows_in_shard = 0
+        self.total_rows = 0
+        self.current_handle = None
+        self.current_path: Optional[Path] = None
+        self.parquet_parts: List[Path] = []
+
+    def __enter__(self):
+        self._open_next_shard()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
+
+    def _open_next_shard(self):
+        self._convert_current_shard()
+        shard_name = f"global_reads_part_{self.shard_index:05d}"
+        self.current_path = self.temp_dir / f"{shard_name}.tsv"
+        self.current_handle = open(self.current_path, "w")
+        self.current_handle.write("read_id\tread_bucket\tsequence\tlength\n")
+        self.rows_in_shard = 0
+        self.shard_index += 1
+
+    def _convert_current_shard(self):
+        if self.current_path is None:
+            return
+
+        self.close()
+        if self.rows_in_shard == 0:
+            try:
+                self.current_path.unlink()
+            except FileNotFoundError:
+                pass
+            self.current_path = None
+            return
+
+        if not HAVE_POLARS:
+            raise RuntimeError("polars is required to stream global read lookup parquet")
+
+        parquet_path = self.temp_dir / f"global_reads_part_{len(self.parquet_parts):05d}.parquet"
+        self._scan_tsv(self.current_path).sink_parquet(
+            parquet_path,
+            compression="zstd",
+        )
+        try:
+            self.current_path.unlink()
+        except FileNotFoundError:
+            pass
+        self.parquet_parts.append(parquet_path)
+        self.current_path = None
+        self.rows_in_shard = 0
+
+    def _scan_tsv(self, tsv_path: Path):
+        scan_kwargs = {"separator": "\t"}
+        schema = {
+            "read_id": pl.UInt64,
+            "read_bucket": pl.UInt32,
+            "sequence": pl.Utf8,
+            "length": pl.UInt32,
+        }
+        try:
+            return pl.scan_csv(tsv_path, **scan_kwargs, schema_overrides=schema)
+        except TypeError:
+            return pl.scan_csv(tsv_path, **scan_kwargs, dtypes=schema)
+
+    def write(self, read_id: int, sequence: str):
+        if self.current_handle is None:
+            self._open_next_shard()
+        if self.rows_in_shard >= self.shard_rows:
+            self._open_next_shard()
+
+        read_bucket = int(read_id) // self.read_bucket_size
+        self.current_handle.write(f"{read_id}\t{read_bucket}\t{sequence}\t{len(sequence)}\n")
+        self.rows_in_shard += 1
+        self.total_rows += 1
+
+    def close(self):
+        if self.current_handle is not None:
+            self.current_handle.close()
+            self.current_handle = None
+
+    def finalize(self) -> str:
+        """Convert shards to parquet. Returns 'file' or 'dataset'."""
+        self._convert_current_shard()
+
+        if self.output_path.exists():
+            if self.output_path.is_dir():
+                shutil.rmtree(self.output_path)
+            else:
+                self.output_path.unlink()
+
+        if self.total_rows == 0:
+            pl.DataFrame(
+                {
+                    "read_id": pl.Series([], dtype=pl.UInt64),
+                    "read_bucket": pl.Series([], dtype=pl.UInt32),
+                    "sequence": pl.Series([], dtype=pl.Utf8),
+                    "length": pl.Series([], dtype=pl.UInt32),
+                }
+            ).write_parquet(self.output_path)
+            return "file"
+
+        if len(self.parquet_parts) == 1:
+            shutil.move(str(self.parquet_parts[0]), self.output_path)
+            return "file"
+
+        self.output_path.mkdir(parents=True, exist_ok=True)
+        for idx, parquet_path in enumerate(self.parquet_parts):
+            shutil.move(str(parquet_path), self.output_path / f"part-{idx:05d}.parquet")
+        return "dataset"
+
+
 class SparseParquetFactWriter:
     """Write sparse global counts as partitioned parquet fact shards."""
 
@@ -766,7 +892,7 @@ class GlobalMatrixMerger:
         output_dir: Path,
         chunk_size: int = 10000,
         partition: str = None,
-        metadata_shard_rows: int = 100_000_000,
+        metadata_shard_rows: int = 1_000_000,
         sparse_shard_rows: int = 5_000_000,
         sparse_read_bucket_size: int = 100_000,
         write_fasta: bool = True,
@@ -774,6 +900,7 @@ class GlobalMatrixMerger:
         allow_dense: bool = False,
         dense_chunk_byte_limit: int = 128 * 1024 * 1024,
         append_to: Optional[Path] = None,
+        write_retained_counts: bool = False,
     ):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -790,7 +917,9 @@ class GlobalMatrixMerger:
         self.dense_chunk_byte_limit = dense_chunk_byte_limit
         self.matrix_backend = matrix_format
         self.matrix_manifest: Optional[Dict[str, Union[str, int, List, Dict]]] = None
+        self.global_reads_written = False
         self.append_to = Path(append_to) if append_to else None
+        self.write_retained_counts = write_retained_counts
         self.previous_manifest_path: Optional[Path] = None
         self.previous_manifest: Optional[Dict] = None
         self.generation = 1
@@ -932,6 +1061,14 @@ class GlobalMatrixMerger:
                 temp_dir,
                 self.metadata_shard_rows,
             ))
+            reads_writer = None
+            if self.matrix_format == "sparse-parquet" and not self.previous_manifest_path:
+                reads_writer = stack.enter_context(GlobalReadShardWriter(
+                    self.output_dir / f"{self.prefix}_reads.parquet",
+                    temp_dir,
+                    self.metadata_shard_rows,
+                    self.sparse_read_bucket_size,
+                ))
 
             for study in study_inputs:
                 iterators.append(read_study_sequences(study.sequences_path, study.study_id))
@@ -953,12 +1090,13 @@ class GlobalMatrixMerger:
                 else:
                     global_id = next_global_id
                     next_global_id += 1
-                    self.existing_reads[seq] = global_id
-                    self.new_read_rows.append({
-                        "read_id": global_id,
-                        "sequence": seq,
-                        "length": len(seq),
-                    })
+                    if self.previous_manifest_path:
+                        self.existing_reads[seq] = global_id
+                        self.new_read_rows.append({
+                            "read_id": global_id,
+                            "sequence": seq,
+                            "length": len(seq),
+                        })
 
                 seen_studies = set()
                 for study_index, local_id in occurrences:
@@ -982,9 +1120,14 @@ class GlobalMatrixMerger:
                 if fasta is not None:
                     fasta.write(f">read_{global_id}\n{seq}\n")
                 metadata_writer.write(global_id, len(seq))
+                if reads_writer is not None:
+                    reads_writer.write(global_id, seq)
 
             self.n_reads = next_global_id
             self.metadata_format = metadata_writer.finalize()
+            if reads_writer is not None:
+                reads_writer.finalize()
+                self.global_reads_written = True
 
         for remap in self.study_remaps.values():
             if hasattr(remap, 'flush'):
@@ -1187,7 +1330,7 @@ class GlobalMatrixMerger:
             else:
                 compat_path.unlink()
         if matrix_path.exists():
-            shutil.copytree(matrix_path, compat_path)
+            os.symlink(matrix_path.relative_to(self.output_dir), compat_path, target_is_directory=True)
 
         return matrix_path
 
@@ -1416,6 +1559,15 @@ class GlobalMatrixMerger:
         if not HAVE_POLARS:
             raise RuntimeError("polars is required for sparse read lookup tables")
 
+        if self.global_reads_written:
+            reads_path = self.output_dir / f"{self.prefix}_reads.parquet"
+            if self.prefix == "global" and reads_path != self.output_dir / "global_reads.parquet":
+                if reads_path.is_dir():
+                    shutil.copytree(reads_path, self.output_dir / "global_reads.parquet", dirs_exist_ok=True)
+                else:
+                    shutil.copy2(reads_path, self.output_dir / "global_reads.parquet")
+            return
+
         rows = list(self.existing_read_rows)
         existing_ids = {int(row["read_id"]) for row in rows}
         rows.extend(row for row in self.new_read_rows if int(row["read_id"]) not in existing_ids)
@@ -1550,7 +1702,8 @@ class GlobalMatrixMerger:
         self._write_global_read_tables()
         self._write_sparse_lookup_tables()
         self._ensure_tombstones_table()
-        self._write_retained_counts_view()
+        if self.write_retained_counts:
+            self._write_retained_counts_view()
 
         # Write config
         config = {
@@ -1572,6 +1725,7 @@ class GlobalMatrixMerger:
             'global_counts': f'{self.prefix}_counts' if self.matrix_manifest else None,
             'tombstones': f'{self.prefix}_tombstones.parquet' if self.matrix_manifest else None,
             'retained_counts': f'{self.prefix}_retained_counts.parquet' if self.matrix_manifest else None,
+            'retained_counts_materialized': bool(self.write_retained_counts),
             'matrix_manifest': f'{self.prefix}_matrix_manifest.json' if self.matrix_manifest else None,
         }
 
@@ -1657,8 +1811,8 @@ def main():
     parser.add_argument(
         '--metadata-shard-rows',
         type=int,
-        default=100_000_000,
-        help='Maximum rows per metadata parquet shard (default: 100000000)'
+        default=1_000_000,
+        help='Maximum rows per metadata/read lookup parquet shard (default: 1000000)'
     )
     parser.add_argument(
         '--matrix-format',
@@ -1705,6 +1859,11 @@ def main():
         action='store_false',
         dest='write_fasta',
         help='Create an empty FASTA placeholder instead of writing global read sequences'
+    )
+    parser.add_argument(
+        '--write-retained-counts',
+        action='store_true',
+        help='Materialize global_retained_counts.parquet compatibility view after sparse merge'
     )
 
     args = parser.parse_args()
@@ -1780,6 +1939,7 @@ def main():
         allow_dense=args.allow_dense,
         dense_chunk_byte_limit=args.dense_chunk_byte_limit,
         append_to=args.append_to,
+        write_retained_counts=args.write_retained_counts,
     )
 
     with make_tempdir("global_merge_", args.output_dir) as temp_dir:

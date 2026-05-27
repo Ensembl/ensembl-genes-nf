@@ -36,7 +36,7 @@ process MERGE_GLOBAL_MATRIX {
 
     script:
     def chunk_size = task.ext.chunk_size ?: 10000
-    def metadata_shard_rows = task.ext.metadata_shard_rows ?: 100000000
+    def metadata_shard_rows = task.ext.metadata_shard_rows ?: 1000000
     def matrix_format = task.ext.matrix_format ?: 'sparse-parquet'
     def sparse_shard_rows = task.ext.sparse_shard_rows ?: 5000000
     def sparse_read_bucket_size = task.ext.sparse_read_bucket_size ?: 100000
