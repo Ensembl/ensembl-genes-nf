@@ -38,8 +38,10 @@ process BUSCO_DATASET {
     def busco_dataset = params.busco_dataset ?: meta.busco_dataset ?: ''
     busco_dataset = busco_dataset ? busco_dataset.trim() : ''
     """
+    export PYTHONPATH="${params.enscode}/ensembl-genes/src/python:\${PYTHONPATH:-}"
+
     if [[ -z "${busco_dataset}" ]]; then
-        ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}
+        python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}
     else
         echo "${busco_dataset}"
     fi

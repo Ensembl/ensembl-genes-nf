@@ -37,6 +37,8 @@ process RUN_ENSEMBL_META {
 
     script:
     """
+    export PYTHONPATH="${params.enscode}/ensembl-genes/src/python:\${PYTHONPATH:-}"
+
     python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py \
     --output_dir core_statistics --db_name ${meta.dbname} \
     --host ${params.host} --port ${params.port}  \
