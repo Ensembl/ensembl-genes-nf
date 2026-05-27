@@ -27,26 +27,40 @@ process FETCH_GENOME {
     tag "${meta.gca}:genome"
     label 'fetch_file'
     label 'python'
-    storeDir "${params.cacheDir}/${meta.gca}/ncbi_dataset", mode: 'copy', pattern: "versions.yml"
 
 
     input:
     val meta
 
     output:
-    tuple val(meta), path("*.fna"), emit: genome_file_output
+    tuple val(meta), path("genome.fna"), emit: genome_file_output
     path "versions.yml", emit: versions_file
 
     script:
+    def cache_dir = "${params.cacheDir}/${meta.gca}/ncbi_dataset"
     """
-    if [[ ! -f ${params.cacheDir}/${meta.gca}/ncbi_dataset/*.fna && ! -f "${meta.genome_file}" ]]; then 
-    fetch_genome.py --output_dir ${params.cacheDir}/${meta.gca}/ncbi_dataset --gca ${meta.gca}
-    fi
-    # Link the appropriate genome file
+    mkdir -p "${cache_dir}"
+
     if [[ -f "${meta.genome_file}" ]]; then
-        ln -s ${meta.genome_file} genome.fna
+        ln -s "${meta.genome_file}" genome.fna
     else
-        ln -s ${params.cacheDir}/${meta.gca}/ncbi_dataset/*.fna genome.fna
+        cached_genome=\$(find "${cache_dir}" -maxdepth 1 -type f -name "*.fna" | head -n 1)
+
+        if [[ -z "\$cached_genome" ]]; then
+            fetch_genome.py \
+                --output_dir "${cache_dir}" \
+                --gca ${meta.gca} \
+                --ncbi_base ${params.ncbiBaseUrl}
+
+            cached_genome=\$(find "${cache_dir}" -maxdepth 1 -type f -name "*.fna" | head -n 1)
+        fi
+
+        if [[ -z "\$cached_genome" ]]; then
+            echo "No genome FASTA found for ${meta.gca}" >&2
+            exit 1
+        fi
+
+        ln -s "\$cached_genome" genome.fna
     fi
     
     # Create versions file
