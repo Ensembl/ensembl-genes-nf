@@ -68,9 +68,7 @@ workflow RUN_OMARK {
     }
     ch_versions_file = ch_versions_file.mix(DB_METADATA.out.versions_file)
     // MODULE: Get canonical protein from db
-    // 
-    //def proteinData = FETCH_PROTEINS (db_meta).output.protein_file_output
-    def proteinData = FETCH_PROTEINS(metadata).protein_file_output
+    def proteinData = FETCH_PROTEINS(metadata).fasta_file_output
     ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
     //
     // MODULE: Get orthologous groups from Omamer db 
