@@ -36,14 +36,14 @@ process DB_METADATA {
     script:
     """
     if [[ "${meta.taxon_id}" == "UNKNOWN"  &&  "${meta.gca}" == "UNKNOWN" ]]; then
-        TAXON_ID=\$(get_meta_value.py.py \
+        TAXON_ID=\$(get_meta_value.py \
             --db ${meta.dbname} \
             --key species.taxonomy_id \
             --species-id ${meta.species_id} \
             --host ${params.host} \
             --port ${params.port} \
             --user ${params.user_r})
-        GCA=\$(get_meta_value.py.py \
+        GCA=\$(get_meta_value.py \
             --db ${meta.dbname} \
             --key assembly.accession \
             --species-id ${meta.species_id} \
@@ -51,7 +51,7 @@ process DB_METADATA {
             --port ${params.port} \
             --user ${params.user_r}
             )
-        PRODUCTION_NAME=\$(get_meta_value.py.py \
+        PRODUCTION_NAME=\$(get_meta_value.py \
             --db ${meta.dbname} \
             --key species.production_name \
             --species-id ${meta.species_id} \
@@ -71,7 +71,7 @@ process DB_METADATA {
     # Create versions file
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        get_meta_value.py.py: \$(get_meta_value.py --version 2>&1 | grep -oP 'version \\K[0-9.]+' || echo "unknown")
+        get_meta_value.py: \$(get_meta_value.py --version 2>&1 | grep -oP 'version \\K[0-9.]+' || echo "unknown")
         python: \$(python --version | sed 's/Python //g')
     END_VERSIONS
     """
