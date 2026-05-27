@@ -22,6 +22,7 @@ import os
 import shutil
 import sys
 import tempfile
+import zipfile
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
@@ -384,6 +385,127 @@ def load_sparse_manifest(path: Path) -> Tuple[Path, Dict]:
     return manifest_path, manifest
 
 
+class BufferedNpyReader:
+    """Stream primitive values from an unpickled .npy member."""
+
+    def __init__(self, handle, buffer_values: int = 1_000_000):
+        version = np.lib.format.read_magic(handle)
+        shape, fortran_order, dtype = np.lib.format._read_array_header(
+            handle,
+            version,
+            max_header_size=10000,
+        )
+        if fortran_order:
+            raise ValueError("Fortran-order .npy arrays are not supported for CSR streaming")
+        if dtype.hasobject:
+            raise ValueError("Object .npy arrays are not supported for CSR streaming")
+
+        self.handle = handle
+        self.shape = tuple(shape)
+        self.dtype = np.dtype(dtype)
+        self.size = int(np.prod(self.shape, dtype=np.int64))
+        self.buffer_values = max(1, buffer_values)
+        self.buffer = np.asarray([], dtype=self.dtype)
+        self.buffer_pos = 0
+        self.values_read = 0
+
+    def _fill(self):
+        remaining = self.size - self.values_read
+        if remaining <= 0:
+            self.buffer = np.asarray([], dtype=self.dtype)
+            self.buffer_pos = 0
+            return
+        n_values = min(self.buffer_values, remaining)
+        raw = self.handle.read(n_values * self.dtype.itemsize)
+        expected = n_values * self.dtype.itemsize
+        if len(raw) != expected:
+            raise EOFError(f"Unexpected EOF while reading .npy payload: expected {expected}, got {len(raw)}")
+        self.buffer = np.frombuffer(raw, dtype=self.dtype)
+        self.buffer_pos = 0
+        self.values_read += n_values
+
+    def read_values(self, n_values: int):
+        if n_values < 0:
+            raise ValueError(f"Cannot read negative number of values: {n_values}")
+        out = np.empty(n_values, dtype=self.dtype)
+        out_pos = 0
+        while out_pos < n_values:
+            if self.buffer_pos >= len(self.buffer):
+                self._fill()
+                if len(self.buffer) == 0:
+                    raise EOFError(
+                        f"Unexpected EOF after {out_pos} of {n_values} requested values"
+                    )
+            available = len(self.buffer) - self.buffer_pos
+            take = min(available, n_values - out_pos)
+            out[out_pos:out_pos + take] = self.buffer[self.buffer_pos:self.buffer_pos + take]
+            self.buffer_pos += take
+            out_pos += take
+        return out
+
+
+def read_npz_scalar_array(npz_path: Path, name: str):
+    with np.load(npz_path) as loaded:
+        if name not in loaded:
+            raise ValueError(f"{npz_path} is missing required array {name!r}")
+        return loaded[name]
+
+
+def iter_csr_npz_rows(npz_path: Path, buffer_values: int = 1_000_000):
+    """
+    Stream rows from a SciPy-compatible CSR .npz without materializing it.
+
+    Yields:
+        local_row, sample_indices, counts
+    """
+    shape = tuple(int(value) for value in read_npz_scalar_array(npz_path, "shape"))
+    if len(shape) != 2:
+        raise ValueError(f"{npz_path} has invalid CSR shape: {shape}")
+
+    with zipfile.ZipFile(npz_path, "r") as zf:
+        required = {"data.npy", "indices.npy", "indptr.npy"}
+        missing = required.difference(zf.namelist())
+        if missing:
+            raise ValueError(f"{npz_path} is missing CSR arrays: {sorted(missing)}")
+
+        with zf.open("indptr.npy") as indptr_handle, \
+                zf.open("indices.npy") as indices_handle, \
+                zf.open("data.npy") as data_handle:
+            indptr = BufferedNpyReader(indptr_handle, buffer_values=buffer_values)
+            indices = BufferedNpyReader(indices_handle, buffer_values=buffer_values)
+            data = BufferedNpyReader(data_handle, buffer_values=buffer_values)
+
+            if indptr.size != shape[0] + 1:
+                raise ValueError(
+                    f"{npz_path} indptr length {indptr.size:,} does not match rows {shape[0]:,}"
+                )
+            if indices.size != data.size:
+                raise ValueError(
+                    f"{npz_path} indices length {indices.size:,} does not match data length {data.size:,}"
+                )
+
+            previous = int(indptr.read_values(1)[0])
+            if previous != 0:
+                raise ValueError(f"{npz_path} CSR indptr starts at {previous}, expected 0")
+
+            for local_row in range(shape[0]):
+                current = int(indptr.read_values(1)[0])
+                if current < previous:
+                    raise ValueError(f"{npz_path} CSR indptr decreases at row {local_row}")
+                row_nnz = current - previous
+                yield (
+                    local_row,
+                    indices.read_values(row_nnz),
+                    data.read_values(row_nnz),
+                )
+                previous = current
+
+            if previous != data.size:
+                raise ValueError(
+                    f"{npz_path} CSR indptr ends at {previous:,}, expected nnz {data.size:,}"
+                )
+
+
 def resolve_local_id(seq_to_id: Dict[int, VocabEntry], seq: str) -> Optional[int]:
     """
     Resolve a study-local row ID for a sequence.
@@ -646,7 +768,7 @@ class GlobalMatrixMerger:
         partition: str = None,
         metadata_shard_rows: int = 100_000_000,
         sparse_shard_rows: int = 5_000_000,
-        sparse_read_bucket_size: int = 1_000_000,
+        sparse_read_bucket_size: int = 100_000,
         write_fasta: bool = True,
         matrix_format: str = "sparse-parquet",
         allow_dense: bool = False,
@@ -981,7 +1103,7 @@ class GlobalMatrixMerger:
                 "samples": f"{self.prefix}_samples.parquet",
                 "studies": f"{self.prefix}_studies.parquet",
             },
-            "partitioning": ["read_bucket"],
+            "partitioning": ["generation", "read_bucket"],
             "read_bucket_size": self.sparse_read_bucket_size,
             "n_reads": n_reads,
             "n_samples": n_samples,
@@ -1035,27 +1157,25 @@ class GlobalMatrixMerger:
                 for study_id, matrix_path_study in study_matrices.items():
                     print(f"  Merging study: {study_id}", file=sys.stderr)
 
-                    study_matrix = sp.load_npz(matrix_path_study).tocsr()
                     remap = self.study_remaps[study_id]
                     sample_offset = self.study_sample_offsets[study_id]
-                    if study_matrix.shape[0] != len(remap):
+                    shape = tuple(int(value) for value in read_npz_scalar_array(matrix_path_study, "shape"))
+                    if shape[0] != len(remap):
                         raise RuntimeError(
-                            f"{study_id}: matrix row count ({study_matrix.shape[0]:,}) does not match "
+                            f"{study_id}: matrix row count ({shape[0]:,}) does not match "
                             f"sequence metadata/remap count ({len(remap):,})"
                         )
 
-                    for local_row in range(study_matrix.shape[0]):
+                    for local_row, sample_indices, counts in iter_csr_npz_rows(matrix_path_study):
                         global_row = int(remap[local_row])
-                        row_start = study_matrix.indptr[local_row]
-                        row_end = study_matrix.indptr[local_row + 1]
-                        for data_idx in range(row_start, row_end):
-                            sample_index = int(study_matrix.indices[data_idx]) + sample_offset
+                        for sample_idx, count in zip(sample_indices, counts):
+                            sample_index = int(sample_idx) + sample_offset
                             writer.write(
                                 study_id=study_id,
                                 read_id=global_row,
                                 sample_id=sample_index,
                                 study_id_int=self.study_id_ints[study_id],
-                                count=int(study_matrix.data[data_idx]),
+                                count=int(count),
                             )
 
                 writer.commit()
@@ -1308,6 +1428,15 @@ class GlobalMatrixMerger:
                 "sequence": pl.Utf8,
                 "length": pl.UInt32,
             },
+        ).with_columns(
+            (pl.col("read_id") // self.sparse_read_bucket_size)
+            .cast(pl.UInt32)
+            .alias("read_bucket")
+        ).select(
+            "read_id",
+            "read_bucket",
+            "sequence",
+            "length",
         )
         frame.write_parquet(self.output_dir / f"{self.prefix}_reads.parquet")
         if self.prefix == "global":
@@ -1546,8 +1675,8 @@ def main():
     parser.add_argument(
         '--sparse-read-bucket-size',
         type=int,
-        default=1_000_000,
-        help='Number of global read IDs per sparse parquet read_bucket partition (default: 1000000)'
+        default=100_000,
+        help='Number of global read IDs per sparse parquet read_bucket partition (default: 100000)'
     )
     parser.add_argument(
         '--allow-dense',

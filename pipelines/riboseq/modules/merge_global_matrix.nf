@@ -39,7 +39,7 @@ process MERGE_GLOBAL_MATRIX {
     def metadata_shard_rows = task.ext.metadata_shard_rows ?: 100000000
     def matrix_format = task.ext.matrix_format ?: 'sparse-parquet'
     def sparse_shard_rows = task.ext.sparse_shard_rows ?: 5000000
-    def sparse_read_bucket_size = task.ext.sparse_read_bucket_size ?: 1000000
+    def sparse_read_bucket_size = task.ext.sparse_read_bucket_size ?: 100000
     def append_flag = task.ext.append_to ? "--append-to ${task.ext.append_to}" : ''
     def fasta_flag = task.ext.write_fasta == false ? '--no-write-fasta' : ''
     def partition_flag = task.ext.partition ? "--partition ${task.ext.partition}" : ''

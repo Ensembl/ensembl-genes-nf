@@ -294,7 +294,7 @@ def test_sparse_parquet_global_store_preserves_counts_across_studies(tmp_path):
     assert manifest["nnz"] == 4
     assert len(manifest["generations"]) == 1
     assert manifest["generations"][0]["path"] == "global_counts/generation=000001"
-    assert manifest["partitioning"] == ["read_bucket"]
+    assert manifest["partitioning"] == ["generation", "read_bucket"]
     assert manifest["read_bucket_size"] == 2
     assert sorted({part["read_bucket"] for part in manifest["parts"]}) == [0, 1]
     assert sum(part["rows"] for part in manifest["parts"]) == 4
@@ -303,8 +303,67 @@ def test_sparse_parquet_global_store_preserves_counts_across_studies(tmp_path):
     assert config["matrix_format"] == "sparse-parquet"
     assert config["matrix_manifest"] == "global_matrix_manifest.json"
     assert (outdir / "global_reads.parquet").exists()
+    assert pl.read_parquet(outdir / "global_reads.parquet").sort("read_id").to_dicts() == [
+        {"read_id": 0, "read_bucket": 0, "sequence": "AA", "length": 2},
+        {"read_id": 1, "read_bucket": 0, "sequence": "CC", "length": 2},
+        {"read_id": 2, "read_bucket": 1, "sequence": "GG", "length": 2},
+    ]
     assert (outdir / "global_counts" / "generation=000001").exists()
     assert pl.read_parquet(outdir / "global_retained_counts.parquet").height == 4
+
+
+def test_sparse_parquet_global_store_does_not_materialize_study_csr(tmp_path, monkeypatch):
+    script = load_script("merge_global_matrix.py")
+    study1, study2 = make_two_study_fixture(tmp_path)
+    outdir = tmp_path / "global_sparse"
+
+    def fail_load_npz(_path):
+        raise AssertionError("sparse merge should stream CSR npz rows")
+
+    monkeypatch.setattr(script.sp, "load_npz", fail_load_npz)
+
+    study_inputs = []
+    study_matrices = {}
+    for study_dir in [study1, study2]:
+        metadata_path = next(study_dir.glob("*_metadata.json"))
+        study_id = metadata_path.stem.removesuffix("_metadata")
+        n_reads, samples = script.load_study_metadata(metadata_path, study_id)
+        matrix_path = study_dir / f"{study_id}_matrix.npz"
+        study_inputs.append(script.StudyInput(
+            study_id=study_id,
+            sequences_path=study_dir / f"{study_id}_sequences.txt.gz",
+            matrix_path=matrix_path,
+            metadata_path=metadata_path,
+            n_reads=n_reads,
+            samples=samples,
+        ))
+        study_matrices[study_id] = matrix_path
+
+    merger = script.GlobalMatrixMerger(
+        outdir,
+        matrix_format="sparse-parquet",
+        sparse_read_bucket_size=2,
+    )
+    with script.make_tempdir("global_merge_", outdir) as temp_dir:
+        try:
+            merger.build_global_vocabulary(study_inputs, Path(temp_dir))
+            merger.build_global_matrix(study_matrices)
+        finally:
+            merger.close_remaps()
+    merger.save_outputs()
+
+    facts = (
+        pl.read_parquet(str(outdir / "global_counts" / "generation=000001" / "read_bucket=*" / "*.parquet"))
+        .select("read_id", "sample_id", "count")
+        .sort("read_id", "sample_id")
+        .to_dicts()
+    )
+    assert facts == [
+        {"read_id": 0, "sample_id": 0, "count": 2},
+        {"read_id": 0, "sample_id": 1, "count": 5},
+        {"read_id": 1, "sample_id": 0, "count": 3},
+        {"read_id": 2, "sample_id": 1, "count": 7},
+    ]
 
 
 def test_sparse_parquet_append_writes_new_generation_with_stable_ids(tmp_path):
@@ -369,10 +428,10 @@ def test_sparse_parquet_append_writes_new_generation_with_stable_ids(tmp_path):
 
     reads = pl.read_parquet(append_out / "global_reads.parquet").sort("read_id").to_dicts()
     assert reads == [
-        {"read_id": 0, "sequence": "AA", "length": 2},
-        {"read_id": 1, "sequence": "CC", "length": 2},
-        {"read_id": 2, "sequence": "GG", "length": 2},
-        {"read_id": 3, "sequence": "TT", "length": 2},
+        {"read_id": 0, "read_bucket": 0, "sequence": "AA", "length": 2},
+        {"read_id": 1, "read_bucket": 0, "sequence": "CC", "length": 2},
+        {"read_id": 2, "read_bucket": 1, "sequence": "GG", "length": 2},
+        {"read_id": 3, "read_bucket": 1, "sequence": "TT", "length": 2},
     ]
 
     samples = pl.read_parquet(append_out / "global_samples.parquet").sort("sample_id").to_dicts()
