@@ -107,7 +107,8 @@ workflow.onComplete {
 
 // nextflow-lint-disable
 workflow.onError {
-    log.error("Pipeline execution stopped with the following message: ${workflow.errorMessage}")
+    def error_report = workflow.errorReport ?: workflow.errorMessage ?: 'Unknown error'
+    log.error("Pipeline execution stopped with the following message: ${error_report}")
 }
 
 /*
@@ -115,5 +116,4 @@ workflow.onError {
     COMPLETION HANDLERS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
 
