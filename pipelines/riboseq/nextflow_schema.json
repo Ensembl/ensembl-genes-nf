@@ -340,7 +340,16 @@
       "type": "integer",
       "default": 10000,
       "minimum": 1,
-      "description": "Rows per chunk in the global matrix output"
+      "description": "Rows per chunk in dense global matrix output"
+    },
+    "matrix_format": {
+      "type": "string",
+      "default": "sparse-parquet",
+      "enum": [
+        "sparse-parquet",
+        "dense"
+      ],
+      "description": "Global matrix output format"
     },
     "matrix_tsv_chunk_size": {
       "type": "integer",
@@ -353,6 +362,22 @@
       "default": 100000000,
       "minimum": 1,
       "description": "Maximum rows per global metadata parquet shard"
+    },
+    "matrix_sparse_shard_rows": {
+      "type": "integer",
+      "default": 5000000,
+      "minimum": 1,
+      "description": "Maximum nonzero rows per sparse count Parquet part"
+    },
+    "matrix_sparse_read_bucket_size": {
+      "type": "integer",
+      "default": 1000000,
+      "minimum": 1,
+      "description": "Number of global read IDs per sparse read_bucket partition"
+    },
+    "matrix_append_to": {
+      "type": "string",
+      "description": "Existing sparse global output directory or manifest to append as a new generation"
     },
     "matrix_use_partitioning": {
       "type": "boolean",

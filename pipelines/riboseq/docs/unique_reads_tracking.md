@@ -12,6 +12,26 @@ The unique reads tracking system:
 
 ## Output Files
 
+Matrix mode (`--run_matrix_mode`) writes the scalable global store under `global/`:
+
+1. **`global_counts/generation=<N>/read_bucket=<B>/part-*.parquet`**
+   - Canonical sparse count facts with columns: `read_bucket`, `read_id`, `sample_id`, `study_id_int`, `count`
+   - Appends create a new generation directory instead of rewriting previous count facts
+
+2. **`global_reads.parquet`**
+   - Canonical stable read lookup with columns: `read_id`, `sequence`, `length`
+
+3. **`global_samples.parquet`** and **`global_studies.parquet`**
+   - Integer ID lookup tables for joining sparse facts back to sample and study names
+
+4. **`global_matrix_manifest.json`**
+   - Store manifest, generation list, schema, lookup paths, and append metadata
+
+5. **`global_tombstones.parquet`** and **`global_retained_counts.parquet`**
+   - Logical removals and a materialized retained-count view
+
+`global_matrix.parquet` is kept as a compatibility copy of the latest generated sparse facts. Query tools should prefer the manifest so they can read all generations.
+
 The process generates four output files in the `unique_reads/` directory:
 
 1. **`unique_reads.fa`** (or `unique_reads_run_<name>.fa` in per-run mode)
@@ -145,6 +165,25 @@ Wave will automatically build a container with the required conda packages.
 - **Required for:** Progressive mode
 - **Description:** Path to directory containing previous index files
 - **Example:** `./results/unique_reads`
+
+### Matrix-mode sparse store parameters
+
+- `--matrix_format sparse-parquet` writes the canonical sparse Parquet store. `dense` keeps legacy Zarr/NPZ behavior for small controlled runs.
+- `--matrix_sparse_shard_rows` controls maximum nonzero rows per sparse Parquet part.
+- `--matrix_sparse_read_bucket_size` controls the global read ID span per `read_bucket` partition.
+- `--matrix_append_to` points at a previous sparse global output directory or manifest. The run writes a new generation with stable read/sample/study IDs.
+
+Sparse stores can be queried and maintained with:
+
+```bash
+python pipelines/riboseq/bin/query_sparse_global_matrix.py query results/global \
+  --read-ids 0,10,20 --sample-ids SRR000001
+
+python pipelines/riboseq/bin/query_sparse_global_matrix.py tombstone results/global \
+  --sample-id SRR000001 --reason "failed QC"
+
+python pipelines/riboseq/bin/query_sparse_global_matrix.py retained-view results/global
+```
 
 ## Performance Tuning
 

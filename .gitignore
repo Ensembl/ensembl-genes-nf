@@ -138,6 +138,7 @@ dmypy.json
 cython_debug/
 
 .claude/
+.codex/
 .nextflow.log*
 .nextflow/
 work/

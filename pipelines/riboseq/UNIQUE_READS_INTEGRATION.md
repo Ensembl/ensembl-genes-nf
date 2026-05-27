@@ -201,13 +201,24 @@ This ensures all samples are processed consistently before indexing.
 - **Containers:** Docker, Singularity
 - **Platforms:** Linux, macOS (with adjustments)
 
+## Matrix Mode Sparse Store
+
+`--run_matrix_mode` now defaults to a generation-aware sparse Parquet store:
+
+- `global_counts/generation=<N>/read_bucket=<B>/part-*.parquet` contains canonical sparse facts.
+- `global_reads.parquet`, `global_samples.parquet`, and `global_studies.parquet` are canonical lookup tables.
+- `global_matrix_manifest.json` records schema, generations, parent generation IDs, and append metadata.
+- `global_tombstones.parquet` stores logical removals separately from the manifest.
+- `global_retained_counts.parquet` is a derived retained-count view.
+
+Use `--matrix_append_to <previous-global-dir-or-manifest>` to add a new generation without rewriting committed count facts. Use `query_sparse_global_matrix.py query`, `tombstone`, and `retained-view` for read/sample queries and logical filtering.
+
 ## Future Enhancements
 
 Potential improvements:
 - [ ] Support for other input formats (BAM, BED)
 - [ ] Built-in visualization of count matrix
 - [ ] Integration with downstream analysis tools
-- [ ] Compression of count matrix for very large datasets
 - [ ] Cloud storage integration (S3, GCS)
 
 ## Getting Help

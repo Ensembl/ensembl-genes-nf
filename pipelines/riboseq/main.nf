@@ -193,7 +193,7 @@ workflow {
         // MATRIX MODE: Unique reads matrix pipeline
         // - Groups samples by study
         // - Builds study-level matrices
-        // - Merges into global matrix (Zarr when available, NPZ fallback)
+        // - Merges into global sparse counts by default, or dense Zarr/NPZ on request
         // - Optional single alignment of unique reads
         //
         log.info "Running in MATRIX MODE: Building global unique reads matrix"
@@ -204,7 +204,7 @@ workflow {
         )
 
         // Downstream analysis will use:
-        // - UNIQUE_READS_MATRIX.out.global_matrix (Zarr or NPZ)
+        // - UNIQUE_READS_MATRIX.out.global_counts / global_matrix
         // - UNIQUE_READS_MATRIX.out.unique_reads_bam (single BAM, if alignment enabled)
         // - UNIQUE_READS_MATRIX.out.global_metadata (read info)
 

@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-Merge study matrices into a global matrix with Zarr output using streaming merge.
+Merge study matrices into a global count store using streaming merge.
 
 Takes all study matrix outputs (optionally for a single partition) and produces:
-1. Global Zarr matrix (chunked by reads for efficient locus queries)
+1. Global matrix/count store
 2. Global unique reads FASTA (for single-pass alignment)
 3. Metadata parquet dataset (read_id, length, etc.)
 
 Uses k-way sequence streaming for O(n log k) complexity.
 When used with partitioned inputs, each invocation handles one dinucleotide partition.
-Designed for 100-250 studies, ~100-200M total unique reads.
+The default global store is sparse partitioned Parquet; dense Zarr/NPZ output is
+kept as an explicit compatibility mode for small runs.
 """
 
 import argparse
@@ -17,9 +18,11 @@ import contextlib
 import gzip
 import heapq
 import json
+import os
 import shutil
 import sys
 import tempfile
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Tuple, Union
@@ -193,6 +196,192 @@ class MetadataShardWriter:
             metadata_format = 'dataset'
 
         return metadata_format
+
+
+class SparseParquetFactWriter:
+    """Write sparse global counts as partitioned parquet fact shards."""
+
+    def __init__(
+        self,
+        output_path: Path,
+        temp_dir: Path,
+        shard_rows: int,
+        read_bucket_size: int,
+    ):
+        if not HAVE_POLARS:
+            raise RuntimeError("polars is required for --matrix-format sparse-parquet")
+        self.output_path = Path(output_path)
+        self.staging_path = Path(temp_dir) / f"{self.output_path.name}.staging"
+        self.lock_path = self.output_path.with_suffix(self.output_path.suffix + ".lock")
+        self.shard_rows = max(1, shard_rows)
+        self.read_bucket_size = max(1, read_bucket_size)
+        self.current_handle = None
+        self.current_path: Optional[Path] = None
+        self.current_read_bucket: Optional[int] = None
+        self.rows_in_shard = 0
+        self.total_rows = 0
+        self.part_index = 0
+        self.parts: List[Dict[str, Union[str, int]]] = []
+
+    def __enter__(self):
+        self._acquire_lock()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
+        if exc_type is not None:
+            self.abort()
+        self._release_lock()
+
+    def _acquire_lock(self):
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError as exc:
+            raise RuntimeError(
+                f"Refusing to write sparse store while lock exists: {self.lock_path}"
+            ) from exc
+        with os.fdopen(fd, "w") as handle:
+            handle.write(f"pid={os.getpid()}\n")
+
+        if self.staging_path.exists():
+            shutil.rmtree(self.staging_path)
+        self.staging_path.mkdir(parents=True)
+
+    def _release_lock(self):
+        try:
+            self.lock_path.unlink()
+        except FileNotFoundError:
+            pass
+
+    def _read_bucket(self, read_id: int) -> int:
+        return int(read_id) // self.read_bucket_size
+
+    def _open_next_shard(self, read_bucket: int):
+        self._convert_current_shard()
+        bucket_dir = self.staging_path / f"read_bucket={read_bucket:06d}"
+        bucket_dir.mkdir(parents=True, exist_ok=True)
+        self.current_path = bucket_dir / f"part-{self.part_index:05d}.tsv"
+        self.current_handle = open(self.current_path, "w")
+        self.current_handle.write(
+            "read_bucket\tread_id\tsample_id\tstudy_id_int\tcount\n"
+        )
+        self.current_read_bucket = read_bucket
+        self.rows_in_shard = 0
+        self.part_index += 1
+
+    def _convert_current_shard(self):
+        if self.current_path is None:
+            return
+        self.close()
+        if self.rows_in_shard == 0:
+            try:
+                self.current_path.unlink()
+            except FileNotFoundError:
+                pass
+            self.current_path = None
+            return
+
+        parquet_path = self.current_path.with_suffix(".parquet")
+        self._scan_tsv(self.current_path).sink_parquet(
+            parquet_path,
+            compression="zstd",
+        )
+        try:
+            self.current_path.unlink()
+        except FileNotFoundError:
+            pass
+        self.parts.append({
+            "path": str(parquet_path.relative_to(self.staging_path)),
+            "rows": self.rows_in_shard,
+            "read_bucket": self.current_read_bucket if self.current_read_bucket is not None else -1,
+        })
+        self.current_path = None
+        self.rows_in_shard = 0
+
+    def _scan_tsv(self, tsv_path: Path):
+        scan_kwargs = {"separator": "\t"}
+        schema = {
+            "read_bucket": pl.UInt32,
+            "read_id": pl.UInt64,
+            "sample_id": pl.UInt32,
+            "study_id_int": pl.UInt32,
+            "count": pl.UInt32,
+        }
+        try:
+            return pl.scan_csv(tsv_path, **scan_kwargs, schema_overrides=schema)
+        except TypeError:
+            return pl.scan_csv(tsv_path, **scan_kwargs, dtypes=schema)
+
+    def write(
+        self,
+        study_id: str,
+        read_id: int,
+        sample_id: int,
+        study_id_int: int,
+        count: int,
+    ):
+        if count < 0 or count > np.iinfo(np.uint32).max:
+            raise ValueError(f"Count out of uint32 range for {study_id}: {count}")
+        read_bucket = self._read_bucket(read_id)
+        if (
+            self.current_handle is None
+            or self.current_read_bucket != read_bucket
+            or self.rows_in_shard >= self.shard_rows
+        ):
+            self._open_next_shard(read_bucket)
+
+        self.current_handle.write(
+            f"{read_bucket}\t{read_id}\t{sample_id}\t{study_id_int}\t{count}\n"
+        )
+        self.rows_in_shard += 1
+        self.total_rows += 1
+
+    def close(self):
+        if self.current_handle is not None:
+            self.current_handle.close()
+            self.current_handle = None
+
+    def commit(self):
+        self._convert_current_shard()
+        if self.output_path.exists():
+            if self.output_path.is_dir():
+                shutil.rmtree(self.output_path)
+            else:
+                self.output_path.unlink()
+        shutil.move(str(self.staging_path), self.output_path)
+
+    def abort(self):
+        self.close()
+        if self.staging_path.exists():
+            shutil.rmtree(self.staging_path)
+
+
+def latest_generation(manifest: Dict) -> Dict:
+    generations = manifest.get("generations") or []
+    if generations:
+        return sorted(generations, key=lambda item: int(item["generation"]))[-1]
+    return {
+        "generation": int(manifest.get("generation", 1)),
+        "path": manifest.get("path", "global_matrix.parquet"),
+        "parents": manifest.get("parents", []),
+        "nnz": manifest.get("nnz", 0),
+        "parts": manifest.get("parts", []),
+    }
+
+
+def load_sparse_manifest(path: Path) -> Tuple[Path, Dict]:
+    """Load a sparse matrix manifest from an output dir or manifest path."""
+    path = Path(path)
+    if path.is_dir():
+        manifest_path = path / "global_matrix_manifest.json"
+    else:
+        manifest_path = path
+    with open(manifest_path, "r") as handle:
+        manifest = json.load(handle)
+    if manifest.get("matrix_format") != "sparse-parquet":
+        raise ValueError(f"{manifest_path} is not a sparse-parquet manifest")
+    return manifest_path, manifest
 
 
 def resolve_local_id(seq_to_id: Dict[int, VocabEntry], seq: str) -> Optional[int]:
@@ -456,7 +645,13 @@ class GlobalMatrixMerger:
         chunk_size: int = 10000,
         partition: str = None,
         metadata_shard_rows: int = 100_000_000,
+        sparse_shard_rows: int = 5_000_000,
+        sparse_read_bucket_size: int = 1_000_000,
         write_fasta: bool = True,
+        matrix_format: str = "sparse-parquet",
+        allow_dense: bool = False,
+        dense_chunk_byte_limit: int = 128 * 1024 * 1024,
+        append_to: Optional[Path] = None,
     ):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -464,8 +659,27 @@ class GlobalMatrixMerger:
         self.chunk_size = chunk_size
         self.partition = partition  # e.g., "AA", "AC", etc. or None
         self.metadata_shard_rows = metadata_shard_rows
+        self.sparse_shard_rows = sparse_shard_rows
+        self.sparse_read_bucket_size = sparse_read_bucket_size
         self.metadata_format = 'file'
         self.write_fasta = write_fasta
+        self.matrix_format = matrix_format
+        self.allow_dense = allow_dense
+        self.dense_chunk_byte_limit = dense_chunk_byte_limit
+        self.matrix_backend = matrix_format
+        self.matrix_manifest: Optional[Dict[str, Union[str, int, List, Dict]]] = None
+        self.append_to = Path(append_to) if append_to else None
+        self.previous_manifest_path: Optional[Path] = None
+        self.previous_manifest: Optional[Dict] = None
+        self.generation = 1
+        self.parent_generations: List[int] = []
+        self.existing_reads: Dict[str, int] = {}
+        self.existing_read_rows = []
+        self.new_read_rows = []
+        self.base_n_reads = 0
+        self.base_samples = []
+        self.base_studies = []
+        self.base_nnz = 0
 
         # Output file prefix
         self.prefix = f"global.{partition}" if partition else "global"
@@ -476,15 +690,72 @@ class GlobalMatrixMerger:
         self.study_remap_counts: Dict[str, int] = {}
         self.all_samples: List[str] = []
         self.study_sample_offsets: Dict[str, int] = {}  # study -> sample column offset
+        self.study_id_ints: Dict[str, int] = {}
         self.studies: List[str] = []
         self.n_reads = 0
 
         self.fasta_path = self.output_dir / f'{self.prefix}_reads.fasta'
         self.metadata_path = self.output_dir / f'{self.prefix}_metadata.parquet'
 
+        if self.append_to:
+            self._load_previous_sparse_store(self.append_to)
+
+    def _load_previous_sparse_store(self, previous: Path):
+        """Load stable ID state from an existing sparse global store."""
+        if self.matrix_format != "sparse-parquet":
+            raise ValueError("--append-to is only supported for --matrix-format sparse-parquet")
+        if not HAVE_POLARS:
+            raise RuntimeError("polars is required for sparse append mode")
+
+        manifest_path, manifest = load_sparse_manifest(previous)
+        self.previous_manifest_path = manifest_path
+        self.previous_manifest = manifest
+
+        latest = latest_generation(manifest)
+        self.generation = int(latest["generation"]) + 1
+        self.parent_generations = [int(latest["generation"])]
+
+        reads_path = manifest_path.parent / manifest.get("global_reads", "global_reads.parquet")
+        if not reads_path.exists():
+            raise FileNotFoundError(
+                f"Append mode requires canonical read lookup table: {reads_path}"
+            )
+        reads = pl.read_parquet(reads_path).select("read_id", "sequence", "length")
+        self.existing_read_rows = reads.sort("read_id").to_dicts()
+        self.existing_reads = {
+            row["sequence"]: int(row["read_id"])
+            for row in self.existing_read_rows
+        }
+        self.base_n_reads = len(self.existing_reads)
+
+        samples_path = manifest_path.parent / manifest.get("lookup_tables", {}).get("samples", "global_samples.parquet")
+        studies_path = manifest_path.parent / manifest.get("lookup_tables", {}).get("studies", "global_studies.parquet")
+        if samples_path.exists():
+            self.base_samples = pl.read_parquet(samples_path).sort("sample_id").to_dicts()
+            self.all_samples = [row["sample_name"] for row in self.base_samples]
+        if studies_path.exists():
+            self.base_studies = pl.read_parquet(studies_path).sort("study_id_int").to_dicts()
+            self.studies = [row["study_id"] for row in self.base_studies]
+            self.study_id_ints = {
+                row["study_id"]: int(row["study_id_int"])
+                for row in self.base_studies
+            }
+            self.study_n_reads = {
+                row["study_id"]: int(row["n_reads"])
+                for row in self.base_studies
+            }
+
+        self.base_nnz = sum(int(gen.get("nnz", 0)) for gen in manifest.get("generations", [latest]))
+
     def _prepare_study_remaps(self, study_inputs: List[StudyInput], temp_dir: Path):
         """Create disk-backed remap arrays and record sample offsets."""
-        for study_idx, study in enumerate(study_inputs):
+        base_study_count = len(self.studies)
+        for study_offset, study in enumerate(study_inputs):
+            study_idx = base_study_count + study_offset
+            if study.study_id in self.study_id_ints:
+                raise ValueError(
+                    f"Study ID already exists in this global store: {study.study_id}"
+                )
             duplicate_samples = set(study.samples).intersection(self.all_samples)
             if duplicate_samples:
                 examples = ', '.join(sorted(duplicate_samples)[:5])
@@ -493,6 +764,7 @@ class GlobalMatrixMerger:
                 )
 
             self.study_sample_offsets[study.study_id] = len(self.all_samples)
+            self.study_id_ints[study.study_id] = study_idx
             self.all_samples.extend(study.samples)
             self.studies.append(study.study_id)
             self.study_n_reads[study.study_id] = study.n_reads
@@ -544,7 +816,7 @@ class GlobalMatrixMerger:
             for study_index in range(len(study_inputs)):
                 advance(study_index)
 
-            global_id = 0
+            next_global_id = self.base_n_reads
             while heap:
                 seq = heap[0][0]
                 occurrences: List[Tuple[int, int]] = []
@@ -553,6 +825,18 @@ class GlobalMatrixMerger:
                     _, study_index, local_id = heapq.heappop(heap)
                     occurrences.append((study_index, local_id))
                     advance(study_index)
+
+                if seq in self.existing_reads:
+                    global_id = self.existing_reads[seq]
+                else:
+                    global_id = next_global_id
+                    next_global_id += 1
+                    self.existing_reads[seq] = global_id
+                    self.new_read_rows.append({
+                        "read_id": global_id,
+                        "sequence": seq,
+                        "length": len(seq),
+                    })
 
                 seen_studies = set()
                 for study_index, local_id in occurrences:
@@ -576,9 +860,8 @@ class GlobalMatrixMerger:
                 if fasta is not None:
                     fasta.write(f">read_{global_id}\n{seq}\n")
                 metadata_writer.write(global_id, len(seq))
-                global_id += 1
 
-            self.n_reads = global_id
+            self.n_reads = next_global_id
             self.metadata_format = metadata_writer.finalize()
 
         for remap in self.study_remaps.values():
@@ -622,10 +905,171 @@ class GlobalMatrixMerger:
         print(f"\nPhase 2: Building global matrix{partition_str}: {n_reads:,} reads × {n_samples:,} samples",
               file=sys.stderr)
 
+        if self.matrix_format == "sparse-parquet":
+            return self._build_sparse_parquet_matrix(study_matrices, n_reads, n_samples)
+
+        self._guard_dense_matrix(n_reads, n_samples)
         if HAVE_ZARR:
+            self.matrix_backend = "zarr"
             return self._build_zarr_matrix(study_matrices, n_reads, n_samples)
         else:
+            self.matrix_backend = "npz"
             return self._build_npz_matrix(study_matrices, n_reads, n_samples)
+
+    def _guard_dense_matrix(self, n_reads: int, n_samples: int):
+        """Fail fast for dense chunk shapes that are too large for production-scale runs."""
+        if self.allow_dense:
+            return
+        estimated_chunk_bytes = min(self.chunk_size, max(n_reads, 1)) * max(n_samples, 1) * np.dtype(np.uint32).itemsize
+        if estimated_chunk_bytes > self.dense_chunk_byte_limit:
+            raise RuntimeError(
+                "Dense global matrix output is unsafe for this run: "
+                f"estimated row chunk is {estimated_chunk_bytes:,} bytes "
+                f"({min(self.chunk_size, max(n_reads, 1)):,} rows × {n_samples:,} samples × uint32). "
+                "Use --matrix-format sparse-parquet for the canonical sparse store, "
+                "or pass --allow-dense only for a deliberately small/controlled run."
+            )
+
+    def _write_sparse_manifest(
+        self,
+        generation_path: Path,
+        writer: SparseParquetFactWriter,
+        n_reads: int,
+        n_samples: int,
+    ):
+        generation_entry = {
+            "generation": self.generation,
+            "path": str(generation_path.relative_to(self.output_dir)),
+            "parents": self.parent_generations,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "nnz": writer.total_rows,
+            "parts": writer.parts,
+            "n_new_reads": len(self.new_read_rows),
+            "n_new_samples": n_samples - len(self.base_samples),
+            "n_new_studies": len(self.studies) - len(self.base_studies),
+        }
+        previous_generations = []
+        if self.previous_manifest:
+            previous_generations = list(self.previous_manifest.get("generations", []))
+            if not previous_generations:
+                previous_latest = latest_generation(self.previous_manifest)
+                previous_generations = [previous_latest]
+        generations = previous_generations + [generation_entry]
+        total_nnz = sum(int(item.get("nnz", 0)) for item in generations)
+
+        manifest = {
+            "version": "1.0",
+            "matrix_format": "sparse-parquet",
+            "status": "committed",
+            "generation": self.generation,
+            "parents": self.parent_generations,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "path": generation_entry["path"],
+            "global_counts": "global_counts",
+            "global_reads": "global_reads.parquet",
+            "tombstones_path": "global_tombstones.parquet",
+            "retained_counts": "global_retained_counts.parquet",
+            "partition": self.partition,
+            "schema": {
+                "read_bucket": "uint32",
+                "read_id": "uint64",
+                "sample_id": "uint32",
+                "study_id_int": "uint32",
+                "count": "uint32",
+            },
+            "lookup_tables": {
+                "samples": f"{self.prefix}_samples.parquet",
+                "studies": f"{self.prefix}_studies.parquet",
+            },
+            "partitioning": ["read_bucket"],
+            "read_bucket_size": self.sparse_read_bucket_size,
+            "n_reads": n_reads,
+            "n_samples": n_samples,
+            "n_studies": len(self.studies),
+            "nnz": total_nnz,
+            "parts": writer.parts,
+            "generations": generations,
+            "append_protocol": {
+                "mode": "generation",
+                "description": "Append by writing a new sparse generation with this manifest in parents; do not destructively filter or rewrite committed facts.",
+            },
+            "commit_protocol": {
+                "lock": f"{generation_path.name}.lock",
+                "staging": f"{generation_path.name}.staging",
+                "commit": "write parts in staging, atomically move staging into place, write manifest, release lock",
+            },
+        }
+        manifest_path = self.output_dir / f"{self.prefix}_matrix_manifest.json"
+        with open(manifest_path, "w") as handle:
+            json.dump(manifest, handle, indent=2)
+        self.matrix_manifest = manifest
+
+    def _build_sparse_parquet_matrix(
+        self,
+        study_matrices: Dict[str, Path],
+        n_reads: int,
+        n_samples: int,
+    ) -> Path:
+        """Build partitioned parquet sparse fact table without dense row chunks."""
+        counts_root = self.output_dir / f"{self.prefix}_counts"
+        matrix_path = counts_root / f"generation={self.generation:06d}"
+        compat_path = self.output_dir / f"{self.prefix}_matrix.parquet"
+        print("  Writing sparse parquet facts", file=sys.stderr)
+
+        if self.previous_manifest_path and self.previous_manifest_path.parent != self.output_dir:
+            for generation in self.previous_manifest.get("generations", [latest_generation(self.previous_manifest)]):
+                source = self.previous_manifest_path.parent / generation["path"]
+                destination = self.output_dir / generation["path"]
+                if destination.exists():
+                    continue
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copytree(source, destination)
+
+        with make_tempdir("global_sparse_", self.output_dir) as temp_dir:
+            with SparseParquetFactWriter(
+                matrix_path,
+                Path(temp_dir),
+                self.sparse_shard_rows,
+                self.sparse_read_bucket_size,
+            ) as writer:
+                for study_id, matrix_path_study in study_matrices.items():
+                    print(f"  Merging study: {study_id}", file=sys.stderr)
+
+                    study_matrix = sp.load_npz(matrix_path_study).tocsr()
+                    remap = self.study_remaps[study_id]
+                    sample_offset = self.study_sample_offsets[study_id]
+                    if study_matrix.shape[0] != len(remap):
+                        raise RuntimeError(
+                            f"{study_id}: matrix row count ({study_matrix.shape[0]:,}) does not match "
+                            f"sequence metadata/remap count ({len(remap):,})"
+                        )
+
+                    for local_row in range(study_matrix.shape[0]):
+                        global_row = int(remap[local_row])
+                        row_start = study_matrix.indptr[local_row]
+                        row_end = study_matrix.indptr[local_row + 1]
+                        for data_idx in range(row_start, row_end):
+                            sample_index = int(study_matrix.indices[data_idx]) + sample_offset
+                            writer.write(
+                                study_id=study_id,
+                                read_id=global_row,
+                                sample_id=sample_index,
+                                study_id_int=self.study_id_ints[study_id],
+                                count=int(study_matrix.data[data_idx]),
+                            )
+
+                writer.commit()
+                self._write_sparse_manifest(matrix_path, writer, n_reads, n_samples)
+
+        if compat_path.exists():
+            if compat_path.is_dir():
+                shutil.rmtree(compat_path)
+            else:
+                compat_path.unlink()
+        if matrix_path.exists():
+            shutil.copytree(matrix_path, compat_path)
+
+        return matrix_path
 
     def _build_zarr_matrix(self, study_matrices: Dict[str, Path],
                            n_reads: int, n_samples: int) -> Path:
@@ -784,26 +1228,222 @@ class GlobalMatrixMerger:
 
         return matrix_path
 
+    def _write_sparse_lookup_tables(self):
+        """Write compact ID lookup tables for sparse fact rows."""
+        if self.matrix_format != "sparse-parquet":
+            return
+        if not HAVE_POLARS:
+            raise RuntimeError("polars is required for sparse lookup tables")
+
+        sample_rows = list(self.base_samples)
+        new_studies = [study_id for study_id in self.studies if study_id in self.study_sample_offsets]
+        for study_id in new_studies:
+            study_id_int = self.study_id_ints[study_id]
+            sample_offset = self.study_sample_offsets[study_id]
+            ordered_new_studies = sorted(new_studies, key=lambda item: self.study_id_ints[item])
+            current_pos = ordered_new_studies.index(study_id)
+            if current_pos + 1 < len(ordered_new_studies):
+                next_offset = self.study_sample_offsets[ordered_new_studies[current_pos + 1]]
+            else:
+                next_offset = len(self.all_samples)
+
+            for sample_id in range(sample_offset, next_offset):
+                sample_rows.append({
+                    "sample_id": sample_id,
+                    "sample_name": self.all_samples[sample_id],
+                    "study_id_int": study_id_int,
+                    "study_id": study_id,
+                    "study_sample_index": sample_id - sample_offset,
+                })
+
+        pl.DataFrame(
+            sample_rows,
+            schema={
+                "sample_id": pl.UInt32,
+                "sample_name": pl.Utf8,
+                "study_id_int": pl.UInt32,
+                "study_id": pl.Utf8,
+                "study_sample_index": pl.UInt32,
+            },
+        ).write_parquet(self.output_dir / f"{self.prefix}_samples.parquet")
+
+        study_rows = list(self.base_studies)
+        study_rows.extend(
+            [
+                {
+                    "study_id_int": self.study_id_ints[study_id],
+                    "study_id": study_id,
+                    "n_reads": self.study_n_reads[study_id],
+                    "sample_offset": self.study_sample_offsets[study_id],
+                }
+                for study_id in new_studies
+            ]
+        )
+        pl.DataFrame(
+            study_rows,
+            schema={
+                "study_id_int": pl.UInt32,
+                "study_id": pl.Utf8,
+                "n_reads": pl.UInt64,
+                "sample_offset": pl.UInt32,
+            },
+        ).write_parquet(self.output_dir / f"{self.prefix}_studies.parquet")
+
+    def _write_global_read_tables(self):
+        """Write canonical read lookup table and compatibility metadata."""
+        if self.matrix_format != "sparse-parquet":
+            return
+        if not HAVE_POLARS:
+            raise RuntimeError("polars is required for sparse read lookup tables")
+
+        rows = list(self.existing_read_rows)
+        existing_ids = {int(row["read_id"]) for row in rows}
+        rows.extend(row for row in self.new_read_rows if int(row["read_id"]) not in existing_ids)
+        rows = sorted(rows, key=lambda row: int(row["read_id"]))
+
+        frame = pl.DataFrame(
+            rows,
+            schema={
+                "read_id": pl.UInt64,
+                "sequence": pl.Utf8,
+                "length": pl.UInt32,
+            },
+        )
+        frame.write_parquet(self.output_dir / f"{self.prefix}_reads.parquet")
+        if self.prefix == "global":
+            frame.write_parquet(self.output_dir / "global_reads.parquet")
+
+        if self.metadata_path.exists():
+            if self.metadata_path.is_dir():
+                shutil.rmtree(self.metadata_path)
+            else:
+                self.metadata_path.unlink()
+        frame.select("read_id", "length").write_parquet(self.metadata_path)
+        self.metadata_format = "file"
+
+        if self.write_fasta:
+            with open(self.fasta_path, "w") as handle:
+                for row in rows:
+                    handle.write(f">read_{int(row['read_id'])}\n{row['sequence']}\n")
+
+    def _ensure_tombstones_table(self):
+        if self.matrix_format != "sparse-parquet":
+            return
+        tombstones_path = self.output_dir / f"{self.prefix}_tombstones.parquet"
+        if tombstones_path.exists():
+            return
+        if self.previous_manifest_path:
+            previous_tombstones = (
+                self.previous_manifest_path.parent
+                / self.previous_manifest.get("tombstones_path", "global_tombstones.parquet")
+            )
+            if previous_tombstones.exists():
+                shutil.copy2(previous_tombstones, tombstones_path)
+                if self.prefix == "global":
+                    shutil.copy2(previous_tombstones, self.output_dir / "global_tombstones.parquet")
+                return
+
+        empty = pl.DataFrame(
+            {
+                "tombstone_id": pl.Series([], dtype=pl.UInt64),
+                "active": pl.Series([], dtype=pl.Boolean),
+                "created_at": pl.Series([], dtype=pl.Utf8),
+                "reason": pl.Series([], dtype=pl.Utf8),
+                "read_id": pl.Series([], dtype=pl.UInt64),
+                "sample_id": pl.Series([], dtype=pl.Utf8),
+                "study_id": pl.Series([], dtype=pl.Utf8),
+            }
+        )
+        empty.write_parquet(tombstones_path)
+        if self.prefix == "global":
+            empty.write_parquet(self.output_dir / "global_tombstones.parquet")
+
+    def _write_retained_counts_view(self):
+        """Materialize a query-friendly retained-count fact view."""
+        if self.matrix_format != "sparse-parquet" or not self.matrix_manifest:
+            return
+        retained_path = self.output_dir / f"{self.prefix}_retained_counts.parquet"
+        if retained_path.exists():
+            if retained_path.is_dir():
+                shutil.rmtree(retained_path)
+            else:
+                retained_path.unlink()
+
+        paths = [
+            str(self.output_dir / generation["path"] / "read_bucket=*" / "*.parquet")
+            for generation in self.matrix_manifest.get("generations", [])
+        ]
+        if not paths:
+            return
+
+        scan = pl.concat([pl.scan_parquet(path) for path in paths])
+        samples = pl.scan_parquet(str(self.output_dir / f"{self.prefix}_samples.parquet")).select(
+            "sample_id",
+            "sample_name",
+            "study_id",
+        )
+        scan = scan.join(samples, on="sample_id", how="left")
+
+        tombstones_path = self.output_dir / f"{self.prefix}_tombstones.parquet"
+        if tombstones_path.exists():
+            tombstones = pl.read_parquet(tombstones_path).filter(pl.col("active") == True).to_dicts()
+            expr = None
+            for tombstone in tombstones:
+                current = None
+                if tombstone.get("read_id") is not None:
+                    current = pl.col("read_id") == int(tombstone["read_id"])
+                if tombstone.get("sample_id") is not None:
+                    sample_expr = pl.col("sample_name") == str(tombstone["sample_id"])
+                    current = sample_expr if current is None else current & sample_expr
+                if tombstone.get("study_id") is not None:
+                    study_expr = pl.col("study_id") == str(tombstone["study_id"])
+                    current = study_expr if current is None else current & study_expr
+                if current is not None:
+                    expr = current if expr is None else expr | current
+            if expr is not None:
+                scan = scan.filter(~expr)
+
+        scan.select("read_bucket", "read_id", "sample_id", "study_id_int", "count").sink_parquet(
+            retained_path,
+            compression="zstd",
+        )
+        if self.prefix == "global":
+            compat = self.output_dir / "global_retained_counts.parquet"
+            if compat != retained_path:
+                shutil.copy2(retained_path, compat)
+
     def save_outputs(self) -> Dict[str, Path]:
         """Save all outputs and return paths."""
         n_reads = self.n_reads
 
         print(f"Unique reads FASTA: {self.fasta_path}", file=sys.stderr)
         print(f"Read metadata: {self.metadata_path}", file=sys.stderr)
+        self._write_global_read_tables()
+        self._write_sparse_lookup_tables()
+        self._ensure_tombstones_table()
+        self._write_retained_counts_view()
 
         # Write config
         config = {
             'version': '1.0',
-            'matrix_format': 'zarr' if HAVE_ZARR else 'npz',
+            'matrix_format': self.matrix_backend,
             'metadata_format': self.metadata_format,
             'chunk_size': self.chunk_size,
             'metadata_shard_rows': self.metadata_shard_rows,
+            'sparse_shard_rows': self.sparse_shard_rows,
+            'sparse_read_bucket_size': self.sparse_read_bucket_size,
             'write_fasta': self.write_fasta,
             'partition': self.partition,
             'n_reads': n_reads,
             'n_samples': len(self.all_samples),
             'n_studies': len(self.studies),
-            'studies': self.studies
+            'studies': self.studies,
+            'generation': self.generation if self.matrix_manifest else None,
+            'global_reads': f'{self.prefix}_reads.parquet' if self.matrix_manifest else None,
+            'global_counts': f'{self.prefix}_counts' if self.matrix_manifest else None,
+            'tombstones': f'{self.prefix}_tombstones.parquet' if self.matrix_manifest else None,
+            'retained_counts': f'{self.prefix}_retained_counts.parquet' if self.matrix_manifest else None,
+            'matrix_manifest': f'{self.prefix}_matrix_manifest.json' if self.matrix_manifest else None,
         }
 
         config_path = self.output_dir / f'{self.prefix}_config.json'
@@ -864,7 +1504,7 @@ def make_tempdir(prefix: str, directory: Path):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Merge study matrices into global Zarr matrix using streaming merge'
+        description='Merge study matrices into a global count store using streaming merge'
     )
     parser.add_argument(
         '--study-dirs',
@@ -883,13 +1523,47 @@ def main():
         '--chunk-size',
         type=int,
         default=10000,
-        help='Zarr chunk size (rows per chunk, default: 10000)'
+        help='Dense/Zarr chunk size in rows (default: 10000)'
     )
     parser.add_argument(
         '--metadata-shard-rows',
         type=int,
         default=100_000_000,
         help='Maximum rows per metadata parquet shard (default: 100000000)'
+    )
+    parser.add_argument(
+        '--matrix-format',
+        choices=['sparse-parquet', 'dense'],
+        default='sparse-parquet',
+        help='Global matrix output format. sparse-parquet is the scalable default; dense keeps legacy Zarr/NPZ behavior.'
+    )
+    parser.add_argument(
+        '--sparse-shard-rows',
+        type=int,
+        default=5_000_000,
+        help='Maximum nonzero count rows per sparse parquet shard (default: 5000000)'
+    )
+    parser.add_argument(
+        '--sparse-read-bucket-size',
+        type=int,
+        default=1_000_000,
+        help='Number of global read IDs per sparse parquet read_bucket partition (default: 1000000)'
+    )
+    parser.add_argument(
+        '--allow-dense',
+        action='store_true',
+        help='Allow dense global output even when the estimated dense row chunk exceeds the safety limit'
+    )
+    parser.add_argument(
+        '--dense-chunk-byte-limit',
+        type=int,
+        default=128 * 1024 * 1024,
+        help='Maximum estimated dense row chunk bytes before --matrix-format dense fails without --allow-dense'
+    )
+    parser.add_argument(
+        '--append-to',
+        type=Path,
+        help='Existing sparse global output directory or manifest to append as a new generation'
     )
     parser.add_argument(
         '--partition',
@@ -970,7 +1644,13 @@ def main():
         chunk_size=args.chunk_size,
         partition=args.partition,
         metadata_shard_rows=args.metadata_shard_rows,
+        sparse_shard_rows=args.sparse_shard_rows,
+        sparse_read_bucket_size=args.sparse_read_bucket_size,
         write_fasta=args.write_fasta,
+        matrix_format=args.matrix_format,
+        allow_dense=args.allow_dense,
+        dense_chunk_byte_limit=args.dense_chunk_byte_limit,
+        append_to=args.append_to,
     )
 
     with make_tempdir("global_merge_", args.output_dir) as temp_dir:

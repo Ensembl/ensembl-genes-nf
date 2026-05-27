@@ -1,5 +1,5 @@
 /*
- * Merge all study matrices into global Zarr matrix
+ * Merge all study matrices into a global count store
  * Outputs: global matrix, unique reads FASTA for alignment, metadata
  */
 
@@ -18,9 +18,16 @@ process MERGE_GLOBAL_MATRIX {
 
     output:
     path "global_matrix.*", emit: matrix
+    path "global_counts", emit: counts, optional: true
+    path "global_reads.parquet", emit: reads, optional: true
+    path "global_samples.parquet", emit: samples_parquet, optional: true
+    path "global_studies.parquet", emit: studies_parquet, optional: true
+    path "global_tombstones.parquet", emit: tombstones, optional: true
+    path "global_retained_counts.parquet", emit: retained_counts, optional: true
     path "global_reads.fasta", emit: fasta
     path "global_metadata.parquet", emit: metadata
     path "global_config.json", emit: config
+    path "global_matrix_manifest.json", emit: manifest, optional: true
     path "samples.json", emit: samples, optional: true
     path "versions.yml", emit: versions
 
@@ -30,6 +37,10 @@ process MERGE_GLOBAL_MATRIX {
     script:
     def chunk_size = task.ext.chunk_size ?: 10000
     def metadata_shard_rows = task.ext.metadata_shard_rows ?: 100000000
+    def matrix_format = task.ext.matrix_format ?: 'sparse-parquet'
+    def sparse_shard_rows = task.ext.sparse_shard_rows ?: 5000000
+    def sparse_read_bucket_size = task.ext.sparse_read_bucket_size ?: 1000000
+    def append_flag = task.ext.append_to ? "--append-to ${task.ext.append_to}" : ''
     def fasta_flag = task.ext.write_fasta == false ? '--no-write-fasta' : ''
     def partition_flag = task.ext.partition ? "--partition ${task.ext.partition}" : ''
     """
@@ -47,8 +58,12 @@ process MERGE_GLOBAL_MATRIX {
     merge_global_matrix.py \\
         --study-dirs studies/* \\
         --output-dir . \\
+        --matrix-format ${matrix_format} \\
         --chunk-size ${chunk_size} \\
         --metadata-shard-rows ${metadata_shard_rows} \\
+        --sparse-shard-rows ${sparse_shard_rows} \\
+        --sparse-read-bucket-size ${sparse_read_bucket_size} \\
+        ${append_flag} \\
         ${fasta_flag} \\
         ${partition_flag}
 
@@ -64,10 +79,17 @@ process MERGE_GLOBAL_MATRIX {
 
     stub:
     """
-    mkdir -p global_matrix.zarr
+    mkdir -p global_matrix.parquet
+    mkdir -p global_counts
+    touch global_reads.parquet
+    touch global_samples.parquet
+    touch global_studies.parquet
+    touch global_tombstones.parquet
+    touch global_retained_counts.parquet
     touch global_reads.fasta
     touch global_metadata.parquet
-    echo '{"version": "1.0", "n_reads": 0, "n_samples": 0}' > global_config.json
+    echo '{"version": "1.0", "matrix_format": "sparse-parquet", "n_reads": 0, "n_samples": 0}' > global_config.json
+    echo '{"version": "1.0", "matrix_format": "sparse-parquet", "status": "stub"}' > global_matrix_manifest.json
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
