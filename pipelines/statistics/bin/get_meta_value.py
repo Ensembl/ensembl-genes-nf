@@ -21,7 +21,6 @@ import argparse
 from typing import List
 import pymysql
 
-
 def get_meta_value(
     *,
     dbname: str,
@@ -75,6 +74,7 @@ def get_meta_value(
 
 def _build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Fetch meta_value from an Ensembl core database")
+    parser.add_argument("--version", action="version", version="get_meta_value.py version 1.0.0")
     parser.add_argument("--db", required=True, help="Core database name")
     parser.add_argument("--key", required=True, help="Meta key to fetch")
     parser.add_argument("--species-id", type=int, default=1)
