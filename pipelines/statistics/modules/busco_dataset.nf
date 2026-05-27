@@ -39,7 +39,7 @@ process BUSCO_DATASET {
     busco_dataset = busco_dataset ? busco_dataset.trim() : ''
     """
     if [[ -z "${busco_dataset}" ]]; then
-        ${params.enscode}/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}
+        ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}
     else
         echo "${busco_dataset}"
     fi
