@@ -58,7 +58,7 @@
     },
     "user": {
       "type": "string",
-      "description:":"Db user"
+      "description":"Db user"
     },
     "user_r": {
       "type": "string",
@@ -78,12 +78,12 @@
     },
     "ncbiBaseUrl": {
       "type": "string",
-      "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/",
+      "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession",
       "description":"NCBI API"
     },
     "readme": {
       "type": "string",
-      "default": "ensembl-genes-nf/pipelines/statistics/../data/README.txt"
+      "default": "README.txt"
     },
     "project": {
       "type": "string",
@@ -112,7 +112,7 @@
     },
     "cacheDir": {
       "type": "string",
-      "default": "/cache",
+      "default": "./results/cache",
       "description": "Directory for caching files."
     },
     "outdir": {
@@ -132,7 +132,7 @@
     },
     "cleanCache": {
       "type": "boolean",
-      "default": true,
+      "default": false,
       "description": "Option to clean the cache directory after running the pipeline."
     },
     "busco_version": {
@@ -147,13 +147,13 @@
     },
     "busco_mode": {
       "type": "string",
-      "default": "protein",
+      "default": "both",
       "enum": ["protein", "genome", "both"],
       "description":"Busco mode: genome, protein or both"
     },
     "busco_datasets_file": {
       "type": "string",
-      "default": "../data/busco_lineage.json"
+      "default": "data/busco_lineage.json"
     },
     "dump_params": {
       "type": "string",
@@ -180,4 +180,3 @@
         }
     ]
 }  
-
