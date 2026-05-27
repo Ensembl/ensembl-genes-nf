@@ -63,7 +63,7 @@ workflow RUN_OMARK {
         def new_taxon = lines[0].split('=')[1]
         def new_gca = lines[1].split('=')[1]
         def production_name = lines[2].split('=')[1]
-        def updated_meta = meta + [taxon_id: new_taxon, gca: new_gca, production_species: production_name]
+        def updated_meta = meta + [taxon_id: new_taxon, gca: new_gca, production_name: production_name]
         updated_meta
     }
     ch_versions_file = ch_versions_file.mix(DB_METADATA.out.versions_file)
