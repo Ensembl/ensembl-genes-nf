@@ -108,9 +108,8 @@ workflow RUN_BUSCO {
         }
         .view { meta -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}" }
     ch_versions_file = ch_versions_file.mix(BUSCO_DATASET.out.versions_file)
-    def buscoInput = channel.empty()
 
-    // Run Busco in genome mode
+    def buscoInput
     if (busco_mode.contains('genome')) {
         def genomeData = FETCH_GENOME(dataset_db).fasta_file_output
             .map { meta, fasta_file ->
@@ -118,17 +117,21 @@ workflow RUN_BUSCO {
             }
             .view { meta, fasta_file -> "Mapped result: gca=${meta.gca}, dbname=${meta.dbname}, busco_dataset=${meta.busco_dataset}, file=${fasta_file}" }
         ch_versions_file = ch_versions_file.mix(FETCH_GENOME.out.versions_file)
-        buscoInput = buscoInput.mix(genomeData)
+        buscoInput = genomeData
     }
 
-    // Run Busco in protein mode
     if (busco_mode.contains('protein')) {
         def proteinData = FETCH_PROTEINS(dataset_db).fasta_file_output
             .map { meta, fasta_file ->
                 return tuple(meta + [busco_mode: 'protein'], fasta_file)
             }
         ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
-        buscoInput = buscoInput.mix(proteinData)
+
+        buscoInput = buscoInput != null ? buscoInput.mix(proteinData) : proteinData
+    }
+
+    if (buscoInput == null) {
+        error("Invalid BUSCO mode: ${params.busco_mode}")
     }
 
     def buscoOutput = BUSCO_LINEAGE(buscoInput).busco_lineage_output
