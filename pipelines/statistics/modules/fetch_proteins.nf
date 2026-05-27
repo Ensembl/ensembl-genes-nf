@@ -19,7 +19,7 @@ limitations under the License.
 Inputs:
 - meta: metadata map containing dbname, species_id, taxon_id, gca
 Outputs:
-- protein_file_output: tuple of meta and protein FASTA file
+- fasta_file_output: tuple of meta and protein FASTA file
 - versions.yml: versions file containing software versions used
 */
 
@@ -36,7 +36,7 @@ process FETCH_PROTEINS {
     val meta
 
     output:
-    tuple val(meta), path("*.fa"), emit: protein_file_output
+    tuple val(meta), path("translations.fa"), emit: fasta_file_output
     path "versions.yml", emit: versions_file
 
     script:

@@ -20,7 +20,7 @@ limitations under the License.
 Inputs:
 - meta: metadata map containing gca
 Outputs:
-- genome_file_output: tuple of meta and genome FASTA file
+- fasta_file_output: tuple of meta and genome FASTA file
 - versions.yml: versions file containing software versions used
 */
 process FETCH_GENOME {
@@ -33,7 +33,7 @@ process FETCH_GENOME {
     val meta
 
     output:
-    tuple val(meta), path("genome.fna"), emit: genome_file_output
+    tuple val(meta), path("genome.fna"), emit: fasta_file_output
     path "versions.yml", emit: versions_file
 
     script:
