@@ -14,12 +14,14 @@ kept as an explicit compatibility mode for small runs.
 """
 
 import argparse
+import ast
 import contextlib
 import gzip
 import heapq
 import json
 import os
 import shutil
+import struct
 import sys
 import tempfile
 import zipfile
@@ -516,11 +518,7 @@ class BufferedNpyReader:
 
     def __init__(self, handle, buffer_values: int = 1_000_000):
         version = np.lib.format.read_magic(handle)
-        shape, fortran_order, dtype = np.lib.format._read_array_header(
-            handle,
-            version,
-            max_header_size=10000,
-        )
+        shape, fortran_order, dtype = read_npy_array_header(handle, version)
         if fortran_order:
             raise ValueError("Fortran-order .npy arrays are not supported for CSR streaming")
         if dtype.hasobject:
@@ -570,11 +568,44 @@ class BufferedNpyReader:
         return out
 
 
-def read_npz_scalar_array(npz_path: Path, name: str):
-    with np.load(npz_path) as loaded:
-        if name not in loaded:
+def read_npy_array_header(handle, version):
+    """Read a .npy header without NumPy private header-reader APIs."""
+    if version == (1, 0):
+        header_length = struct.unpack("<H", handle.read(2))[0]
+        encoding = "latin1"
+    elif version in {(2, 0), (3, 0)}:
+        header_length = struct.unpack("<I", handle.read(4))[0]
+        encoding = "utf8" if version == (3, 0) else "latin1"
+    else:
+        raise ValueError(f"Unsupported .npy format version in CSR npz: {version}")
+
+    if header_length > 10000:
+        raise ValueError(f"Refusing oversized .npy header: {header_length} bytes")
+
+    header = handle.read(header_length).decode(encoding)
+    try:
+        metadata = ast.literal_eval(header)
+    except (SyntaxError, ValueError) as exc:
+        raise ValueError(f"Invalid .npy header: {header!r}") from exc
+
+    try:
+        shape = tuple(int(value) for value in metadata["shape"])
+        fortran_order = bool(metadata["fortran_order"])
+        dtype = np.dtype(metadata["descr"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid .npy header metadata: {metadata!r}") from exc
+
+    return shape, fortran_order, dtype
+
+
+def read_npz_array(npz_path: Path, name: str):
+    npy_name = f"{name}.npy"
+    with zipfile.ZipFile(npz_path, "r") as zf:
+        if npy_name not in zf.namelist():
             raise ValueError(f"{npz_path} is missing required array {name!r}")
-        return loaded[name]
+        with zf.open(npy_name) as handle:
+            reader = BufferedNpyReader(handle)
+            return reader.read_values(reader.size)
 
 
 def iter_csr_npz_rows(npz_path: Path, buffer_values: int = 1_000_000):
@@ -584,7 +615,7 @@ def iter_csr_npz_rows(npz_path: Path, buffer_values: int = 1_000_000):
     Yields:
         local_row, sample_indices, counts
     """
-    shape = tuple(int(value) for value in read_npz_scalar_array(npz_path, "shape"))
+    shape = tuple(int(value) for value in read_npz_array(npz_path, "shape"))
     if len(shape) != 2:
         raise ValueError(f"{npz_path} has invalid CSR shape: {shape}")
 
@@ -901,6 +932,9 @@ class GlobalMatrixMerger:
         dense_chunk_byte_limit: int = 128 * 1024 * 1024,
         append_to: Optional[Path] = None,
         write_retained_counts: bool = False,
+        read_id_offset: int = 0,
+        partition_ordinal: Optional[int] = None,
+        partition_stride: Optional[int] = None,
     ):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -920,6 +954,9 @@ class GlobalMatrixMerger:
         self.global_reads_written = False
         self.append_to = Path(append_to) if append_to else None
         self.write_retained_counts = write_retained_counts
+        self.read_id_offset = int(read_id_offset)
+        self.partition_ordinal = partition_ordinal
+        self.partition_stride = partition_stride
         self.previous_manifest_path: Optional[Path] = None
         self.previous_manifest: Optional[Dict] = None
         self.generation = 1
@@ -927,7 +964,7 @@ class GlobalMatrixMerger:
         self.existing_reads: Dict[str, int] = {}
         self.existing_read_rows = []
         self.new_read_rows = []
-        self.base_n_reads = 0
+        self.base_n_reads = self.read_id_offset
         self.base_samples = []
         self.base_studies = []
         self.base_nnz = 0
@@ -1123,7 +1160,15 @@ class GlobalMatrixMerger:
                 if reads_writer is not None:
                     reads_writer.write(global_id, seq)
 
-            self.n_reads = next_global_id
+            if self.previous_manifest_path:
+                self.n_reads = next_global_id
+            else:
+                self.n_reads = next_global_id - self.read_id_offset
+            if self.partition_stride is not None and self.n_reads > self.partition_stride:
+                raise RuntimeError(
+                    f"Partition {self.partition} produced {self.n_reads:,} reads, "
+                    f"exceeding reserved partition stride {self.partition_stride:,}"
+                )
             self.metadata_format = metadata_writer.finalize()
             if reads_writer is not None:
                 reads_writer.finalize()
@@ -1235,6 +1280,9 @@ class GlobalMatrixMerger:
             "tombstones_path": "global_tombstones.parquet",
             "retained_counts": "global_retained_counts.parquet",
             "partition": self.partition,
+            "partition_ordinal": self.partition_ordinal,
+            "partition_stride": self.partition_stride,
+            "read_id_offset": self.read_id_offset,
             "schema": {
                 "read_bucket": "uint32",
                 "read_id": "uint64",
@@ -1302,7 +1350,7 @@ class GlobalMatrixMerger:
 
                     remap = self.study_remaps[study_id]
                     sample_offset = self.study_sample_offsets[study_id]
-                    shape = tuple(int(value) for value in read_npz_scalar_array(matrix_path_study, "shape"))
+                    shape = tuple(int(value) for value in read_npz_array(matrix_path_study, "shape"))
                     if shape[0] != len(remap):
                         raise RuntimeError(
                             f"{study_id}: matrix row count ({shape[0]:,}) does not match "
@@ -1716,6 +1764,9 @@ class GlobalMatrixMerger:
             'sparse_read_bucket_size': self.sparse_read_bucket_size,
             'write_fasta': self.write_fasta,
             'partition': self.partition,
+            'partition_ordinal': self.partition_ordinal,
+            'partition_stride': self.partition_stride,
+            'read_id_offset': self.read_id_offset,
             'n_reads': n_reads,
             'n_samples': len(self.all_samples),
             'n_studies': len(self.studies),
@@ -1865,8 +1916,37 @@ def main():
         action='store_true',
         help='Materialize global_retained_counts.parquet compatibility view after sparse merge'
     )
+    parser.add_argument(
+        '--read-id-offset',
+        type=int,
+        default=0,
+        help='Global read ID offset for independently merged partitions'
+    )
+    parser.add_argument(
+        '--partition-ordinal',
+        type=int,
+        default=None,
+        help='Ordinal for this partition in a deterministic partition namespace'
+    )
+    parser.add_argument(
+        '--partition-stride',
+        type=int,
+        default=None,
+        help='Read ID stride reserved for each partition; recorded in manifest'
+    )
 
     args = parser.parse_args()
+    if args.partition_stride is not None and args.partition_stride <= 0:
+        raise SystemExit("--partition-stride must be positive")
+    if args.partition_ordinal is not None:
+        if args.partition_stride is None:
+            raise SystemExit("--partition-ordinal requires --partition-stride")
+        computed_offset = args.partition_ordinal * args.partition_stride
+        if args.read_id_offset not in (0, computed_offset):
+            raise SystemExit(
+                "--read-id-offset conflicts with --partition-ordinal * --partition-stride"
+            )
+        args.read_id_offset = computed_offset
 
     partition_str = f" [{args.partition}]" if args.partition else ""
     print(f"Merging {len(args.study_dirs)} studies{partition_str} using streaming merge", file=sys.stderr)
@@ -1940,6 +2020,9 @@ def main():
         dense_chunk_byte_limit=args.dense_chunk_byte_limit,
         append_to=args.append_to,
         write_retained_counts=args.write_retained_counts,
+        read_id_offset=args.read_id_offset,
+        partition_ordinal=args.partition_ordinal,
+        partition_stride=args.partition_stride,
     )
 
     with make_tempdir("global_merge_", args.output_dir) as temp_dir:

@@ -11,19 +11,29 @@ from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Tuple
 
 
-# All possible dinucleotide prefixes (sorted for consistent ordering)
-DINUCLEOTIDES = sorted([f"{a}{b}" for a in "ACGT" for b in "ACGT"])
+DNA_ALPHABET = "ACGT"
+DINUCLEOTIDES = sorted([f"{a}{b}" for a in DNA_ALPHABET for b in DNA_ALPHABET])
 PARTITIONS = DINUCLEOTIDES + ["NN"]
 COUNT_PATTERN = re.compile(r"_x(\d+)(?:\s|$)")
 
 
-def get_dinucleotide(seq: str) -> str:
-    """Get dinucleotide prefix, defaulting to 'NN' for short/invalid sequences."""
-    if len(seq) >= 2:
-        prefix = seq[:2].upper()
-        if prefix in DINUCLEOTIDES:
+def generate_partitions(prefix_length: int) -> List[str]:
+    """Return all A/C/G/T prefix partitions plus one catch-all N partition."""
+    if prefix_length < 1:
+        raise ValueError("--partition-prefix-length must be at least 1")
+    partitions = [""]
+    for _ in range(prefix_length):
+        partitions = [prefix + base for prefix in partitions for base in DNA_ALPHABET]
+    return sorted(partitions) + ["N" * prefix_length]
+
+
+def get_prefix_partition(seq: str, partitions: set, prefix_length: int) -> str:
+    """Get sequence prefix partition, defaulting to all-N for short/invalid sequences."""
+    if len(seq) >= prefix_length:
+        prefix = seq[:prefix_length].upper()
+        if prefix in partitions:
             return prefix
-    return "NN"
+    return "N" * prefix_length
 
 
 def open_text(path: Path):
@@ -270,7 +280,13 @@ def main():
     parser.add_argument(
         '--partition',
         action='store_true',
-        help='Output partition files by dinucleotide prefix (AA, AC, ..., TT, NN)'
+        help='Output partition files by sequence prefix'
+    )
+    parser.add_argument(
+        '--partition-prefix-length',
+        type=int,
+        default=2,
+        help='Prefix length for --partition (default: 2; 4 gives 257 partitions including NNNN)'
     )
     parser.add_argument(
         '--chunk-size',
@@ -309,9 +325,11 @@ def main():
     temp_dir.mkdir(parents=True, exist_ok=True)
 
     if args.partition:
+        partitions = generate_partitions(args.partition_prefix_length)
+        partition_set = set(partitions)
         args.output_dir.mkdir(parents=True, exist_ok=True)
-        print(f"Writing {len(PARTITIONS)} partition files to: {args.output_dir}", file=sys.stderr)
-        per_partition_chunk_size = max(1, args.chunk_size // len(PARTITIONS))
+        print(f"Writing {len(partitions)} partition files to: {args.output_dir}", file=sys.stderr)
+        per_partition_chunk_size = max(1, args.chunk_size // len(partitions))
         sorters = {
             partition: SpillSorter(
                 args.output_dir / f"{sample_id}.{partition}.tsv",
@@ -319,17 +337,17 @@ def main():
                 per_partition_chunk_size,
                 args.merge_fan_in,
             )
-            for partition in PARTITIONS
+            for partition in partitions
         }
 
         for sequence, count in iter_collapsed_fasta(args.input):
-            sorters[get_dinucleotide(sequence)].add(sequence, count)
+            sorters[get_prefix_partition(sequence, partition_set, args.partition_prefix_length)].add(sequence, count)
 
         partition_sizes = []
         total_records = 0
         total_counts = 0
         total_unique = 0
-        for partition in PARTITIONS:
+        for partition in partitions:
             sorter = sorters[partition]
             unique_count = sorter.finish()
             partition_sizes.append(unique_count)

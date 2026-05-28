@@ -63,6 +63,42 @@ def test_collapsed_to_tsv_spills_sorts_and_coalesces_duplicates(tmp_path):
     ]
 
 
+def test_collapsed_to_tsv_supports_longer_prefix_partitions(tmp_path):
+    fasta = tmp_path / "sample.collapsed.fa"
+    fasta.write_text(
+        ">read_x2\n"
+        "AAAA\n"
+        ">read_x3\n"
+        "AAAC\n"
+        ">read_x5\n"
+        "ANNN\n"
+    )
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(BIN_DIR / "collapsed_to_tsv.py"),
+            str(fasta),
+            "--partition",
+            "--partition-prefix-length",
+            "3",
+            "--output-dir",
+            str(tmp_path),
+            "--sample-id",
+            "sample",
+            "--chunk-size",
+            "65",
+        ],
+        check=True,
+    )
+
+    assert (tmp_path / "sample.AAA.tsv").read_text().splitlines() == [
+        "AAAA\t2",
+        "AAAC\t3",
+    ]
+    assert (tmp_path / "sample.NNN.tsv").read_text().splitlines() == ["ANNN\t5"]
+
+
 def test_build_study_matrix_preserves_sample_columns_and_coalesces_rows(tmp_path):
     s1 = tmp_path / "s1.tsv"
     s2 = tmp_path / "s2.tsv"
@@ -368,6 +404,127 @@ def test_sparse_parquet_global_store_does_not_materialize_study_csr(tmp_path, mo
         {"read_id": 1, "sample_id": 0, "count": 3},
         {"read_id": 2, "sample_id": 1, "count": 7},
     ]
+
+
+def test_csr_npz_streaming_uses_public_numpy_header_reader(tmp_path, monkeypatch):
+    script = load_script("merge_global_matrix.py")
+    study1, _ = make_two_study_fixture(tmp_path)
+    matrix_path = study1 / "STUDY1_matrix.npz"
+
+    if hasattr(script.np.lib.format, "_read_array_header"):
+        monkeypatch.delattr(script.np.lib.format, "_read_array_header")
+
+    rows = [
+        (local_row, sample_indices.tolist(), counts.tolist())
+        for local_row, sample_indices, counts in script.iter_csr_npz_rows(matrix_path)
+    ]
+
+    assert rows == [
+        (0, [0], [2]),
+        (1, [0], [3]),
+    ]
+
+
+def build_partition_fixture(tmp_path, partition, rows1, rows2):
+    study1 = tmp_path / f"study1_{partition}"
+    study2 = tmp_path / f"study2_{partition}"
+    study1.mkdir()
+    study2.mkdir()
+
+    s1 = tmp_path / f"s1.{partition}.tsv"
+    s2 = tmp_path / f"s2.{partition}.tsv"
+    s1.write_text(rows1)
+    s2.write_text(rows2)
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(BIN_DIR / "build_study_matrix.py"),
+            str(s1),
+            "--output-dir",
+            str(study1),
+            "--study-id",
+            "STUDY1",
+            "--sample-ids",
+            "s1",
+            "--partition",
+            partition,
+        ],
+        check=True,
+    )
+    subprocess.run(
+        [
+            sys.executable,
+            str(BIN_DIR / "build_study_matrix.py"),
+            str(s2),
+            "--output-dir",
+            str(study2),
+            "--study-id",
+            "STUDY2",
+            "--sample-ids",
+            "s2",
+            "--partition",
+            partition,
+        ],
+        check=True,
+    )
+    return study1, study2
+
+
+def test_partitioned_sparse_merge_assigns_deterministic_noncolliding_read_ids(tmp_path):
+    aa_studies = build_partition_fixture(tmp_path, "AA", "AAAA\t2\nAAAC\t3\n", "AAAC\t5\n")
+    cc_studies = build_partition_fixture(tmp_path, "CC", "CCCC\t7\n", "CCCG\t11\n")
+
+    aa_out = tmp_path / "global_AA"
+    cc_out = tmp_path / "global_CC"
+    for outdir, studies, partition, ordinal in [
+        (aa_out, aa_studies, "AA", 0),
+        (cc_out, cc_studies, "CC", 1),
+    ]:
+        subprocess.run(
+            [
+                sys.executable,
+                str(BIN_DIR / "merge_global_matrix.py"),
+                "--study-dirs",
+                str(studies[0]),
+                str(studies[1]),
+                "--output-dir",
+                str(outdir),
+                "--partition",
+                partition,
+                "--partition-ordinal",
+                str(ordinal),
+                "--partition-stride",
+                "1000",
+                "--sparse-read-bucket-size",
+                "100",
+                "--metadata-shard-rows",
+                "2",
+            ],
+            check=True,
+        )
+
+    aa_reads = pl.read_parquet(aa_out / "global.AA_reads.parquet").sort("read_id").to_dicts()
+    cc_reads = pl.read_parquet(cc_out / "global.CC_reads.parquet").sort("read_id").to_dicts()
+    assert aa_reads == [
+        {"read_id": 0, "read_bucket": 0, "sequence": "AAAA", "length": 4},
+        {"read_id": 1, "read_bucket": 0, "sequence": "AAAC", "length": 4},
+    ]
+    assert cc_reads == [
+        {"read_id": 1000, "read_bucket": 10, "sequence": "CCCC", "length": 4},
+        {"read_id": 1001, "read_bucket": 10, "sequence": "CCCG", "length": 4},
+    ]
+
+    aa_manifest = json.loads((aa_out / "global.AA_matrix_manifest.json").read_text())
+    cc_manifest = json.loads((cc_out / "global.CC_matrix_manifest.json").read_text())
+    assert aa_manifest["read_id_offset"] == 0
+    assert aa_manifest["partition_ordinal"] == 0
+    assert aa_manifest["partition_stride"] == 1000
+    assert aa_manifest["n_reads"] == 2
+    assert cc_manifest["read_id_offset"] == 1000
+    assert cc_manifest["partition_ordinal"] == 1
+    assert cc_manifest["partition_stride"] == 1000
+    assert cc_manifest["n_reads"] == 2
 
 
 def test_sparse_parquet_append_writes_new_generation_with_stable_ids(tmp_path):

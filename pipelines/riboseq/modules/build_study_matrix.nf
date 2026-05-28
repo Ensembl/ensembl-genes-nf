@@ -58,3 +58,56 @@ process BUILD_STUDY_MATRIX {
     END_VERSIONS
     """
 }
+
+process BUILD_STUDY_MATRIX_PARTITIONED {
+    tag "${study_id}:${partition}"
+    label 'process_ultra_high'
+
+    conda "conda-forge::python=3.11 conda-forge::numpy=1.26 conda-forge::scipy=1.12"
+    container "oras://community.wave.seqera.io/library/pip_numpy_polars_scipy_pruned:ca114eb799eb08b3"
+    publishDir "${params.outdir}/studies_partitioned/${partition}/${study_id}", mode: 'copy'
+
+    input:
+    tuple val(study_id), val(partition), val(sample_ids), path(tsv_files)
+
+    output:
+    tuple val(partition), val(study_id), path("${study_id}.${partition}_matrix.npz"), emit: matrix
+    tuple val(partition), val(study_id), path("${study_id}.${partition}_sequences.txt.gz"), emit: sequences
+    tuple val(partition), val(study_id), path("${study_id}.${partition}_metadata.json"), emit: metadata
+    path "versions.yml", emit: versions
+
+    when:
+    task.ext.when == null || task.ext.when
+
+    script:
+    def sample_ids_arg = sample_ids.join(',')
+    """
+    build_study_matrix.py \\
+        ${tsv_files} \\
+        --output-dir . \\
+        --study-id ${study_id} \\
+        --sample-ids ${sample_ids_arg} \\
+        --partition ${partition}
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: \$(python --version 2>&1 | sed 's/Python //')
+        numpy: \$(python -c "import numpy; print(numpy.__version__)")
+        scipy: \$(python -c "import scipy; print(scipy.__version__)")
+    END_VERSIONS
+    """
+
+    stub:
+    """
+    touch ${study_id}.${partition}_matrix.npz
+    printf '' | gzip -c > ${study_id}.${partition}_sequences.txt.gz
+    echo '{}' > ${study_id}.${partition}_metadata.json
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        python: unknown
+        numpy: unknown
+        scipy: unknown
+    END_VERSIONS
+    """
+}

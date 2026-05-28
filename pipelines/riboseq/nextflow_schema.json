@@ -359,9 +359,9 @@
     },
     "matrix_metadata_shard_rows": {
       "type": "integer",
-      "default": 100000000,
+      "default": 1000000,
       "minimum": 1,
-      "description": "Maximum rows per global metadata parquet shard"
+      "description": "Maximum rows per global metadata/read lookup parquet shard"
     },
     "matrix_sparse_shard_rows": {
       "type": "integer",
@@ -371,7 +371,7 @@
     },
     "matrix_sparse_read_bucket_size": {
       "type": "integer",
-      "default": 1000000,
+      "default": 100000,
       "minimum": 1,
       "description": "Number of global read IDs per sparse read_bucket partition"
     },
@@ -382,7 +382,25 @@
     "matrix_use_partitioning": {
       "type": "boolean",
       "default": false,
-      "description": "Reserved flag for future partitioned unique-read matrix construction"
+      "description": "Split unique-read matrix construction by sequence prefix"
+    },
+    "matrix_partition_prefix_length": {
+      "type": "integer",
+      "default": 4,
+      "minimum": 1,
+      "description": "Prefix length for partitioned matrix construction"
+    },
+    "matrix_partition_stride": {
+      "type": "integer",
+      "default": 1000000000,
+      "minimum": 1,
+      "description": "Read ID namespace stride reserved for each sequence-prefix partition"
+    },
+    "matrix_partition_sparse_read_bucket_size": {
+      "type": "integer",
+      "default": 50000000,
+      "minimum": 1,
+      "description": "Read bucket size used by partitioned sparse count stores"
     },
     "metrics_db": {
       "type": "string",
