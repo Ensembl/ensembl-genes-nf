@@ -138,7 +138,8 @@ results/
 
 ### 1. Quality Control for New Annotations
 ```bash
-nextflow run main.nf \
+nextflow run pipelines/statistics/main.nf \
+  -c pipelines/statistics/nextflow.config \
   --csvFile genomes.csv \
   --run_busco_core \
   --run_omark \
@@ -147,7 +148,8 @@ nextflow run main.nf \
 
 ### 2. Quick Assembly Assessment from NCBI
 ```bash
-nextflow run main.nf \
+nextflow run pipelines/statistics/main.nf \
+  -c pipelines/statistics/nextflow.config \
   --csvFile ncbi_assemblies.csv \
   --run_busco_ncbi \
   --outdir ncbi_qc
@@ -155,7 +157,8 @@ nextflow run main.nf \
 
 ### 3. Statistics Generation for Database Release
 ```bash
-nextflow run main.nf \
+nextflow run pipelines/statistics/main.nf \
+  -c pipelines/statistics/nextflow.config \
   --csvFile production_dbs.csv \
   --run_ensembl_stats \
   --apply_ensembl_stats \

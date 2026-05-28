@@ -218,8 +218,8 @@ nextflow run main.nf \
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `--cacheDir` | string | `/cache` | Directory for caching downloaded files |
-| `--cleanCache` | boolean | `true` | Clean cache directory after pipeline completion |
+| `--cacheDir` | string | `./results/cache` | Directory for caching downloaded files |
+| `--cleanCache` | boolean | `false` | Clean cache directory after pipeline completion |
 | `--files_latency` | integer | `60` | File system latency in seconds |
 
 ### Example
