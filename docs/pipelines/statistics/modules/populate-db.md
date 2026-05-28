@@ -41,8 +41,7 @@ The `POPULATE_DB` process executes SQL files against Ensembl core databases to p
 The process:
 1. Executes the mysql_ensadmin script with host and database name
 2. Redirects the SQL file as input to populate the database
-3. Captures MySQL version information when `mysql` is available on PATH
-4. Generates a versions file
+3. Generates a minimal versions file
 
 ### Command Structure
 ```bash
@@ -74,6 +73,6 @@ The process only runs when at least one of these conditions is true:
 - The versions file is marked as optional
 - SQL execution is performed via the mysql_ensadmin utility for standardized database administration
 - Nextflow task caching is disabled for this process because it performs database write side effects
-- Missing `mysql` on PATH does not fail the process after SQL execution; the version is recorded as `unknown`
+- MySQL version probing is skipped; the version is recorded as `unknown`
 - The process assumes SQL files are pre-validated and safe to execute
 - No rollback mechanism is provided; ensure SQL files are tested before production use

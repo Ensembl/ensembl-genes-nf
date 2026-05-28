@@ -38,24 +38,10 @@ process POPULATE_DB {
 
     script:
     """
-    MYSQL_CMD="${params.mysql_ensadmin}/${params.host}"
-
-    if [[ ! -x "\$MYSQL_CMD" ]]; then
-        echo "MySQL ensadmin wrapper not found or not executable: \$MYSQL_CMD" >&2
-        exit 127
-    fi
-
-    "\$MYSQL_CMD" ${meta.dbname} < ${sql_file}
+    ${params.mysql_ensadmin}/${params.host} ${meta.dbname} < ${sql_file}
 
     # Create versions file
-    if command -v mysql >/dev/null 2>&1; then
-        MYSQL_VERSION=\$(mysql --version 2>&1 | awk '{ for (i = 1; i <= NF; i++) if (\$i == "Distrib") { print \$(i + 1); exit } }' | tr -d ',')
-        MYSQL_VERSION=\${MYSQL_VERSION:-unknown}
-    else
-        MYSQL_VERSION="unknown"
-    fi
-    
     echo '"POPULATE_DB":' > versions.yml
-    echo "  mysql: \$MYSQL_VERSION" >> versions.yml
+    echo "  mysql: unknown" >> versions.yml
     """
 }
