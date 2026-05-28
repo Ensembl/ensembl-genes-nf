@@ -34,7 +34,7 @@ process FETCH_GENOME {
     val meta
 
     output:
-    tuple val(meta), path("genome.fna"), emit: fasta_file_output
+    tuple val(meta), path("*.fna"), emit: fasta_file_output
     path "versions.yml", emit: versions_file
 
     script:
@@ -43,20 +43,17 @@ process FETCH_GENOME {
         echo "Using provided genome file: ${meta.genome_file}"
         cp -L "${meta.genome_file}" genome.fna
     else
-        mkdir -p ncbi_dataset
         fetch_genome.py \
-            --output_dir ncbi_dataset \
+            --output_dir . \
             --gca ${meta.gca} \
             --ncbi_base ${params.ncbiBaseUrl}
 
-        downloaded_genome=\$(find ncbi_dataset -maxdepth 1 -type f -name "*.fna" | head -n 1)
+        downloaded_genome=\$(find . -maxdepth 1 -type f -name "*.fna" | head -n 1)
 
         if [[ -z "\$downloaded_genome" ]]; then
             echo "No genome FASTA found for ${meta.gca}" >&2
             exit 1
         fi
-
-        mv "\$downloaded_genome" genome.fna
     fi
     
     # Create versions file

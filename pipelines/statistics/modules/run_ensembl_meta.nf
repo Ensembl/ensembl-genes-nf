@@ -25,6 +25,7 @@ Outputs:
 process RUN_ENSEMBL_META {
     label 'python'
     tag "${meta.gca}"
+    storeDir "${params.cacheDir}/${meta.gca}/core_statistics/metakeys"
     publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
     afterScript "sleep ${params.files_latency}"
 
@@ -44,7 +45,7 @@ process RUN_ENSEMBL_META {
     --host ${params.host} --port ${params.port}  \
     --team ${params.team}  \
     --production_name ${meta.production_name}
-    ln -s core_statistics/*.sql .
+    cp core_statistics/*.sql .
     # Create versions file
     PYTHON_VERSION=\$(python --version 2>&1 | awk '{print \$2}')
     
