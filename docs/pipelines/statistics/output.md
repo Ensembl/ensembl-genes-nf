@@ -62,11 +62,11 @@ ${params.cacheDir}/
 
 ### FETCH_GENOME
 
-**Task output:** `genome.fna` (used by downstream BUSCO steps)
+**Task output:** `*.fna` (used by downstream BUSCO steps)
 **Cached in:** `${params.cacheDir}/${meta.gca}/ncbi_dataset/`
 
 #### Files:
-- `genome.fna` - FASTA format genome sequence
+- `*.fna` - FASTA format genome sequence
 
 #### Format:
 ```fasta
@@ -157,7 +157,7 @@ Primary results file with completeness metrics.
 ```
 # BUSCO version is: 5.4.7
 # The lineage dataset is: vertebrata_odb10 (Creation date: 2021-02-19, number of genomes: 65, number of BUSCOs: 3354)
-# Summarized benchmarking in BUSCO notation for file genome.fna
+# Summarized benchmarking in BUSCO notation for file *.fna
 # BUSCO was run in mode: genome
 
 	***** Results: *****
@@ -244,6 +244,7 @@ Same structure as BUSCO_GENOME_LINEAGE, but:
 ### BUSCO_CORE_METAKEYS
 
 **Published to:** `${params.outdir}/${meta.gca}/`
+**Cached:** No. Nextflow task caching is disabled because this step writes to the database.
 
 #### Files:
 - `{database}_busco_{mode}_metakey.json` - BUSCO metadata generated from the summary file
@@ -359,6 +360,7 @@ Potential contamination candidates.
 ### RUN_STATISTICS
 
 **Published to:** `${params.outdir}/${meta.gca}/core_statistics/`
+**Cached in:** `${params.cacheDir}/${meta.gca}/core_statistics/statistics/`
 
 #### Files:
 Multiple SQL files containing INSERT statements:
@@ -418,6 +420,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES (X, 'stat.name', 'val
 ### RUN_ENSEMBL_META
 
 **Published to:** `${params.outdir}/${meta.gca}/core_statistics/`
+**Cached in:** `${params.cacheDir}/${meta.gca}/core_statistics/metakeys/`
 
 #### Files:
 
@@ -466,6 +469,7 @@ INSERT INTO meta (species_id, meta_key, meta_value) VALUES
 ### POPULATE_DB
 
 **Output:** None (executes SQL against database)
+**Cached:** No. Nextflow task caching is disabled because this step writes to the database.
 
 #### Database Changes:
 - Executes all SQL files from RUN_STATISTICS and RUN_ENSEMBL_META
@@ -588,6 +592,8 @@ UPDATE table SET col1 = val WHERE condition;
 The pipeline uses `storeDir` for expensive operations:
 - **FETCH_GENOME**: Avoid repeated NCBI/ENA downloads
 - **FETCH_PROTEINS**: Avoid repeated protein extraction
+- **RUN_STATISTICS**: Avoid repeated statistics SQL generation
+- **RUN_ENSEMBL_META**: Avoid repeated metadata SQL generation
 - **OMAMER_HOG**: Avoid expensive orthology searches
 
 ### Cache Behavior
@@ -911,7 +917,7 @@ Provide:
 
 | Module | Primary Output | Location | Format |
 |--------|---------------|----------|---------|
-| FETCH_GENOME | genome.fna | cache/${gca}/ncbi_dataset/ | FASTA |
+| FETCH_GENOME | *.fna | cache/${gca}/ncbi_dataset/ | FASTA |
 | FETCH_PROTEINS | translations.fa | cache/${gca}/fasta/ | FASTA |
 | BUSCO_GENOME | short_summary.txt | outdir/${gca}/busco_genome_lineage/ | TXT |
 | BUSCO_PROTEIN | short_summary.txt | outdir/${gca}/busco_protein_lineage/ | TXT |

@@ -60,10 +60,11 @@ tuple val(meta)
 
 #### Genome FASTA File
 
-**Location**: `${params.cacheDir}/${meta.gca}/ncbi_dataset/genome.fna`
+**Location**: `${params.cacheDir}/${meta.gca}/ncbi_dataset/*.fna`
 
 **Naming Convention**: 
-- `genome.fna`
+- NCBI/ENA downloads keep their source FASTA filename
+- Direct input files are copied as `genome.fna`
 
 **Format**: Standard FASTA format
 
@@ -182,7 +183,7 @@ The module uses a bash script to:
 
 ### Caching Strategy
 
-The module uses `storeDir` to cache `genome.fna` and `versions.yml` under `${params.cacheDir}/${meta.gca}/ncbi_dataset/`. When those outputs already exist, Nextflow can reuse them instead of running the download task body.
+The module uses `storeDir` to cache the downloaded `*.fna` and `versions.yml` under `${params.cacheDir}/${meta.gca}/ncbi_dataset/`. When those outputs already exist, Nextflow can reuse them instead of running the download task body.
 
 Nextflow `-resume` is still required for the standard `work/` cache, but `storeDir` provides this module-level persistent cache across runs.
 
@@ -451,7 +452,7 @@ channel.fromPath('genomes.csv')
 With `storeDir` caching:
 
 - **First run**: Full download time (minutes to hours)
-- **Subsequent runs**: Reuses `genome.fna` from the store directory without downloading again
+- **Subsequent runs**: Reuses the stored `.fna` from the store directory without downloading again
 - **Cache hit rate**: Typically >80% for repeated analyses
 
 ### Resource Usage

@@ -8,6 +8,7 @@ The `RUN_STATISTICS` process generates comprehensive gene annotation statistics 
 
 - **Label**: `fetch_file`
 - **Tag**: Uses genome assembly accession (`meta.gca`)
+- **Store Directory**: `${params.cacheDir}/${meta.gca}/core_statistics/statistics`
 - **Publish Directory**: `${params.outdir}/${meta.gca}`
 - **Max Forks**: 20 (limits parallel execution)
 
@@ -33,6 +34,7 @@ The `RUN_STATISTICS` process generates comprehensive gene annotation statistics 
 ## Parameters
 
 ### Required
+- `params.cacheDir`: Cache directory for stored process outputs
 - `params.outdir`: Output directory for results
 - `params.enscode`: Path to Ensembl code repository
 - `params.host`: Database host
@@ -91,6 +93,7 @@ The SQL files typically include statistics for:
 
 ## Notes
 
+- SQL generation is cached with `storeDir`; clear this cache if the source core database changes
 - Results are published to a genome-specific subdirectory
 - Maximum of 20 concurrent processes to prevent database overload
 - The process includes a configurable sleep delay after completion to handle file system latency

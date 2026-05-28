@@ -8,6 +8,7 @@ The `BUSCO_CORE_METAKEYS` process patches BUSCO metadata into an Ensembl core da
 
 - **Label**: `python`
 - **Tag**: Uses genome assembly accession (`meta.gca`)
+- **Cache**: Disabled because the process writes to the database
 - **Publish Directory**: `${params.outdir}/${meta.gca}`
 - **Conditional Execution**: Only runs when `params.apply_busco_metakeys` is true
 
@@ -66,3 +67,4 @@ The process:
 - The process includes a configurable sleep delay after completion to handle file system latency
 - JSON results are published to a genome-specific subdirectory
 - Direct database modification requires appropriate write permissions
+- Nextflow task caching is disabled for this process because it writes BUSCO metakeys to the database

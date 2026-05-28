@@ -8,6 +8,7 @@ The `RUN_ENSEMBL_META` process generates SQL files containing Ensembl core datab
 
 - **Label**: `python`
 - **Tag**: Uses genome assembly accession (`meta.gca`)
+- **Store Directory**: `${params.cacheDir}/${meta.gca}/core_statistics/metakeys`
 - **Publish Directory**: `${params.outdir}/${meta.gca}`
 
 ## Inputs
@@ -32,6 +33,7 @@ The `RUN_ENSEMBL_META` process generates SQL files containing Ensembl core datab
 ## Parameters
 
 ### Required
+- `params.cacheDir`: Cache directory for stored process outputs
 - `params.outdir`: Output directory for results
 - `params.enscode`: Path to Ensembl code repository
 - `params.host`: Database host
@@ -52,7 +54,7 @@ The process:
    - Production database references
    - Team attribution
 4. Outputs SQL files to `core_statistics/` subdirectory
-5. Creates symbolic links to SQL files in the publish directory
+5. Copies SQL files into the task working directory for Nextflow output tracking
 6. Captures Python version information
 
 ## Dependencies
@@ -75,7 +77,8 @@ The SQL files typically include INSERT/UPDATE statements for the `meta` table wi
 ## Notes
 
 - Results are published to a genome-specific subdirectory
+- SQL generation is cached with `storeDir`; clear this cache if the source core database or team metadata changes
 - The process includes a configurable sleep delay after completion to handle file system latency
 - Generated SQL files can be executed using the `POPULATE_DB` process
 - The `core_statistics/` directory is created as an output subdirectory
-- Symbolic links ensure SQL files are accessible in the publish directory
+- SQL files are copied into the task directory so they are accessible in the publish directory
