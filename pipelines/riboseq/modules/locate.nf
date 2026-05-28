@@ -14,8 +14,8 @@ process LOCATE {
 
     script:
     """
-    collapsed_file="${params.collapsed_read_path}/${run}.collapsed.fa"
-    collapsed_file_1="${params.collapsed_read_path}/${run}_1.collapsed.fa.gz"
+    collapsed_file="${params.collapsed_read_path}/${run}_rpfs.collapsed.fa"
+    collapsed_file_1="${params.collapsed_read_path}/${run}_1_rpfs.collapsed.fa.gz"
 
     if [ -f "\$collapsed_file" ]; then
         gzip -c "\$collapsed_file" > "${run}.collapsed.fa.gz"
