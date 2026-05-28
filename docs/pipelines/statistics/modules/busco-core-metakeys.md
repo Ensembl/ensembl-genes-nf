@@ -28,7 +28,8 @@ The `BUSCO_CORE_METAKEYS` process patches BUSCO metadata into an Ensembl core da
 
 | Channel | Type | Description |
 |---------|------|-------------|
-| versions_file | path | Optional versions.yml file tracking Python version |
+| metakey_json | tuple val(meta), path | BUSCO metakey JSON file published to `${params.outdir}/${meta.gca}` |
+| versions_file | path | Versions YAML file tracking Python version |
 
 ## Parameters
 
@@ -48,9 +49,11 @@ The `BUSCO_CORE_METAKEYS` process patches BUSCO metadata into an Ensembl core da
 The process:
 1. Executes `busco_metakeys_patch.py` with database connection parameters
 2. Parses the BUSCO summary file
-3. Inserts metakeys into the specified Ensembl core database
-4. Runs the query directly against the database (`-run_query true`)
-5. Generates a versions file tracking the Python version used
+3. Creates a BUSCO metakey JSON file in the task working directory
+4. Inserts metakeys into the specified Ensembl core database
+5. Runs the query directly against the database (`-run_query true`)
+6. Publishes the JSON file to `${params.outdir}/${meta.gca}`
+7. Generates a versions file tracking the Python version used
 
 ## Dependencies
 
@@ -61,6 +64,5 @@ The process:
 ## Notes
 
 - The process includes a configurable sleep delay after completion to handle file system latency
-- Results are published to a genome-specific subdirectory
+- JSON results are published to a genome-specific subdirectory
 - Direct database modification requires appropriate write permissions
-- The versions file is marked as optional

@@ -21,6 +21,7 @@ Inputs:
 - summary_file: path to the BUSCO summary file  
 Outputs:
 - versions.yml: versions file containing software versions used
+- *_busco_<mode>_metakey.json: JSON file containing BUSCO metakeys
 
 */
 process BUSCO_CORE_METAKEYS {
@@ -34,19 +35,21 @@ process BUSCO_CORE_METAKEYS {
     tuple val(meta), path(summary_file)
 
     output:
-    path "versions.yml", emit: versions_file, optional: true
+    tuple val(meta), path("*_busco_${meta.busco_mode}_metakey.json"), emit: metakey_json
+    path "versions_busco_${meta.busco_mode}_metakeys.yml", emit: versions_file
 
     when:
     params.apply_busco_metakeys
 
     script:
+    def versions_file = "versions_busco_${meta.busco_mode}_metakeys.yml"
 
     """
     export PYTHONPATH="${params.enscode}/ensembl-genes/src/python:\${PYTHONPATH:-}"
 
     python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metrics/busco_metakeys_patch.py \
     -db ${meta.dbname} -file ${summary_file} \
-    -output_dir "${params.outdir}/${meta.gca}/"  -host ${params.host} \
+    -output_dir "./"  -host ${params.host} \
     -port ${params.port} -user ${params.user}  \
     -password ${params.password} -species_id ${meta.species_id} \
     -run_query true
@@ -54,7 +57,9 @@ process BUSCO_CORE_METAKEYS {
     # Create versions file
     PYTHON_VERSION=\$(python --version 2>&1 | awk '{print \$2}')
 
-
-    echo "  python: \$PYTHON_VERSION" >> versions.yml
+    cat <<-END_VERSIONS > ${versions_file}
+    "${task.process}:${meta.busco_mode}":
+        python: \$PYTHON_VERSION
+    END_VERSIONS
     """
 }
