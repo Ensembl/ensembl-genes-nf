@@ -8,7 +8,7 @@ The `FETCH_PROTEINS` process retrieves protein translations from an Ensembl core
 
 - **Label**: `fetch_file`
 - **Tag**: Uses genome assembly accession (`meta.gca`)
-- **Store Directory**: `${params.cacheDir}/${meta.gca}/translations/`
+- **Store Directory**: `${params.cacheDir}/${meta.gca}/fasta/`
 - **Max Forks**: 20 (limits parallel execution)
 
 ## Inputs
@@ -45,10 +45,10 @@ The `FETCH_PROTEINS` process retrieves protein translations from an Ensembl core
 ## Script Details
 
 The process:
-1. Executes `dump_translations.pl` Perl script from the Ensembl genes repository
-2. Connects to the specified Ensembl core database
-3. Extracts all protein translations
-4. Outputs a FASTA file named `${meta.production_name}.fa`
+1. Uses `storeDir` to reuse cached `translations.fa` and `versions.yml` when they exist
+2. Uses `meta.protein_file` directly when a protein FASTA is provided
+3. Executes `dump_translations.pl` when no stored output is available
+4. Outputs a FASTA file named `translations.fa`
 5. Generates a versions file tracking the Perl version used
 
 ## Dependencies
@@ -60,11 +60,11 @@ The process:
 
 ## Storage Strategy
 
-Uses `storeDir` directive to cache results permanently by genome assembly accession, avoiding redundant database queries for the same genome.
+Uses the Nextflow `storeDir` directive to cache results permanently by genome assembly accession, avoiding redundant database queries for the same genome.
 
 ## Notes
 
 - Results are cached permanently to reduce database load
 - The process includes a configurable sleep delay after completion to handle file system latency
 - Maximum of 20 concurrent processes to prevent database overload
-- Output filename is based on the production name for consistency
+- Output filename is `translations.fa` for consistency with downstream BUSCO inputs

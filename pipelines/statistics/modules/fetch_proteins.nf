@@ -26,8 +26,7 @@ Outputs:
 process FETCH_PROTEINS {
     tag "${meta.dbname}:protein"
     label 'fetch_file'
-    publishDir "${params.cacheDir}/${meta.gca}/fasta", mode: 'copy', pattern: "*.fa"
-    publishDir "${params.cacheDir}/${meta.gca}/fasta", mode: 'copy', pattern: "versions.yml"
+    storeDir "${params.cacheDir}/${meta.gca}/fasta"
     afterScript "sleep ${params.files_latency}"
     // Needed because of file system latency
     maxForks 20
@@ -40,19 +39,20 @@ process FETCH_PROTEINS {
     path "versions.yml", emit: versions_file
 
     script:
-    translations_file = "translations.fa"
+    def translations_file = "translations.fa"
     """
-    if [[ ! -f "${meta.protein_file}" ]]; then
-    perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
-        -host ${params.host} \
-        -port ${params.port} \
-        -dbname ${meta.dbname} \
-        -user ${params.user_r} \
-        -file ${translations_file} \
-        --species_id ${meta.species_id} \
-        ${params.dump_params}
+    if [[ -f "${meta.protein_file}" ]]; then
+        echo "Using provided protein file: ${meta.protein_file}"
+        cp -L "${meta.protein_file}" ${translations_file}
     else
-    ln -s ${meta.protein_file} ${translations_file}
+        perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
+            -host ${params.host} \
+            -port ${params.port} \
+            -dbname ${meta.dbname} \
+            -user ${params.user_r} \
+            -file ${translations_file} \
+            --species_id ${meta.species_id} \
+            ${params.dump_params}
     fi
     # Create versions file - simpler approach
     PERL_VERSION=\$(perl --version | grep -oP 'v\\K[0-9.]+' | head -n1)

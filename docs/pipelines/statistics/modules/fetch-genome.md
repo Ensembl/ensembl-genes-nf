@@ -45,7 +45,7 @@ tuple val(meta)
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `params.outdir` | String | `./results` | Base output directory |
-| `params.cacheDir` | String | `./cache` | Directory for caching downloads |
+| `params.cacheDir` | String | `./results/cache` | Directory for cached process outputs |
 
 ## Outputs
 
@@ -60,11 +60,10 @@ tuple val(meta)
 
 #### Genome FASTA File
 
-**Location**: `${params.cacheDir}/${meta.gca}/*.fna`
+**Location**: `${params.cacheDir}/${meta.gca}/ncbi_dataset/genome.fna`
 
 **Naming Convention**: 
-- NCBI Download: `GCA_XXXXXXXXX.Y_<assembly_name>_genomic.fna`
-- Direct File: Original filename (must be `.fna` or `.fna.gz`)
+- `genome.fna`
 
 **Format**: Standard FASTA format
 
@@ -80,7 +79,7 @@ ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG
 
 #### Versions File
 
-**Location**: `${params.outdir}/${meta.gca}/versions.yml`
+**Location**: `${params.cacheDir}/${meta.gca}/ncbi_dataset/versions.yml`
 
 **Format**: YAML
 
@@ -96,10 +95,9 @@ ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG
 ### Directives
 
 ```groovy
-scratch false                  // Don't use scratch directory
 label 'fetch_file'             // Use fetch_file resource allocation
 tag "${meta.gca}"              // Tag with GCA accession
-storeDir "${params.cacheDir}/${meta.gca}"  // Permanent cache
+storeDir "${params.cacheDir}/${meta.gca}/ncbi_dataset"
 ```
 
 ### Resource Allocation
@@ -150,7 +148,7 @@ The module uses a bash script to:
    ```bash
    if [ -n "${meta.genome_file}" ]; then
        # Use provided file
-       ln -s ${meta.genome_file} genome.fna
+       cp -L ${meta.genome_file} genome.fna
    else
        # Download from NCBI
    fi
@@ -184,18 +182,11 @@ The module uses a bash script to:
 
 ### Caching Strategy
 
-The module uses `storeDir` for permanent caching:
+The module uses `storeDir` to cache `genome.fna` and `versions.yml` under `${params.cacheDir}/${meta.gca}/ncbi_dataset/`. When those outputs already exist, Nextflow can reuse them instead of running the download task body.
 
-```groovy
-storeDir "${params.cacheDir}/${meta.gca}"
-```
+Nextflow `-resume` is still required for the standard `work/` cache, but `storeDir` provides this module-level persistent cache across runs.
 
-**Benefits**:
-- Downloaded files persist across pipeline runs
-- Saves bandwidth and time for repeated analyses
-- Shared cache across multiple workflows
-
-**Cache Location**: `${params.cacheDir}/GCA_XXXXXXXXX.Y/`
+**Cache Location**: `${params.cacheDir}/GCA_XXXXXXXXX.Y/ncbi_dataset/`
 
 ## Usage Example
 
@@ -460,7 +451,7 @@ channel.fromPath('genomes.csv')
 With `storeDir` caching:
 
 - **First run**: Full download time (minutes to hours)
-- **Subsequent runs**: Instant (0 seconds) - file already cached
+- **Subsequent runs**: Reuses `genome.fna` from the store directory without downloading again
 - **Cache hit rate**: Typically >80% for repeated analyses
 
 ### Resource Usage
