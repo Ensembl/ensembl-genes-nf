@@ -6,6 +6,10 @@
 process STAR_ALIGN_UNIQUE_READS {
     tag "unique_reads"
     label 'process_high'
+    cpus 16
+    memory '48.GB'
+    time '12.h'
+    errorStrategy 'terminate'
 
     conda "bioconda::star=2.7.11a bioconda::samtools=1.19"
     container "oras://community.wave.seqera.io/library/samtools_star:1b5dd3ca5b761fb8"
@@ -23,7 +27,7 @@ process STAR_ALIGN_UNIQUE_READS {
     path "versions.yml", emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    (task.ext.when == null || task.ext.when) && (params.matrix_align_unique_reads == null || params.matrix_align_unique_reads)
 
     script:
     def mismatches = params.mismatches ?: 2
@@ -76,6 +80,10 @@ process STAR_ALIGN_UNIQUE_READS {
 process STAR_ALIGN_UNIQUE_READS_PARTITIONED {
     tag "${partition}"
     label 'process_high'
+    cpus 16
+    memory '48.GB'
+    time '12.h'
+    errorStrategy 'terminate'
 
     conda "bioconda::star=2.7.11a bioconda::samtools=1.19"
     container "oras://community.wave.seqera.io/library/samtools_star:1b5dd3ca5b761fb8"
@@ -93,7 +101,7 @@ process STAR_ALIGN_UNIQUE_READS_PARTITIONED {
     path "versions.yml", emit: versions
 
     when:
-    task.ext.when == null || task.ext.when
+    (task.ext.when == null || task.ext.when) && (params.matrix_align_unique_reads == null || params.matrix_align_unique_reads)
 
     script:
     def mismatches = params.mismatches ?: 2

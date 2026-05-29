@@ -6,6 +6,10 @@
 process MERGE_GLOBAL_MATRIX {
     tag "global"
     label 'process_ultra_high'
+    cpus 1
+    memory '64.GB'
+    time '24.h'
+    errorStrategy 'terminate'
 
     // Dependencies: python, numpy, scipy, zarr, numcodecs, polars, xxhash
     // Use conda profile or enable Wave for automatic container generation
@@ -35,13 +39,14 @@ process MERGE_GLOBAL_MATRIX {
     task.ext.when == null || task.ext.when
 
     script:
-    def chunk_size = task.ext.chunk_size ?: 10000
-    def metadata_shard_rows = task.ext.metadata_shard_rows ?: 1000000
-    def matrix_format = task.ext.matrix_format ?: 'sparse-parquet'
-    def sparse_shard_rows = task.ext.sparse_shard_rows ?: 5000000
-    def sparse_read_bucket_size = task.ext.sparse_read_bucket_size ?: 100000
-    def append_flag = task.ext.append_to ? "--append-to ${task.ext.append_to}" : ''
-    def fasta_flag = task.ext.write_fasta == false ? '--no-write-fasta' : ''
+    def chunk_size = task.ext.chunk_size ?: (params.matrix_chunk_size ?: 10000)
+    def metadata_shard_rows = task.ext.metadata_shard_rows ?: (params.matrix_metadata_shard_rows ?: 1000000)
+    def matrix_format = task.ext.matrix_format ?: (params.matrix_format ?: 'sparse-parquet')
+    def sparse_shard_rows = task.ext.sparse_shard_rows ?: (params.matrix_sparse_shard_rows ?: 5000000)
+    def sparse_read_bucket_size = task.ext.sparse_read_bucket_size ?: (params.matrix_sparse_read_bucket_size ?: 100000)
+    def append_flag = (task.ext.append_to ?: params.matrix_append_to) ? "--append-to ${task.ext.append_to ?: params.matrix_append_to}" : ''
+    def write_fasta = task.ext.write_fasta == null ? (params.matrix_align_unique_reads == null ? true : params.matrix_align_unique_reads) : task.ext.write_fasta
+    def fasta_flag = write_fasta == false ? '--no-write-fasta' : ''
     def partition_flag = task.ext.partition ? "--partition ${task.ext.partition}" : ''
     """
     # Organize flat files into study directories
@@ -105,6 +110,10 @@ process MERGE_GLOBAL_MATRIX {
 process MERGE_GLOBAL_MATRIX_PARTITIONED {
     tag "${partition}"
     label 'process_ultra_high'
+    cpus 1
+    memory '64.GB'
+    time '24.h'
+    errorStrategy 'terminate'
 
     conda "conda-forge::python=3.11 conda-forge::numpy=1.26 conda-forge::scipy=1.12 conda-forge::zarr=2.18 conda-forge::numcodecs=0.12 conda-forge::polars=0.20 conda-forge::xxhash-python=3.4"
     container "oras://community.wave.seqera.io/library/pip_numpy_polars_scipy_pruned:ca114eb799eb08b3"
@@ -130,12 +139,13 @@ process MERGE_GLOBAL_MATRIX_PARTITIONED {
     task.ext.when == null || task.ext.when
 
     script:
-    def chunk_size = task.ext.chunk_size ?: 10000
-    def metadata_shard_rows = task.ext.metadata_shard_rows ?: 1000000
-    def matrix_format = task.ext.matrix_format ?: 'sparse-parquet'
-    def sparse_shard_rows = task.ext.sparse_shard_rows ?: 5000000
-    def sparse_read_bucket_size = task.ext.sparse_read_bucket_size ?: 50000000
-    def fasta_flag = task.ext.write_fasta == false ? '--no-write-fasta' : ''
+    def chunk_size = task.ext.chunk_size ?: (params.matrix_chunk_size ?: 10000)
+    def metadata_shard_rows = task.ext.metadata_shard_rows ?: (params.matrix_metadata_shard_rows ?: 1000000)
+    def matrix_format = task.ext.matrix_format ?: (params.matrix_format ?: 'sparse-parquet')
+    def sparse_shard_rows = task.ext.sparse_shard_rows ?: (params.matrix_sparse_shard_rows ?: 5000000)
+    def sparse_read_bucket_size = task.ext.sparse_read_bucket_size ?: (params.matrix_partition_sparse_read_bucket_size ?: 50000000)
+    def write_fasta = task.ext.write_fasta == null ? (params.matrix_align_unique_reads == null ? true : params.matrix_align_unique_reads) : task.ext.write_fasta
+    def fasta_flag = write_fasta == false ? '--no-write-fasta' : ''
     """
     for matrix in *_matrix.npz; do
         study_id=\$(basename \$matrix _matrix.npz)

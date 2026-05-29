@@ -6,6 +6,11 @@
 process COLLAPSED_TO_TSV {
     tag "${meta.id}"
     label 'process_low'
+    cpus 1
+    time '4.h'
+    memory '4.GB'
+    errorStrategy 'retry'
+    maxRetries 3
 
     // Pure Python - no external dependencies
     conda "conda-forge::python=3.11"
@@ -24,7 +29,7 @@ process COLLAPSED_TO_TSV {
     task.ext.when == null || task.ext.when
 
     script:
-    def chunk_size = task.ext.chunk_size ?: 500000
+    def chunk_size = task.ext.chunk_size ?: (params.matrix_tsv_chunk_size ?: 500000)
     def extra_args = task.ext.args ?: ''
     """
     collapsed_to_tsv.py \\
@@ -54,6 +59,11 @@ process COLLAPSED_TO_TSV {
 process COLLAPSED_TO_TSV_PARTITIONED {
     tag "${meta.id}"
     label 'process_low'
+    cpus 1
+    time '8.h'
+    memory '4.GB'
+    errorStrategy 'retry'
+    maxRetries 3
 
     conda "conda-forge::python=3.11"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -72,8 +82,8 @@ process COLLAPSED_TO_TSV_PARTITIONED {
     task.ext.when == null || task.ext.when
 
     script:
-    def chunk_size = task.ext.chunk_size ?: 500000
-    def prefix_length = task.ext.partition_prefix_length ?: 4
+    def chunk_size = task.ext.chunk_size ?: (params.matrix_tsv_chunk_size ?: 500000)
+    def prefix_length = task.ext.partition_prefix_length ?: (params.matrix_partition_prefix_length ?: 4)
     def extra_args = task.ext.args ?: ''
     """
     collapsed_to_tsv.py \\
