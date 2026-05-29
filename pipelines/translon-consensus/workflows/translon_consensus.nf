@@ -19,9 +19,9 @@ workflow TRANSLON_CONSENSUS {
         translon_db_gtf_ch = params.gencode_gtf
             ? Channel.value(file(params.gencode_gtf, checkIfExists: true))
             : Channel.value(file('NO_FILE'))
-        // Optional manifest TSV (path / tool / sample_id).  When supplied,
-        // translon_db_standardise.py reads files from their original paths,
-        // preserving filename keywords used to infer source_feature_class.
+        // Optional manifest TSV produced by scripts/build_translon_manifest.py.
+        // Only rows with ingest_status=matched are parsed; audit rows remain in
+        // the manifest for source coverage review.
         // Produce with scripts/build_translon_manifest.py.
         translon_db_manifest_ch = params.manifest_tsv
             ? Channel.value(file(params.manifest_tsv, checkIfExists: true))

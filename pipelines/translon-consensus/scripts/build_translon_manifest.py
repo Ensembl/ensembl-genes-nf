@@ -1,378 +1,655 @@
 #!/usr/bin/env python3
-"""
-Build a translon_db manifest TSV from raw tool outputs.
+"""Build an auditable translon_db source manifest from TransCODE pilot outputs.
 
-Handles all 5 tools (PRICE, RiboTIE, ORFQuant, iRibo, RibORF2) with
-CDS / non-CDS split from each tool's native output structure.
-
-The manifest is passed directly to translon_db_standardise.py via --manifest,
-so original file paths are preserved and source_feature_class is inferred from
-the original filenames (annotated/known -> cds, novel/unannotated -> non_cds).
-
-Usage:
-    python build_translon_manifest.py \\
-        --results-dir /hps/.../full_pilot_results \\
-        --riborf2-converted /hps/.../riborf2_converted \\
-        --out manifest.tsv
-
-    # Run DB build directly against original files:
-    translon_db_standardise.py \\
-        --input-root /any/valid/dir \\
-        --manifest manifest.tsv \\
-        --out-dir translon_db/ \\
-        --fasta genome.fa \\
-        --gtf gencode.gtf.gz
+The manifest is deliberately provenance-first.  It starts from the canonical
+pilot sample space, maps raw tool leaves onto canonical keys, records native
+caller classes without interpreting them as CDS/non-CDS truth, and preserves
+non-ingested leaves as explicit excluded rows.
 """
 
 from __future__ import annotations
 
 import argparse
 import csv
+import gzip
 import re
-import sys
-from collections import defaultdict
+from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 
-# ---------------------------------------------------------------------------
-# Sample name normalisation
-# ---------------------------------------------------------------------------
+TOOLS = ("iRibo", "ORFQuant", "RibORF2", "RiboTIE", "PRICE")
+FASTQ_ROUTE_TOOLS = ("iRibo", "RibORF2", "RiboTIE", "PRICE")
+NATIVE_CLASSES = ("annotated", "novel")
+MATCHED = "matched"
+
+
+@dataclass(frozen=True)
+class SampleMeta:
+    sample_no: int
+    sample_name: str
+    dataset_id: str
+    sample_id: str
+    cell_type: str
+    replicate: str
+    is_pooled: bool
+    run_type: str
+    fastq_route_expected: int
+
+
+EXPECTED_SAMPLE_METADATA: tuple[SampleMeta, ...] = (
+    SampleMeta(1, "Pancreas 1", "GSE144682", "SRR11005875_to_79", "pancreas", "1", False, "individual_sample", 1),
+    SampleMeta(2, "Pancreas 2", "GSE144682", "SRR11005880_to_84", "pancreas", "2", False, "individual_sample", 1),
+    SampleMeta(3, "Pancreas 3", "GSE144682", "SRR11005885_to_89", "pancreas", "3", False, "individual_sample", 1),
+    SampleMeta(4, "Pancreas 4", "GSE144682", "SRR11005890_to_94", "pancreas", "4", False, "individual_sample", 1),
+    SampleMeta(5, "Pancreas 5", "GSE144682", "SRR11005895_to_99", "pancreas", "5", False, "individual_sample", 1),
+    SampleMeta(6, "Pancreas 6", "GSE144682", "SRR11005900_to_04", "pancreas", "6", False, "individual_sample", 1),
+    SampleMeta(7, "Fibroblast 1", "GSE182371", "SRR15513179", "fibroblast", "1", False, "individual_sample", 0),
+    SampleMeta(8, "Fibroblast 2", "GSE182371", "SRR15513180", "fibroblast", "2", False, "individual_sample", 0),
+    SampleMeta(9, "Fibroblast 3", "GSE182371", "SRR15513181", "fibroblast", "3", False, "individual_sample", 0),
+    SampleMeta(10, "Fibroblast 4", "GSE182371", "SRR15513182", "fibroblast", "4", False, "individual_sample", 0),
+    SampleMeta(11, "Fibroblast 5", "GSE182371", "Fib_24_45m", "fibroblast", "5", False, "individual_sample", 0),
+    SampleMeta(12, "Fibroblast 6", "GSE182371", "Fib_24_bsl", "fibroblast", "6", False, "individual_sample", 0),
+    SampleMeta(13, "Fibroblast 7", "GSE182371", "Fib_27_45m", "fibroblast", "7", False, "individual_sample", 0),
+    SampleMeta(14, "Fibroblast 8", "GSE182371", "Fib_27_bsl", "fibroblast", "8", False, "individual_sample", 0),
+    SampleMeta(15, "Fibroblast 9", "GSE182371", "Fib_41_45m", "fibroblast", "9", False, "individual_sample", 0),
+    SampleMeta(16, "Fibroblast 10", "GSE182371", "Fib_41_bsl", "fibroblast", "10", False, "individual_sample", 0),
+    SampleMeta(17, "Endothelial cell 1", "GSE182371", "SRR15513197", "endothelial", "1", False, "individual_sample", 0),
+    SampleMeta(18, "Endothelial cell 2", "GSE182371", "SRR15513198_GENELAB1026", "endothelial", "2", False, "individual_sample", 0),
+    SampleMeta(19, "Endothelial cell 3", "GSE182371", "SRR15513199", "endothelial", "3", False, "individual_sample", 0),
+    SampleMeta(20, "Endothelial cell 4", "GSE182371", "SRR15513200", "endothelial", "4", False, "individual_sample", 0),
+    SampleMeta(21, "Endothelial cell 5", "GSE182371", "SRR15513201", "endothelial", "5", False, "individual_sample", 0),
+    SampleMeta(22, "Endothelial cell 6", "GSE182371", "SRR15513202_GENELAB1143", "endothelial", "6", False, "individual_sample", 0),
+    SampleMeta(23, "Pooled Pancreas cells", "GSE144682", "Ribo_Pancreas_pooled", "pancreas", "pooled", True, "pooled_or_aggregate", 0),
+    SampleMeta(24, "Pooled Fibroblast cells", "GSE182371", "Ribo_Fib_pooled", "fibroblast", "pooled", True, "pooled_or_aggregate", 0),
+    SampleMeta(25, "Pooled Endothelial cells", "GSE182371", "Ribo_EC_pooled", "endothelial", "pooled", True, "pooled_or_aggregate", 0),
+)
+EXPECTED_SAMPLE_BY_ID = {sample.sample_id: sample for sample in EXPECTED_SAMPLE_METADATA}
+EXPECTED_SAMPLES = frozenset(EXPECTED_SAMPLE_BY_ID)
+
 
 PRICE_SAMPLE_MAP: dict[str, str] = {
-    "Fibo":     "Ribo_Fib_pooled",
-    "Fibo_0":   "SRR15513179",
-    "Fibo_1":   "SRR15513180",
-    "Fibo_2":   "SRR15513181",
-    "Fibo_3":   "SRR15513182",
-    "Fibo_4":   "Fib_24_45m",
-    "Fibo_5":   "Fib_24_bsl",
-    "Fibo_6":   "Fib_27_45m",
-    "Fibo_7":   "Fib_27_bsl",
-    "Fibo_8":   "Fib_41_45m",
-    "Fibo_9":   "Fib_41_bsl",
-    "Endo":     "Ribo_EC_pooled",
-    "Endo_0":   "SRR15513197",
-    "Endo_1":   "SRR15513198_GENELAB1026",
-    "Endo_2":   "SRR15513199",
-    "Endo_3":   "SRR15513200",
-    "Endo_4":   "SRR15513201",
-    "Endo_5":   "SRR15513202_GENELAB1143",
-    "Pancreas":   "Ribo_Pancreas_pooled",
+    "Fibo": "Ribo_Fib_pooled",
+    "Fibo_0": "SRR15513179",
+    "Fibo_1": "SRR15513180",
+    "Fibo_2": "SRR15513181",
+    "Fibo_3": "SRR15513182",
+    "Fibo_4": "Fib_24_45m",
+    "Fibo_5": "Fib_24_bsl",
+    "Fibo_6": "Fib_27_45m",
+    "Fibo_7": "Fib_27_bsl",
+    "Fibo_8": "Fib_41_45m",
+    "Fibo_9": "Fib_41_bsl",
+    "Endo": "Ribo_EC_pooled",
+    "Endo_0": "SRR15513197",
+    "Endo_1": "SRR15513198_GENELAB1026",
+    "Endo_2": "SRR15513199",
+    "Endo_3": "SRR15513200",
+    "Endo_4": "SRR15513201",
+    "Endo_5": "SRR15513202_GENELAB1143",
+    "Pancreas": "Ribo_Pancreas_pooled",
     "Pancreas_0": "SRR11005875_to_79",
     "Pancreas_1": "SRR11005880_to_84",
     "Pancreas_2": "SRR11005885_to_89",
     "Pancreas_3": "SRR11005890_to_94",
     "Pancreas_4": "SRR11005895_to_99",
     "Pancreas_5": "SRR11005900_to_04",
+    "pancreas_mymapping": "Ribo_Pancreas_pooled",
+    "pancreas_mymapping_0": "SRR11005875_to_79",
+    "pancreas_mymapping_1": "SRR11005880_to_84",
+    "pancreas_mymapping_2": "SRR11005885_to_89",
+    "pancreas_mymapping_3": "SRR11005890_to_94",
+    "pancreas_mymapping_4": "SRR11005895_to_99",
+    "pancreas_mymapping_5": "SRR11005900_to_04",
 }
-
-# iRibo uses abbreviated pooled names
-IRIBO_POOLED_MAP: dict[str, str] = {
-    "Ribo_EC_p":       "Ribo_EC_pooled",
-    "Ribo_Fib_p":      "Ribo_Fib_pooled",
+IRIBO_POOLED_MAP = {
+    "Ribo_EC_p": "Ribo_EC_pooled",
+    "Ribo_Fib_p": "Ribo_Fib_pooled",
     "Ribo_pancreas_p": "Ribo_Pancreas_pooled",
 }
-
-# Capitalisation / punctuation discrepancies across tools
-MISC_FIXES: dict[str, str] = {
+MISC_FIXES = {
     "Ribo_pancreas_pooled": "Ribo_Pancreas_pooled",
-    "Ribo_ECs_pooled":      "Ribo_EC_pooled",
-    "Ribo_fib_pooled":      "Ribo_Fib_pooled",
+    "Ribo_ECs_pooled": "Ribo_EC_pooled",
+    "Ribo_fib_pooled": "Ribo_Fib_pooled",
 }
 
-EXPECTED_SAMPLES: frozenset[str] = frozenset({
-    # Fibroblast individual (GENELAB dataset — named by condition)
-    "Fib_24_45m", "Fib_24_bsl",
-    "Fib_27_45m", "Fib_27_bsl",
-    "Fib_41_45m", "Fib_41_bsl",
-    # Fibroblast individual (second dataset — named by SRR accession, PRICE Fibo_0–3)
-    "SRR15513179", "SRR15513180", "SRR15513181", "SRR15513182",
-    # Fibroblast pooled
-    "Ribo_Fib_pooled",
-    # Endothelial individual
-    "SRR15513197", "SRR15513198_GENELAB1026",
-    "SRR15513199", "SRR15513200",
-    "SRR15513201", "SRR15513202_GENELAB1143",
-    # Endothelial pooled
-    "Ribo_EC_pooled",
-    # Pancreas individual
-    "SRR11005875_to_79", "SRR11005880_to_84", "SRR11005885_to_89",
-    "SRR11005890_to_94", "SRR11005895_to_99", "SRR11005900_to_04",
-    # Pancreas pooled
-    "Ribo_Pancreas_pooled",
-})
+
+FIELDNAMES = [
+    "sample_id",
+    "sample_no",
+    "sample_name",
+    "dataset_id",
+    "cell_type",
+    "replicate",
+    "is_pooled",
+    "run_type",
+    "tool",
+    "route",
+    "input_route",
+    "native_class",
+    "source_feature_class",
+    "path",
+    "source_path",
+    "raw_record_count",
+    "ingest_status",
+    "reason",
+    "reconciliation",
+    "parser",
+    "fastq_route_expected",
+]
 
 
 def normalise(raw: str) -> str:
-    """Normalise a raw sample token to a canonical sample_id."""
-    s = raw.strip()
-    s = s.replace("GENELAB-000", "GENELAB").replace("GENELAB_000", "GENELAB")
-    s = re.sub(r"_1$", "", s)          # strip trailing _1 from SRR15513179_1 etc.
-    s = PRICE_SAMPLE_MAP.get(s, s)
-    s = IRIBO_POOLED_MAP.get(s, s)
-    s = MISC_FIXES.get(s, s)
-    return s
+    sample = raw.strip()
+    sample = sample.replace("GENELAB-000", "GENELAB").replace("GENELAB_000", "GENELAB")
+    sample = re.sub(r"_1$", "", sample)
+    sample = PRICE_SAMPLE_MAP.get(sample, sample)
+    sample = IRIBO_POOLED_MAP.get(sample, sample)
+    sample = MISC_FIXES.get(sample, sample)
+    return sample
 
 
-# ---------------------------------------------------------------------------
-# Per-tool file collection
-# ---------------------------------------------------------------------------
-
-def collect_price(results_dir: Path) -> list[dict]:
-    """
-    PRICE_results/price/{sample}.known.bed  -> CDS
-    PRICE_results/price/{sample}.novel.bed  -> non-CDS
-    Skip pancreas_mymapping_* (FASTQ re-run duplicates).
-    """
-    rows = []
-    for f in sorted((results_dir / "PRICE_results" / "price").glob("*.bed")):
-        m = re.match(r"^(.+)\.(known|novel)\.bed$", f.name)
-        if not m:
-            continue
-        raw_sample = m.group(1)
-        if "mymapping" in raw_sample:
-            continue
-        rows.append({"path": str(f), "tool": "PRICE", "sample_id": normalise(raw_sample)})
-    return rows
+def route_to_input_route(route: str) -> str:
+    return "fastq_to_orf" if route == "fastq" else "bam_to_orf"
 
 
-def collect_ribotie(results_dir: Path) -> list[dict]:
-    """
-    RiboTIE_results/deliverables/annotated/db_*.annotated.out.gtf  -> CDS
-    RiboTIE_results/deliverables/novel/db_*.novel.out.gtf           -> non-CDS
-
-    GTF files only (Pancreas_N entries in deliverables are FASTQ-run CSV — skip).
-    The unfiltered/ subdirectory is also skipped.
-    """
-    rows = []
-    for subdir in ("annotated", "novel"):
-        d = results_dir / "RiboTIE_results" / "deliverables" / subdir
-        for f in sorted(d.glob("*.gtf")):
-            if "unfiltered" in str(f):
-                continue
-            stem = f.name
-            stem = re.sub(r"^db_", "", stem)
-            stem = re.sub(r"\.(annotated|novel)\.out\.gtf$", "", stem)
-            stem = re.sub(r"\.Aligned\.toTranscriptome\.out$", "", stem)
-            stem = re.sub(r"_Transcriptome$", "", stem)   # pooled: Ribo_*_pooled_Transcriptome
-            rows.append({"path": str(f), "tool": "RiboTIE", "sample_id": normalise(stem)})
-    return rows
-
-
-def collect_orfquant(results_dir: Path) -> list[dict]:
-    """
-    ORFQuant_results/bed_files/annotated_orf_exon_genomic_*.bed -> CDS
-    ORFQuant_results/bed_files/novel_orf_exon_genomic_*.bed     -> non-CDS
-
-    Some samples have two files for the same sample_id+class (one with
-    .Aligned.sortedByCoord.out in the name, one without). Keep the shorter
-    (simpler) filename.
-    """
-    bed_dir = results_dir / "ORFQuant_results" / "bed_files"
-    # (sample_id, cls) -> (name_length, path)
-    best: dict[tuple[str, str], tuple[int, Path]] = {}
-    for f in sorted(bed_dir.glob("*.bed")):
-        m = re.match(
-            r"^(annotated|novel)_orf_exon_genomic_"
-            r"(.+?)(?:_S\d+_R1_001(?:_trimmed)?)?(?:\.Aligned\.sortedByCoord\.out)?\.bed$",
-            f.name,
-        )
-        if not m:
-            continue
-        cls, raw_sample = m.group(1), m.group(2)
-        sample_id = normalise(raw_sample)
-        key = (sample_id, cls)
-        if key not in best or len(f.name) < best[key][0]:
-            best[key] = (len(f.name), f)
-    return [
-        {"path": str(path), "tool": "ORFQuant", "sample_id": sid}
-        for (sid, _), (_, path) in sorted(best.items())
-    ]
-
-
-def collect_iribo(results_dir: Path) -> list[dict]:
-    """
-    iRibo_results/annotated_orfs_*.bed   -> CDS
-    iRibo_results/unannotated_orfs_*.bed -> non-CDS
-
-    Fibroblast files carry _S##_R1_001 sequencing run suffix — strip it.
-    Pooled samples use abbreviated names (Ribo_EC_p etc.) — normalise.
-    Skip *_fastq variants.
-    """
-    rows = []
-    for f in sorted((results_dir / "iRibo_results").glob("*.bed")):
-        m = re.match(r"^(annotated|unannotated)_orfs_(.+?)(?:_S\d+_R1_001)?\.bed$", f.name)
-        if not m:
-            continue
-        raw_sample = m.group(2)
-        if raw_sample.endswith("_fastq"):
-            continue
-        rows.append({"path": str(f), "tool": "iRibo", "sample_id": normalise(raw_sample)})
-    return rows
-
-
-def collect_riborf2(converted_dir: Path) -> list[dict]:
-    """
-    RibORF2 outputs only repre.valid.ORF.genepred.txt (no CDS/non-CDS split).
-    These must be pre-converted to BED12 via genePredToBed.
-    source_feature_class will be 'unknown'; the DB reference_cds JOIN classifies them.
-    """
-    if not converted_dir.exists():
-        print(
-            f"[WARN] RibORF2 converted dir not found: {converted_dir}\n"
-            f"       Run genePredToBed on RibORF_results/*/repre.valid.ORF.genepred.txt first.",
-            file=sys.stderr,
-        )
-        return []
-    rows = []
-    for f in sorted(converted_dir.glob("*.bed12")):
-        # Strip trailing _S##_R1_001_trimmed artefact if present
-        stem = re.sub(r"_S\d+_R1_001(?:_trimmed)?$", "", f.stem)
-        rows.append({"path": str(f), "tool": "RibORF2", "sample_id": normalise(stem)})
-    return rows
-
-
-# ---------------------------------------------------------------------------
-# Summary / validation
-# ---------------------------------------------------------------------------
-
-def _classify(path_str: str) -> str:
-    lower = path_str.lower()
-    # Check unannotated BEFORE annotated: "unannotated" contains the substring "annotated"
-    if any(x in lower for x in ("novel", "unannotated")):
-        return "non_cds"
-    if any(x in lower for x in ("known", "annotated")):
-        return "cds"
+def class_to_source_feature_class(native_class: str) -> str:
+    # Tool-native annotated/known/novel classes are provenance labels, not the
+    # central GENCODE-derived CDS/non-CDS assignment.
     return "unknown"
 
 
-def print_summary(rows: list[dict], expected: frozenset[str]) -> None:
-    TOOLS = ["PRICE", "RiboTIE", "ORFQuant", "iRibo", "RibORF2"]
-    W = 60
+def parser_for(tool: str, path: Path) -> str:
+    if tool == "iRibo":
+        return "iribo_gff"
+    if tool == "ORFQuant":
+        return "orfquant_bed_exon"
+    if tool == "RibORF2" or path.suffix == ".bed12":
+        return "bed12"
+    if tool == "RiboTIE":
+        return "translonscorer_csv" if path.suffix == ".csv" else "ribotie_gtf"
+    if tool == "PRICE":
+        return "bed12"
+    return "unknown"
 
-    print("\n" + "=" * W)
-    print("MANIFEST SUMMARY")
-    print("=" * W)
 
-    # Index rows by tool
-    by_tool: dict[str, list[dict]] = defaultdict(list)
-    for r in rows:
-        by_tool[r["tool"]].append(r)
+def open_text(path: Path):
+    if path.suffix == ".gz":
+        return gzip.open(path, "rt")
+    return path.open()
 
-    all_ok = True
 
-    for tool in TOOLS:
-        tool_rows = by_tool.get(tool, [])
-        if not tool_rows:
-            print(f"\n{tool}  [NO FILES FOUND]")
-            all_ok = False
+def count_records(path: Path) -> int:
+    """Count data records, excluding comments, browser tracks, and CSV headers."""
+    try:
+        with open_text(path) as handle:
+            count = 0
+            first_data = True
+            for line in handle:
+                if not line.strip() or line.startswith("#") or line.startswith("track"):
+                    continue
+                if path.suffix == ".csv" and first_data:
+                    first_data = False
+                    continue
+                first_data = False
+                count += 1
+    except OSError:
+        return 0
+    return count
+
+
+def with_metadata(row: dict[str, object]) -> dict[str, object]:
+    sample_id = str(row.get("sample_id", ""))
+    meta = EXPECTED_SAMPLE_BY_ID.get(sample_id)
+    base = {field: "" for field in FIELDNAMES}
+    base.update(row)
+    base["source_path"] = base.get("source_path") or base.get("path", "")
+    base["input_route"] = base.get("input_route") or route_to_input_route(str(base.get("route", "bam")))
+    base["source_feature_class"] = base.get("source_feature_class") or class_to_source_feature_class(str(base.get("native_class", "")))
+    if meta:
+        base.update(
+            {
+                "sample_no": meta.sample_no,
+                "sample_name": meta.sample_name,
+                "dataset_id": meta.dataset_id,
+                "cell_type": meta.cell_type,
+                "replicate": meta.replicate,
+                "is_pooled": int(meta.is_pooled),
+                "run_type": meta.run_type,
+                "fastq_route_expected": meta.fastq_route_expected,
+            }
+        )
+    return base
+
+
+def matched_row(tool: str, sample_id: str, route: str, native_class: str, path: Path) -> dict[str, object]:
+    return with_metadata(
+        {
+            "sample_id": sample_id,
+            "tool": tool,
+            "route": route,
+            "native_class": native_class,
+            "path": str(path),
+            "source_path": str(path),
+            "raw_record_count": count_records(path),
+            "ingest_status": MATCHED,
+            "reason": "",
+            "parser": parser_for(tool, path),
+        }
+    )
+
+
+def status_row(
+    tool: str,
+    sample_id: str,
+    route: str,
+    native_class: str,
+    ingest_status: str,
+    reason: str,
+) -> dict[str, object]:
+    return with_metadata(
+        {
+            "sample_id": sample_id,
+            "tool": tool,
+            "route": route,
+            "native_class": native_class,
+            "ingest_status": ingest_status,
+            "reason": reason,
+            "raw_record_count": "",
+        }
+    )
+
+
+def excluded_row(path: Path, reason: str) -> dict[str, object]:
+    return with_metadata(
+        {
+            "path": str(path),
+            "source_path": str(path),
+            "ingest_status": "excluded",
+            "reason": reason,
+        }
+    )
+
+
+def collect_iribo(results_dir: Path) -> tuple[list[dict[str, object]], set[Path]]:
+    rows: list[dict[str, object]] = []
+    seen: set[Path] = set()
+    for path in sorted((results_dir / "iRibo_results").glob("*.bed")):
+        match = re.match(r"^(annotated|unannotated)_orfs_(.+?)(?:_S\d+_R1_001)?\.bed$", path.name)
+        if not match:
             continue
-
-        by_cls: dict[str, set[str]] = defaultdict(set)
-        for r in tool_rows:
-            by_cls[_classify(r["path"])].add(r["sample_id"])
-
-        cds     = by_cls["cds"]
-        non_cds = by_cls["non_cds"]
-        unk     = by_cls["unknown"]
-        all_s   = cds | non_cds | unk
-
-        print(f"\n{tool}  ({len(tool_rows)} files, {len(all_s)} samples)")
-        print(f"  CDS files     : {len(cds):2d} samples")
-        print(f"  non-CDS files : {len(non_cds):2d} samples")
-        if unk:
-            print(f"  unknown class : {len(unk):2d} samples  (no keyword in filename)")
-
-        missing = expected - all_s
-        extra   = all_s - expected
-        if missing:
-            print(f"  MISSING from expected set ({len(missing)}): {sorted(missing)}")
-            all_ok = False
-        if extra:
-            print(f"  Extra / unexpected ({len(extra)}): {sorted(extra)}")
-
-        if cds and non_cds:
-            cds_only     = sorted(cds - non_cds)
-            non_cds_only = sorted(non_cds - cds)
-            if cds_only:
-                print(f"  CDS only (no non-CDS pair)    : {cds_only}")
-            if non_cds_only:
-                print(f"  non-CDS only (no CDS pair)    : {non_cds_only}")
-
-        if not missing and not extra:
-            print(f"  Coverage: complete ({len(all_s)}/{len(expected)} expected samples)")
-
-    # Cross-tool matrix
-    print(f"\n{'─' * W}")
-    print("CROSS-TOOL SAMPLE COVERAGE")
-    print(f"{'Sample':<30}", end="")
-    for t in TOOLS:
-        print(f"  {t[:8]:<8}", end="")
-    print()
-    print("─" * W)
-
-    samples_per_tool = {t: {r["sample_id"] for r in by_tool.get(t, [])} for t in TOOLS}
-    for sample in sorted(expected):
-        print(f"  {sample:<28}", end="")
-        for t in TOOLS:
-            present = sample in samples_per_tool[t]
-            print(f"  {'✓' if present else '✗':<8}", end="")
-        print()
-
-    # Totals row
-    print("─" * W)
-    print(f"  {'TOTAL':<28}", end="")
-    for t in TOOLS:
-        n = len(samples_per_tool[t] & expected)
-        print(f"  {n}/{len(expected):<6}", end="")
-    print()
-
-    print(f"\nTotal manifest entries : {len(rows)}")
-    print(f"Overall status         : {'OK' if all_ok else 'INCOMPLETE — see warnings above'}")
-    print("=" * W)
+        prefix, raw_sample = match.groups()
+        route = "fastq" if raw_sample.endswith("_fastq") else "bam"
+        raw_sample = re.sub(r"_fastq$", "", raw_sample)
+        native_class = "annotated" if prefix == "annotated" else "novel"
+        rows.append(matched_row("iRibo", normalise(raw_sample), route, native_class, path))
+        seen.add(path)
+    return rows, seen
 
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
+def collect_orfquant(results_dir: Path) -> tuple[list[dict[str, object]], set[Path]]:
+    rows: list[dict[str, object]] = []
+    seen: set[Path] = set()
+    best: dict[tuple[str, str], tuple[int, Path, str]] = {}
+    for path in sorted((results_dir / "ORFQuant_results" / "bed_files").glob("*.bed")):
+        match = re.match(
+            r"^(annotated|novel)_orf_exon_genomic_"
+            r"(.+?)(?:_S\d+_R1_001(?:_trimmed)?)?(?:\.Aligned\.sortedByCoord\.out)?\.bed$",
+            path.name,
+        )
+        if not match:
+            continue
+        cls, raw_sample = match.groups()
+        native_class = "annotated" if cls == "annotated" else "novel"
+        key = (normalise(raw_sample), native_class)
+        # Prefer the shorter plain BED when duplicate STAR-named copies exist.
+        if key not in best or len(path.name) < best[key][0]:
+            best[key] = (len(path.name), path, raw_sample)
+    for (sample_id, native_class), (_, path, _) in sorted(best.items()):
+        rows.append(matched_row("ORFQuant", sample_id, "bam", native_class, path))
+        seen.add(path)
+    for path in sorted((results_dir / "ORFQuant_results" / "bed_files").glob("*.bed")):
+        if path not in seen and re.match(r"^(annotated|novel)_orf_exon_genomic_", path.name):
+            rows.append(excluded_row(path, "duplicate_derived_or_star_named_copy"))
+            seen.add(path)
+    return rows, seen
+
+
+def collect_riborf2(results_dir: Path, converted_dir: Path) -> tuple[list[dict[str, object]], set[Path]]:
+    rows: list[dict[str, object]] = []
+    seen: set[Path] = set()
+    if converted_dir.exists():
+        for path in sorted(converted_dir.glob("*.bed12")):
+            stem = re.sub(r"_S\d+_R1_001(?:_trimmed)?$", "", path.stem)
+            rows.append(matched_row("RibORF2", normalise(stem), "bam", "unknown", path))
+            seen.add(path)
+    fastq_dir = results_dir / "RibORF_results" / "RibORF_Output_fastqtoORFcalling"
+    if not fastq_dir.exists() or not any(fastq_dir.rglob("*")):
+        for sample in EXPECTED_SAMPLE_METADATA[:6]:
+            rows.append(status_row("RibORF2", sample.sample_id, "fastq", "unknown", "empty_at_source", "RibORF2 FASTQ output directory is empty"))
+    return rows, seen
+
+
+def ribotie_sample_and_route(stem: str) -> tuple[str, str]:
+    stem = re.sub(r"^db_", "", stem)
+    stem = re.sub(r"\.(annotated|novel)\.out$", "", stem)
+    stem = re.sub(r"\.Aligned\.toTranscriptome\.out$", "", stem)
+    stem = re.sub(r"_Transcriptome$", "", stem)
+    pancreas = re.match(r"^Pancreas_([1-6])$", stem)
+    if pancreas:
+        idx = int(pancreas.group(1)) - 1
+        return EXPECTED_SAMPLE_METADATA[idx].sample_id, "fastq"
+    return normalise(stem), "bam"
+
+
+def collect_ribotie(results_dir: Path) -> tuple[list[dict[str, object]], set[Path]]:
+    rows: list[dict[str, object]] = []
+    seen: set[Path] = set()
+    root = results_dir / "RiboTIE_results" / "deliverables"
+    for subdir, native_class in (("annotated", "annotated"), ("novel", "novel")):
+        for path in sorted((root / subdir).glob("*.csv")):
+            if "unfiltered" in path.as_posix():
+                continue
+            sample_id, route = ribotie_sample_and_route(path.stem)
+            rows.append(matched_row("RiboTIE", sample_id, route, native_class, path))
+            seen.add(path)
+    for path in sorted(root.rglob("*")):
+        if path.is_file() and path not in seen:
+            rows.append(excluded_row(path, "ribotie_noncanonical_deliverable_or_unfiltered"))
+            seen.add(path)
+    return rows, seen
+
+
+def collect_price(results_dir: Path) -> tuple[list[dict[str, object]], set[Path]]:
+    rows: list[dict[str, object]] = []
+    seen: set[Path] = set()
+    for path in sorted((results_dir / "PRICE_results" / "price").glob("*.bed")):
+        match = re.match(r"^(.+)\.(known|novel)\.bed$", path.name)
+        if not match:
+            continue
+        raw_sample, cls = match.groups()
+        route = "fastq" if raw_sample.startswith("pancreas_mymapping") else "bam"
+        native_class = "annotated" if cls == "known" else "novel"
+        rows.append(matched_row("PRICE", normalise(raw_sample), route, native_class, path))
+        seen.add(path)
+    return rows, seen
+
+
+def iter_all_leaves(results_dir: Path, converted_dir: Path) -> Iterable[Path]:
+    if results_dir.exists():
+        yield from (path for path in results_dir.rglob("*") if path.is_file())
+    if converted_dir.exists() and results_dir not in converted_dir.parents and converted_dir != results_dir:
+        yield from (path for path in converted_dir.rglob("*") if path.is_file())
+
+
+def design_matrix_rows() -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for sample in EXPECTED_SAMPLE_METADATA:
+        for tool in TOOLS:
+            native_classes = ("unknown",) if tool == "RibORF2" else NATIVE_CLASSES
+            for native_class in native_classes:
+                rows.append(status_row(tool, sample.sample_id, "bam", native_class, "expected", ""))
+        if sample.fastq_route_expected:
+            for tool in FASTQ_ROUTE_TOOLS:
+                native_classes = ("unknown",) if tool == "RibORF2" else NATIVE_CLASSES
+                for native_class in native_classes:
+                    rows.append(status_row(tool, sample.sample_id, "fastq", native_class, "expected", ""))
+    return rows
+
+
+def optional_key(key: tuple[str, str, str, str]) -> bool:
+    _tool, sample_id, route, _native_class = key
+    return sample_id == "Ribo_Pancreas_pooled" and route == "fastq"
+
+
+def is_allowed_missing_cell(key: tuple[str, str, str, str], ingest_status: str) -> bool:
+    tool, sample_id, route, _native_class = key
+    if route == "fastq" and sample_id not in {sample.sample_id for sample in EXPECTED_SAMPLE_METADATA[:6]}:
+        return ingest_status == "empty_at_source"
+    if route == "fastq" and tool == "RibORF2":
+        return ingest_status == "empty_at_source"
+    return False
+
+
+def expected_key_set() -> set[tuple[str, str, str, str]]:
+    return {
+        (str(row["tool"]), str(row["sample_id"]), str(row["route"]), str(row["native_class"]))
+        for row in design_matrix_rows()
+    }
+
+
+def add_expected_missing(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    present = {
+        (str(row["tool"]), str(row["sample_id"]), str(row["route"]), str(row["native_class"]))
+        for row in rows
+        if row.get("ingest_status") == MATCHED
+    }
+    existing_status = {
+        (str(row["tool"]), str(row["sample_id"]), str(row["route"]), str(row["native_class"]))
+        for row in rows
+        if row.get("ingest_status") in {"empty_at_source", "blocked"}
+    }
+    for expected in design_matrix_rows():
+        key = (
+            str(expected["tool"]),
+            str(expected["sample_id"]),
+            str(expected["route"]),
+            str(expected["native_class"]),
+        )
+        if key in present or key in existing_status:
+            continue
+        status = "blocked"
+        reason = "expected_by_design_but_no_source_file_matched"
+        if expected["route"] == "fastq" and expected["tool"] == "RibORF2":
+            status = "empty_at_source"
+            reason = "RibORF2 FASTQ route has no callable BED12 source"
+        elif expected["route"] == "fastq" and expected["sample_id"] not in {
+            *(sample.sample_id for sample in EXPECTED_SAMPLE_METADATA[:6]),
+            "Ribo_Pancreas_pooled",
+        }:
+            status = "empty_at_source"
+            reason = "FASTQ route was not requested for this sample"
+        rows.append(
+            status_row(
+                str(expected["tool"]),
+                str(expected["sample_id"]),
+                str(expected["route"]),
+                str(expected["native_class"]),
+                status,
+                reason,
+            )
+        )
+    return rows
+
+
+def reconcile(rows: list[dict[str, object]], old_manifest: Path | None, parser_manifest: Path | None) -> None:
+    old_keys: set[tuple[str, str, str, str]] = set()
+    for manifest in (old_manifest, parser_manifest):
+        if not manifest or not manifest.exists():
+            continue
+        opener = gzip.open if manifest.suffix == ".gz" else open
+        with opener(manifest, "rt", newline="") as handle:
+            reader = csv.DictReader(handle, delimiter="\t")
+            for row in reader:
+                tool = row.get("tool") or row.get("tool_hint") or row.get("detected_tool") or ""
+                sample_id = row.get("sample_id", "")
+                route = row.get("route") or ("fastq" if row.get("input_route") == "fastq_to_orf" else "bam")
+                native_class = row.get("native_class") or ""
+                if tool and sample_id:
+                    old_keys.add((tool, sample_id, route, native_class))
+    if not old_keys:
+        for row in rows:
+            row["reconciliation"] = ""
+        return
+    for row in rows:
+        if row.get("ingest_status") != MATCHED:
+            row["reconciliation"] = ""
+            continue
+        key = (str(row["tool"]), str(row["sample_id"]), str(row["route"]), str(row["native_class"]))
+        loose_key = (str(row["tool"]), str(row["sample_id"]), str(row["route"]), "")
+        row["reconciliation"] = "agree" if key in old_keys or loose_key in old_keys else "manifest_missing"
+
+
+def assert_manifest(rows: list[dict[str, object]], matched_paths: set[Path], all_leaves: set[Path]) -> None:
+    errors: list[str] = []
+    expected_keys = expected_key_set()
+    keyed_rows = [
+        (row["tool"], row["sample_id"], row["route"], row["native_class"])
+        for row in rows
+        if row.get("tool") and row.get("sample_id") and row.get("route") and row.get("native_class")
+    ]
+    matched_keys = [
+        (row["tool"], row["sample_id"], row["route"], row["native_class"])
+        for row in rows
+        if row.get("ingest_status") == MATCHED
+    ]
+    unexpected_keys = sorted(key for key in set(keyed_rows) - expected_keys if not optional_key(key))
+    if unexpected_keys:
+        errors.append(f"rows outside expected design matrix: {unexpected_keys[:10]}")
+    missing_keys = sorted(expected_keys - set(keyed_rows))
+    if missing_keys:
+        errors.append(f"expected design cells absent from manifest: {missing_keys[:10]}")
+    duplicates = [key for key, count in Counter(matched_keys).items() if count > 1]
+    if duplicates:
+        errors.append(f"duplicate matched keys: {duplicates[:10]}")
+    status_by_key = {
+        (row["tool"], row["sample_id"], row["route"], row["native_class"]): row
+        for row in rows
+        if row.get("tool") and row.get("sample_id") and row.get("route") and row.get("native_class")
+    }
+    unexpected_missing = [
+        key for key, row in status_by_key.items()
+        if row.get("ingest_status") in {"blocked", "empty_at_source"}
+        and not is_allowed_missing_cell(key, str(row.get("ingest_status", "")))
+    ]
+    if unexpected_missing:
+        errors.append(f"unexpected missing source cells: {unexpected_missing[:10]}")
+    bad_status_rows = [
+        row for row in rows
+        if row.get("ingest_status") not in {MATCHED, "blocked", "empty_at_source", "excluded"}
+    ]
+    if bad_status_rows:
+        errors.append(f"rows with invalid ingest_status: {len(bad_status_rows)}")
+    missing_reasons = [
+        row for row in rows
+        if row.get("ingest_status") != MATCHED and not row.get("reason")
+    ]
+    if missing_reasons:
+        errors.append(f"non-matched rows missing reason: {len(missing_reasons)}")
+    matched_missing_path = [
+        row for row in rows
+        if row.get("ingest_status") == MATCHED and (not row.get("source_path") or not Path(str(row["source_path"])).exists())
+    ]
+    if matched_missing_path:
+        errors.append(f"matched rows with missing source_path on disk: {len(matched_missing_path)}")
+    matched_without_records = [
+        row for row in rows
+        if row.get("ingest_status") == MATCHED and str(row.get("raw_record_count", "")) in {"", "0"}
+    ]
+    if matched_without_records:
+        errors.append(f"matched rows with zero raw_record_count: {len(matched_without_records)}")
+    matched_not_unknown_class = [
+        row for row in rows
+        if row.get("ingest_status") == MATCHED and row.get("source_feature_class") != "unknown"
+    ]
+    if matched_not_unknown_class:
+        errors.append(f"matched rows should keep source_feature_class=unknown before DB classification: {len(matched_not_unknown_class)}")
+    unmapped_matched = [row for row in rows if row.get("ingest_status") == MATCHED and row.get("sample_id") not in EXPECTED_SAMPLES]
+    if unmapped_matched:
+        errors.append(f"matched rows with noncanonical sample_id: {len(unmapped_matched)}")
+    illegal_fastq = [
+        row for row in rows
+        if row.get("ingest_status") == MATCHED
+        and row.get("route") == "fastq"
+        and row.get("sample_id") not in {*(sample.sample_id for sample in EXPECTED_SAMPLE_METADATA[:6]), "Ribo_Pancreas_pooled"}
+    ]
+    if illegal_fastq:
+        errors.append(f"illegal FASTQ matched rows: {len(illegal_fastq)}")
+    price_zero_index = {
+        ("PRICE", "SRR11005875_to_79", "bam", "annotated"),
+        ("PRICE", "SRR11005875_to_79", "fastq", "annotated"),
+    }
+    if not price_zero_index.issubset(set(matched_keys)):
+        errors.append("PRICE zero-index sanity failed for Pancreas_0/pancreas_mymapping_0")
+    accounted = {
+        Path(str(row["source_path"]))
+        for row in rows
+        if row.get("source_path") and row.get("ingest_status") in {MATCHED, "excluded"}
+    }
+    missing_accounting = all_leaves - accounted
+    if missing_accounting:
+        errors.append(f"unaccounted leaves under known output roots: {len(missing_accounting)}")
+    if errors:
+        raise SystemExit("Manifest assertions failed:\n  - " + "\n  - ".join(errors))
+
+
+def print_summary(rows: list[dict[str, object]]) -> None:
+    counts = Counter(str(row["ingest_status"]) for row in rows)
+    matched_by_tool = Counter(str(row["tool"]) for row in rows if row.get("ingest_status") == MATCHED)
+    print("\nManifest rows by status:")
+    for status, count in sorted(counts.items()):
+        print(f"  {status}: {count}")
+    print("Matched rows by tool:")
+    for tool in TOOLS:
+        print(f"  {tool}: {matched_by_tool[tool]}")
+    blocked = [row for row in rows if row.get("ingest_status") in {"blocked", "empty_at_source"}]
+    print(f"Expected cells without matched source: {len(blocked)}")
+
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__,
-                                formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--results-dir", type=Path, required=True,
-                   help="Path to full_pilot_results directory")
-    p.add_argument("--riborf2-converted", type=Path, required=True,
-                   help="Directory of RibORF2 BED12 files converted from GenePred")
-    p.add_argument("--out", type=Path, required=True,
-                   help="Output manifest TSV (path / tool / sample_id)")
-    return p.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--results-dir", type=Path, required=True)
+    parser.add_argument("--riborf2-converted", type=Path, required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--design-matrix-out", type=Path)
+    parser.add_argument("--old-manifest", type=Path)
+    parser.add_argument("--parser-manifest", type=Path)
+    parser.add_argument("--no-assert", action="store_true")
+    return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-
-    collectors = [
-        ("PRICE",    collect_price,    (args.results_dir,)),
-        ("RiboTIE",  collect_ribotie,  (args.results_dir,)),
-        ("ORFQuant", collect_orfquant, (args.results_dir,)),
-        ("iRibo",    collect_iribo,    (args.results_dir,)),
-        ("RibORF2",  collect_riborf2,  (args.riborf2_converted,)),
-    ]
-
-    rows: list[dict] = []
-    for label, fn, fn_args in collectors:
-        tool_rows = fn(*fn_args)
+    collectors = (
+        collect_iribo(args.results_dir),
+        collect_orfquant(args.results_dir),
+        collect_riborf2(args.results_dir, args.riborf2_converted),
+        collect_ribotie(args.results_dir),
+        collect_price(args.results_dir),
+    )
+    rows: list[dict[str, object]] = []
+    matched_or_excluded_paths: set[Path] = set()
+    for tool_rows, seen in collectors:
         rows.extend(tool_rows)
-        print(f"  {label:<10}: {len(tool_rows):3d} files")
+        matched_or_excluded_paths.update(seen)
+
+    all_leaves = set(iter_all_leaves(args.results_dir, args.riborf2_converted))
+    for path in sorted(all_leaves - matched_or_excluded_paths):
+        rows.append(excluded_row(path, "outside_canonical_ingest_rules"))
+
+    rows = add_expected_missing(rows)
+    reconcile(rows, args.old_manifest, args.parser_manifest)
+    if not args.no_assert:
+        assert_manifest(rows, matched_or_excluded_paths, all_leaves)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    with args.out.open("w", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=["path", "tool", "sample_id"], delimiter="\t")
+    with args.out.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, delimiter="\t", fieldnames=FIELDNAMES, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
 
-    print(f"\nWrote {len(rows)} entries -> {args.out}")
-    print_summary(rows, EXPECTED_SAMPLES)
+    if args.design_matrix_out:
+        args.design_matrix_out.parent.mkdir(parents=True, exist_ok=True)
+        with args.design_matrix_out.open("w", newline="") as handle:
+            writer = csv.DictWriter(handle, delimiter="\t", fieldnames=FIELDNAMES, lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(design_matrix_rows())
+
+    print(f"Wrote {len(rows)} rows -> {args.out}")
+    if args.design_matrix_out:
+        print(f"Wrote design matrix -> {args.design_matrix_out}")
+    print_summary(rows)
 
 
 if __name__ == "__main__":

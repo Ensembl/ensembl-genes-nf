@@ -255,7 +255,7 @@ workflow {
 
         COLLECT_RIBOMETRIC(
             run_id,
-            ribometric_triplet.map { m1, j, m2, c, m3, off -> [m1, j, c, off] }
+            ribometric_triplet.map { meta, j, c, off -> [meta, j, c, off] }
         )
 
         // Gate using RiboMetric offsets; filter passing lengths

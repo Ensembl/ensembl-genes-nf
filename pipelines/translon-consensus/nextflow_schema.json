@@ -64,7 +64,7 @@
       },
       "manifest_tsv": {
         "type": "string",
-        "description": "Optional manifest TSV (path / tool / sample_id columns) produced by scripts/build_translon_manifest.py. When provided, translon_db_standardise.py reads files from their original paths, preserving filename keywords (known/novel/annotated/unannotated) used to infer source_feature_class.",
+        "description": "Optional audit manifest TSV produced by scripts/build_translon_manifest.py. When provided, translon_db_standardise.py parses only rows with ingest_status=matched and keeps native caller class separate from the central reference-derived source_feature_class.",
         "format": "file-path",
         "pattern": "\\.tsv$"
       }

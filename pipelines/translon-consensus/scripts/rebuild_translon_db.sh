@@ -38,26 +38,48 @@ echo
 
 mkdir -p "${OUT_DIR}"
 MANIFEST="${OUT_DIR}/translon_manifest.tsv"
+DESIGN_MATRIX="${OUT_DIR}/design_matrix.tsv"
+VALIDATION_DIR="${OUT_DIR}/validation"
 
 # Step 1: build manifest from original paths
 echo "--- Step 1: generating manifest ---"
 python3 "${SCRIPTS_DIR}/build_translon_manifest.py" \
     --results-dir "${PILOT_ROOT}" \
     --riborf2-converted "${RIBORF2_CONVERTED}" \
-    --out "${MANIFEST}"
+    --out "${MANIFEST}" \
+    --design-matrix-out "${DESIGN_MATRIX}"
+echo "Manifest datachecks passed."
+
+python3 "${SCRIPTS_DIR}/validate_translon_manifest.py" \
+    --manifest "${MANIFEST}" \
+    --results-dir "${PILOT_ROOT}" \
+    --riborf2-converted "${RIBORF2_CONVERTED}" \
+    --out-dir "${VALIDATION_DIR}/stage1_manifest" \
+    --ignore-prefix "${OUT_DIR}"
+echo "Standalone Stage 1 manifest validation passed."
 
 echo
-echo "--- Step 2: building translon DB ---"
+echo "--- Step 2: building translon DB and checking DB against manifest ---"
 PYTHONPATH="${BIN_DIR}${PYTHONPATH:+:${PYTHONPATH}}" python3 "${BIN_DIR}/translon_db_standardise.py" \
     --input-root "${PILOT_ROOT}" \
     --manifest "${MANIFEST}" \
     --out-dir "${OUT_DIR}/translon_db" \
     --fasta "${GENCODE_FASTA}" \
     --gtf "${GENCODE_GTF}"
+echo "DB/manifest datachecks passed."
+
+python3 "${SCRIPTS_DIR}/validate_translon_db_against_manifest.py" \
+    --manifest "${MANIFEST}" \
+    --db "${OUT_DIR}/translon_db/translons.sqlite" \
+    --out-dir "${VALIDATION_DIR}/stage2_db_manifest"
+echo "Standalone Stage 2 DB/manifest validation passed."
 
 echo
 echo "=== Done ==="
 echo "DB files: ${OUT_DIR}/translon_db/"
+echo "  ${MANIFEST}"
+echo "  ${DESIGN_MATRIX}"
+echo "  ${VALIDATION_DIR}/"
 echo "  translons.sqlite"
 echo "  translons.tsv.gz, translon_blocks.tsv.gz"
 echo "  parser_manifest.tsv.gz (check parser_status for any unsupported files)"

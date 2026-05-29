@@ -121,7 +121,15 @@ class Candidate:
     gene_id: str = ""
     gene_name: str = ""
     native_feature_type: str = ""
+    native_class: str = ""
     source_feature_class: str = ""
+    sample_no: str = ""
+    sample_name: str = ""
+    dataset_id: str = ""
+    cell_type: str = ""
+    run_type: str = ""
+    input_route: str = ""
+    fastq_route_expected: str = ""
     attributes: dict[str, str] = field(default_factory=dict)
 
 
@@ -130,6 +138,16 @@ class InputRecord:
     path: Path
     tool_hint: str
     sample_id: str
+    sample_no: str = ""
+    sample_name: str = ""
+    dataset_id: str = ""
+    cell_type: str = ""
+    run_type: str = ""
+    input_route: str = ""
+    fastq_route_expected: str = ""
+    source_feature_class: str = ""
+    native_class: str = ""
+    raw_record_count: str = ""
 
 
 def open_text(path: Path) -> TextIO:
@@ -143,6 +161,11 @@ def normalise_sample(raw: str) -> str:
     sample = re.sub(r"\.(known|novel|cds|non_cds|annotated|unannotated)$", "", sample)
     sample = PRICE_SAMPLE_MAP.get(sample, sample)
     return re.sub(r"_1$", "", sample)
+
+
+def infer_input_route(path: Path, sample_id: str) -> str:
+    text = f"{path.as_posix()} {sample_id}".lower()
+    return "fastq_to_orf" if "fastq" in text or "mymapping" in text else "bam_to_orf"
 
 
 def infer_source_feature_class(path: Path, raw_label: str = "") -> str:
@@ -266,12 +289,28 @@ def discover_inputs(input_root: Path, manifest: Path | None) -> list[InputRecord
         with manifest.open() as handle:
             reader = csv.DictReader(handle, delimiter="\t")
             for row in reader:
-                path = Path(row["path"])
+                if row.get("ingest_status") and row.get("ingest_status") != "matched":
+                    continue
+                raw_path = row.get("path") or row.get("source_path")
+                if not raw_path:
+                    continue
+                path = Path(raw_path)
+                sample_id = row.get("sample_id", "") or normalise_sample(path.stem)
                 rows.append(
                     InputRecord(
                         path=path,
                         tool_hint=row.get("tool", "") or path.parent.name,
-                        sample_id=row.get("sample_id", "") or normalise_sample(path.stem),
+                        sample_id=sample_id,
+                        sample_no=row.get("sample_no", ""),
+                        sample_name=row.get("sample_name", ""),
+                        dataset_id=row.get("dataset_id", ""),
+                        cell_type=row.get("cell_type", ""),
+                        run_type=row.get("run_type", ""),
+                        input_route=row.get("input_route", "") or infer_input_route(path, sample_id),
+                        fastq_route_expected=row.get("fastq_route_expected", ""),
+                        source_feature_class=row.get("source_feature_class", ""),
+                        native_class=row.get("native_class", ""),
+                        raw_record_count=row.get("raw_record_count", ""),
                     )
                 )
         return rows
@@ -281,8 +320,31 @@ def discover_inputs(input_root: Path, manifest: Path | None) -> list[InputRecord
         suffixes = "".join(path.suffixes[-2:]).lower()
         suffix = path.suffix.lower()
         if path.is_file() and (suffix in SUPPORTED_SUFFIXES or suffixes.endswith(".gtf.gz") or suffixes.endswith(".bed.gz")):
-            records.append(InputRecord(path=path, tool_hint=path.parent.name, sample_id=normalise_sample(path.stem)))
+            sample_id = normalise_sample(path.stem)
+            records.append(
+                InputRecord(
+                    path=path,
+                    tool_hint=path.parent.name,
+                    sample_id=sample_id,
+                    input_route=infer_input_route(path, sample_id),
+                )
+            )
     return records
+
+
+def attach_record_metadata(candidates: Iterable[Candidate], record: InputRecord) -> Iterable[Candidate]:
+    for candidate in candidates:
+        candidate.sample_no = record.sample_no
+        candidate.sample_name = record.sample_name
+        candidate.dataset_id = record.dataset_id
+        candidate.cell_type = record.cell_type
+        candidate.run_type = record.run_type
+        candidate.input_route = record.input_route
+        candidate.fastq_route_expected = record.fastq_route_expected
+        candidate.native_class = record.native_class
+        if record.source_feature_class:
+            candidate.source_feature_class = record.source_feature_class
+        yield candidate
 
 
 def group_gff(path: Path, parser_name: str, source_tool: str, sample_id: str) -> Iterable[Candidate]:
@@ -417,6 +479,18 @@ def parse_bed12(path: Path, parser_name: str, source_tool: str, sample_id: str) 
             if block_count != len(sizes) or block_count != len(starts):
                 continue
             intervals = [(chrom_start + rel, chrom_start + rel + size) for rel, size in zip(starts, sizes)]
+            conversion_rule = CONVERSION_RULES.get(parser_name, "")
+            if source_tool == "RibORF2":
+                thick_start = int(fields[6])
+                thick_end = int(fields[7])
+                clipped = [
+                    (max(start, thick_start), min(end, thick_end))
+                    for start, end in intervals
+                    if max(start, thick_start) < min(end, thick_end)
+                ]
+                if clipped:
+                    intervals = clipped
+                    conversion_rule = "riborf2_bed12_thick_orf"
             yield Candidate(
                 source_tool=source_tool,
                 parser_name=parser_name,
@@ -430,6 +504,7 @@ def parse_bed12(path: Path, parser_name: str, source_tool: str, sample_id: str) 
                 score=fields[4],
                 transcript_id=parse_enst(fields[3]),
                 source_feature_class=infer_source_feature_class(path, path.stem),
+                attributes={"conversion_rule": conversion_rule},
             )
 
 
@@ -517,10 +592,20 @@ def parse_translonscorer_csv(path: Path, source_tool: str, sample_id: str) -> It
 def sequence_from_blocks(genome, chrom: str, intervals: list[tuple[int, int]], strand: str) -> tuple[str, list[str]]:
     if genome is None:
         return "", ["sequence_not_checked"]
-    if chrom not in genome:
+    chrom_candidates = [chrom]
+    if chrom.startswith("chr"):
+        chrom_candidates.append(chrom[3:])
+    else:
+        chrom_candidates.append(f"chr{chrom}")
+    if chrom == "chrM":
+        chrom_candidates.extend(["MT", "M"])
+    elif chrom in {"MT", "M"}:
+        chrom_candidates.append("chrM")
+    fasta_chrom = next((candidate for candidate in chrom_candidates if candidate in genome), "")
+    if not fasta_chrom:
         return "", ["missing_chrom"]
     try:
-        pieces = [str(genome[chrom][start:end]).upper() for start, end in intervals]
+        pieces = [str(genome[fasta_chrom][start:end]).upper() for start, end in intervals]
     except Exception:
         return "", ["sequence_fetch_failed"]
     seq = "".join(pieces)
@@ -668,11 +753,19 @@ def build_translon_tables(candidates: Iterable[Candidate], fasta: Path | None) -
                 "raw_file": candidate.raw_file,
                 "raw_label": candidate.raw_label,
                 "sample_id": candidate.sample_id,
+                "sample_no": candidate.sample_no,
+                "sample_name": candidate.sample_name,
+                "dataset_id": candidate.dataset_id,
+                "cell_type": candidate.cell_type,
+                "run_type": candidate.run_type,
+                "input_route": candidate.input_route,
+                "fastq_route_expected": candidate.fastq_route_expected,
                 "native_translon_id": candidate.native_translon_id,
                 "transcript_id": candidate.transcript_id,
                 "gene_id": candidate.gene_id,
                 "gene_name": candidate.gene_name,
                 "native_feature_type": candidate.native_feature_type,
+                "native_class": candidate.native_class,
                 "source_feature_class": candidate.source_feature_class or infer_source_feature_class(Path(candidate.raw_file), candidate.raw_label),
                 "score": candidate.score,
                 "conversion_rule": candidate.attributes.get("conversion_rule", CONVERSION_RULES.get(candidate.parser_name, "")),
@@ -882,11 +975,121 @@ def write_sqlite(path: Path, tables: dict[str, pd.DataFrame]) -> None:
         con.executescript(
             """
             CREATE INDEX IF NOT EXISTS idx_translons_tool_sample ON translons(source_tool, sample_id);
+            CREATE INDEX IF NOT EXISTS idx_translons_sample_route ON translons(sample_id, input_route);
             CREATE INDEX IF NOT EXISTS idx_translons_feature_key ON translons(feature_key);
             CREATE INDEX IF NOT EXISTS idx_translon_blocks_translon ON translon_blocks(translon_id);
             CREATE INDEX IF NOT EXISTS idx_ref_cds_feature_key ON reference_cds(feature_key);
             """
         )
+
+
+def manifest_matched_rows(manifest: Path | None) -> pd.DataFrame:
+    if manifest is None:
+        return pd.DataFrame()
+    with manifest.open() as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        rows = []
+        for row in reader:
+            if row.get("ingest_status") and row.get("ingest_status") != "matched":
+                continue
+            raw_path = row.get("path") or row.get("source_path")
+            if not raw_path:
+                continue
+            sample_id = row.get("sample_id", "") or normalise_sample(Path(raw_path).stem)
+            rows.append(
+                {
+                    "path": str(Path(raw_path)),
+                    "tool": row.get("tool", "") or Path(raw_path).parent.name,
+                    "sample_id": sample_id,
+                    "input_route": row.get("input_route", "") or infer_input_route(Path(raw_path), sample_id),
+                    "source_feature_class": row.get("source_feature_class", ""),
+                    "native_class": row.get("native_class", ""),
+                    "parser": row.get("parser", ""),
+                    "raw_record_count": int(row.get("raw_record_count") or 0),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def validate_db_matches_manifest(
+    manifest: Path | None,
+    parser_manifest: pd.DataFrame,
+    translons: pd.DataFrame,
+) -> None:
+    expected = manifest_matched_rows(manifest)
+    if expected.empty:
+        return
+    errors: list[str] = []
+    if len(expected) != len(parser_manifest):
+        errors.append(f"parser_manifest row count {len(parser_manifest)} != matched manifest row count {len(expected)}")
+    dup_expected = expected["path"][expected["path"].duplicated()].tolist()
+    if dup_expected:
+        errors.append(f"duplicate matched manifest paths: {dup_expected[:10]}")
+    dup_parser = parser_manifest["path"][parser_manifest["path"].duplicated()].tolist() if not parser_manifest.empty else []
+    if dup_parser:
+        errors.append(f"duplicate parser_manifest paths: {dup_parser[:10]}")
+    expected_paths = set(expected["path"])
+    parser_paths = set(parser_manifest["path"]) if not parser_manifest.empty else set()
+    missing_parser = sorted(expected_paths - parser_paths)
+    extra_parser = sorted(parser_paths - expected_paths)
+    if missing_parser:
+        errors.append(f"matched manifest paths missing from parser_manifest: {missing_parser[:10]}")
+    if extra_parser:
+        errors.append(f"parser_manifest paths not present as matched manifest rows: {extra_parser[:10]}")
+    if not parser_manifest.empty and not parser_manifest["parser_status"].eq("ok").all():
+        bad = parser_manifest.loc[~parser_manifest["parser_status"].eq("ok"), ["path", "parser_status"]].head(10)
+        errors.append(f"matched manifest rows with non-ok parser_status: {bad.to_dict('records')}")
+    if not parser_manifest.empty:
+        merged = expected.merge(parser_manifest, on="path", how="inner", suffixes=("_manifest", "_db"))
+        for column in ("sample_id", "input_route", "source_feature_class", "native_class"):
+            db_column = f"{column}_db"
+            manifest_column = f"{column}_manifest"
+            if db_column not in merged or manifest_column not in merged:
+                continue
+            mismatch = merged[
+                merged[manifest_column].fillna("").astype(str) != merged[db_column].fillna("").astype(str)
+            ]
+            if not mismatch.empty:
+                errors.append(
+                    f"{column} mismatch between manifest and parser_manifest: "
+                    f"{mismatch[['path', manifest_column, db_column]].head(10).to_dict('records')}"
+                )
+        tool_mismatch = merged[
+            merged["tool"].fillna("").astype(str) != merged["tool_hint"].fillna("").astype(str)
+        ]
+        if not tool_mismatch.empty:
+            errors.append(
+                "tool mismatch between manifest and parser_manifest: "
+                f"{tool_mismatch[['path', 'tool', 'tool_hint']].head(10).to_dict('records')}"
+            )
+        if "parser" in merged and "parser_name" in merged:
+            parser_mismatch = merged[
+                merged["parser"].fillna("").astype(str).ne("")
+                & (merged["parser"].fillna("").astype(str) != merged["parser_name"].fillna("").astype(str))
+            ]
+            if not parser_mismatch.empty:
+                errors.append(
+                    "parser mismatch between manifest and parser_manifest: "
+                    f"{parser_mismatch[['path', 'parser', 'parser_name']].head(10).to_dict('records')}"
+                )
+        low_parse = merged[
+            (merged["raw_record_count_manifest"].fillna(0).astype(int) > 0)
+            & (merged["translons"].fillna(0).astype(int) <= 0)
+        ]
+        if not low_parse.empty:
+            errors.append(f"matched source files produced zero parsed translons: {low_parse['path'].head(10).tolist()}")
+    parser_translons = int(parser_manifest["translons"].sum()) if not parser_manifest.empty else 0
+    if parser_translons != len(translons):
+        errors.append(f"sum(parser_manifest.translons) {parser_translons} != translons rows {len(translons)}")
+    if not translons.empty and not parser_manifest.empty:
+        by_raw_file = translons.groupby("raw_file", dropna=False).size().rename("translons_table").reset_index()
+        by_parser = parser_manifest[["path", "translons"]].rename(columns={"path": "raw_file", "translons": "parser_translons"})
+        counts = by_parser.merge(by_raw_file, on="raw_file", how="left").fillna({"translons_table": 0})
+        mismatch_counts = counts[counts["parser_translons"].astype(int) != counts["translons_table"].astype(int)]
+        if not mismatch_counts.empty:
+            errors.append(f"per-file translon count mismatch: {mismatch_counts.head(10).to_dict('records')}")
+    if errors:
+        raise SystemExit("DB/manifest datachecks failed:\n  - " + "\n  - ".join(errors))
 
 
 def parse_args() -> argparse.Namespace:
@@ -905,41 +1108,79 @@ def main() -> None:
 
     candidates: list[Candidate] = []
     manifest_rows: list[dict[str, object]] = []
-    for record in discover_inputs(args.input_root, args.manifest):
+    input_records = discover_inputs(args.input_root, args.manifest)
+    for record in input_records:
         status, parser_name, detected_tool = detect_parser(record.path, record.tool_hint)
         before = len(candidates)
         if status == "ok" and parser_name == "bed12":
-            candidates.extend(parse_bed12(record.path, parser_name, detected_tool, record.sample_id))
+            candidates.extend(attach_record_metadata(parse_bed12(record.path, parser_name, detected_tool, record.sample_id), record))
         elif status == "ok" and parser_name == "iribo_gff":
-            candidates.extend(group_iribo(record.path, detected_tool, record.sample_id))
+            candidates.extend(attach_record_metadata(group_iribo(record.path, detected_tool, record.sample_id), record))
         elif status == "ok" and parser_name.endswith(("gff", "gtf")):
-            candidates.extend(group_gff(record.path, parser_name, detected_tool, record.sample_id))
+            candidates.extend(attach_record_metadata(group_gff(record.path, parser_name, detected_tool, record.sample_id), record))
         elif status == "ok" and parser_name == "orfquant_bed_exon":
-            candidates.extend(parse_orfquant_bed_exon(record.path, detected_tool, record.sample_id))
+            candidates.extend(attach_record_metadata(parse_orfquant_bed_exon(record.path, detected_tool, record.sample_id), record))
         elif status == "ok" and parser_name == "translonscorer_csv":
-            candidates.extend(parse_translonscorer_csv(record.path, detected_tool, record.sample_id))
+            candidates.extend(attach_record_metadata(parse_translonscorer_csv(record.path, detected_tool, record.sample_id), record))
+        parsed_translons = len(candidates) - before
+        try:
+            raw_record_count = int(record.raw_record_count) if record.raw_record_count != "" else ""
+        except ValueError:
+            raw_record_count = ""
+        parser_collapse_count = raw_record_count - parsed_translons if isinstance(raw_record_count, int) else ""
         manifest_rows.append(
             {
                 "path": str(record.path),
                 "tool_hint": record.tool_hint,
                 "sample_id": record.sample_id,
+                "sample_no": record.sample_no,
+                "sample_name": record.sample_name,
+                "dataset_id": record.dataset_id,
+                "cell_type": record.cell_type,
+                "run_type": record.run_type,
+                "input_route": record.input_route,
+                "fastq_route_expected": record.fastq_route_expected,
+                "source_feature_class": record.source_feature_class,
+                "native_class": record.native_class,
                 "parser_status": status,
                 "parser_name": parser_name,
                 "detected_tool": detected_tool,
-                "translons": len(candidates) - before,
+                "raw_record_count": raw_record_count,
+                "parser_collapse_count": parser_collapse_count,
+                "translons": parsed_translons,
             }
         )
 
     parser_manifest = pd.DataFrame(manifest_rows)
+    sample_metadata_cols = [
+        "sample_id",
+        "sample_no",
+        "sample_name",
+        "dataset_id",
+        "cell_type",
+        "run_type",
+        "fastq_route_expected",
+    ]
+    if parser_manifest.empty:
+        sample_metadata = pd.DataFrame(columns=sample_metadata_cols)
+    else:
+        sample_metadata = (
+            parser_manifest[sample_metadata_cols]
+            .drop_duplicates()
+            .sort_values(["sample_no", "sample_id"], na_position="last")
+            .reset_index(drop=True)
+        )
     translons, blocks, qc = build_translon_tables(candidates, args.fasta)
     reference_cds = reference_cds_from_gtf(args.gtf)
     translons = classify_unknown_feature_class(translons, reference_cds)
     recall = cds_recall(translons, reference_cds)
+    validate_db_matches_manifest(args.manifest, parser_manifest, translons)
 
     tables = {
         "translons": translons,
         "translon_blocks": blocks,
         "parser_manifest": parser_manifest,
+        "sample_metadata": sample_metadata,
         "qc_summary": qc,
         "reference_cds": reference_cds,
         "cds_recall_by_tool": recall,
