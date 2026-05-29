@@ -87,6 +87,8 @@ class UInt32Spool:
         self.fh.close()
 
     def memmap(self):
+        if self.n == 0:
+            return np.asarray([], dtype=np.uint32)
         return np.memmap(self.path, dtype=np.uint32, mode="r", shape=(self.n,))
 
 

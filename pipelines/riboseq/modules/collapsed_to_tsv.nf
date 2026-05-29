@@ -65,6 +65,7 @@ process COLLAPSED_TO_TSV_PARTITIONED {
 
     output:
     tuple val(meta), path("*.tsv"), emit: tsvs
+    tuple val(meta), path("${meta.id}.partition_stats.json"), emit: stats
     path "versions.yml", emit: versions
 
     when:
@@ -93,6 +94,7 @@ process COLLAPSED_TO_TSV_PARTITIONED {
     stub:
     """
     touch ${meta.id}.AAAA.tsv
+    echo '{"sample_id":"${meta.id}","partition_prefix_length":4,"catch_all_partition":"NNNN","total_records":1,"total_counts":1,"total_unique_sequences":1,"partitions":[{"partition":"AAAA","records":1,"counts":1,"unique_sequences":1},{"partition":"NNNN","records":0,"counts":0,"unique_sequences":0}]}' > ${meta.id}.partition_stats.json
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

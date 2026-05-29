@@ -402,6 +402,43 @@
       "minimum": 1,
       "description": "Read bucket size used by partitioned sparse count stores"
     },
+    "matrix_partition_qc_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable QC gate for partitioned matrix TSV stats"
+    },
+    "matrix_partition_qc_action": {
+      "type": "string",
+      "default": "fail",
+      "description": "Action for partitioned matrix QC threshold violations",
+      "enum": ["fail", "warn"]
+    },
+    "matrix_partition_qc_min_total_records": {
+      "type": "integer",
+      "default": 1,
+      "minimum": 0,
+      "description": "Minimum collapsed FASTA records required per sample in partitioned matrix mode"
+    },
+    "matrix_partition_qc_min_total_counts": {
+      "type": "integer",
+      "default": 1,
+      "minimum": 0,
+      "description": "Minimum collapsed read count required per sample in partitioned matrix mode"
+    },
+    "matrix_partition_qc_max_n_unique_fraction": {
+      "type": "number",
+      "default": 0.05,
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Maximum fraction of unique sequences allowed in the all-N catch-all partition"
+    },
+    "matrix_partition_qc_max_n_count_fraction": {
+      "type": "number",
+      "default": 0.05,
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Maximum fraction of read counts allowed in the all-N catch-all partition"
+    },
     "metrics_db": {
       "type": "string",
       "description": "Path to DuckDB metrics store (default: results/pipeline_info/qc.duckdb)"

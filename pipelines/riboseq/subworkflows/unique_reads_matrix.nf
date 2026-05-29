@@ -11,6 +11,7 @@
  */
 
 include { COLLAPSED_TO_TSV; COLLAPSED_TO_TSV_PARTITIONED } from '../modules/collapsed_to_tsv.nf'
+include { QC_PARTITIONED_TSV } from '../modules/qc_partitioned_tsv.nf'
 include { BUILD_STUDY_MATRIX; BUILD_STUDY_MATRIX_PARTITIONED } from '../modules/build_study_matrix.nf'
 include { MERGE_GLOBAL_MATRIX; MERGE_GLOBAL_MATRIX_PARTITIONED } from '../modules/merge_global_matrix.nf'
 include { STAR_ALIGN_UNIQUE_READS; STAR_ALIGN_UNIQUE_READS_PARTITIONED } from '../modules/star_align_unique_reads.nf'
@@ -40,9 +41,11 @@ workflow UNIQUE_READS_MATRIX {
         )
 
         COLLAPSED_TO_TSV_PARTITIONED(samples)
+        QC_PARTITIONED_TSV(COLLAPSED_TO_TSV_PARTITIONED.out.stats)
 
         partitioned_tsvs = COLLAPSED_TO_TSV_PARTITIONED.out.tsvs
-            .flatMap { meta, tsvs ->
+            .join(QC_PARTITIONED_TSV.out.qc_json)
+            .flatMap { meta, tsvs, qc_json ->
                 def files = tsvs instanceof List ? tsvs : [tsvs]
                 files.collect { tsv ->
                     def name = tsv.name
@@ -110,6 +113,7 @@ workflow UNIQUE_READS_MATRIX {
         unique_reads_bai_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.bai : Channel.empty()
         unique_reads_log_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.log : Channel.empty()
         versions_ch = COLLAPSED_TO_TSV_PARTITIONED.out.versions.first()
+            .mix(QC_PARTITIONED_TSV.out.versions.first())
             .mix(BUILD_STUDY_MATRIX_PARTITIONED.out.versions.first())
             .mix(MERGE_GLOBAL_MATRIX_PARTITIONED.out.versions)
             .mix(params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.versions : Channel.empty())

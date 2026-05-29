@@ -3,6 +3,7 @@ import argparse
 import contextlib
 import gzip
 import heapq
+import json
 import os
 import re
 import sys
@@ -344,6 +345,7 @@ def main():
             sorters[get_prefix_partition(sequence, partition_set, args.partition_prefix_length)].add(sequence, count)
 
         partition_sizes = []
+        partition_stats = []
         total_records = 0
         total_counts = 0
         total_unique = 0
@@ -354,11 +356,31 @@ def main():
             total_records += sorter.total_records
             total_counts += sorter.total_counts
             total_unique += unique_count
+            partition_stats.append({
+                "partition": partition,
+                "records": sorter.total_records,
+                "counts": sorter.total_counts,
+                "unique_sequences": unique_count,
+            })
 
         print(f"Read {total_records:,} FASTA records", file=sys.stderr)
         print(f"Found {total_unique:,} unique sequences", file=sys.stderr)
         print(f"Partition sizes: min={min(partition_sizes):,}, max={max(partition_sizes):,}, "
               f"mean={sum(partition_sizes)/len(partition_sizes):,.0f}", file=sys.stderr)
+        stats_path = args.output_dir / f"{sample_id}.partition_stats.json"
+        stats = {
+            "sample_id": sample_id,
+            "partition_prefix_length": args.partition_prefix_length,
+            "catch_all_partition": "N" * args.partition_prefix_length,
+            "total_records": total_records,
+            "total_counts": total_counts,
+            "total_unique_sequences": total_unique,
+            "partitions": partition_stats,
+        }
+        with open(stats_path, "wt") as handle:
+            json.dump(stats, handle, indent=2)
+            handle.write("\n")
+        print(f"Wrote partition stats: {stats_path}", file=sys.stderr)
     else:
         if args.output:
             output_path = args.output

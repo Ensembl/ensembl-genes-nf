@@ -98,6 +98,106 @@ def test_collapsed_to_tsv_supports_longer_prefix_partitions(tmp_path):
     ]
     assert (tmp_path / "sample.NNN.tsv").read_text().splitlines() == ["ANNN\t5"]
 
+    stats = json.loads((tmp_path / "sample.partition_stats.json").read_text())
+    assert stats["sample_id"] == "sample"
+    assert stats["partition_prefix_length"] == 3
+    assert stats["catch_all_partition"] == "NNN"
+    assert stats["total_records"] == 3
+    assert stats["total_counts"] == 10
+    assert stats["total_unique_sequences"] == 3
+    partition_stats = {item["partition"]: item for item in stats["partitions"]}
+    assert partition_stats["AAA"] == {
+        "partition": "AAA",
+        "records": 2,
+        "counts": 5,
+        "unique_sequences": 2,
+    }
+    assert partition_stats["NNN"] == {
+        "partition": "NNN",
+        "records": 1,
+        "counts": 5,
+        "unique_sequences": 1,
+    }
+
+
+def test_qc_partitioned_tsv_fails_empty_sample(tmp_path):
+    stats = tmp_path / "sample.partition_stats.json"
+    report = tmp_path / "sample.partition_qc.json"
+    stats.write_text(
+        json.dumps(
+            {
+                "sample_id": "sample",
+                "partition_prefix_length": 4,
+                "catch_all_partition": "NNNN",
+                "total_records": 0,
+                "total_counts": 0,
+                "total_unique_sequences": 0,
+                "partitions": [],
+            }
+        )
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(BIN_DIR / "qc_partitioned_tsv.py"),
+            str(stats),
+            "--output",
+            str(report),
+        ],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+
+    qc = json.loads(report.read_text())
+    assert result.returncode == 1
+    assert qc["passed"] is False
+    assert "total_records=0 is below 1" in qc["failures"]
+    assert "total_counts=0 is below 1" in qc["failures"]
+
+
+def test_qc_partitioned_tsv_flags_high_catch_all_fraction(tmp_path):
+    stats = tmp_path / "sample.partition_stats.json"
+    report = tmp_path / "sample.partition_qc.json"
+    stats.write_text(
+        json.dumps(
+            {
+                "sample_id": "sample",
+                "partition_prefix_length": 4,
+                "catch_all_partition": "NNNN",
+                "total_records": 10,
+                "total_counts": 100,
+                "total_unique_sequences": 10,
+                "partitions": [
+                    {"partition": "AAAA", "records": 9, "counts": 90, "unique_sequences": 9},
+                    {"partition": "NNNN", "records": 1, "counts": 10, "unique_sequences": 1},
+                ],
+            }
+        )
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(BIN_DIR / "qc_partitioned_tsv.py"),
+            str(stats),
+            "--output",
+            str(report),
+            "--max-catch-all-unique-fraction",
+            "0.05",
+            "--max-catch-all-count-fraction",
+            "0.05",
+        ],
+        check=False,
+    )
+
+    qc = json.loads(report.read_text())
+    assert result.returncode == 1
+    assert qc["passed"] is False
+    assert qc["observed"]["catch_all_unique_fraction"] == 0.1
+    assert qc["observed"]["catch_all_count_fraction"] == 0.1
+
 
 def test_build_study_matrix_preserves_sample_columns_and_coalesces_rows(tmp_path):
     s1 = tmp_path / "s1.tsv"
@@ -132,6 +232,42 @@ def test_build_study_matrix_preserves_sample_columns_and_coalesces_rows(tmp_path
         [0, 13],
         [5, 17],
     ]
+
+
+def test_build_study_matrix_writes_empty_partition(tmp_path):
+    s1 = tmp_path / "s1.NNNN.tsv"
+    s2 = tmp_path / "s2.NNNN.tsv"
+    s1.write_text("")
+    s2.write_text("")
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(BIN_DIR / "build_study_matrix.py"),
+            str(s1),
+            str(s2),
+            "--output-dir",
+            str(tmp_path),
+            "--study-id",
+            "STUDY",
+            "--sample-ids",
+            "s1,s2",
+            "--partition",
+            "NNNN",
+        ],
+        check=True,
+    )
+
+    with gzip.open(tmp_path / "STUDY.NNNN_sequences.txt.gz", "rt") as handle:
+        assert handle.read() == ""
+
+    matrix = sp.load_npz(tmp_path / "STUDY.NNNN_matrix.npz")
+    metadata = json.loads((tmp_path / "STUDY.NNNN_metadata.json").read_text())
+
+    assert matrix.shape == (0, 2)
+    assert matrix.nnz == 0
+    assert metadata["n_reads"] == 0
+    assert metadata["nnz"] == 0
 
 
 def make_two_study_fixture(tmp_path):
