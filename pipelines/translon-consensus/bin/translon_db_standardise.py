@@ -85,12 +85,22 @@ EMPTY_TABLE_COLUMNS = {
         "block_starts",
         "spliced_length_nt",
         "feature_key",
+        "stop_excluded_bed_start",
+        "stop_excluded_bed_end",
+        "stop_excluded_block_count",
+        "stop_excluded_block_sizes",
+        "stop_excluded_block_starts",
+        "stop_excluded_spliced_length_nt",
+        "stop_excluded_feature_key",
+        "reference_stop_policy",
     ],
     "cds_recall_by_tool": [
         "source_tool",
         "reference_cds",
         "exact_cds_recalled",
         "exact_cds_recall_pct",
+        "stop_excluded_cds_recalled",
+        "stop_excluded_cds_recall_pct",
     ],
 }
 
@@ -524,6 +534,77 @@ def feature_key(chrom: str, start: int, end: int, strand: str, sizes: str, start
     return f"{chrom}:{start}-{end}:{strand}:{sizes}:{starts}"
 
 
+def bed_fields_from_intervals(intervals: list[tuple[int, int]]) -> tuple[int, int, str, str, int]:
+    intervals = sorted(intervals)
+    bed_start = min(start for start, _ in intervals)
+    bed_end = max(end for _, end in intervals)
+    sizes = ",".join(str(end - start) for start, end in intervals)
+    starts = ",".join(str(start - bed_start) for start, _ in intervals)
+    return bed_start, bed_end, sizes, starts, sum(end - start for start, end in intervals)
+
+
+def extend_intervals_in_transcript_order(
+    intervals: list[tuple[int, int]],
+    exons: list[tuple[int, int]],
+    strand: str,
+    nt: int = 3,
+) -> list[tuple[int, int]]:
+    """Extend CDS intervals by nt bases after the CDS in transcript order."""
+    intervals = sorted(intervals)
+    if not intervals or nt <= 0:
+        return intervals
+
+    merged = list(intervals)
+    remaining = nt
+    exon_intervals = sorted(exons) if exons else []
+
+    if strand == "+":
+        terminal_start, terminal_end = merged[-1]
+        candidates = [(terminal_start, terminal_end)] + [exon for exon in exon_intervals if exon[1] > terminal_end]
+        cursor = terminal_end
+        idx = len(merged) - 1
+        for exon_start, exon_end in candidates:
+            start = max(cursor, exon_start)
+            if start >= exon_end:
+                continue
+            take = min(remaining, exon_end - start)
+            if idx == len(merged) - 1 and start <= merged[idx][1]:
+                merged[idx] = (merged[idx][0], start + take)
+            else:
+                merged.append((start, start + take))
+                idx = len(merged) - 1
+            cursor = start + take
+            remaining -= take
+            if remaining == 0:
+                break
+        if remaining:
+            start, end = merged[-1]
+            merged[-1] = (start, end + remaining)
+    else:
+        terminal_start, terminal_end = merged[0]
+        candidates = [(terminal_start, terminal_end)] + [exon for exon in reversed(exon_intervals) if exon[0] < terminal_start]
+        cursor = terminal_start
+        for exon_start, exon_end in candidates:
+            end = min(cursor, exon_end)
+            if exon_start >= end:
+                continue
+            take = min(remaining, end - exon_start)
+            start = end - take
+            if end >= merged[0][0]:
+                merged[0] = (start, merged[0][1])
+            else:
+                merged.insert(0, (start, end))
+            cursor = start
+            remaining -= take
+            if remaining == 0:
+                break
+        if remaining:
+            start, end = merged[0]
+            merged[0] = (max(0, start - remaining), end)
+
+    return sorted(merged)
+
+
 def start_class(codon: str) -> str:
     if len(codon) != 3:
         return "missing"
@@ -659,7 +740,7 @@ def reference_cds_from_gtf(gtf: Path | None) -> pd.DataFrame:
             if not line.strip() or line.startswith("#"):
                 continue
             fields = line.rstrip("\n").split("\t")
-            if len(fields) < 9 or fields[2] != "CDS":
+            if len(fields) < 9 or fields[2] not in {"CDS", "exon"}:
                 continue
             attrs = parse_attrs(fields[8])
             tid = attrs.get("transcript_id", "")
@@ -674,17 +755,26 @@ def reference_cds_from_gtf(gtf: Path | None) -> pd.DataFrame:
                     "chrom": chrom_to_ucsc(fields[0]),
                     "strand": fields[6],
                     "intervals": [],
+                    "exons": [],
                 },
             )
-            record["intervals"].append((int(fields[3]) - 1, int(fields[4])))  # type: ignore[index,union-attr]
+            interval = (int(fields[3]) - 1, int(fields[4]))
+            if fields[2] == "CDS":
+                record["intervals"].append(interval)  # type: ignore[index,union-attr]
+            else:
+                record["exons"].append(interval)  # type: ignore[index,union-attr]
 
     rows = []
     for record in grouped.values():
         intervals = sorted(record["intervals"])  # type: ignore[arg-type]
-        bed_start = min(start for start, _ in intervals)
-        bed_end = max(end for _, end in intervals)
-        sizes = ",".join(str(end - start) for start, end in intervals)
-        starts = ",".join(str(start - bed_start) for start, _ in intervals)
+        if not intervals:
+            continue
+        exons = sorted(record["exons"])  # type: ignore[arg-type]
+        stop_excluded_start, stop_excluded_end, stop_excluded_sizes, stop_excluded_starts, stop_excluded_len = (
+            bed_fields_from_intervals(intervals)
+        )
+        stop_included = extend_intervals_in_transcript_order(intervals, exons, str(record["strand"]), nt=3)
+        bed_start, bed_end, sizes, starts, spliced_len = bed_fields_from_intervals(stop_included)
         rows.append(
             {
                 "transcript_id": record["transcript_id"],
@@ -694,11 +784,26 @@ def reference_cds_from_gtf(gtf: Path | None) -> pd.DataFrame:
                 "bed_start": bed_start,
                 "bed_end": bed_end,
                 "bed_strand": record["strand"],
-                "block_count": len(intervals),
+                "block_count": len(stop_included),
                 "block_sizes": sizes,
                 "block_starts": starts,
-                "spliced_length_nt": sum(end - start for start, end in intervals),
+                "spliced_length_nt": spliced_len,
                 "feature_key": feature_key(record["chrom"], bed_start, bed_end, record["strand"], sizes, starts),
+                "stop_excluded_bed_start": stop_excluded_start,
+                "stop_excluded_bed_end": stop_excluded_end,
+                "stop_excluded_block_count": len(intervals),
+                "stop_excluded_block_sizes": stop_excluded_sizes,
+                "stop_excluded_block_starts": stop_excluded_starts,
+                "stop_excluded_spliced_length_nt": stop_excluded_len,
+                "stop_excluded_feature_key": feature_key(
+                    record["chrom"],
+                    stop_excluded_start,
+                    stop_excluded_end,
+                    record["strand"],
+                    stop_excluded_sizes,
+                    stop_excluded_starts,
+                ),
+                "reference_stop_policy": "stop_included_feature_key_from_stop_excluded_gtf_cds",
             }
         )
     return pd.DataFrame(rows)
@@ -709,6 +814,7 @@ def cds_recall(translons: pd.DataFrame, reference_cds: pd.DataFrame) -> pd.DataF
         return pd.DataFrame()
     rows = []
     reference_keys = set(reference_cds["feature_key"])
+    stop_excluded_reference_keys = set(reference_cds["stop_excluded_feature_key"]) if "stop_excluded_feature_key" in reference_cds.columns else set()
     total = len(reference_keys)
     for tool, group in translons.groupby("source_tool", observed=True):
         called = set(group["feature_key"])
@@ -718,6 +824,8 @@ def cds_recall(translons: pd.DataFrame, reference_cds: pd.DataFrame) -> pd.DataF
                 "reference_cds": total,
                 "exact_cds_recalled": len(reference_keys & called),
                 "exact_cds_recall_pct": 100 * len(reference_keys & called) / total if total else 0.0,
+                "stop_excluded_cds_recalled": len(stop_excluded_reference_keys & called),
+                "stop_excluded_cds_recall_pct": 100 * len(stop_excluded_reference_keys & called) / total if total else 0.0,
             }
         )
     called_any = set(translons["feature_key"])
@@ -727,6 +835,8 @@ def cds_recall(translons: pd.DataFrame, reference_cds: pd.DataFrame) -> pd.DataF
             "reference_cds": total,
             "exact_cds_recalled": len(reference_keys & called_any),
             "exact_cds_recall_pct": 100 * len(reference_keys & called_any) / total if total else 0.0,
+            "stop_excluded_cds_recalled": len(stop_excluded_reference_keys & called_any),
+            "stop_excluded_cds_recall_pct": 100 * len(stop_excluded_reference_keys & called_any) / total if total else 0.0,
         }
     )
     return pd.DataFrame(rows)
