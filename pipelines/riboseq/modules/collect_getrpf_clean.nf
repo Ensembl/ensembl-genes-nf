@@ -1,7 +1,7 @@
 process COLLECT_GETRPF_CLEAN {
     tag "${meta.id}"
 
-    container "python:3.10-slim"
+    container "python:3.10"
 
     input:
     val run_id

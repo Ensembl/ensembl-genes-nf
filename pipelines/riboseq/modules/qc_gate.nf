@@ -2,7 +2,7 @@ process QC_GATE {
     tag "${meta.id}"
     label "process_medium"
 
-    container "python:3.10-slim"
+    container "python:3.10"
 
     publishDir "${params.outdir}/qc_gate", mode: 'copy', pattern: "*.{offsets.pass.tsv,pass_lengths.tsv,qc.json}"
 

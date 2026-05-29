@@ -2,7 +2,7 @@ process COLLECT_RIBOMETRIC {
     tag "${meta.id}"
     label "process_medium"
 
-    container "python:3.10-slim"
+    container "python:3.10"
 
     input:
     val run_id
