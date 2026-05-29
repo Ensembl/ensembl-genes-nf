@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 import hashlib
+import fcntl
 from pathlib import Path
 
 import duckdb
 
+_LOCK_HANDLES = {}
+
 
 def connect(db_path: str):
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    lock_path = f"{db_path}.lock"
+    lock_handle = open(lock_path, "w")
+    fcntl.flock(lock_handle, fcntl.LOCK_EX)
+    _LOCK_HANDLES[db_path] = lock_handle
     con = duckdb.connect(db_path)
     con.execute(
         """

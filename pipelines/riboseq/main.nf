@@ -260,7 +260,12 @@ workflow {
 
         // Gate using RiboMetric offsets; filter passing lengths
         def rules_path = params.qc_rules ?: "${projectDir}/resources/qc_rules.default.yaml"
-        QC_GATE( run_id, ANALYSIS.out.offsets, file(rules_path) )
+        def offsets_after_metrics = ANALYSIS.out.offsets
+            .join(COLLECT_RIBOMETRIC.out.done)
+            .join(COLLECT_STAR_LOG.out.done)
+            .map { meta, offsets, ribometric_done, star_done -> [meta, offsets] }
+
+        QC_GATE( run_id, offsets_after_metrics, file(rules_path) )
 
         // Use filtered offsets for downstream processing
         def offsets_for_post = QC_GATE.out.filtered_offsets

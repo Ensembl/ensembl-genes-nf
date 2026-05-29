@@ -9,7 +9,7 @@ process COLLECT_GETRPF_CLEAN {
     tuple val(meta2), path(checks)
 
     output:
-    path "getrpf_metrics.done", emit: done
+    tuple val(meta), path("getrpf_metrics.done"), emit: done
 
     when:
     task.ext.when == null || task.ext.when

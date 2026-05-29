@@ -9,7 +9,7 @@ process COLLECT_RIBOMETRIC {
     tuple val(meta), path(json), path(csv), path(offsets)
 
     output:
-    path "ribometric_metrics.done", emit: done
+    tuple val(meta), path("ribometric_metrics.done"), emit: done
 
     script:
     def db = params.metrics_db ?: "${params.outdir}/pipeline_info/qc.duckdb"

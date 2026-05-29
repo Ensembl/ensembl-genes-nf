@@ -6,10 +6,10 @@ process COLLECT_STAR_LOG {
 
     input:
     val run_id
-    tuple val(meta), path(log)
+    tuple val(meta), path(star_log)
 
     output:
-    path "star_metrics.done", emit: done
+    tuple val(meta), path("star_metrics.done"), emit: done
 
     when:
     task.ext.when == null || task.ext.when
@@ -23,7 +23,7 @@ process COLLECT_STAR_LOG {
       --run-id ${run_id} \
       --sample-id ${meta.id} \
       --study-id ${meta.study_id ?: 'unknown'} \
-      --log ${log}
+      --log ${star_log}
     touch star_metrics.done
     """
 }
