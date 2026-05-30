@@ -38,6 +38,8 @@ include { UNIQUE_READS_MATRIX } from './subworkflows/unique_reads_matrix.nf'
 include { TRANSLONSCORER } from './modules/translonscorer.nf'
 
 include { COLLECT_QC_METRICS } from './modules/collect_qc_metrics.nf'
+include { QC_GATE } from './modules/qc_gate.nf'
+include { IMPORT_QC_DB } from './modules/import_qc_db.nf'
 
 /*
 ========================================================================================
@@ -256,20 +258,33 @@ workflow {
 
         COLLECT_QC_METRICS(
             run_id,
-            qc_metric_inputs,
+            qc_metric_inputs
+        )
+
+        qc_gate_inputs = ANALYSIS.out.offsets
+            .join(COLLECT_QC_METRICS.out.metrics)
+            .map { meta, offsets, metrics ->
+                [meta, offsets, metrics]
+            }
+
+        QC_GATE(
+            run_id,
+            qc_gate_inputs,
             file(rules_path)
         )
 
-        // Use only samples selected for downstream BigWig consumers. QC-failed
-        // samples still publish their empty *.offsets.pass.tsv files for
-        // auditing, but they must not be passed to BEDgraph/BigWig generation.
-        def offsets_for_post = COLLECT_QC_METRICS.out.filtered_offsets
-            .join(COLLECT_QC_METRICS.out.qc_json)
-            .filter { meta, offsets, qcjson ->
-                def qc = new groovy.json.JsonSlurper().parse(qcjson.toFile())
-                (qc.selected_for_trackhub || qc.selected_for_translon) && (qc.pass_lengths ?: []).size() > 0
-            }
-            .map { meta, offsets, qcjson -> [meta, offsets] }
+        // Only selected offsets drive downstream BEDgraph/BigWig generation.
+        // Failed samples still publish QC audit files, but do not enter
+        // post-processing.
+        def offsets_for_post = QC_GATE.out.selected_offsets
+
+        IMPORT_QC_DB(
+            COLLECT_QC_METRICS.out.metrics.map { meta, metrics -> metrics }.collect(),
+            COLLECT_QC_METRICS.out.artifacts.map { meta, artifacts -> artifacts }.collect(),
+            QC_GATE.out.qc_rule_set.map { meta, rule_set -> rule_set }.collect(),
+            QC_GATE.out.qc_eval.map { meta, qc_eval -> qc_eval }.collect(),
+            QC_GATE.out.gate_selection.map { meta, gate_selection -> gate_selection }.collect()
+        )
 
         POST_PROCESSING(
             ALIGNMENT.out.genome_bam,
@@ -311,12 +326,8 @@ workflow {
                 .map { meta, files -> [ meta, files ] }
 
             // Gate by QC decision: selected_for_translon must be true
-            def selected_ids = COLLECT_QC_METRICS.out.qc_json
-                .map { meta, qcjson ->
-                    def js = new groovy.json.JsonSlurper().parse(qcjson.toFile())
-                    js.selected_for_translon ? meta.id : null
-                }
-                .filter { it != null }
+            def selected_ids = QC_GATE.out.translon_selected
+                .map { meta, selected -> meta.id }
 
             // Key join on sample id
             def keyed_bw = bigwigs_per_sample.map { meta, files -> [ meta.id, [meta, files] ] }
