@@ -558,15 +558,20 @@ def parse_translonscorer_csv(path: Path, source_tool: str, sample_id: str) -> It
         reader = csv.DictReader(handle, dialect=dialect)
         for idx, row in enumerate(reader, start=1):
             lower = {key.lower(): key for key in row}
-            chrom_key = lower.get("chrom") or lower.get("chromosome") or lower.get("seq_region_name")
+            chrom_key = lower.get("chrom") or lower.get("chromosome") or lower.get("seq_region_name") or lower.get("seqname")
             start_key = lower.get("start") or lower.get("chrom_start") or lower.get("seq_region_start")
             end_key = lower.get("end") or lower.get("chrom_end") or lower.get("seq_region_end")
+            if not (start_key and end_key) and lower.get("tis_coord") and lower.get("tts_coord"):
+                start_key = lower["tis_coord"]
+                end_key = lower["tts_coord"]
             strand_key = lower.get("strand") or lower.get("seq_region_strand")
             if not (chrom_key and start_key and end_key):
                 continue
-            start = int(float(row[start_key]))
-            end = int(float(row[end_key]))
-            if start > 0 and "seq_region" in start_key:
+            raw_start = int(float(row[start_key]))
+            raw_end = int(float(row[end_key]))
+            start = min(raw_start, raw_end)
+            end = max(raw_start, raw_end)
+            if start > 0 and ("seq_region" in start_key or start_key.lower().endswith("_coord")):
                 start -= 1
             name = row.get(lower.get("id", ""), "") or row.get(lower.get("orf_id", ""), "") or f"{path.stem}_{idx}"
             strand = row[strand_key] if strand_key else "+"
@@ -585,6 +590,10 @@ def parse_translonscorer_csv(path: Path, source_tool: str, sample_id: str) -> It
                 strand=strand,
                 intervals=[(start, end)],
                 transcript_id=parse_enst(name),
+                gene_id=row.get(lower.get("gene_id", ""), ""),
+                gene_name=row.get(lower.get("gene_name", ""), ""),
+                native_feature_type=row.get(lower.get("orf_type", ""), ""),
+                score=row.get(lower.get("ribotie_score", ""), "0"),
                 source_feature_class=infer_source_feature_class(path, path.stem),
             )
 

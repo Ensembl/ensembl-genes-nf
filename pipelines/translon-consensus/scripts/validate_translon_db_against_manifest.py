@@ -75,15 +75,20 @@ def parse_csv_records(path: Path) -> dict[str, dict[str, object]]:
         reader = csv.DictReader(handle, dialect=dialect)
         for idx, row in enumerate(reader, start=1):
             lower = {key.lower(): key for key in row}
-            chrom_key = lower.get("chrom") or lower.get("chromosome") or lower.get("seq_region_name")
+            chrom_key = lower.get("chrom") or lower.get("chromosome") or lower.get("seq_region_name") or lower.get("seqname")
             start_key = lower.get("start") or lower.get("chrom_start") or lower.get("seq_region_start")
             end_key = lower.get("end") or lower.get("chrom_end") or lower.get("seq_region_end")
+            if not (start_key and end_key) and lower.get("tis_coord") and lower.get("tts_coord"):
+                start_key = lower["tis_coord"]
+                end_key = lower["tts_coord"]
             strand_key = lower.get("strand") or lower.get("seq_region_strand")
             if not (chrom_key and start_key and end_key):
                 continue
-            start = int(float(row[start_key]))
-            end = int(float(row[end_key]))
-            if "seq_region" in start_key and start > 0:
+            raw_start = int(float(row[start_key]))
+            raw_end = int(float(row[end_key]))
+            start = min(raw_start, raw_end)
+            end = max(raw_start, raw_end)
+            if ("seq_region" in start_key or start_key.lower().endswith("_coord")) and start > 0:
                 start -= 1
             strand = row[strand_key] if strand_key else "+"
             if strand == "1":
