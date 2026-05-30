@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def fail_or_warn(message: str, action: str, failures: list[str], warnings: list[str]):
-    if action == "fail":
+    if action in {"fail", "record"}:
         failures.append(message)
     else:
         warnings.append(message)
@@ -24,9 +24,12 @@ def main():
     parser.add_argument("--max-catch-all-count-fraction", type=float, default=0.05)
     parser.add_argument(
         "--action",
-        choices=("fail", "warn"),
+        choices=("fail", "warn", "record"),
         default="fail",
-        help="Whether threshold violations fail the process or only emit warnings",
+        help=(
+            "Whether threshold violations fail the process, only emit warnings, "
+            "or record a failed QC report while exiting successfully"
+        ),
     )
     args = parser.parse_args()
 
@@ -117,7 +120,7 @@ def main():
     for message in failures:
         print(f"ERROR: {sample_id}: {message}", file=sys.stderr)
 
-    if failures:
+    if failures and args.action == "fail":
         raise SystemExit(1)
 
 

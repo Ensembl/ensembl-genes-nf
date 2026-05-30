@@ -199,6 +199,53 @@ def test_qc_partitioned_tsv_flags_high_catch_all_fraction(tmp_path):
     assert qc["observed"]["catch_all_count_fraction"] == 0.1
 
 
+def test_qc_partitioned_tsv_record_action_keeps_report_but_exits_zero(tmp_path):
+    stats = tmp_path / "sample.partition_stats.json"
+    report = tmp_path / "sample.partition_qc.json"
+    stats.write_text(
+        json.dumps(
+            {
+                "sample_id": "sample",
+                "partition_prefix_length": 4,
+                "catch_all_partition": "NNNN",
+                "total_records": 10,
+                "total_counts": 100,
+                "total_unique_sequences": 10,
+                "partitions": [
+                    {"partition": "AAAA", "records": 9, "counts": 90, "unique_sequences": 9},
+                    {"partition": "NNNN", "records": 1, "counts": 10, "unique_sequences": 1},
+                ],
+            }
+        )
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(BIN_DIR / "qc_partitioned_tsv.py"),
+            str(stats),
+            "--output",
+            str(report),
+            "--max-catch-all-unique-fraction",
+            "0.05",
+            "--max-catch-all-count-fraction",
+            "0.05",
+            "--action",
+            "record",
+        ],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+
+    qc = json.loads(report.read_text())
+    assert result.returncode == 0
+    assert qc["passed"] is False
+    assert qc["action"] == "record"
+    assert "NNNN count fraction 0.100000 exceeds 0.050000" in qc["failures"]
+    assert "ERROR: sample: NNNN count fraction 0.100000 exceeds 0.050000" in result.stderr
+
+
 def test_build_study_matrix_preserves_sample_columns_and_coalesces_rows(tmp_path):
     s1 = tmp_path / "s1.tsv"
     s2 = tmp_path / "s2.tsv"

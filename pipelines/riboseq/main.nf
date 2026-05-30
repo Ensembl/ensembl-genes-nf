@@ -37,10 +37,7 @@ include { TRACKHUB_GENERATION } from './subworkflows/trackhub_generation.nf'
 include { UNIQUE_READS_MATRIX } from './subworkflows/unique_reads_matrix.nf'
 include { TRANSLONSCORER } from './modules/translonscorer.nf'
 
-include { COLLECT_STAR_LOG } from './modules/collect_star_log.nf'
-include { COLLECT_RIBOMETRIC } from './modules/collect_ribometric.nf'
-include { COLLECT_GETRPF_CLEAN } from './modules/collect_getrpf_clean.nf'
-include { QC_GATE } from './modules/qc_gate.nf'
+include { COLLECT_QC_METRICS } from './modules/collect_qc_metrics.nf'
 
 /*
 ========================================================================================
@@ -242,33 +239,29 @@ workflow {
         // Collect metrics into DuckDB and perform QC gating (RiboMetric-first)
         def run_id = workflow.runName
 
-        // STAR alignment metrics
-        COLLECT_STAR_LOG( run_id, ALIGNMENT.out.logs )
-
-        // getRPF cleanliness
-        COLLECT_GETRPF_CLEAN( run_id, QUALITY_CONTROL.out.reports, QUALITY_CONTROL.out.rpf_checks )
-
         // RiboMetric metrics + artifacts: join JSON, CSV, and offsets by sample
         ribometric_triplet = ANALYSIS.out.ribometric_json
             .join(ANALYSIS.out.ribometric_csv)
             .join(ANALYSIS.out.offsets)
 
-        COLLECT_RIBOMETRIC(
+        def rules_path = params.qc_rules ?: "${projectDir}/resources/qc_rules.default.yaml"
+
+        def qc_metric_inputs = ALIGNMENT.out.logs
+            .join(QUALITY_CONTROL.out.reports)
+            .join(QUALITY_CONTROL.out.rpf_checks)
+            .join(ribometric_triplet)
+            .map { meta, star_log, getrpf_report, getrpf_checks, ribometric_json, ribometric_csv, offsets ->
+                [meta, star_log, getrpf_report, getrpf_checks, ribometric_json, ribometric_csv, offsets]
+            }
+
+        COLLECT_QC_METRICS(
             run_id,
-            ribometric_triplet.map { meta, j, c, off -> [meta, j, c, off] }
+            qc_metric_inputs,
+            file(rules_path)
         )
 
-        // Gate using RiboMetric offsets; filter passing lengths
-        def rules_path = params.qc_rules ?: "${projectDir}/resources/qc_rules.default.yaml"
-        def offsets_after_metrics = ANALYSIS.out.offsets
-            .join(COLLECT_RIBOMETRIC.out.done)
-            .join(COLLECT_STAR_LOG.out.done)
-            .map { meta, offsets, ribometric_done, star_done -> [meta, offsets] }
-
-        QC_GATE( run_id, offsets_after_metrics, file(rules_path) )
-
         // Use filtered offsets for downstream processing
-        def offsets_for_post = QC_GATE.out.filtered_offsets
+        def offsets_for_post = COLLECT_QC_METRICS.out.filtered_offsets
 
         POST_PROCESSING(
             ALIGNMENT.out.genome_bam,
@@ -310,7 +303,7 @@ workflow {
                 .map { meta, files -> [ meta, files ] }
 
             // Gate by QC decision: selected_for_translon must be true
-            def selected_ids = QC_GATE.out.qc_json
+            def selected_ids = COLLECT_QC_METRICS.out.qc_json
                 .map { meta, qcjson ->
                     def js = new groovy.json.JsonSlurper().parse(qcjson.toFile())
                     js.selected_for_translon ? meta.id : null

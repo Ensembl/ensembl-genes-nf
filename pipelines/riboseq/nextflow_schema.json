@@ -409,9 +409,9 @@
     },
     "matrix_partition_qc_action": {
       "type": "string",
-      "default": "fail",
+      "default": "record",
       "description": "Action for partitioned matrix QC threshold violations",
-      "enum": ["fail", "warn"]
+      "enum": ["fail", "warn", "record"]
     },
     "matrix_partition_qc_min_total_records": {
       "type": "integer",

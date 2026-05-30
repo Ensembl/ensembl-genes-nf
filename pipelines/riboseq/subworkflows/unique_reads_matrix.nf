@@ -10,8 +10,10 @@
  * Designed for scale: 5k+ samples across 100-250 studies
  */
 
+import groovy.json.JsonSlurper
+
 include { COLLAPSED_TO_TSV; COLLAPSED_TO_TSV_PARTITIONED } from '../modules/collapsed_to_tsv.nf'
-include { QC_PARTITIONED_TSV } from '../modules/qc_partitioned_tsv.nf'
+include { QC_PARTITIONED_TSV; COLLECT_PARTITION_QC_MANIFEST } from '../modules/qc_partitioned_tsv.nf'
 include { BUILD_STUDY_MATRIX; BUILD_STUDY_MATRIX_PARTITIONED } from '../modules/build_study_matrix.nf'
 include { MERGE_GLOBAL_MATRIX; MERGE_GLOBAL_MATRIX_PARTITIONED } from '../modules/merge_global_matrix.nf'
 include { STAR_ALIGN_UNIQUE_READS; STAR_ALIGN_UNIQUE_READS_PARTITIONED } from '../modules/star_align_unique_reads.nf'
@@ -42,9 +44,13 @@ workflow UNIQUE_READS_MATRIX {
 
         COLLAPSED_TO_TSV_PARTITIONED(samples)
         QC_PARTITIONED_TSV(COLLAPSED_TO_TSV_PARTITIONED.out.stats)
+        COLLECT_PARTITION_QC_MANIFEST(QC_PARTITIONED_TSV.out.qc_json.map { meta, qc_json -> qc_json }.collect())
 
         partitioned_tsvs = COLLAPSED_TO_TSV_PARTITIONED.out.tsvs
             .join(QC_PARTITIONED_TSV.out.qc_json)
+            .filter { meta, tsvs, qc_json ->
+                new JsonSlurper().parse(qc_json.toFile()).passed
+            }
             .flatMap { meta, tsvs, qc_json ->
                 def files = tsvs instanceof List ? tsvs : [tsvs]
                 files.collect { tsv ->
@@ -109,11 +115,13 @@ workflow UNIQUE_READS_MATRIX {
         global_metadata_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.metadata
         global_config_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.config
         global_matrix_manifest_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.manifest
+        partition_qc_manifest_ch = COLLECT_PARTITION_QC_MANIFEST.out.manifest
         unique_reads_bam_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.bam : Channel.empty()
         unique_reads_bai_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.bai : Channel.empty()
         unique_reads_log_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.log : Channel.empty()
         versions_ch = COLLAPSED_TO_TSV_PARTITIONED.out.versions.first()
             .mix(QC_PARTITIONED_TSV.out.versions.first())
+            .mix(COLLECT_PARTITION_QC_MANIFEST.out.versions.first())
             .mix(BUILD_STUDY_MATRIX_PARTITIONED.out.versions.first())
             .mix(MERGE_GLOBAL_MATRIX_PARTITIONED.out.versions)
             .mix(params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.versions : Channel.empty())
@@ -165,6 +173,7 @@ workflow UNIQUE_READS_MATRIX {
         global_metadata_ch = MERGE_GLOBAL_MATRIX.out.metadata
         global_config_ch = MERGE_GLOBAL_MATRIX.out.config
         global_matrix_manifest_ch = MERGE_GLOBAL_MATRIX.out.manifest
+        partition_qc_manifest_ch = Channel.empty()
         unique_reads_bam_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.bam : Channel.empty()
         unique_reads_bai_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.bai : Channel.empty()
         unique_reads_log_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.log : Channel.empty()
@@ -194,6 +203,7 @@ workflow UNIQUE_READS_MATRIX {
     global_metadata = global_metadata_ch
     global_config = global_config_ch
     global_matrix_manifest = global_matrix_manifest_ch
+    partition_qc_manifest = partition_qc_manifest_ch
 
     // Alignment outputs
     unique_reads_bam = unique_reads_bam_ch
