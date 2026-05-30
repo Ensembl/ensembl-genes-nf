@@ -2,7 +2,8 @@ process COLLECT_RIBOMETRIC {
     tag "${meta.id}"
     label "process_medium"
 
-    container "python:3.10"
+    conda "conda-forge::python=3.10 conda-forge::duckdb conda-forge::pandas"
+    container "community.wave.seqera.io/library/pip_pyyaml_duckdb_pandas:5ede6677f4262ec2"
 
     input:
     val run_id
@@ -14,8 +15,7 @@ process COLLECT_RIBOMETRIC {
     script:
     def db = params.metrics_db ?: "${params.outdir}/pipeline_info/qc.duckdb"
     """
-    python3 -m pip install -q --no-cache-dir duckdb pandas >/dev/null 2>&1 || true
-    python3 $projectDir/bin/collect_ribometric.py \
+    collect_ribometric.py \
       --db ${db} \
       --run-id ${run_id} \
       --sample-id ${meta.id} \

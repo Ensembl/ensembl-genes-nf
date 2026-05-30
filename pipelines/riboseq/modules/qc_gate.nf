@@ -2,7 +2,8 @@ process QC_GATE {
     tag "${meta.id}"
     label "process_medium"
 
-    container "python:3.10"
+    conda "conda-forge::python=3.10 conda-forge::duckdb conda-forge::pyyaml"
+    container "community.wave.seqera.io/library/pip_pyyaml_duckdb_pandas:5ede6677f4262ec2"
 
     publishDir "${params.outdir}/qc_gate", mode: 'copy', pattern: "*.{offsets.pass.tsv,pass_lengths.tsv,qc.json}"
 
@@ -22,8 +23,7 @@ process QC_GATE {
     def rule_set_name = params.qc_rule_set_name ?: 'default'
     def prefix = meta.id
     """
-    python3 -m pip install -q --no-cache-dir duckdb pyyaml >/dev/null 2>&1 || true
-    python3 $projectDir/bin/qc_gate.py \
+    qc_gate.py \
       --db ${db} \
       --run-id ${run_id} \
       --sample-id ${meta.id} \

@@ -143,10 +143,10 @@ FIELDNAMES = [
 def normalise(raw: str) -> str:
     sample = raw.strip()
     sample = sample.replace("GENELAB-000", "GENELAB").replace("GENELAB_000", "GENELAB")
-    sample = re.sub(r"_1$", "", sample)
     sample = PRICE_SAMPLE_MAP.get(sample, sample)
     sample = IRIBO_POOLED_MAP.get(sample, sample)
     sample = MISC_FIXES.get(sample, sample)
+    sample = re.sub(r"_1$", "", sample)
     return sample
 
 

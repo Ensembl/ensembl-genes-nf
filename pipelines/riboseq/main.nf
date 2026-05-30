@@ -260,8 +260,16 @@ workflow {
             file(rules_path)
         )
 
-        // Use filtered offsets for downstream processing
+        // Use only samples selected for downstream BigWig consumers. QC-failed
+        // samples still publish their empty *.offsets.pass.tsv files for
+        // auditing, but they must not be passed to BEDgraph/BigWig generation.
         def offsets_for_post = COLLECT_QC_METRICS.out.filtered_offsets
+            .join(COLLECT_QC_METRICS.out.qc_json)
+            .filter { meta, offsets, qcjson ->
+                def qc = new groovy.json.JsonSlurper().parse(qcjson.toFile())
+                (qc.selected_for_trackhub || qc.selected_for_translon) && (qc.pass_lengths ?: []).size() > 0
+            }
+            .map { meta, offsets, qcjson -> [meta, offsets] }
 
         POST_PROCESSING(
             ALIGNMENT.out.genome_bam,

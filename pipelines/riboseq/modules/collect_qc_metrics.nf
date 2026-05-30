@@ -3,8 +3,9 @@ process COLLECT_QC_METRICS {
     label "process_medium"
     maxForks 1
 
-    container "python:3.10"
-
+    conda "conda-forge::python=3.10 conda-forge::duckdb conda-forge::pandas conda-forge::pyyaml"
+    container "community.wave.seqera.io/library/pip_pyyaml_duckdb_pandas:5ede6677f4262ec2"
+    
     publishDir "${params.outdir}/qc_gate", mode: 'copy', pattern: "*.{offsets.pass.tsv,pass_lengths.tsv,qc.json}"
 
     input:
@@ -26,9 +27,7 @@ process COLLECT_QC_METRICS {
     def rule_set_name = params.qc_rule_set_name ?: 'default'
     def prefix = meta.id
     """
-    python3 -m pip install -q --no-cache-dir duckdb pandas pyyaml >/dev/null 2>&1 || true
-
-    python3 $projectDir/bin/collect_star_log.py \\
+    collect_star_log.py \\
       --db ${db} \\
       --run-id ${run_id} \\
       --sample-id ${meta.id} \\
@@ -36,7 +35,7 @@ process COLLECT_QC_METRICS {
       --log ${star_log}
 
     if [ -s ${getrpf_report} ] && [ -s ${getrpf_checks} ]; then
-      python3 $projectDir/bin/collect_getrpf_clean.py \\
+      collect_getrpf_clean.py \\
         --db ${db} \\
         --run-id ${run_id} \\
         --sample-id ${meta.id} \\
@@ -44,7 +43,7 @@ process COLLECT_QC_METRICS {
         --checks ${getrpf_checks}
     fi
 
-    python3 $projectDir/bin/collect_ribometric.py \\
+    collect_ribometric.py \\
       --db ${db} \\
       --run-id ${run_id} \\
       --sample-id ${meta.id} \\
@@ -52,7 +51,7 @@ process COLLECT_QC_METRICS {
       --csv ${ribometric_csv} \\
       --offsets ${offsets}
 
-    python3 $projectDir/bin/qc_gate.py \\
+    qc_gate.py \\
       --db ${db} \\
       --run-id ${run_id} \\
       --sample-id ${meta.id} \\

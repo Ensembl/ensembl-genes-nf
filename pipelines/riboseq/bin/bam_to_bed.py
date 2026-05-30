@@ -35,6 +35,8 @@ def read_offset_file(offset_file: str) -> Dict[int, int]:
     with open(offset_file) as f:
         next(f)  # Skip header
         for line in f:
+            if not line.strip():
+                continue
             read_length, offset = line.strip().split('\t')
             offsets[int(read_length)] = int(offset)
     return offsets
@@ -216,6 +218,12 @@ def main():
         logger.info("Reading offsets file")
         length_offsets = read_offset_file(args.offsets)
         logger.info(f"Loaded offsets for {len(length_offsets)} read lengths")
+        if not length_offsets:
+            raise ValueError(
+                f"No usable offsets found in {args.offsets}. "
+                "This usually means QC gating found no passing read lengths; "
+                "do not send this sample to BEDgraph/BigWig generation."
+            )
         
         # Process BAM and write output(s)
         logger.info(f"Processing BAM file {'with' if args.stranded else 'without'} strand separation")

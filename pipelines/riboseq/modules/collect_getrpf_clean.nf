@@ -1,7 +1,8 @@
 process COLLECT_GETRPF_CLEAN {
     tag "${meta.id}"
 
-    container "python:3.10"
+    conda "conda-forge::python=3.10 conda-forge::duckdb"
+    container "community.wave.seqera.io/library/pip_pyyaml_duckdb_pandas:5ede6677f4262ec2"
 
     input:
     val run_id
@@ -17,12 +18,11 @@ process COLLECT_GETRPF_CLEAN {
     script:
     def db = params.metrics_db ?: "${params.outdir}/pipeline_info/qc.duckdb"
     """
-    python3 -m pip install -q --no-cache-dir duckdb >/dev/null 2>&1 || true
     if [ ! -s ${report} ] || [ ! -s ${checks} ]; then
       touch getrpf_metrics.done
       exit 0
     fi
-    python3 $projectDir/bin/collect_getrpf_clean.py \
+    collect_getrpf_clean.py \
       --db ${db} \
       --run-id ${run_id} \
       --sample-id ${meta.id} \
