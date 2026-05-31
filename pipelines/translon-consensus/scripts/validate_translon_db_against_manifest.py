@@ -56,7 +56,7 @@ def parse_bed12_records(path: Path) -> dict[str, dict[str, object]]:
             sizes = ",".join(part for part in fields[10].rstrip(",").split(",") if part)
             starts = ",".join(part for part in fields[11].rstrip(",").split(",") if part)
             records[name or f"{path.stem}_{idx}"] = {
-                "bed_chrom": chrom,
+                "bed_chrom": chrom_to_ucsc(chrom),
                 "bed_start": int(start),
                 "bed_end": int(end),
                 "bed_strand": strand,
@@ -64,6 +64,15 @@ def parse_bed12_records(path: Path) -> dict[str, dict[str, object]]:
                 "block_starts": starts,
             }
     return records
+
+
+def chrom_to_ucsc(chrom: str) -> str:
+    chrom = chrom.strip()
+    if chrom.startswith("chr"):
+        return chrom
+    if chrom in {"MT", "M"}:
+        return "chrM"
+    return f"chr{chrom}"
 
 
 def parse_csv_records(path: Path) -> dict[str, dict[str, object]]:
@@ -96,8 +105,7 @@ def parse_csv_records(path: Path) -> dict[str, dict[str, object]]:
             elif strand == "-1":
                 strand = "-"
             chrom = row[chrom_key]
-            if not chrom.startswith("chr"):
-                chrom = "chrM" if chrom in {"M", "MT"} else f"chr{chrom}"
+            chrom = chrom_to_ucsc(chrom)
             name_key = lower.get("id") or lower.get("orf_id")
             name = row.get(name_key, "") if name_key else ""
             records[name or f"{path.stem}_{idx}"] = {

@@ -12,7 +12,9 @@ sample_rules:
     metric: ribometric.information_content
     scope: sample
     op: ">="
-    threshold: 1.5
+    # RiboMetric periodicity_information is normalized to 0-1.
+    # 0.4 is roughly equivalent to a dominant-frame fraction near 0.65.
+    threshold: 0.4
     severity: fail
     include_if_missing: false
 length_rules:

@@ -1,0 +1,33 @@
+{
+  "results": {
+    "mode": "annotation",
+    "metrics": {
+      "periodicity_information": {
+        "29": 0.55,
+        "30": 0.01,
+        "global": 0.50
+      },
+      "periodicity_dominance": {
+        "29": 0.72,
+        "30": 0.34,
+        "global": 0.58
+      }
+    },
+    "read_length_distribution": {
+      "29": 10000,
+      "30": 8000
+    },
+    "read_frame_distribution": {
+      "29": {
+        "0": 7200,
+        "1": 1400,
+        "2": 1400
+      },
+      "30": {
+        "0": 2600,
+        "1": 2700,
+        "2": 2700
+      }
+    }
+  }
+}
