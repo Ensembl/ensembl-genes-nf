@@ -12,9 +12,10 @@ from __future__ import annotations
 import argparse
 import gzip
 import json
+import logging
 import re
 import sqlite3
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Iterable
 
@@ -58,6 +59,7 @@ class ScoreConfig:
     min_total_signal: float = 10.0
     max_features_per_sample: int | None = 2000
     max_total_features: int | None = None
+    psite_offset: int = 0
     overwrite: bool = False
 
 
@@ -143,7 +145,7 @@ def mean_coverage(arr: np.ndarray | None) -> float:
 
 
 def periodicity_score(arr, start_offset=0):
-    """Dominant-frame fraction of body signal (phase-invariant 3-nt periodicity)."""
+    """Fraction of body signal in the annotated ORF frame."""
     if arr is None or len(arr) < 9:
         return np.nan
     positions = (np.arange(len(arr)) + start_offset) % 3
@@ -151,7 +153,7 @@ def periodicity_score(arr, start_offset=0):
     total = frame_sums.sum()
     if total <= 0:
         return np.nan
-    return float(frame_sums.max() / total)      # was frame_sums[0] / total
+    return float(frame_sums[0] / total)
 
 
 def uniformity_score(arr: np.ndarray | None) -> float:
@@ -247,7 +249,7 @@ def score_signal_array(arr: np.ndarray | None, cfg: ScoreConfig) -> dict[str, fl
     return {
         "mean_cov": mean_coverage(arr),
         "body_mean_cov": body_mean,
-        "periodicity": periodicity_score(body, start_offset=body_start),
+        "periodicity": periodicity_score(body, start_offset=body_start + cfg.psite_offset),
         "uniformity": uniformity_score(body),
         "body_total_signal": body_total,
         "body_nonzero_nt": body_nonzero,
@@ -319,6 +321,27 @@ def _read_sql(con: sqlite3.Connection, sql: str, params: tuple[object, ...] = ()
     return pd.read_sql_query(sql, con, params=params)
 
 
+def load_psite_offsets(path: Path | None) -> dict[str, int]:
+    """Load frozen per-sample mod-3 P-site offsets."""
+
+    if path is None:
+        logging.warning("No --psite-offsets path provided; using offset 0 for all samples")
+        return {}
+    if not path.exists():
+        logging.warning("P-site offsets file %s is absent; using offset 0 for all samples", path)
+        return {}
+
+    raw = json.loads(path.read_text())
+    offsets: dict[str, int] = {}
+    for sample_id, value in raw.items():
+        offset = value.get("offset") if isinstance(value, dict) else value
+        try:
+            offsets[str(sample_id)] = int(offset) % 3
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Invalid P-site offset for {sample_id!r}: {offset!r}") from exc
+    return offsets
+
+
 def load_sample_orfs(con: sqlite3.Connection, sample_id: str, cfg: ScoreConfig) -> pd.DataFrame:
     limit = f"LIMIT {int(cfg.max_features_per_sample)}" if cfg.max_features_per_sample else ""
     return _read_sql(
@@ -348,7 +371,13 @@ def load_sample_orfs(con: sqlite3.Connection, sample_id: str, cfg: ScoreConfig) 
     )
 
 
-def score_database(db: Path, bigwig_root: Path, out_dir: Path, cfg: ScoreConfig) -> tuple[pd.DataFrame, dict[str, object]]:
+def score_database(
+    db: Path,
+    bigwig_root: Path,
+    out_dir: Path,
+    cfg: ScoreConfig,
+    psite_offsets: dict[str, int] | None = None,
+) -> tuple[pd.DataFrame, dict[str, object]]:
     if not HAS_PYBIGWIG:
         raise RuntimeError("pyBigWig is required for signal extraction")
     if not db.exists():
@@ -363,6 +392,7 @@ def score_database(db: Path, bigwig_root: Path, out_dir: Path, cfg: ScoreConfig)
     if bw_manifest.empty:
         raise FileNotFoundError(f"No paired BigWigs found under {bigwig_root}")
 
+    psite_offsets = psite_offsets or {}
     summaries: list[dict[str, object]] = []
     total_unique_scored = 0
     con = sqlite3.connect(db)
@@ -382,15 +412,23 @@ def score_database(db: Path, bigwig_root: Path, out_dir: Path, cfg: ScoreConfig)
 
         for _, bw_row in sample_rows.iterrows():
             sample_id = str(bw_row["sample_id"])
+            sample_cfg = replace(cfg, psite_offset=psite_offsets.get(sample_id, 0))
             done = batch_dir / f"{_slug(sample_id)}.done.json"
             out_path = batch_dir / f"{_slug(sample_id)}.scores.tsv.gz"
             if done.exists() and out_path.exists() and not cfg.overwrite:
-                summaries.append(json.loads(done.read_text()))
-                continue
+                previous_summary = json.loads(done.read_text())
+                if previous_summary.get("psite_offset") == sample_cfg.psite_offset:
+                    summaries.append(previous_summary)
+                    continue
+                logging.info(
+                    "Sample %s: existing batch lacks matching P-site offset; recomputing",
+                    sample_id,
+                )
             if cfg.max_total_features is not None and total_unique_scored >= cfg.max_total_features:
                 break
+            logging.info("Sample %s: applying P-site offset %s", sample_id, sample_cfg.psite_offset)
 
-            sample_orfs = load_sample_orfs(con, sample_id, cfg)
+            sample_orfs = load_sample_orfs(con, sample_id, sample_cfg)
             if sample_orfs.empty:
                 continue
             unique_features = sample_orfs[KEY_COLS].drop_duplicates().reset_index(drop=True)
@@ -416,7 +454,7 @@ def score_database(db: Path, bigwig_root: Path, out_dir: Path, cfg: ScoreConfig)
             bws = BigWigPair(str(bw_row["fwd_path"]), str(bw_row["rev_path"]))
             try:
                 for feature in unique_features.itertuples(index=False):
-                    score = score_feature(pd.Series(feature._asdict()), bws, cfg)
+                    score = score_feature(pd.Series(feature._asdict()), bws, sample_cfg)
                     ann = annotation_lookup.get((score["feature_key"], score["sample_id"]))
                     if ann is not None:
                         score.update(
@@ -440,6 +478,7 @@ def score_database(db: Path, bigwig_root: Path, out_dir: Path, cfg: ScoreConfig)
                 "input_rows": int(len(sample_orfs)),
                 "scored_features": int((scored["extract_status"] == "ok").sum()) if not scored.empty else 0,
                 "coverage_pass": int(scored["coverage_pass"].sum()) if "coverage_pass" in scored else 0,
+                "psite_offset": int(sample_cfg.psite_offset),
                 "output": str(out_path),
             }
             done.write_text(json.dumps(summary, indent=2) + "\n")
@@ -493,6 +532,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--min-total-signal", type=float, default=10.0)
     parser.add_argument("--max-features-per-sample", type=int, default=2000)
     parser.add_argument("--max-total-features", type=int)
+    parser.add_argument("--psite-offsets", type=Path, default=Path("psite_offsets.json"))
     parser.add_argument("--full", action="store_true", help="score all features per sample")
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
@@ -500,6 +540,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     cfg = ScoreConfig(
         flank_nt=args.flank_nt,
         body_edge_nt=args.body_edge_nt,
@@ -509,7 +550,8 @@ def main() -> None:
         max_total_features=args.max_total_features,
         overwrite=args.overwrite,
     )
-    scored, summary = score_database(args.db, args.bigwig_root, args.out_dir, cfg)
+    psite_offsets = load_psite_offsets(args.psite_offsets)
+    scored, summary = score_database(args.db, args.bigwig_root, args.out_dir, cfg, psite_offsets=psite_offsets)
     print(json.dumps({k: v for k, v in summary.items() if k != "samples"}, indent=2))
     print(f"Scored rows: {len(scored):,}")
 
