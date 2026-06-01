@@ -19,14 +19,13 @@ limitations under the License.
 process FETCH_REPEAT_MODEL {
     tag "$meta.gca:repeatmodel"
     label 'fetch_file'
-    publishDir "${params.outDir}/${meta.gca}/library/", mode: 'copy'
+    publishDir "${params.outdir}/${meta.gca}/library/", mode: 'copy'
 
     input:
-    val meta
-    //tuple val(species_name), val(gca),path(genome_file)
+    tuple val(meta), path(genome_file)
 
     output:
-    tuple val(meta), path("${meta.gca}.repeatmodeler.fa"), emit: rep_library_file_output
+    tuple val(meta), path(genome_file), path("${meta.gca}.repeatmodeler.fa"), emit: rep_library_file_output
     path "versions.yml", emit: versions_file
 
 
@@ -44,5 +43,11 @@ process FETCH_REPEAT_MODEL {
         echo "Repeat model file not found for ${meta.gca} skipping download"
         echo "No repeatmodeler file available for ${meta.gca}" > "${meta.gca}.repeatmodeler.fa"
     fi
+
+    CURL_VERSION=\$(curl --version 2>&1 | head -n 1 | awk '{print \$2}')
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        curl: \$CURL_VERSION
+    END_VERSIONS
     """
 }

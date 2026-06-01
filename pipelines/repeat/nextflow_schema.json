@@ -1,119 +1,172 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com///nextflow_schema.json",
-  "title": "pipeline parameters",
-  "description": "",
+  "$id": "https://raw.githubusercontent.com/ensembl/ensembl-genes-nf/main/pipelines/repeat/nextflow_schema.json",
+  "title": "Ensembl repeat pipeline parameters",
+  "description": "Parameters for repeat annotation workflows.",
   "type": "object",
   "$defs": {
-    "main_parameters": {
+    "input_output_options": {
       "title": "Input/output options",
       "type": "object",
       "fa_icon": "fas fa-terminal",
-      "description": "Define where the pipeline should find input data and save output data.",
-            "required": ["csvFile", "outdir"],
-  "properties": {
-    "run_repeatmasker": {
-      "type": "boolean",
-      "description":"Run RepeatMasker given a repeat library"
-    },
-    "run_trf": {
-      "type": "boolean",
-      "description":"Run TRF given a genome assembly"
-    },
-    "run_dustmasker": {
-      "type": "boolean",
-      "description":"Run DustMasker given a genome assembly"
-    },
-    "check_rmlibrary": {
-      "type": "boolean",
-      "description":"Check if a RepeatModeler library is available for a given genome assembly and download it. If not available, run RepeatModeler to generate a library."
-    },
-    
-    
-    "csvFile": {
-      "type": "string",
-      "format": "file-path",
-            "exists": true,
-            "mimetype": "text/csv",
-            "schema": "assets/schema_input.json",
-            "description": "Path to the input CSV metadata file."
-    },
-    "enscode": {
-      "type": "string",
-      "description":"Enscode path"
-    },
-    "bioperl": {
-      "type": "string",
-      "default": "/bioperl-1.6.924",
-      "description":"BioPerl path"
-    },
-    "cacheDir": {
-      "type": "string",
-      "default": "/cache",
-      "description": "Directory for caching files."
-    },
-    "outdir": {
-      "type": "string",
-      "default": "./results",
-      "description": "Output directory."
-    },
-    "tracedir": {
-      "type": "string",
-      "default": "./results/pipeline_info",
-      "description": "Directory for tracing pipeline."
-    },
-    "files_latency": {
-      "type": "integer",
-      "default": 60,
-      "description": "Latency in seconds for file operations."
-    },
-    "cleanCache": {
-      "type": "boolean",
-      "default": true,
-      "description": "Option to clean the cache directory after running the pipeline."
-    },
-    "busco_version": {
-      "type": "string",
-      "default": "v6.0.0_cv1",
-      "description":"BUSCO image version"
-    },
-    "download_path": {
-      "type": "string",
-      "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data_odb12/",
-      "description":"BUSCO lineages path"
-    },
-    "busco_mode": {
-      "type": "string",
-      "default": "protein",
-      "enum": ["protein", "genome", "both"],
-      "description":"Busco mode: genome, protein or both"
-    },
-    "busco_datasets_file": {
-      "type": "string",
-      "default": "../data/busco_lineage.json"
-    },
-    "dump_params": {
-      "type": "string",
-      "default": "--canonical_only"
-    },
-    "omamer_database": {
-      "type": "string",
-      "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/omamer_db/LUCA_MinFamSize6_OR_MinFamComp05_A21_k6.h5"
-    },
-    "omark_singularity_path": {
-      "type": "string",
-      "default": "/hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif"
-    },
-    "meta_query_file": {
-      "type": "string",
-      "default": "../bin/meta.sql"
-    }
-  }
-}
-  },
-"allOf": [
-        {
-            "$ref": "#/$defs/main_parameters"
+      "description": "Define where the pipeline should find input data, write results, and cache downloaded files.",
+      "required": ["csvFile", "outdir"],
+      "properties": {
+        "csvFile": {
+          "type": "string",
+          "format": "file-path",
+          "exists": true,
+          "mimetype": "text/csv",
+          "schema": "assets/schema_input.json",
+          "description": "Path to the input CSV metadata file."
+        },
+        "outdir": {
+          "type": "string",
+          "default": "./results",
+          "description": "Output directory."
+        },
+        "tracedir": {
+          "type": "string",
+          "default": "./results/pipeline_info",
+          "description": "Directory for execution reports and trace files."
+        },
+        "cacheDir": {
+          "type": "string",
+          "default": "./results/cache",
+          "description": "Directory used by cached fetch steps."
+        },
+        "files_latency": {
+          "type": "integer",
+          "default": 60,
+          "description": "Sleep time in seconds after file-publishing steps."
+        },
+        "cleanup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Remove temporary files when supported."
+        },
+        "cleanCache": {
+          "type": "boolean",
+          "default": false,
+          "description": "Remove cached downloaded files after the run."
         }
-    ]
-}  
+      }
+    },
+    "analysis_options": {
+      "title": "Repeat analysis options",
+      "type": "object",
+      "fa_icon": "fas fa-dna",
+      "description": "Enable repeat annotation steps and configure repeat tools.",
+      "properties": {
+        "generate_lib": {
+          "type": "boolean",
+          "default": false,
+          "description": "Check for an existing RepeatModeler library and generate one when it is missing."
+        },
+        "run_repeatmasker": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run RepeatMasker using the RepeatModeler library channel."
+        },
+        "run_red": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run RED on the fetched genome assembly."
+        },
+        "run_dust": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run DustMasker on the fetched genome assembly."
+        },
+        "run_trf": {
+          "type": "boolean",
+          "default": false,
+          "description": "Run TRF on the fetched genome assembly."
+        },
+        "ncbiBaseUrl": {
+          "type": "string",
+          "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/",
+          "description": "NCBI datasets API base URL used for genome downloads."
+        },
+        "repeats_ftp_base": {
+          "type": "string",
+          "default": "http://ftp.ebi.ac.uk/pub/databases/ensembl/repeats/unfiltered_repeatmodeler/species/",
+          "description": "Base URL for pre-computed RepeatModeler libraries."
+        },
+        "repeatmasker_path": {
+          "type": "string",
+          "description": "Path to the RepeatMasker executable."
+        },
+        "builddatabase_path": {
+          "type": "string",
+          "description": "Path to the BuildDatabase executable."
+        },
+        "engine_repeatmasker": {
+          "type": "string",
+          "default": "rmblast",
+          "description": "RepeatMasker search engine."
+        },
+        "engine_repeatmodeler": {
+          "type": "string",
+          "default": "ncbi",
+          "description": "RepeatModeler search engine."
+        },
+        "red_path": {
+          "type": "string",
+          "description": "Path to the RED executable."
+        },
+        "dust_path": {
+          "type": "string",
+          "description": "Path to the DustMasker executable."
+        },
+        "trf_path": {
+          "type": "string",
+          "description": "Path to the TRF executable."
+        },
+        "trf_match_score": {
+          "type": "integer",
+          "default": 2,
+          "description": "TRF match score."
+        },
+        "trf_mismatch_score": {
+          "type": "integer",
+          "default": 5,
+          "description": "TRF mismatch penalty."
+        },
+        "trf_delta": {
+          "type": "integer",
+          "default": 7,
+          "description": "TRF indel penalty."
+        },
+        "trf_pm": {
+          "type": "integer",
+          "default": 80,
+          "description": "TRF match probability."
+        },
+        "trf_pi": {
+          "type": "integer",
+          "default": 10,
+          "description": "TRF indel probability."
+        },
+        "trf_minscore": {
+          "type": "integer",
+          "default": 40,
+          "description": "TRF minimum alignment score to report."
+        },
+        "trf_maxperiod": {
+          "type": "integer",
+          "default": 500,
+          "description": "TRF maximum period size."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/input_output_options"
+    },
+    {
+      "$ref": "#/$defs/analysis_options"
+    }
+  ]
+}

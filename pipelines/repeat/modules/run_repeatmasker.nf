@@ -20,20 +20,20 @@ process RUN_REPEATMASKER {
     tag "${meta.gca}:genome"
 
     // Multiple publishDir statements as needed
-    //publishDir "${params.outDir}/repeatmasker/", pattern: "*.fa", mode: "move"
-    //publishDir "${params.outDir}/repeatmasker/", pattern: "*.fa.cat", mode: "move"
-    //publishDir "${params.outDir}/repeatmasker/", pattern: "*.fa.masked", mode: "move"
-    //publishDir "${params.outDir}/repeatmasker/", pattern: "*.fa.ori.out", mode: "move"
-    //publishDir "${params.outDir}/repeatmasker/", pattern: "*.fa.out", mode: "move"
-    //publishDir "${params.outDir}/repeatmasker/", pattern: "*.fa.tbl", mode: "move"
-    //publishDir "${params.outDir}/repeatmasker/", pattern: "*.fa.rm.gtf", mode: "move"
-    publishDir "${params.outDir}/repeatmasker/", pattern: "*.gtf", mode: "move"
+    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa", mode: "move"
+    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.cat", mode: "move"
+    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.masked", mode: "move"
+    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.ori.out", mode: "move"
+    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.out", mode: "move"
+    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.tbl", mode: "move"
+    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.rm.gtf", mode: "move"
+    publishDir "${params.outdir}/${meta.gca}/repeatmasker/", pattern: "repeatmasker_output/*.gtf", mode: "copy"
 
     input:
-    val meta
+    tuple val(meta), path(genome_file), path(library_file)
 
     output:
-    val(meta), emit: repeatmasker_out
+    tuple val(meta), path("repeatmasker_output/*.gtf"), emit: repeatmasker_out
     path "versions.yml", emit: versions_file
 
     //path ("*.fa", emit: path_fasta),
@@ -47,11 +47,11 @@ process RUN_REPEATMASKER {
 
     script:
     """
-    run_repeatmasker --genome_file ${meta.genome_file} \
-                    --output_dir ${params.outDir}/repeatmasker \
+    repeatmasker.py --genome_file ${genome_file} \
+                    --output_dir . \
                     --repeatmasker_bin ${params.repeatmasker_path} \
-                    --library ${params.outDir}/${meta.gca}/rm_library/${meta.gca}.repeatmodeler.fa \
-                    --repeatmasker_engine ${params.engine_repeatmasker}
+                    --library ${library_file} \
+                    --repeatmasker_engine ${params.engine_repeatmasker} \
                     --num_threads ${task.cpus}
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -60,4 +60,3 @@ process RUN_REPEATMASKER {
     """
 
 }
-

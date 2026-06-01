@@ -1,11 +1,12 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/demultiplex/master/assets/schema_input.json",
-    "title": "nf-core/demultiplex pipeline - params.input schema",
-    "description": "Schema for the file provided with params.input",
+    "$id": "https://raw.githubusercontent.com/ensembl/ensembl-genes-nf/main/pipelines/repeat/assets/schema_input.json",
+    "title": "Ensembl repeat pipeline input schema",
+    "description": "Schema for the CSV file provided with params.csvFile",
     "type": "array",
     "items": {
         "type": "object",
+        "required": ["species_name", "gca"],
         "properties": {
             "species_name": {
                 "type": "string",
@@ -24,8 +25,9 @@
             
             "genome_file": {
                     "type": "string",
-                    "pattern": "^\\S+$",
-                    "errorMessage": "Genome file path must be provided and cannot contain or have trailing spaces",
+                    "pattern": "^(\\S+)?$",
+                    "description": "Optional local genome FASTA path. Leave blank to download by GCA.",
+                    "errorMessage": "Genome file path cannot contain spaces",
                     "meta": ["genome_file"]
                 }
 

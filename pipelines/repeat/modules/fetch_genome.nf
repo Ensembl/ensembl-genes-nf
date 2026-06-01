@@ -19,7 +19,8 @@ limitations under the License.
 process FETCH_GENOME {
     tag "${meta.gca}:genome"
     label 'fetch_file'
-    publishDir "${params.outDir}/${meta.gca}", mode: 'copy'
+    label 'python'
+    storeDir "${params.cacheDir}/${meta.gca}/ncbi_dataset"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 10
 
@@ -32,14 +33,21 @@ process FETCH_GENOME {
 
     script:
     """
-    if [[ ! -f ${params.outDir}/${meta.gca}/ncbi_dataset/*.fna && ! -f "${meta.genome_file}" ]]; then 
-    fetch_genome.py --output_dir ${params.outDir}/${meta.gca}/ncbi_dataset --gca ${meta.gca}
-    fi
-    # Link the appropriate genome file
     if [[ -f "${meta.genome_file}" ]]; then
-        ln -s ${meta.genome_file} genome.fna
+        echo "Using provided genome file: ${meta.genome_file}"
+        cp -L "${meta.genome_file}" genome.fna
     else
-        ln -s ${params.outDir}/${meta.gca}/ncbi_dataset/*.fna genome.fna
+        fetch_genome.py \
+            --output_dir . \
+            --gca ${meta.gca} \
+            --ncbi_base ${params.ncbiBaseUrl}
+
+        downloaded_genome=\$(find . -maxdepth 1 -type f -name "*.fna" | head -n 1)
+
+        if [[ -z "\$downloaded_genome" ]]; then
+            echo "No genome FASTA found for ${meta.gca}" >&2
+            exit 1
+        fi
     fi
     
     # Create versions file

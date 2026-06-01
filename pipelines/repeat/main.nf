@@ -96,15 +96,13 @@ workflow REPEAT_ANNOTATION {
         if (params.generate_lib) {
 
         // Stage 2: Check for existing RepeatModeler libraries
-        FETCH_REPEAT_MODEL(genomeData).rep_library_file_output
-            .map { meta, library_file ->
-                return tuple(meta, library_file)
-            }
-            .view { meta, library_file -> "Checked for RepeatModeler library for ${meta.gca}, file: ${library_file}" }
+        checkedLibraries = FETCH_REPEAT_MODEL(genomeData).rep_library_file_output
+            .view { meta, genome_file, library_file -> "Checked for RepeatModeler library for ${meta.gca}, file: ${library_file}" }
         ch_versions_file = ch_versions_file.mix(FETCH_REPEAT_MODEL.out.versions_file)
+
         // Separate genomes based on library availability
-        FETCH_REPEAT_MODEL.rep_library_file_output
-            .branch { _meta, library_file ->
+        checkedLibraries
+            .branch { _meta, _genome_file, library_file ->
                 // Check if library file contains error message
                 available: !library_file.text.contains("No repeatmodeler file available")
                 missing: library_file.text.contains("No repeatmodeler file available")
@@ -112,30 +110,27 @@ workflow REPEAT_ANNOTATION {
             .set { library_status }
         
         // Stage 3a: Generate de novo RepeatModeler libraries for genomes without existing libraries
-        library_status.missing
-            | GENERATE_REPEATMODELER_LIBRARY.repeatmodeler_library_out
-            .map { meta, library_file, stk_file, log_file ->
-
-                return tuple(meta, library_file, stk_file, log_file)
-            }
+        repeatModelerInput = library_status.missing
+            .map { meta, genome_file, _library_file -> tuple(meta, genome_file) }
+        GENERATE_REPEATMODELER_LIBRARY(repeatModelerInput)
         ch_versions_file = ch_versions_file.mix(GENERATE_REPEATMODELER_LIBRARY.out.versions_file)
         
         
         // Stage 3b: Download pre-computed libraries for genomes that have them
         // Transform to [url, gca] format expected by CHECK_AND_DOWNLOAD_RMLIBRARY
         downloadInput = library_status.available
-            .map { meta, _library_file ->
+            .map { meta, genome_file, _library_file ->
                 def url = "${params.repeats_ftp_base}/${meta.species_name}/${meta.gca}.repeatmodeler.fa"
-                return tuple(url, meta)
+                return tuple(url, meta, genome_file)
             }
         CHECK_AND_DOWNLOAD_RMLIBRARY(downloadInput)
         ch_versions_file = ch_versions_file.mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.versions_file)
                 
         // Merge both library sources (generated + downloaded)
-        // Assuming both outputs have format: tuple val(meta), path(library_file)
-        allLibraries = GENERATE_REPEATMODELER_LIBRARY.out.repeatmodeler_library_download_out
+        // Outputs have format: tuple val(meta), path(genome_file), path(library_file)
+        allLibraries = GENERATE_REPEATMODELER_LIBRARY.out.repeatmodeler_library_out
             .mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.repeatmodeler_library_out)
-            .view { meta, library -> "Library ready for ${meta.gca}: ${library}" }
+            .view { meta, genome_file, library -> "Library ready for ${meta.gca}: ${library}" }
         
         if(params.run_repeatmasker) {
         
@@ -184,7 +179,7 @@ workflow {
     //    ================================================================================
     //    REPEAT ANNOTATION PIPELINE
      //   ================================================================================
-    //    Output directory : ${params.outDir}
+    //    Output directory : ${params.outdir}
      //   CSV input file   : ${params.csvFile ?: 'NOT PROVIDED'}
     //    NCBI base URL    : ${params.ncbiBaseUrl}
     //    Repeats FTP base : ${params.repeats_ftp_base}
@@ -194,8 +189,8 @@ workflow {
     //    """.stripIndent()
         
         // Validate required parameters
-    //    if (!params.outDir) {
-    //        error "❌ ERROR: --outDir parameter is required. Please provide the output directory path."
+    //    if (!params.outdir) {
+    //        error "ERROR: --outdir parameter is required. Please provide the output directory path."
     //    }
         
     //    if (!params.csvFile) {

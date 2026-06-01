@@ -20,19 +20,19 @@ process RUN_DUST {
     tag "${meta.gca}:genome"
 
 
-    publishDir "${params.outDir}/dust/", pattern: "*.gtf", mode: "move"
+    publishDir "${params.outdir}/${meta.gca}/dust/", pattern: "**/*.gtf", mode: "copy"
 
     input:
-    val meta
+    tuple val(meta), path(genome_file)
 
     output:
-    val(meta), emit: dust_out
+    tuple val(meta), path("**/*.gtf"), emit: dust_out
     path "versions.yml", emit: versions_file
 
     script:
     """
-    run_dust --genome_file ${meta.genome_file} \
-                    --output_dir ${params.outDir}/dust \
+    run_dust --genome_file ${genome_file} \
+                    --output_dir . \
                     --dust_bin ${params.dust_path} \
                     --num_threads ${task.cpus}
     cat <<-END_VERSIONS > versions.yml
@@ -42,4 +42,3 @@ process RUN_DUST {
     """
 
 }
-

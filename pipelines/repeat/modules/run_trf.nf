@@ -19,19 +19,19 @@ process RUN_TRF {
     label "python"
     tag "${meta.gca}:genome"
 
-    publishDir "${params.outDir}/trf/", pattern: "*.gtf", mode: "move"
+    publishDir "${params.outdir}/${meta.gca}/trf/", pattern: "**/*.gtf", mode: "copy"
 
     input:
-    val meta
+    tuple val(meta), path(genome_file)
 
     output:
-    val(meta), emit: trf_out
+    tuple val(meta), path("**/*.gtf"), emit: trf_out
     path "versions.yml", emit: versions_file
 
     script:
     """
-    run_trf --genome_file ${meta.genome_file} \
-                    --output_dir ${params.outDir}/trf \
+    run_trf --genome_file ${genome_file} \
+                    --output_dir . \
                     --trf_bin ${params.trf_path} \
                     --match_score ${params.trf_match_score} \
                     --mismatch_score ${params.trf_mismatch_score} \
@@ -48,4 +48,3 @@ process RUN_TRF {
     """
 
 }
-

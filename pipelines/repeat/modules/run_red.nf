@@ -20,21 +20,21 @@ process RUN_RED {
     tag "${meta.gca}:genome"
 
 
-    publishDir "${params.outDir}/red/", pattern: "*.gtf", mode: "move"
+    publishDir "${params.outdir}/${meta.gca}/red/", pattern: "**/*.gtf", mode: "copy"
 
     input:
-    val meta
+    tuple val(meta), path(genome_file)
 
     output:
-    val(meta), emit: red_out
+    tuple val(meta), path("**/*.gtf"), emit: red_out
     path "versions.yml", emit: versions_file    
 
 
     script:
     """
-    run_red --genome_file ${meta.genome_file} \
-                    --output_dir ${params.outDir}/red \
-                    --red_bin ${params.red_path} \
+    run_red --genome_file ${genome_file} \
+                    --output_dir . \
+                    --red_bin ${params.red_path}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -43,4 +43,3 @@ process RUN_RED {
     """
 
 }
-
