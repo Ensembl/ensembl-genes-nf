@@ -459,4 +459,4 @@ publishDir "${params.outdir}/results"
 
 - [Simple examples](README.md) - Basic workflow structure
 - [Module template](../modules/minimal_example.nf) - Creating new processes
-- [Entry point system](../DESIGN.md) - Advanced workflow orchestration
+

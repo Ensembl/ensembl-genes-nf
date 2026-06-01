@@ -13,7 +13,7 @@ The statistics pipeline consists of 13 modules organized into functional categor
 ### BUSCO Quality Assessment Modules
 3. **[busco-dataset](modules/busco-dataset.md)** - Downloads appropriate BUSCO lineage datasets
 4. **[busco-lineage](modules/busco-lineage.md)** - Runs BUSCO assessment on genome sequences or on protein translations
-5. **[busco-core-metakeys](busco-core-metakeys.md)** - Patches BUSCO metadata into core databases
+5. **[busco-core-metakeys](modules/bbusco-core-metakeys.md)** - Patches BUSCO metadata into core databases
 
 ### Orthology Analysis Modules
 6. **[omamer-hog](modules/omamer-hog.md)** - Performs orthology inference using OMAmer

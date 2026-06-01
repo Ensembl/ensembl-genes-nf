@@ -4,7 +4,6 @@ The **Statistics Pipeline** generates comprehensive quality metrics and statisti
 
 ## Quick Links
 
-- **[Quick Start Guide](quickstart.md)** - Get up and running quickly
 - **[Input Specification](input.md)** - Prepare your input data
 - **[Output Reference](output.md)** - Understand the results
 - **[Troubleshooting](troubleshooting.md)** - Solve common issues
