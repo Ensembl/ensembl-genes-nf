@@ -1,0 +1,73 @@
+{
+  "config": {
+    "flank_nt": 30,
+    "body_edge_nt": 15,
+    "min_body_nt": 30,
+    "min_total_signal": 10.0,
+    "max_features_per_sample": 2000,
+    "max_total_features": null,
+    "overwrite": false
+  },
+  "db": "/hps/nobackup/flicek/ensembl/genebuild/jackt/riboseq/pilot/full_pilot_results/translon_db_rebuild/translon_db/translons.sqlite",
+  "bigwig_root": "figures_bigwig_pancreas_fallback/bigwig_links_unique_no_junction",
+  "batch_dir": "figures_bigwig_pancreas_fallback/signal_score_batches",
+  "samples": [
+    {
+      "sample_id": "Ribo_Pancreas_pooled",
+      "unique_features": 1247,
+      "input_rows": 2000,
+      "scored_features": 1247,
+      "coverage_pass": 1094,
+      "output": "figures_bigwig_pancreas_fallback/signal_score_batches/Ribo_Pancreas_pooled.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005875_to_79",
+      "unique_features": 1234,
+      "input_rows": 2000,
+      "scored_features": 1234,
+      "coverage_pass": 1035,
+      "output": "figures_bigwig_pancreas_fallback/signal_score_batches/SRR11005875_to_79.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005880_to_84",
+      "unique_features": 1227,
+      "input_rows": 2000,
+      "scored_features": 1227,
+      "coverage_pass": 1058,
+      "output": "figures_bigwig_pancreas_fallback/signal_score_batches/SRR11005880_to_84.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005885_to_89",
+      "unique_features": 1256,
+      "input_rows": 2000,
+      "scored_features": 1256,
+      "coverage_pass": 1083,
+      "output": "figures_bigwig_pancreas_fallback/signal_score_batches/SRR11005885_to_89.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005890_to_94",
+      "unique_features": 1217,
+      "input_rows": 2000,
+      "scored_features": 1217,
+      "coverage_pass": 996,
+      "output": "figures_bigwig_pancreas_fallback/signal_score_batches/SRR11005890_to_94.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005895_to_99",
+      "unique_features": 1250,
+      "input_rows": 2000,
+      "scored_features": 1250,
+      "coverage_pass": 1083,
+      "output": "figures_bigwig_pancreas_fallback/signal_score_batches/SRR11005895_to_99.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005900_to_04",
+      "unique_features": 1217,
+      "input_rows": 2000,
+      "scored_features": 1217,
+      "coverage_pass": 1007,
+      "output": "figures_bigwig_pancreas_fallback/signal_score_batches/SRR11005900_to_04.scores.tsv.gz"
+    }
+  ],
+  "result_rows": 8648
+}

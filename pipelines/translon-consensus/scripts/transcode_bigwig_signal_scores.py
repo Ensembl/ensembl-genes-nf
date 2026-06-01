@@ -142,17 +142,16 @@ def mean_coverage(arr: np.ndarray | None) -> float:
     return float(np.mean(arr))
 
 
-def periodicity_score(arr: np.ndarray | None, start_offset: int = 0) -> float:
-    """Fraction of body signal in the annotated ORF frame."""
-
+def periodicity_score(arr, start_offset=0):
+    """Dominant-frame fraction of body signal (phase-invariant 3-nt periodicity)."""
     if arr is None or len(arr) < 9:
         return np.nan
     positions = (np.arange(len(arr)) + start_offset) % 3
-    frame_sums = np.array([arr[positions == frame].sum() for frame in range(3)], dtype=float)
+    frame_sums = np.array([arr[positions == f].sum() for f in range(3)], float)
     total = frame_sums.sum()
     if total <= 0:
         return np.nan
-    return float(frame_sums[0] / total)
+    return float(frame_sums.max() / total)      # was frame_sums[0] / total
 
 
 def uniformity_score(arr: np.ndarray | None) -> float:

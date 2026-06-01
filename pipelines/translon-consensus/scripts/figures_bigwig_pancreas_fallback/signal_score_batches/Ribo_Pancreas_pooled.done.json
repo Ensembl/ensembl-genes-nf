@@ -1,0 +1,8 @@
+{
+  "sample_id": "Ribo_Pancreas_pooled",
+  "unique_features": 1247,
+  "input_rows": 2000,
+  "scored_features": 1247,
+  "coverage_pass": 1094,
+  "output": "figures_bigwig_pancreas_fallback/signal_score_batches/Ribo_Pancreas_pooled.scores.tsv.gz"
+}
