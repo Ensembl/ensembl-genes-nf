@@ -395,10 +395,11 @@ def collect_ribotie(results_dir: Path) -> tuple[list[dict[str, object]], set[Pat
 
     for subdir, native_class in (("annotated", "annotated"), ("novel", "novel")):
         for path in sorted((root / subdir).glob("*.gtf")):
-            # Prefer converted genomic GTFs such as db_SRR...annotated.out.gtf
-            # over transcript-coordinate GTFs such as
-            # db_SRR....Aligned.toTranscriptome.out.annotated.out.gtf.
-            priority = 1 if ".Aligned.toTranscriptome.out." in path.name else 0
+            # Prefer the delivered .Aligned.toTranscriptome.out GTFs.  Despite
+            # the name, these carry parseable RiboTIE CDS blocks in the current
+            # pilot delivery; the shorter db_SAMPLE.annotated.out.gtf files can
+            # be empty/non-ORF after conversion for some samples.
+            priority = 0 if ".Aligned.toTranscriptome.out." in path.name else 1
             add_candidate(path, native_class, priority)
         for path in sorted((root / subdir).glob("*.csv")):
             add_candidate(path, native_class, 2)
@@ -427,7 +428,7 @@ def collect_ribotie(results_dir: Path) -> tuple[list[dict[str, object]], set[Pat
             elif path.suffix == ".csv":
                 reason = "ribotie_csv_superseded_by_split_gtf"
             else:
-                reason = "ribotie_transcript_gtf_superseded_by_converted_gtf"
+                reason = "ribotie_nonpreferred_gtf_superseded_by_aligned_gtf"
             rows.append(excluded_row(path, reason))
             seen.add(path)
 
