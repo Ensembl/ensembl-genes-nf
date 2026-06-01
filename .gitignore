@@ -144,3 +144,4 @@ cython_debug/
 work/
 
 figures
+pipelines/translon-consensus/scripts/figures_talk_foundation/translon_signal_scores.tsv.gz

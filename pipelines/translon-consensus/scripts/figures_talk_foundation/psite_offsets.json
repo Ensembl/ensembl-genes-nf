@@ -1,0 +1,65 @@
+{
+  "Ribo_Pancreas_pooled": {
+    "offset": 1,
+    "dom_frac": 0.8320552536991804,
+    "dom_frac_plus": 0.8321901342776975,
+    "dom_frac_minus": 0.8319191097259632,
+    "dom_frame_plus": 2,
+    "dom_frame_minus": 2,
+    "n_tx": 16526
+  },
+  "SRR11005875_to_79": {
+    "offset": 1,
+    "dom_frac": 0.8492296655621221,
+    "dom_frac_plus": 0.8495908341671474,
+    "dom_frac_minus": 0.8488610509585659,
+    "dom_frame_plus": 2,
+    "dom_frame_minus": 2,
+    "n_tx": 14951
+  },
+  "SRR11005880_to_84": {
+    "offset": 1,
+    "dom_frac": 0.8322177282007193,
+    "dom_frac_plus": 0.8325183954865306,
+    "dom_frac_minus": 0.8319153331625163,
+    "dom_frame_plus": 2,
+    "dom_frame_minus": 2,
+    "n_tx": 15432
+  },
+  "SRR11005885_to_89": {
+    "offset": 1,
+    "dom_frac": 0.8388343756139695,
+    "dom_frac_plus": 0.839085383935519,
+    "dom_frac_minus": 0.8385820813128303,
+    "dom_frame_plus": 2,
+    "dom_frame_minus": 2,
+    "n_tx": 15410
+  },
+  "SRR11005890_to_94": {
+    "offset": 1,
+    "dom_frac": 0.8328705299499068,
+    "dom_frac_plus": 0.8325461852515382,
+    "dom_frac_minus": 0.8331956913387438,
+    "dom_frame_plus": 2,
+    "dom_frame_minus": 2,
+    "n_tx": 15310
+  },
+  "SRR11005895_to_99": {
+    "offset": 1,
+    "dom_frac": 0.8139189425214327,
+    "dom_frac_plus": 0.8142972303251489,
+    "dom_frac_minus": 0.8135357073210802,
+    "dom_frame_plus": 2,
+    "dom_frame_minus": 2,
+    "n_tx": 15397
+  },
+  "SRR11005900_to_04": {
+    "offset": 1,
+    "dom_frac": 0.829475914958103,
+    "dom_frac_plus": 0.8292547542090151,
+    "dom_frac_minus": 0.8296998808103478,
+    "dom_frame_plus": 2,
+    "dom_frame_minus": 2,
+    "n_tx": 15416
+  }
+}
