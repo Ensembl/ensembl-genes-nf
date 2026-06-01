@@ -25,8 +25,8 @@ length_rules:
     threshold: 5000
     severity: fail
     include_if_missing: false
-  - name: min_frame0_fraction
-    metric: ribometric.frame0_frac
+  - name: min_periodicity_dominance
+    metric: ribometric.periodicity_dominance
     scope: length
     op: ">="
     threshold: 0.65
