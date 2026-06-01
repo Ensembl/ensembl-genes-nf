@@ -19,19 +19,19 @@ limitations under the License.
 process GENERATE_REPEATMODELER_LIBRARY {
     tag "$meta.gca:run_repeatmodeler"
     label 'repeatmodeler'
-    publishDir "${params.outdir}/${meta.gca}/library", mode: 'copy'
+    publishDir "${params.outDir}/${meta.gca}/library", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
     tuple val(meta), path(genome_file)
 
     output:
-    tuple val(meta), path(genome_file), path("*-families.fa"), emit: repeatmodeler_library_out
+    tuple val(meta), path("*-families.fa"), path("*-families.stk"), path("*-rmod.log"), emit: repeatmodeler_library_out
     path "versions.yml", emit: versions_file
     script:
     """
     echo "Running RepeatModeler for ${meta.gca} using genome file ${genome_file}"
-    ${params.builddatabase_path} -name ${meta.gca}.repeatmodeler ${genome_file}
+    ${params.builddatabase_path} -name ${meta.gca}.repeatmodeler -dir ${params.outDir}/${meta.gca} ${genome_file}
     RepeatModeler -engine ${params.engine_repeatmodeler} -threads ${task.cpus} -database ${meta.gca}.repeatmodeler
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
