@@ -198,7 +198,6 @@ workflow {
 
 - **Workflow patterns:** [PATTERNS.md](PATTERNS.md) - 12 common patterns
 - **Workflow examples:** [workflows.md](workflows.md) - Detailed examples
-- **Entry point design:** [advanced_entrypoints/docs/advanced_design.md](../pipelines/example/advanced_entrypoints/docs/advanced_design.md)
 - **Nextflow docs:** https://nextflow.io/docs/latest/
 - **nf-core guidelines:** https://nf-co.re/docs/guidelines
 

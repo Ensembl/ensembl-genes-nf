@@ -352,5 +352,4 @@ nextflow run main.nf --csvFile genomes.csv --help
 ## Next Steps
 
 - [Parameters Reference](parameters.md) - Configure pipeline behavior
-- [Quick Start](quickstart.md) - Run your first analysis
 - [Output Documentation](output.md) - Understand results

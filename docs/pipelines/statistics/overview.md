@@ -167,7 +167,6 @@ nextflow run pipelines/statistics/main.nf \
 
 ## Next Steps
 
-- [Quick Start Guide](quickstart.md) - Get running in minutes
 - [Parameters Reference](parameters.md) - Complete parameter documentation
 - [Input Format](input.md) - Detailed input file specifications
 - [Troubleshooting](troubleshooting.md) - Common issues and solutions
