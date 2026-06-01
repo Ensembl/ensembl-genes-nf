@@ -74,6 +74,11 @@ python3 "${SCRIPTS_DIR}/validate_translon_db_against_manifest.py" \
     --out-dir "${VALIDATION_DIR}/stage2_db_manifest"
 echo "Standalone Stage 2 DB/manifest validation passed."
 
+python3 "${SCRIPTS_DIR}/validate_translon_comparison_sets.py" \
+    --db "${OUT_DIR}/translon_db/translons.sqlite" \
+    --out-dir "${VALIDATION_DIR}/stage3_comparison_sets"
+echo "Standalone Stage 3 comparison-set validation passed."
+
 echo
 echo "=== Done ==="
 echo "DB files: ${OUT_DIR}/translon_db/"

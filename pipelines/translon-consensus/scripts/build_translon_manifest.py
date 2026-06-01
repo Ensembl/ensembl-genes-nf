@@ -20,9 +20,10 @@ from typing import Iterable
 
 
 TOOLS = ("iRibo", "ORFQuant", "RibORF2", "RiboTIE", "PRICE")
-FASTQ_ROUTE_TOOLS = ("iRibo", "RibORF2", "RiboTIE", "PRICE")
+FASTQ_ROUTE_TOOLS = ("iRibo", "ORFQuant", "RibORF2", "RiboTIE", "PRICE")
 NATIVE_CLASSES = ("annotated", "novel")
 MATCHED = "matched"
+RIBORF2_FASTQ_DIRNAME = "fastq_RibORF2.0_ORFidentification"
 
 
 @dataclass(frozen=True)
@@ -112,6 +113,15 @@ MISC_FIXES = {
     "Ribo_pancreas_pooled": "Ribo_Pancreas_pooled",
     "Ribo_ECs_pooled": "Ribo_EC_pooled",
     "Ribo_fib_pooled": "Ribo_Fib_pooled",
+}
+RIBORF2_FASTQ_SAMPLE_MAP = {
+    "Pancreas1": "SRR11005875_to_79",
+    "Pancreas2": "SRR11005880_to_84",
+    "Pancreas3": "SRR11005885_to_89",
+    "Pancreas4": "SRR11005890_to_94",
+    "Pancreas5": "SRR11005895_to_99",
+    "Pancreas6": "SRR11005900_to_04",
+    "Pooledalignmentfile": "Ribo_Pancreas_pooled",
 }
 
 
@@ -291,7 +301,6 @@ def collect_iribo(results_dir: Path) -> tuple[list[dict[str, object]], set[Path]
 def collect_orfquant(results_dir: Path) -> tuple[list[dict[str, object]], set[Path]]:
     rows: list[dict[str, object]] = []
     seen: set[Path] = set()
-    best: dict[tuple[str, str], tuple[int, Path, str]] = {}
     for path in sorted((results_dir / "ORFQuant_results" / "bed_files").glob("*.bed")):
         match = re.match(
             r"^(annotated|novel)_orf_exon_genomic_"
@@ -302,16 +311,20 @@ def collect_orfquant(results_dir: Path) -> tuple[list[dict[str, object]], set[Pa
             continue
         cls, raw_sample = match.groups()
         native_class = "annotated" if cls == "annotated" else "novel"
-        key = (normalise(raw_sample), native_class)
-        # Prefer the shorter plain BED when duplicate STAR-named copies exist.
-        if key not in best or len(path.name) < best[key][0]:
-            best[key] = (len(path.name), path, raw_sample)
-    for (sample_id, native_class), (_, path, _) in sorted(best.items()):
-        rows.append(matched_row("ORFQuant", sample_id, "bam", native_class, path))
+        sample_id = normalise(raw_sample)
+        if ".Aligned.sortedByCoord.out.bed" in path.name or "_trimmed.Aligned.sortedByCoord.out.bed" in path.name:
+            route = "bam"
+        elif sample_id in {sample.sample_id for sample in EXPECTED_SAMPLE_METADATA[:6]}:
+            route = "fastq"
+        else:
+            # Pooled ORFQuant outputs do not carry STAR's BAM stem, but the
+            # staged input design only has pooled BAMs, not pooled FASTQs.
+            route = "bam"
+        rows.append(matched_row("ORFQuant", sample_id, route, native_class, path))
         seen.add(path)
     for path in sorted((results_dir / "ORFQuant_results" / "bed_files").glob("*.bed")):
         if path not in seen and re.match(r"^(annotated|novel)_orf_exon_genomic_", path.name):
-            rows.append(excluded_row(path, "duplicate_derived_or_star_named_copy"))
+            rows.append(excluded_row(path, "orfquant_noncanonical_bed"))
             seen.add(path)
     return rows, seen
 
@@ -324,10 +337,31 @@ def collect_riborf2(results_dir: Path, converted_dir: Path) -> tuple[list[dict[s
             stem = re.sub(r"_S\d+_R1_001(?:_trimmed)?$", "", path.stem)
             rows.append(matched_row("RibORF2", normalise(stem), "bam", "unknown", path))
             seen.add(path)
-    fastq_dir = results_dir / "RibORF_results" / "RibORF_Output_fastqtoORFcalling"
-    if not fastq_dir.exists() or not any(fastq_dir.rglob("*")):
+
+    matched_fastq_keys: set[tuple[str, str]] = set()
+    fastq_result_dir = results_dir / RIBORF2_FASTQ_DIRNAME
+    if fastq_result_dir.exists():
+        for path in sorted(fastq_result_dir.rglob("*.bed")):
+            sample_dir = path.parent.name
+            sample_id = RIBORF2_FASTQ_SAMPLE_MAP.get(sample_dir)
+            if not sample_id:
+                continue
+            lower_name = path.name.lower()
+            if "annotatedorf" in lower_name:
+                native_class = "annotated"
+            elif "novelsmorf" in lower_name or "novelsmorfs" in lower_name:
+                native_class = "novel"
+            else:
+                continue
+            rows.append(matched_row("RibORF2", sample_id, "fastq", native_class, path))
+            seen.add(path)
+            matched_fastq_keys.add((sample_id, native_class))
+
+    legacy_fastq_dir = results_dir / "RibORF_results" / "RibORF_Output_fastqtoORFcalling"
+    if not matched_fastq_keys and (not legacy_fastq_dir.exists() or not any(legacy_fastq_dir.rglob("*"))):
         for sample in EXPECTED_SAMPLE_METADATA[:6]:
-            rows.append(status_row("RibORF2", sample.sample_id, "fastq", "unknown", "empty_at_source", "RibORF2 FASTQ output directory is empty"))
+            for native_class in NATIVE_CLASSES:
+                rows.append(status_row("RibORF2", sample.sample_id, "fastq", native_class, "empty_at_source", "RibORF2 FASTQ output directory is empty"))
     return rows, seen
 
 
@@ -347,13 +381,56 @@ def collect_ribotie(results_dir: Path) -> tuple[list[dict[str, object]], set[Pat
     rows: list[dict[str, object]] = []
     seen: set[Path] = set()
     root = results_dir / "RiboTIE_results" / "deliverables"
-    for subdir, native_class in (("annotated", "annotated"), ("novel", "novel")):
-        for path in sorted((root / subdir).glob("*.csv")):
-            if "unfiltered" in path.as_posix():
-                continue
-            sample_id, route = ribotie_sample_and_route(path.stem)
-            rows.append(matched_row("RiboTIE", sample_id, route, native_class, path))
+    candidates: dict[tuple[str, str, str], list[tuple[int, Path]]] = {}
+
+    def add_candidate(path: Path, native_class: str, priority: int) -> None:
+        if "unfiltered" in path.as_posix():
+            return
+        sample_id, route = ribotie_sample_and_route(path.stem)
+        if route == "fastq":
+            rows.append(excluded_row(path, "ribotie_fastq_split_deliverable_superseded_by_raw_fastq_gtf"))
             seen.add(path)
+            return
+        candidates.setdefault((sample_id, route, native_class), []).append((priority, path))
+
+    for subdir, native_class in (("annotated", "annotated"), ("novel", "novel")):
+        for path in sorted((root / subdir).glob("*.gtf")):
+            # Prefer converted genomic GTFs such as db_SRR...annotated.out.gtf
+            # over transcript-coordinate GTFs such as
+            # db_SRR....Aligned.toTranscriptome.out.annotated.out.gtf.
+            priority = 1 if ".Aligned.toTranscriptome.out." in path.name else 0
+            add_candidate(path, native_class, priority)
+        for path in sorted((root / subdir).glob("*.csv")):
+            add_candidate(path, native_class, 2)
+
+    raw_fastq = results_dir / "RiboTIE_results" / "raw" / "fastq"
+    for path in sorted(raw_fastq.glob("*.gtf")):
+        if "unfiltered" in path.name:
+            continue
+        sample_id, route = ribotie_sample_and_route(path.stem)
+        rows.append(matched_row("RiboTIE", sample_id, route, "unknown", path))
+        seen.add(path)
+    for path in sorted(raw_fastq.glob("*.csv")):
+        if "unfiltered" in path.name:
+            continue
+        rows.append(excluded_row(path, "ribotie_fastq_csv_superseded_by_gtf"))
+        seen.add(path)
+
+    for key, ranked_paths in sorted(candidates.items()):
+        ranked_paths = sorted(ranked_paths, key=lambda item: (item[0], item[1].name))
+        best_priority, best_path = ranked_paths[0]
+        rows.append(matched_row("RiboTIE", key[0], key[1], key[2], best_path))
+        seen.add(best_path)
+        for priority, path in ranked_paths[1:]:
+            if priority == best_priority:
+                reason = "ribotie_duplicate_equivalent_deliverable"
+            elif path.suffix == ".csv":
+                reason = "ribotie_csv_superseded_by_split_gtf"
+            else:
+                reason = "ribotie_transcript_gtf_superseded_by_converted_gtf"
+            rows.append(excluded_row(path, reason))
+            seen.add(path)
+
     for path in sorted(root.rglob("*")):
         if path.is_file() and path not in seen:
             rows.append(excluded_row(path, "ribotie_noncanonical_deliverable_or_unfiltered"))
@@ -392,7 +469,7 @@ def design_matrix_rows() -> list[dict[str, object]]:
                 rows.append(status_row(tool, sample.sample_id, "bam", native_class, "expected", ""))
         if sample.fastq_route_expected:
             for tool in FASTQ_ROUTE_TOOLS:
-                native_classes = ("unknown",) if tool == "RibORF2" else NATIVE_CLASSES
+                native_classes = ("unknown",) if tool == "RiboTIE" else NATIVE_CLASSES
                 for native_class in native_classes:
                     rows.append(status_row(tool, sample.sample_id, "fastq", native_class, "expected", ""))
     return rows
@@ -441,10 +518,7 @@ def add_expected_missing(rows: list[dict[str, object]]) -> list[dict[str, object
             continue
         status = "blocked"
         reason = "expected_by_design_but_no_source_file_matched"
-        if expected["route"] == "fastq" and expected["tool"] == "RibORF2":
-            status = "empty_at_source"
-            reason = "RibORF2 FASTQ route has no callable BED12 source"
-        elif expected["route"] == "fastq" and expected["sample_id"] not in {
+        if expected["route"] == "fastq" and expected["sample_id"] not in {
             *(sample.sample_id for sample in EXPECTED_SAMPLE_METADATA[:6]),
             "Ribo_Pancreas_pooled",
         }:
