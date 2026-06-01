@@ -7,26 +7,26 @@ This directory contains comprehensive documentation for all modules in the Ensem
 The statistics pipeline consists of 13 modules organized into functional categories:
 
 ### Data Retrieval Modules
-1. **[fetch-genome](fetch-genome.md)** - Retrieves genome sequences from Ensembl core databases
-2. **[fetch-proteins](fetch-proteins.md)** - Extracts protein translations from Ensembl databases
+1. **[fetch-genome](modules/fetch-genome.md)** - Retrieves genome sequences from Ensembl core databases
+2. **[fetch-proteins](modules/fetch-proteins.md)** - Extracts protein translations from Ensembl databases
 
 ### BUSCO Quality Assessment Modules
-3. **[busco-dataset](busco-dataset.md)** - Downloads appropriate BUSCO lineage datasets
-4. **[busco-genome-lineage](busco-genome-lineage.md)** - Runs BUSCO assessment on genome sequences
-5. **[busco-protein-lineage](busco-protein-lineage.md)** - Runs BUSCO assessment on protein translations
-6. **[busco-core-metakeys](busco-core-metakeys.md)** - Patches BUSCO metadata into core databases
+3. **[busco-dataset](modules/busco-dataset.md)** - Downloads appropriate BUSCO lineage datasets
+4. **[busco-lineage](modules/busco-lineage.md)** - Runs BUSCO assessment on genome sequences or on protein translations
+5. **[busco-core-metakeys](busco-core-metakeys.md)** - Patches BUSCO metadata into core databases
 
 ### Orthology Analysis Modules
-7. **[omamer-hog](omamer-hog.md)** - Performs orthology inference using OMAmer
-8. **[omark](omark.md)** - Quality assessment of protein annotations using OMark
+6. **[omamer-hog](modules/omamer-hog.md)** - Performs orthology inference using OMAmer
+7. **[omark](modules/omark.md)** - Quality assessment of protein annotations using OMark
 
 ### Statistics Generation Modules
-9. **[run-statistics](run-statistics.md)** - Generates comprehensive annotation statistics
-10. **[run-ensembl-meta](run-ensembl-meta.md)** - Generates core database metadata SQL files
+8. **[run-statistics](modules/run-statistics.md)** - Generates comprehensive annotation statistics
+9. **[run-ensembl-meta](modules/run-ensembl-meta.md)** - Generates core database metadata SQL files
+
 
 ### Database Operations Modules
-11. **[populate-db](populate-db.md)** - Executes SQL files to populate databases
-12. **[db-metadata](db-metadata.md)** - Manages database metadata and versioning
+10. **[populate-db](modules/populate-db.md)** - Executes SQL files to populate databases
+11. **[db-metadata](modules/db-metadata.md)** - Manages database metadata and versioning
 
 
 ## Pipeline Flow
@@ -40,9 +40,10 @@ The typical execution flow of the statistics pipeline:
 
 2. Quality Assessment (Parallel)
    ├─> BUSCO_DATASET
-   │   ├─> BUSCO_GENOME_LINEAGE
-   │   └─> BUSCO_PROTEIN_LINEAGE
-   │       └─> BUSCO_CORE_METAKEYS
+   │   ├─> BUSCO_LINEAGE
+            └─> BUSCO_CORE_METAKEYS
+   │   └─> BUSCO_LINEAGE
+            └─> BUSCO_CORE_METAKEYS
    │
    └─> OMAMER_HOG
        └─> OMARK
@@ -57,8 +58,6 @@ The typical execution flow of the statistics pipeline:
 5. Metadata Management
    └─> DB_METADATA
 
-6. Cleanup
-   └─> CLEANING
 ```
 
 ## Module Categories by Function
