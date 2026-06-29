@@ -22,6 +22,11 @@ process RUN_ENSEMBL_META {
 
     label 'python'
     tag "$gca"
+
+    errorStrategy 'retry'
+    maxRetries 3
+    maxForks 5
+
     publishDir "${params.outDir}/$publish_dir/", mode: 'copy'
 //    storeDir "${params.cacheDir}/$gca/" 
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
