@@ -23,18 +23,26 @@ process RUN_DUST {
     publishDir "${params.outdir}/${meta.gca}/dust/", pattern: "**/*.gtf", mode: "copy"
 
     input:
-    tuple val(meta), path(genome_file)
+    val(meta)
 
     output:
     tuple val(meta), path("**/*.gtf"), emit: dust_out
     path "versions.yml", emit: versions_file
 
     script:
+    // run_dust
     """
-    run_dust --genome_file ${genome_file} \
+    echo "=== Checking bind ==="
+    mount | grep hps || true
+    ls -ld /opt
+    ls -ld /opt/linuxbrew
+    ls -l /opt/linuxbrew/bin
+    /opt/linuxbrew/bin/bedtools --version
+    run_dust --genome_file ${meta.genome_file} \
                     --output_dir . \
-                    --dust_bin ${params.dust_path} \
-                    --num_threads ${task.cpus}
+                    --dust_bin /opt/linuxbrew/bin/dustmasker \
+                    --num_threads ${task.cpus}  \
+                    --bedtools_bin /opt/linuxbrew/bin/bedtools
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         dust: \$(Dust -version 2>&1 | head -n 1 | sed 's/.*Dust version \\([0-9.]\\+\\).*/\\1/p')

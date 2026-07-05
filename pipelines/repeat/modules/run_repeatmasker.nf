@@ -30,7 +30,7 @@ process RUN_REPEATMASKER {
     publishDir "${params.outdir}/${meta.gca}/repeatmasker/", pattern: "repeatmasker_output/*.gtf", mode: "copy"
 
     input:
-    tuple val(meta), path(genome_file), path(library_file)
+    tuple val(meta), val(library_file)
 
     output:
     tuple val(meta), path("repeatmasker_output/*.gtf"), emit: repeatmasker_out
@@ -47,12 +47,26 @@ process RUN_REPEATMASKER {
 
     script:
     """
-    repeatmasker.py --genome_file ${genome_file} \
+    echo "PATH=$PATH"
+    which /opt/linuxbrew/bin/RepeatMasker
+    ls -l \$(which /opt/linuxbrew/bin/RepeatMasker)
+
+    
+    head -1 /opt/linuxbrew/bin/RepeatMasker
+
+    which perl
+    perl -v
+
+    export LD_LIBRARY_PATH=/hps/software/users/ensembl/genebuild/shared/libnsl/lib:/hps/software/users/ensembl/genebuild/shared/libnsl/libtirpc:$LD_LIBRARY_PATH
+    ls /hps/software/users/ensembl/genebuild/shared/libnsl/lib/libnsl.so.2
+    /opt/linuxbrew/bin/RepeatMasker -help
+    run_repeatmasker  --genome_file ${meta.genome_file} \
                     --output_dir . \
-                    --repeatmasker_bin ${params.repeatmasker_path} \
+                    --repeatmasker_bin /opt/linuxbrew/bin/RepeatMasker \
                     --library ${library_file} \
                     --repeatmasker_engine ${params.engine_repeatmasker} \
-                    --num_threads ${task.cpus}
+                    --num_threads ${task.cpus} \
+                    --bedtools_bin /opt/linuxbrew/bin/bedtools
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         repeatmasker: \$(RepeatMasker -version 2>&1 | head -n 1 | sed 's/.*RepeatMasker version \\([0-9.]\\+\\).*/\\1/p')

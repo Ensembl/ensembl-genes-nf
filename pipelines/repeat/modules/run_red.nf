@@ -23,16 +23,20 @@ process RUN_RED {
     publishDir "${params.outdir}/${meta.gca}/red/", pattern: "**/*.gtf", mode: "copy"
 
     input:
-    tuple val(meta), path(genome_file)
+    val(meta)
 
     output:
     tuple val(meta), path("**/*.gtf"), emit: red_out
     path "versions.yml", emit: versions_file    
-
-
+    //export PYTHONPATH=/hps/nobackup/flicek/ensembl/genebuild/ftricomi/stats_pipe/ensembl-anno/src/python
+    //python /hps/nobackup/flicek/ensembl/genebuild/ftricomi/stats_pipe/ensembl-anno/src/python/ensembl/tools/anno/repeat_annotation/red.py
     script:
     """
-    run_red --genome_file ${genome_file} \
+    set -x
+    echo "red_path=${params.red_path}"
+    ls -l "${params.red_path}" || true
+    test -x "${params.red_path}" && echo "red bin ok" || echo "red bin missing or not executable"
+    run_red --genome_file ${meta.genome_file} \
                     --output_dir . \
                     --red_bin ${params.red_path}
 

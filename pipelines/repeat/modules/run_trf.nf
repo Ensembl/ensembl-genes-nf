@@ -22,15 +22,16 @@ process RUN_TRF {
     publishDir "${params.outdir}/${meta.gca}/trf/", pattern: "**/*.gtf", mode: "copy"
 
     input:
-    tuple val(meta), path(genome_file)
+    val(meta)
 
     output:
     tuple val(meta), path("**/*.gtf"), emit: trf_out
     path "versions.yml", emit: versions_file
-
+    //export PYTHONPATH=/hps/nobackup/flicek/ensembl/genebuild/ftricomi/stats_pipe/ensembl-anno/src/python
+    //python /hps/nobackup/flicek/ensembl/genebuild/ftricomi/stats_pipe/ensembl-anno/src/python/ensembl/tools/anno/repeat_annotation/trf.py
     script:
     """
-    run_trf --genome_file ${genome_file} \
+    run_trf --genome_file ${meta.genome_file} \
                     --output_dir . \
                     --trf_bin ${params.trf_path} \
                     --match_score ${params.trf_match_score} \
@@ -40,7 +41,8 @@ process RUN_TRF {
                     --pi ${params.trf_pi} \
                     --minscore ${params.trf_minscore} \
                     --maxperiod ${params.trf_maxperiod} \
-                    --num_threads ${task.cpus}
+                    --num_threads ${task.cpus} \
+                    --bedtools_bin /opt/linuxbrew/bin/bedtools
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         trf: \$(trf -version 2>&1 | head -n 1 | sed 's/.*Tandem Repeats Finder version \\([0-9.]\\+\\).*/\\1/p')
