@@ -20,19 +20,29 @@ process GENERATE_REPEATMODELER_LIBRARY {
     tag "$meta.gca:run_repeatmodeler"
     label 'repeatmodeler'
     publishDir "${params.outdir}/${meta.gca}/library", mode: 'copy'
+    //publishDir "/nfs/ftp/public/databases/ensembl/repeats/unfiltered_repeatmodeler/species/${meta.species_name}",
+    //    mode: 'copy',
+    //        overwrite: true
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(meta), path(genome_file)
+    val(meta)
 
     output:
-    tuple val(meta), path("*-families.fa"), path("*-families.stk"), path("*-rmod.log"), emit: repeatmodeler_library_out
+    tuple val(meta), path("*repeatmodeler.fa"), path("*families.stk.gz"), path("*rmod.log"), emit: repeatmodeler_library_out
     path "versions.yml", emit: versions_file
     script:
     """
-    echo "Running RepeatModeler for ${meta.gca} using genome file ${genome_file}"
-    ${params.builddatabase_path} -name ${meta.gca}.repeatmodeler  ${genome_file}
+    echo "Running RepeatModeler for ${meta.gca} using genome file ${meta.genome_file}"
+    ${params.builddatabase_path} -name ${meta.gca}.repeatmodeler  ${meta.genome_file}
+    echo "Database files after BuildDatabase:"
     RepeatModeler -engine ${params.engine_repeatmodeler} -threads ${task.cpus} -database ${meta.gca}.repeatmodeler
+    # Rename outputs to the desired published names
+    mv ${meta.gca}.repeatmodeler-families.fa ${meta.gca}.repeatmodeler.fa
+    gzip -f ${meta.gca}.repeatmodeler-families.stk
+    mv ${meta.gca}.repeatmodeler-families.stk.gz ${meta.gca}.families.stk.gz
+    mv ${meta.gca}.repeatmodeler-rmod.log ${meta.gca}.rmod.log
+                    
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         repeatmodeler: \$(RepeatModeler --version 2>&1 | sed -n 's/.*RepeatModeler version \\([0-9.]\\+\\).*/\\1/p')
