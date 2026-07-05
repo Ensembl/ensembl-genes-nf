@@ -1,0 +1,11 @@
+.wy-nav-content {
+    max-width: 1080px;
+}
+
+table.docutils {
+    width: 100%;
+}
+
+code.literal {
+    white-space: nowrap;
+}

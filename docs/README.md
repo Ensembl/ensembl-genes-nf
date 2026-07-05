@@ -1,25 +1,24 @@
 # Documentation
 
-Complete documentation for the example pipeline.
+The primary documentation site is now built with Sphinx from `docs/source/`.
 
-## Getting Started
+## Build Locally
 
-New to this pipeline? Start here:
+```bash
+python -m pip install -r docs/requirements.txt
+python docs/scripts/render_schema_docs.py
+sphinx-build -b html docs/source docs/build/html
+```
 
-- **[QUICK_START.md](QUICK_START.md)** - Step-by-step guide from basics to advanced
-- **[INDEX.md](INDEX.md)** - Complete documentation index
+Open `docs/build/html/index.html` after the build completes.
 
-## Reference Guides
+## Legacy Guides
 
-- **[MODULES.md](MODULES.md)** - Module design principles and patterns
-- **[PATTERNS.md](PATTERNS.md)** - 12 common Nextflow patterns with examples
-- **[workflows.md](workflows.md)** - Workflow structure and organization
-- **[CONFIGURATION.md](CONFIGURATION.md)** - Configuration strategy and hierarchy
+These Markdown guides are still useful while the Sphinx site is filled out:
 
-
----
-
-**Quick Links:**
-- Back to [main README](../README.md)
-- [Example workflows](../workflows/)
-- [Advanced entry points](../advanced_entrypoints/)
+- [QUICK_START.md](QUICK_START.md)
+- [INDEX.md](INDEX.md)
+- [MODULES.md](MODULES.md)
+- [PATTERNS.md](PATTERNS.md)
+- [workflows.md](workflows.md)
+- [CONFIGURATION.md](CONFIGURATION.md)
