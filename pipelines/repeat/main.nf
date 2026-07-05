@@ -60,13 +60,32 @@ include { RUN_REPEATMASKER }                 from './modules/run_repeatmasker.nf
 include { RUN_RED }                          from './modules/run_red.nf'
 include { RUN_DUST }                         from './modules/run_dust.nf'
 include { RUN_TRF }                          from './modules/run_trf.nf'
-
+include { UPLOAD_INTO_FTP }                  from './modules/upload_into_ftp.nf'
 /*
 ========================================================================================
     MAIN WORKFLOW
 ========================================================================================
 */
-
+// Helper function to clean cache directory
+def cleanCacheDirectory() {
+    if (params.cleanCache) {
+            try {
+                        def cacheDir = file(params.cacheDir)
+                                    if (cacheDir.exists() && cacheDir.isDirectory()) {
+                                                    cacheDir.listFiles().each { f ->
+                                                                        if (f.isDirectory()) {
+                                                                                                f.deleteDir()
+                                                                                                                    } else {
+                                                                                                                                            f.delete()
+                                                                                                                                                                }
+                                                                                                                                                                                }
+                                                                                                                                                                                                log.info("Cleaning process completed successfully.")
+                                                                                                                                                                                                            }
+                                                                                                                                                                                                                    } catch (Exception e) {
+                                                                                                                                                                                                                                log.error("Exception occurred while executing cleaning command: ${e.message}")
+                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                            }
 workflow REPEAT_ANNOTATION {
     take:
     csv_file
@@ -89,20 +108,23 @@ workflow REPEAT_ANNOTATION {
         //FETCH_GENOME(data)
         genomeData = FETCH_GENOME(data).genome_file_output
             .map { meta, fna_file ->
-                return tuple(meta, fna_file)
+                return meta + [ genome_file: fna_file ]
             }
-            .view { meta, fna_file -> "Processing: gca=${meta.gca},  genome=${fna_file}" }
+            .view { meta -> "Processing: gca=${meta.gca},${meta.species_name},  genome=${meta.genome_file}" }
         ch_versions_file = ch_versions_file.mix(FETCH_GENOME.out.versions_file)
         if (params.generate_lib) {
 
         // Stage 2: Check for existing RepeatModeler libraries
         checkedLibraries = FETCH_REPEAT_MODEL(genomeData).rep_library_file_output
-            .view { meta, genome_file, library_file -> "Checked for RepeatModeler library for ${meta.gca}, file: ${library_file}" }
+            .view { meta, library_file -> "Checked for RepeatModeler library for ${meta.gca}, genome_file ${meta.genome_file}, file: ${library_file}" }
         ch_versions_file = ch_versions_file.mix(FETCH_REPEAT_MODEL.out.versions_file)
 
         // Separate genomes based on library availability
         checkedLibraries
-            .branch { _meta, _genome_file, library_file ->
+        .view { meta,  library_file ->
+                "meta=${meta}  library=${library_file}"
+                    }
+            .branch { _meta,  library_file ->
                 // Check if library file contains error message
                 available: !library_file.text.contains("No repeatmodeler file available")
                 missing: library_file.text.contains("No repeatmodeler file available")
@@ -110,27 +132,29 @@ workflow REPEAT_ANNOTATION {
             .set { library_status }
         
         // Stage 3a: Generate de novo RepeatModeler libraries for genomes without existing libraries
-        repeatModelerInput = library_status.missing
-            .map { meta, genome_file, _library_file -> tuple(meta, genome_file) }
-        GENERATE_REPEATMODELER_LIBRARY(repeatModelerInput)
+        generateLibraryInput = library_status.missing
+            .map { meta,  _library_file -> meta }
+        ftpInput=GENERATE_REPEATMODELER_LIBRARY(generateLibraryInput).repeatmodeler_library_out
         ch_versions_file = ch_versions_file.mix(GENERATE_REPEATMODELER_LIBRARY.out.versions_file)
         
-        
+        repeatModelerInput = UPLOAD_INTO_FTP(ftpInput).library_out
+        ch_versions_file = ch_versions_file.mix(UPLOAD_INTO_FTP.out.versions_file) 
         // Stage 3b: Download pre-computed libraries for genomes that have them
         // Transform to [url, gca] format expected by CHECK_AND_DOWNLOAD_RMLIBRARY
         downloadInput = library_status.available
-            .map { meta, genome_file, _library_file ->
+            .map { meta,  _library_file ->
                 def url = "${params.repeats_ftp_base}/${meta.species_name}/${meta.gca}.repeatmodeler.fa"
-                return tuple(url, meta, genome_file)
+                return tuple(url, meta)
             }
-        CHECK_AND_DOWNLOAD_RMLIBRARY(downloadInput)
+        rmlibrary = CHECK_AND_DOWNLOAD_RMLIBRARY(downloadInput)
         ch_versions_file = ch_versions_file.mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.versions_file)
                 
         // Merge both library sources (generated + downloaded)
         // Outputs have format: tuple val(meta), path(genome_file), path(library_file)
-        allLibraries = GENERATE_REPEATMODELER_LIBRARY.out.repeatmodeler_library_out
+        //allLibraries = GENERATE_REPEATMODELER_LIBRARY.out.repeatmodeler_library_out
+        allLibraries = repeatModelerInput
             .mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.repeatmodeler_library_out)
-            .view { meta, genome_file, library -> "Library ready for ${meta.gca}: ${library}" }
+            .view { meta,  library -> "Library ready for ${meta.gca}: ${library}" }
         
         if(params.run_repeatmasker) {
         
@@ -205,32 +229,34 @@ workflow {
     //    log.info "✅ Parameters validated successfully"
     //}
     
-    workflow.onComplete {
-        log.info """
-        ================================================================================
-        Pipeline Execution Summary
-        ================================================================================
-        Completed at : ${workflow.complete}
-        Duration     : ${workflow.duration}
-        Success      : ${workflow.success}
-        Exit status  : ${workflow.exitStatus}
-        Work directory: ${workflow.workDir}
-        ================================================================================
-        """.stripIndent()
-    }
-    
-    workflow.onError {
-        log.error """
-        ================================================================================
-        Pipeline Execution Error
-        ================================================================================
-        Error message: ${workflow.errorMessage}
-        Error report : ${workflow.errorReport}
-        ================================================================================
-        """.stripIndent()
-    }
-    
+//    workflow.onComplete {
+//        log.info """
+//        ================================================================================
+//        Pipeline Execution Summary
+//        ================================================================================
+//        Completed at : ${workflow.complete}
+//        Duration     : ${workflow.duration}
+//        Success      : ${workflow.success}
+//        Exit status  : ${workflow.exitStatus}
+//        Work directory: ${workflow.workDir}
+//        ================================================================================
+ //       """.stripIndent()
+ //   }
+     // Execute main workflow
+         REPEAT_ANNOTATION(params.csvFile)
+     }
+ // nextflow-lint-disable
+workflow.onComplete {
+    log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
+        log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
+            cleanCacheDirectory()
+            }
 
+            // nextflow-lint-disable
+            workflow.onError {
+                def error_report = workflow.errorReport ?: workflow.errorMessage ?: 'Unknown error'
+                    log.error("Pipeline execution stopped with the following message: ${error_report}")
+                    }
     // Execute main workflow
-    REPEAT_ANNOTATION(params.csvFile)
-}
+//    REPEAT_ANNOTATION(params.csvFile)
+//}
