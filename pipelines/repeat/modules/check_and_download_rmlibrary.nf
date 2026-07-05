@@ -19,14 +19,14 @@ limitations under the License.
 process CHECK_AND_DOWNLOAD_RMLIBRARY {
     tag "$meta.gca"
     label 'default'
-    publishDir "${params.outdir}/${meta.gca}/rm_library", mode: 'move'
+    publishDir "${params.outdir}/${meta.gca}/rm_library", mode: 'copy'
     afterScript "sleep $params.files_latency"
 
     input:
-    tuple val(url), val(meta), path(genome_file)
+    tuple val(url), val(meta)
 
     output:
-    tuple val(meta), path(genome_file), path("${meta.gca}.repeatmodeler.fa"), emit: repeatmodeler_library_out
+    tuple val(meta), path("*.fa"), emit: repeatmodeler_library_out
     path "versions.yml", emit: versions_file
 
     script:
