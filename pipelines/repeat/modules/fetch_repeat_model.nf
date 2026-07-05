@@ -22,10 +22,10 @@ process FETCH_REPEAT_MODEL {
     publishDir "${params.outdir}/${meta.gca}/library/", mode: 'copy'
 
     input:
-    tuple val(meta), path(genome_file)
+    val(meta)
 
     output:
-    tuple val(meta), path(genome_file), path("${meta.gca}.repeatmodeler.fa"), emit: rep_library_file_output
+    tuple val(meta), path("${meta.gca}.repeatmodeler.fa"), emit: rep_library_file_output
     path "versions.yml", emit: versions_file
 
 
@@ -34,7 +34,7 @@ process FETCH_REPEAT_MODEL {
     """
     # Construct the URL for the repeat model file
     REPEAT_URL="${params.repeats_ftp_base}/${meta.species_name}/${meta.gca}.repeatmodeler.fa"
-
+    echo "\$REPEAT_URL"
     # Check if the file exists on the server and download if available
     if curl --silent --fail --output "${meta.gca}.repeatmodeler.fa" "\$REPEAT_URL"; then
         echo "Successfully downloaded RepeatModeler file for ${meta.gca}"
