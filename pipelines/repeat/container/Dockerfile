@@ -5,23 +5,29 @@ RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
+# Install procps (provides ps command for Nextflow metrics)
+RUN apt-get update && \
+    apt-get install -y procps && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*    
 
 # Clone and build
 WORKDIR /build
-RUN git clone --depth 1 --branch dev/python_repo https://github.com/Ensembl/ensembl-anno.git
+RUN git clone --depth 1 --branch feature/github_actions https://github.com/Ensembl/ensembl-anno.git
 
 # Build the wheel - cd into the cloned repository
 WORKDIR /build/ensembl-anno
 
 # Upgrade pip and install build tools
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
-RUN pip install --no-cache-dir .
+RUN pip install -e .
+RUN mkdir -p /usr/local/lib/conf && \
+    cp /build/ensembl-anno/conf/logging.conf /usr/local/lib/conf/logging.conf
 
 LABEL maintainer="Ensembl <ensembl@ebi.ac.uk.com>"
-LABEL description="Optimized Docker image with ensembl-anno for RepeatMasker"
 
-# Set the working directory back to root
-WORKDIR /
+RUN which run_trf
+RUN run_trf --help || true 
 
 # Verify installation
 RUN python -c "from importlib.metadata import distribution; pkg = distribution('ensembl-anno'); print(f'✓ Package installed: {pkg.metadata[\"Name\"]} v{pkg.version}')"
