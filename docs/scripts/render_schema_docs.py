@@ -12,15 +12,14 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_DIR = REPO_ROOT / "docs" / "source"
 GENERATED_DIR = SOURCE_DIR / "generated"
 
-SCHEMAS = {
-    "example": REPO_ROOT / "pipelines" / "example" / "nextflow_schema.json",
-    "repeat": REPO_ROOT / "pipelines" / "repeat" / "nextflow_schema.json",
-    "riboseq": REPO_ROOT / "pipelines" / "riboseq" / "nextflow_schema.json",
-    "translon-consensus": REPO_ROOT
-    / "pipelines"
-    / "translon-consensus"
-    / "nextflow_schema.json",
-}
+PIPELINES_DIR = REPO_ROOT / "pipelines"
+
+
+def discover_schemas() -> dict[str, Path]:
+    return {
+        schema_path.parent.name: schema_path
+        for schema_path in sorted(PIPELINES_DIR.glob("*/nextflow_schema.json"))
+    }
 
 
 def load_schema(path: Path) -> dict[str, Any]:
@@ -131,11 +130,18 @@ def render_index(slugs: list[str]) -> str:
 
 
 def main() -> None:
+    schemas = discover_schemas()
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
-    for slug, schema_path in SCHEMAS.items():
+    expected_outputs = {f"{slug}-parameters.md" for slug in schemas}
+
+    for stale_path in GENERATED_DIR.glob("*-parameters.md"):
+        if stale_path.name not in expected_outputs:
+            stale_path.unlink()
+
+    for slug, schema_path in schemas.items():
         output_path = GENERATED_DIR / f"{slug}-parameters.md"
         output_path.write_text(render_schema(slug, schema_path), encoding="utf-8")
-    (GENERATED_DIR / "index.md").write_text(render_index(list(SCHEMAS)), encoding="utf-8")
+    (GENERATED_DIR / "index.md").write_text(render_index(list(schemas)), encoding="utf-8")
 
 
 if __name__ == "__main__":
