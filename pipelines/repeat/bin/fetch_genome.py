@@ -23,50 +23,47 @@ import urllib.request
 import zipfile
 import shutil
 import re
-import requests
 from urllib.error import HTTPError
+import requests
 
-def download_ncbi_assembly_report(gca: str, dest_folder: str = ".") -> Path:
 
+def download_ncbi_assembly_report(gca: str, dest_folder: str| Path = ".") -> Path:
+    """Download the assembly report from NCBI for a given GCA accession."""
     num = gca.split("_")[1].split(".")[0]
 
     p1, p2, p3 = num[0:3], num[3:6], num[6:9]
 
     base = f"https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/{p1}/{p2}/{p3}"
 
-    r = requests.get(base)
+    r = requests.get(base, timeout=30)
     r.raise_for_status()
 
-    match = re.search(fr"{gca}_[^\"/]+", r.text)
+    match = re.search(rf"{gca}_[^\"/]+", r.text)
 
-    if not match:
+    if match is None:
         raise RuntimeError(f"Assembly directory not found for {gca}")
 
     assembly_dir = match.group(0)
 
-    report_url = (
-        f"{base}/{assembly_dir}/{assembly_dir}_assembly_report.txt"
-    )
+    report_url = f"{base}/{assembly_dir}/{assembly_dir}_assembly_report.txt"
 
     dest_folder = Path(dest_folder)
     dest_folder.mkdir(parents=True, exist_ok=True)
 
-    out_path = (
-        dest_folder /
-        f"{assembly_dir}_assembly_report.txt"
-    )
+    out_path = dest_folder / f"{assembly_dir}_assembly_report.txt"
 
     if out_path.exists():
         return out_path
 
-    r = requests.get(report_url)
+    r = requests.get(report_url, timeout=30)
     r.raise_for_status()
 
     out_path.write_bytes(r.content)
 
     return out_path
 
-def download_and_extract(url: str, output_dir: str) -> bool:
+
+def download_and_extract(url: str, output_dir: str| Path = ".") -> bool:
     """Download genome zip from NCBI and extract .fna files to output_dir.
     Returns True if successful, False otherwise.
     Inputs:
@@ -136,7 +133,9 @@ def download_from_ena(ena_base: str, gca: str, output_dir: str) -> bool:
 
         # Find genomic fasta
         matches = [
-            line.split('"')[1] for line in html.splitlines() if ".fna.gz" in line and "genomic" in line
+            line.split('"')[1]
+            for line in html.splitlines()
+            if ".fna.gz" in line and "genomic" in line
         ]
 
         if not matches:
@@ -161,12 +160,13 @@ def download_from_ena(ena_base: str, gca: str, output_dir: str) -> bool:
     except HTTPError:
         return False
 
-def parse_assembly_report(assembly_report):
+
+def parse_assembly_report(assembly_report: Path) -> dict:
     """Build mapping GenBank accession -> Ensembl sequence name."""
 
     mapping = {}
 
-    with open(assembly_report) as f:
+    with open(assembly_report, "r", encoding="utf-8") as f:
         for line in f:
             if line.startswith("#"):
                 continue
@@ -180,14 +180,19 @@ def parse_assembly_report(assembly_report):
             if seq_role == "assembled-molecule":
                 if assigned_molecule.lower() == "na":
                     mapping[genbank] = genbank
-                else: 
+                else:
                     mapping[genbank] = assigned_molecule
             else:
                 mapping[genbank] = genbank
     print(mapping)
     return mapping
-def rewrite_fasta_headers(input_fasta, output_fasta, mapping):
-    with open(input_fasta) as fin, open(output_fasta, "w") as fout:
+
+
+def rewrite_fasta_headers(input_fasta: Path, output_fasta: Path, mapping: dict) -> None:
+    """Rewrite FASTA headers using the assembly report mapping."""
+    with open(input_fasta, "r", encoding="utf-8") as fin, open(
+        output_fasta, "w", encoding="utf-8"
+    ) as fout:
         for line in fin:
             if line.startswith(">"):
                 accession = line[1:].split()[0]
@@ -197,6 +202,7 @@ def rewrite_fasta_headers(input_fasta, output_fasta, mapping):
             else:
                 fout.write(line)
 
+
 def main():
     """Main function to parse arguments and download genome."""
     parser = argparse.ArgumentParser()
@@ -204,11 +210,17 @@ def main():
     parser.add_argument("--gca", required=True)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument(
-        "--ncbi_base", default="https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession"
+        "--ncbi_base",
+        default="https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession",
     )
-    parser.add_argument("--ena_base", default="https://ftp.ebi.ac.uk/pub/databases/ena/assembly")
-    parser.add_argument("--reheader_file", action="store_true",
-    help="Rewrite FASTA headers using the assembly report.")
+    parser.add_argument(
+        "--ena_base", default="https://ftp.ebi.ac.uk/pub/databases/ena/assembly"
+    )
+    parser.add_argument(
+        "--reheader_file",
+        action="store_true",
+        help="Rewrite FASTA headers using the assembly report.",
+    )
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -221,11 +233,11 @@ def main():
 
     if download_and_extract(ncbi_url, args.output_dir):
         print("Genome downloaded from NCBI")
-        if(args.reheader_file):
+        if args.reheader_file:
             output_dir = Path(args.output_dir)
-            assembly_report = download_ncbi_assembly_report(args.gca,args.output_dir)
+            assembly_report = download_ncbi_assembly_report(args.gca, args.output_dir)
             input_fasta = next(output_dir.glob("*.fna"))
-            output_fasta = output_dir / f"{input_fasta.stem}.fa" 
+            output_fasta = output_dir / f"{input_fasta.stem}.fa"
             mapping = parse_assembly_report(assembly_report)
             rewrite_fasta_headers(input_fasta, output_fasta, mapping)
         sys.exit(0)
