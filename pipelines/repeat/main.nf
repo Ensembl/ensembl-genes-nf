@@ -146,39 +146,33 @@ workflow REPEAT_ANNOTATION {
                 def url = "${params.repeats_ftp_base}/${meta.species_name}/${meta.gca}.repeatmodeler.fa"
                 return tuple(url, meta)
             }
-        rmlibrary = CHECK_AND_DOWNLOAD_RMLIBRARY(downloadInput)
+        // nextflow-lint-disable    
+        rmlibrary = CHECK_AND_DOWNLOAD_RMLIBRARY(downloadInput).repeatmodeler_library_out // nextflow-lint-disable
         ch_versions_file = ch_versions_file.mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.versions_file)
                 
         // Merge both library sources (generated + downloaded)
-        // Outputs have format: tuple val(meta), path(genome_file), path(library_file)
-        //allLibraries = GENERATE_REPEATMODELER_LIBRARY.out.repeatmodeler_library_out
         allLibraries = repeatModelerInput
-            .mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.repeatmodeler_library_out)
+            .mix(rmlibrary)
             .view { meta,  library -> "Library ready for ${meta.gca}: ${library}" }
         
         if(params.run_repeatmasker) {
-        
-        // Stage 4: Run RepeatMasker to identify and mask repeats
-        RUN_REPEATMASKER(allLibraries)
-        
-        ch_versions_file = ch_versions_file.mix(RUN_REPEATMASKER.out.versions_file)
-        }
+            // Stage 4: Run RepeatMasker to identify and mask repeats
+            RUN_REPEATMASKER(allLibraries)
+            ch_versions_file = ch_versions_file.mix(RUN_REPEATMASKER.out.versions_file)
+            }
         }
         if (params.run_red) {
             // Run RED for repeat annotation
-            // Similar approach: join genome files with RED results
             RUN_RED(genomeData)
             ch_versions_file = ch_versions_file.mix(RUN_RED.out.versions_file)
         }
         if (params.run_dust) {
             // Run DUST for repeat annotation
-            // Similar approach: join genome files with DUST results
             RUN_DUST(genomeData) 
             ch_versions_file = ch_versions_file.mix(RUN_DUST.out.versions_file)          
         }
         if (params.run_trf) {
             // Run TRF for repeat annotation
-            // Similar approach: join genome files with TRF results
             RUN_TRF(genomeData)
             ch_versions_file = ch_versions_file.mix(RUN_TRF.out.versions_file)  
         }
@@ -197,66 +191,17 @@ workflow {
     validateParameters()
     // Print summary of supplied parameters
     log.info(paramsSummaryLog(workflow))
-    // Workflow execution handlers
-    //workflow.onStart {
-    //    log.info """
-    //    ================================================================================
-    //    REPEAT ANNOTATION PIPELINE
-     //   ================================================================================
-    //    Output directory : ${params.outdir}
-     //   CSV input file   : ${params.csvFile ?: 'NOT PROVIDED'}
-    //    NCBI base URL    : ${params.ncbiBaseUrl}
-    //    Repeats FTP base : ${params.repeats_ftp_base}
-    //    RepeatModeler    : ${params.repeatmodeler_path}
-     //   RepeatMasker     : ${params.repeatmasker_path}
-     //   ================================================================================
-    //    """.stripIndent()
-        
-        // Validate required parameters
-    //    if (!params.outdir) {
-    //        error "ERROR: --outdir parameter is required. Please provide the output directory path."
-    //    }
-        
-    //    if (!params.csvFile) {
-    //        error "❌ ERROR: --csvFile parameter is required. Please provide the path to the CSV file."
-    //    }
-        
-        // Check if CSV file exists
-    //    if (!file(params.csvFile).exists()) {
-    //        error "❌ ERROR: CSV file does not exist: ${params.csvFile}"
-    //    }
-        
-    //    log.info "✅ Parameters validated successfully"
-    //}
-    
-//    workflow.onComplete {
-//        log.info """
-//        ================================================================================
-//        Pipeline Execution Summary
-//        ================================================================================
-//        Completed at : ${workflow.complete}
-//        Duration     : ${workflow.duration}
-//        Success      : ${workflow.success}
-//        Exit status  : ${workflow.exitStatus}
-//        Work directory: ${workflow.workDir}
-//        ================================================================================
- //       """.stripIndent()
- //   }
-     // Execute main workflow
-         REPEAT_ANNOTATION(params.csvFile)
-     }
- // nextflow-lint-disable
+    // Execute main workflow
+    REPEAT_ANNOTATION(params.csvFile)
+}
+
 workflow.onComplete {
     log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
-        log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
-            cleanCacheDirectory()
-            }
+    log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
+    cleanCacheDirectory()
+}
 
-            // nextflow-lint-disable
-            workflow.onError {
-                def error_report = workflow.errorReport ?: workflow.errorMessage ?: 'Unknown error'
-                    log.error("Pipeline execution stopped with the following message: ${error_report}")
-                    }
-    // Execute main workflow
-//    REPEAT_ANNOTATION(params.csvFile)
-//}
+workflow.onError {
+    def error_report = workflow.errorReport ?: workflow.errorMessage ?: 'Unknown error'
+    log.error("Pipeline execution stopped with the following message: ${error_report}")
+}

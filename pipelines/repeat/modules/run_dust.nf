@@ -15,13 +15,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*This process runs DustMasker to identify low-complexity regions in a genome file. 
+It uses the dustmasker tool to perform the analysis and generates a GTF file 
+containing the identified low-complexity regions. The output GTF file is saved 
+in the "dust" directory under the output directory for the given GCA accession. 
+The process also generates a versions.yml file containing the version of Dust used.*/
+
 process RUN_DUST {
     label "python"
     tag "${meta.gca}:genome"
 
-
     publishDir "${params.outdir}/${meta.gca}/dust/", pattern: "**/*.gtf", mode: "copy"
-
     input:
     val(meta)
 
@@ -30,14 +34,7 @@ process RUN_DUST {
     path "versions.yml", emit: versions_file
 
     script:
-    // run_dust
     """
-    echo "=== Checking bind ==="
-    mount | grep hps || true
-    ls -ld /opt
-    ls -ld /opt/linuxbrew
-    ls -l /opt/linuxbrew/bin
-    /opt/linuxbrew/bin/bedtools --version
     run_dust --genome_file ${meta.genome_file} \
                     --output_dir . \
                     --dust_bin /opt/linuxbrew/bin/dustmasker \
@@ -48,5 +45,4 @@ process RUN_DUST {
         dust: \$(Dust -version 2>&1 | head -n 1 | sed 's/.*Dust version \\([0-9.]\\+\\).*/\\1/p')
     END_VERSIONS
     """
-
 }

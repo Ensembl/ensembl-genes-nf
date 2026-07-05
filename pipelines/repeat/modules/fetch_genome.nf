@@ -15,7 +15,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*This process fetches the genome file for a given GCA accession. 
+If a genome file is provided as part of the metadata, 
+it uses that file instead of downloading it. 
+The fetched genome file is saved with the name "genome.fna".*/
 process FETCH_GENOME {
     tag "${meta.gca}:genome"
     label 'fetch_file'
@@ -38,7 +41,7 @@ process FETCH_GENOME {
         cp -L "${meta.genome_file}" genome.fna
     else
         fetch_genome.py \
-             --reheader_file \
+            --reheader_file \
             --output_dir . \
             --gca ${meta.gca} \
             --ncbi_base ${params.ncbiBaseUrl}

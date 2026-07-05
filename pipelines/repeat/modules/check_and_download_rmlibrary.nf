@@ -15,7 +15,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*
+This process checks if a RepeatModeler library file exists at the given URL.
+If the file exists, it downloads the file and saves it with the name "<GCA>.
+repeatmodeler.fa". If the file does not exist, it outputs an error message 
+and exits with a non-zero status.
+*/
 process CHECK_AND_DOWNLOAD_RMLIBRARY {
     tag "$meta.gca"
     label 'default'

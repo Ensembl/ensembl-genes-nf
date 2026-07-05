@@ -15,18 +15,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*This process runs RepeatMasker on a given genome file using a 
+specified RepeatModeler library. It uses the RepeatMasker tool
+to perform the analysis and generates GTF files containing the identified 
+repetitive regions. The output GTF files are saved in the "repeatmasker" 
+directory under the output directory for the given GCA accession. 
+The process also generates a versions.yml file containing the version 
+of RepeatMasker used.*/
 process RUN_REPEATMASKER {
     label "python"
     tag "${meta.gca}:genome"
 
-    // Multiple publishDir statements as needed
-    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa", mode: "move"
-    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.cat", mode: "move"
-    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.masked", mode: "move"
-    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.ori.out", mode: "move"
-    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.out", mode: "move"
-    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.tbl", mode: "move"
-    //publishDir "${params.outdir}/repeatmasker/", pattern: "*.fa.rm.gtf", mode: "move"
     publishDir "${params.outdir}/${meta.gca}/repeatmasker/", pattern: "repeatmasker_output/*.gtf", mode: "copy"
 
     input:
@@ -36,27 +35,9 @@ process RUN_REPEATMASKER {
     tuple val(meta), path("repeatmasker_output/*.gtf"), emit: repeatmasker_out
     path "versions.yml", emit: versions_file
 
-    //path ("*.fa", emit: path_fasta),
-    //path ("*.fa.cat", emit: path_fasta_cat),
-    //path ("*.fa.masked", emit: path_fasta_masked),
-    //path ("*.fa.ori.out", emit: path_fasta_ori_out),
-    //path ("*.fa.out", emit: path_fa_out),
-    //path ("*.fa.tbl", emit: path_fa_tbl),
-    //path ("*.fa.rm.gtf", emit: path_fa_rm_gtf),
-    //path ("*.gtf", emit: path_gtf)
-
     script:
+    LD_LIBRARY_PATH='/hps/software/users/ensembl/genebuild/shared/libnsl/lib:/hps/software/users/ensembl/genebuild/shared/libnsl/libtirpc'
     """
-    echo "PATH=$PATH"
-    which /opt/linuxbrew/bin/RepeatMasker
-    ls -l \$(which /opt/linuxbrew/bin/RepeatMasker)
-
-    
-    head -1 /opt/linuxbrew/bin/RepeatMasker
-
-    which perl
-    perl -v
-
     export LD_LIBRARY_PATH=/hps/software/users/ensembl/genebuild/shared/libnsl/lib:/hps/software/users/ensembl/genebuild/shared/libnsl/libtirpc:$LD_LIBRARY_PATH
     ls /hps/software/users/ensembl/genebuild/shared/libnsl/lib/libnsl.so.2
     /opt/linuxbrew/bin/RepeatMasker -help
