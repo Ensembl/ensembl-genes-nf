@@ -6,7 +6,7 @@ include { AGAT_METRICS } from './subworkflows/agat/agat_stats.nf'
 def validate_params() {
     def errors = []
     def repoRoot = params.ensembl_genes_repo ? file(params.ensembl_genes_repo) : null
-    def defaultFeatureLevelsPath = "${repoRoot}/src/python/ensembl/genes/annotation-qc/metrics/config/feature_levels.yaml"
+    def defaultFeatureLevelsPath = "${repoRoot}/src/python/ensembl/genes/annotation-qc/config/feature_levels.yaml"
 
     if (!params.gff_csv)
         errors << "  --gff_csv is required"

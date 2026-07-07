@@ -20,7 +20,7 @@ The workflow processes all listed samples in parallel.
 - Singularity or Apptainer available on the execution host
 - A local checkout of `ensembl-genes` containing:
   - `src/python/ensembl/genes/annotation-qc/parsers/parse_agat.py`
-  - `src/python/ensembl/genes/annotation-qc/metrics/config/feature_levels.yaml`
+  - `src/python/ensembl/genes/annotation-qc/config/feature_levels.yaml`
 
 ## Inputs
 
