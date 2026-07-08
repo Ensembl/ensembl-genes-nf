@@ -1,0 +1,81 @@
+{
+  "config": {
+    "flank_nt": 30,
+    "body_edge_nt": 15,
+    "min_body_nt": 30,
+    "min_total_signal": 10.0,
+    "max_features_per_sample": null,
+    "max_total_features": null,
+    "psite_offset": 0,
+    "overwrite": true
+  },
+  "db": "/hps/nobackup/flicek/ensembl/genebuild/jackt/riboseq/pilot/full_pilot_results/translon_db_rebuild/translon_db/translons.sqlite",
+  "bigwig_root": "figures_talk_foundation/bigwig_links_unique_no_junction",
+  "batch_dir": "figures_talk_foundation/signal_score_batches",
+  "samples": [
+    {
+      "sample_id": "Ribo_Pancreas_pooled",
+      "unique_features": 237973,
+      "input_rows": 377547,
+      "scored_features": 237973,
+      "coverage_pass": 187890,
+      "psite_offset": 1,
+      "output": "figures_talk_foundation/signal_score_batches/Ribo_Pancreas_pooled.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005875_to_79",
+      "unique_features": 164703,
+      "input_rows": 260501,
+      "scored_features": 164703,
+      "coverage_pass": 131310,
+      "psite_offset": 1,
+      "output": "figures_talk_foundation/signal_score_batches/SRR11005875_to_79.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005880_to_84",
+      "unique_features": 180091,
+      "input_rows": 284407,
+      "scored_features": 180091,
+      "coverage_pass": 141069,
+      "psite_offset": 1,
+      "output": "figures_talk_foundation/signal_score_batches/SRR11005880_to_84.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005885_to_89",
+      "unique_features": 181092,
+      "input_rows": 281620,
+      "scored_features": 181092,
+      "coverage_pass": 144008,
+      "psite_offset": 1,
+      "output": "figures_talk_foundation/signal_score_batches/SRR11005885_to_89.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005890_to_94",
+      "unique_features": 189261,
+      "input_rows": 304834,
+      "scored_features": 189261,
+      "coverage_pass": 141027,
+      "psite_offset": 1,
+      "output": "figures_talk_foundation/signal_score_batches/SRR11005890_to_94.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005895_to_99",
+      "unique_features": 183812,
+      "input_rows": 290159,
+      "scored_features": 183812,
+      "coverage_pass": 145732,
+      "psite_offset": 1,
+      "output": "figures_talk_foundation/signal_score_batches/SRR11005895_to_99.scores.tsv.gz"
+    },
+    {
+      "sample_id": "SRR11005900_to_04",
+      "unique_features": 185310,
+      "input_rows": 295256,
+      "scored_features": 185310,
+      "coverage_pass": 142239,
+      "psite_offset": 1,
+      "output": "figures_talk_foundation/signal_score_batches/SRR11005900_to_04.scores.tsv.gz"
+    }
+  ],
+  "result_rows": 1322242
+}

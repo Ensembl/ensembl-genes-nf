@@ -1,0 +1,9 @@
+{
+  "sample_id": "SRR11005890_to_94",
+  "unique_features": 189261,
+  "input_rows": 304834,
+  "scored_features": 189261,
+  "coverage_pass": 141027,
+  "psite_offset": 1,
+  "output": "figures_talk_foundation/signal_score_batches/SRR11005890_to_94.scores.tsv.gz"
+}

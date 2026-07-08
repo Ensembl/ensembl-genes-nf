@@ -138,6 +138,10 @@ dmypy.json
 cython_debug/
 
 .claude/
+.codex/
 .nextflow.log*
 .nextflow/
 work/
+
+figures
+pipelines/translon-consensus/scripts/figures_talk_foundation/translon_signal_scores.tsv.gz

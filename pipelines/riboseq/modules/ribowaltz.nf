@@ -1,6 +1,5 @@
 process RIBOWALTZ {
     tag "${meta.id}"
-    label 'process_medium'
 
     conda "bioconda::bioconductor-ribowaltz=2.0"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
@@ -32,8 +31,14 @@ process RIBOWALTZ {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def start_nts = params.ribowaltz_exclude_start ?: 42
-    def stop_nts = params.ribowaltz_exclude_stop ?: 27
+    def start_nts = params.ribowaltz_exclude_start ?: 0
+    def stop_nts = params.ribowaltz_exclude_stop ?: 0
+    def flanking = params.ribowaltz_flanking ?: 6
+    def extremity = params.ribowaltz_extremity ?: 'auto'
+    def cl = params.ribowaltz_confidence_level ?: 99
+    def utr5l = params.ribowaltz_utr5_length ?: 25
+    def cdsl = params.ribowaltz_cds_length ?: 40
+    def utr3l = params.ribowaltz_utr3_length ?: 25
     """
     #!/usr/bin/env Rscript
 
@@ -64,7 +69,7 @@ process RIBOWALTZ {
 
     # Calculate P-site offsets
     # The psite() function with txt=TRUE automatically creates the best_offset.txt file
-    psite_offset <- psite(filtered_list, flanking = 6, extremity = "auto", start = TRUE,
+    psite_offset <- psite(filtered_list, flanking = ${flanking}, extremity = "${extremity}", start = TRUE,
                          txt = TRUE, plot = TRUE, plot_format = "pdf",
                          txt_file = "${prefix}.ribowaltz_best_offset.txt")
 
@@ -115,14 +120,14 @@ process RIBOWALTZ {
 
     # Read length distribution
     length_dist <- rlength_distr(reads_list, sample = sample_name,
-                                multisamples = "average", cl = 99,
+                                multisamples = "average", cl = ${cl},
                                 colour = "grey70")
     ggplot2::ggsave("ribowaltz_qc/${prefix}_length_distribution.pdf",
                    length_dist[["plot"]], dpi = 400)
 
     # Meta-heatmap
     ends_heatmap <- rends_heat(reads_list, annotation_dt, sample = sample_name,
-                              cl = 100, utr5l = 25, cdsl = 40, utr3l = 25)
+                              cl = ${cl}, utr5l = ${utr5l}, cdsl = ${cdsl}, utr3l = ${utr3l})
     ggplot2::ggsave("ribowaltz_qc/${prefix}_ends_heatmap.pdf",
                    ends_heatmap[[paste0("plot_", sample_name)]],
                    dpi = 400, width = 12, height = 8)
@@ -156,7 +161,7 @@ process RIBOWALTZ {
     # Metaprofile
     metaprofile <- metaprofile_psite(filtered_psite_list, annotation_dt,
                                     sample = sample_name,
-                                    utr5l = 25, cdsl = 40, utr3l = 25,
+                                    utr5l = ${utr5l}, cdsl = ${cdsl}, utr3l = ${utr3l},
                                     colour = "black")
     ggplot2::ggsave("ribowaltz_qc/${prefix}_metaprofile_psite.pdf",
                    metaprofile[[paste0("plot_", sample_name)]],

@@ -1,0 +1,5 @@
+Number of input reads | 1000000
+Uniquely mapped reads number | 900000
+Uniquely mapped reads % | 90.00%
+Number of reads mapped to multiple loci | 50000
+% of reads mapped to multiple loci | 5.00%

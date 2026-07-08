@@ -1,0 +1,59 @@
+# =============================================================================
+# READ LENGTH: STRICT FILTERING (28-32nt)
+# =============================================================================
+# Apply strict RPF length filtering (28-32nt range).
+# Compare with baseline (no filtering) to evaluate length selection impact.
+#
+# Key difference: filter_by_length: true, rpf_length_min: 28, rpf_length_max: 32
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# RPF Extraction
+# -----------------------------------------------------------------------------
+rpf_extraction_method: 'getrpf'
+getrpf_max_reads: 5000
+
+# -----------------------------------------------------------------------------
+# rRNA Filtering
+# -----------------------------------------------------------------------------
+run_rrna_filter: false
+
+# -----------------------------------------------------------------------------
+# Alignment (STAR) - same as baseline
+# -----------------------------------------------------------------------------
+mismatches: 3
+alignment_type: 'EndToEnd'
+allow_introns: true
+max_multimappers: 10
+min_mapq: 0
+trim_front: 0
+
+# -----------------------------------------------------------------------------
+# Read Length Filtering - MODIFIED
+# -----------------------------------------------------------------------------
+filter_by_length: true                  # Enable length filtering
+rpf_length_min: 28                      # Strict minimum
+rpf_length_max: 32                      # Strict maximum
+
+# -----------------------------------------------------------------------------
+# RiboMetric
+# -----------------------------------------------------------------------------
+ribometric_offset_method: 'tripsviz'
+ribometric_sample_size: 10000000
+
+# -----------------------------------------------------------------------------
+# RiboWaltz
+# -----------------------------------------------------------------------------
+ribowaltz_exclude_start: 0
+ribowaltz_exclude_stop: 0
+ribowaltz_flanking: 6
+ribowaltz_extremity: 'auto'
+ribowaltz_confidence_level: 99
+ribowaltz_utr5_length: 25
+ribowaltz_cds_length: 40
+ribowaltz_utr3_length: 25
+
+# -----------------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------------
+normalize_coverage: false

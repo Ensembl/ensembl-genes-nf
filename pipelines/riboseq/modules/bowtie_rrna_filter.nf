@@ -25,6 +25,8 @@ process BOWTIE_RRNA_FILTER {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def unzip_cmd = reads.name.endsWith('.gz') ? 'zcat' : 'cat'
+    def mismatches = params.bowtie_rrna_mismatches ?: 2
+    def k_value = params.bowtie_rrna_k ?: 1
 
     """
     # Find the index base name from the staged files
@@ -38,8 +40,8 @@ process BOWTIE_RRNA_FILTER {
     ${unzip_cmd} ${reads} | \\
         bowtie \\
         -p ${task.cpus} \\
-        -v 2 \\
-        -k 1 \\
+        -v ${mismatches} \\
+        -k ${k_value} \\
         --un ${prefix}_no_rrna.fastq \\
         ${args} \\
         \$INDEX \\

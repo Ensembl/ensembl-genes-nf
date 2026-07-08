@@ -1,0 +1,57 @@
+# =============================================================================
+# OFFSET CALCULATION: RIBOMETRIC RIBOWALTZ-STYLE METHOD
+# =============================================================================
+# Use RiboMetric's RiboWaltz-style algorithm for P-site offset.
+# Compare with actual RiboWaltz and other methods.
+#
+# Key difference: ribometric_offset_method: 'ribowaltz'
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# RPF Extraction
+# -----------------------------------------------------------------------------
+rpf_extraction_method: 'getrpf'
+getrpf_max_reads: 5000
+
+# -----------------------------------------------------------------------------
+# rRNA Filtering
+# -----------------------------------------------------------------------------
+run_rrna_filter: false
+
+# -----------------------------------------------------------------------------
+# Alignment (STAR) - same as baseline
+# -----------------------------------------------------------------------------
+mismatches: 3
+alignment_type: 'EndToEnd'
+allow_introns: true
+max_multimappers: 10
+min_mapq: 0
+trim_front: 0
+
+# -----------------------------------------------------------------------------
+# Read Length Filtering
+# -----------------------------------------------------------------------------
+filter_by_length: false
+
+# -----------------------------------------------------------------------------
+# RiboMetric - MODIFIED
+# -----------------------------------------------------------------------------
+ribometric_offset_method: 'ribowaltz'     # RiboWaltz-style detection
+ribometric_sample_size: 10000000
+
+# -----------------------------------------------------------------------------
+# RiboWaltz
+# -----------------------------------------------------------------------------
+ribowaltz_exclude_start: 0
+ribowaltz_exclude_stop: 0
+ribowaltz_flanking: 6
+ribowaltz_extremity: 'auto'
+ribowaltz_confidence_level: 99
+ribowaltz_utr5_length: 25
+ribowaltz_cds_length: 40
+ribowaltz_utr3_length: 25
+
+# -----------------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------------
+normalize_coverage: false

@@ -1,0 +1,9 @@
+{
+  "sample_id": "Ribo_Pancreas_pooled",
+  "unique_features": 237973,
+  "input_rows": 377547,
+  "scored_features": 237973,
+  "coverage_pass": 187890,
+  "psite_offset": 1,
+  "output": "figures_talk_foundation/signal_score_batches/Ribo_Pancreas_pooled.scores.tsv.gz"
+}

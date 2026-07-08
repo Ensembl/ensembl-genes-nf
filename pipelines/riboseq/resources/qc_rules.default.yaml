@@ -1,0 +1,37 @@
+rule_set_name: default
+version: 1
+sample_rules:
+  - name: min_unique_mapped_reads
+    metric: star.unique_mapped_reads
+    scope: sample
+    op: ">="
+    threshold: 500000
+    severity: fail
+    include_if_missing: false
+  - name: min_information_content
+    metric: ribometric.information_content
+    scope: sample
+    op: ">="
+    # RiboMetric periodicity_information is normalized to 0-1.
+    # 0.4 is roughly equivalent to a dominant-frame fraction near 0.65.
+    threshold: 0.4
+    severity: fail
+    include_if_missing: false
+length_rules:
+  - name: min_reads_per_length
+    metric: ribometric.reads_at_length
+    scope: length
+    op: ">="
+    threshold: 5000
+    severity: fail
+    include_if_missing: false
+  - name: min_periodicity_dominance
+    metric: ribometric.periodicity_dominance
+    scope: length
+    op: ">="
+    threshold: 0.65
+    severity: fail
+    include_if_missing: false
+selection:
+  selected_for_translon: true
+  selected_for_trackhub: true

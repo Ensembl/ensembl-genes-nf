@@ -14,11 +14,11 @@ process LOCATE {
 
     script:
     """
-    collapsed_file="${params.collapsed_read_path}/${run[0..5]}/${run}.collapsed.fa.gz"
-    collapsed_file_1="${params.collapsed_read_path}/${run[0..5]}/${run}_1.collapsed.fa.gz"
+    collapsed_file="${params.collapsed_read_path}/${run}_rpfs.collapsed.fa"
+    collapsed_file_1="${params.collapsed_read_path}/${run}_1_rpfs.collapsed.fa.gz"
 
     if [ -f "\$collapsed_file" ]; then
-        ln -s "\$collapsed_file" "${run}.collapsed.fa.gz"
+        gzip -c "\$collapsed_file" > "${run}.collapsed.fa.gz"
         echo "Found collapsed file for $run"
     elif [ -f "\$collapsed_file_1" ]; then
         ln -s "\$collapsed_file_1" "${run}.collapsed.fa.gz"

@@ -1,0 +1,60 @@
+# =============================================================================
+# ALIGNMENT: LOCAL MODE + 3' TRIMMING
+# =============================================================================
+# Use STAR in Local mode with explicit 3' base trimming.
+# Tests impact of removing potential adapter contamination at 3' end.
+#
+# Key difference: alignment_type: 'Local', clip_3p_nbases: 3
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# RPF Extraction
+# -----------------------------------------------------------------------------
+rpf_extraction_method: 'getrpf'
+getrpf_max_reads: 5000
+
+# -----------------------------------------------------------------------------
+# rRNA Filtering
+# -----------------------------------------------------------------------------
+run_rrna_filter: false
+
+# -----------------------------------------------------------------------------
+# Alignment (STAR) - MODIFIED
+# -----------------------------------------------------------------------------
+mismatches: 3
+alignment_type: 'Local'
+allow_introns: true
+max_multimappers: 10
+min_mapq: 0
+trim_front: 0
+clip_5p_nbases: 0
+clip_3p_nbases: 3                         # Trim 3 bases from 3' end
+align_soft_clip_at_ref_ends: 'Yes'
+
+# -----------------------------------------------------------------------------
+# Read Length Filtering
+# -----------------------------------------------------------------------------
+filter_by_length: false
+
+# -----------------------------------------------------------------------------
+# RiboMetric
+# -----------------------------------------------------------------------------
+ribometric_offset_method: 'tripsviz'
+ribometric_sample_size: 10000000
+
+# -----------------------------------------------------------------------------
+# RiboWaltz
+# -----------------------------------------------------------------------------
+ribowaltz_exclude_start: 0
+ribowaltz_exclude_stop: 0
+ribowaltz_flanking: 6
+ribowaltz_extremity: 'auto'
+ribowaltz_confidence_level: 99
+ribowaltz_utr5_length: 25
+ribowaltz_cds_length: 40
+ribowaltz_utr3_length: 25
+
+# -----------------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------------
+normalize_coverage: false

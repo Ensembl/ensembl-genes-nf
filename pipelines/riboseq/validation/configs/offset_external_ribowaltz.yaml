@@ -1,0 +1,57 @@
+# =============================================================================
+# OFFSET CALCULATION: PASS RIBOWALTZ OFFSETS TO RIBOMETRIC
+# =============================================================================
+# Calculate offsets with RiboWaltz, then pass them to RiboMetric.
+# This allows comparing RiboMetric metrics using externally-computed offsets.
+#
+# Key difference: ribometric_use_ribowaltz_offsets: true
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# RPF Extraction
+# -----------------------------------------------------------------------------
+rpf_extraction_method: 'getrpf'
+getrpf_max_reads: 5000
+
+# -----------------------------------------------------------------------------
+# rRNA Filtering
+# -----------------------------------------------------------------------------
+run_rrna_filter: false
+
+# -----------------------------------------------------------------------------
+# Alignment (STAR) - same as baseline
+# -----------------------------------------------------------------------------
+mismatches: 3
+alignment_type: 'EndToEnd'
+allow_introns: true
+max_multimappers: 10
+min_mapq: 0
+trim_front: 0
+
+# -----------------------------------------------------------------------------
+# Read Length Filtering
+# -----------------------------------------------------------------------------
+filter_by_length: false
+
+# -----------------------------------------------------------------------------
+# RiboMetric - MODIFIED
+# -----------------------------------------------------------------------------
+ribometric_use_ribowaltz_offsets: true    # Pass RiboWaltz offsets
+ribometric_sample_size: 10000000
+
+# -----------------------------------------------------------------------------
+# RiboWaltz - Runs first to generate offsets
+# -----------------------------------------------------------------------------
+ribowaltz_exclude_start: 0
+ribowaltz_exclude_stop: 0
+ribowaltz_flanking: 6
+ribowaltz_extremity: 'auto'
+ribowaltz_confidence_level: 99
+ribowaltz_utr5_length: 25
+ribowaltz_cds_length: 40
+ribowaltz_utr3_length: 25
+
+# -----------------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------------
+normalize_coverage: false

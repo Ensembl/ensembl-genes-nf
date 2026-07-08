@@ -1,0 +1,58 @@
+# =============================================================================
+# ADAPTER DETECTION: fastp REFERENCE LIST
+# =============================================================================
+# Use fastp with a predefined adapter reference list.
+# Compare with baseline (getRPF) to evaluate adapter detection methods.
+#
+# Key difference: rpf_extraction_method: 'traditional', fastp_adapter_fasta set
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# RPF Extraction - MODIFIED
+# -----------------------------------------------------------------------------
+rpf_extraction_method: 'traditional'      # Use fastp path
+fastp_detect_adapter: false               # Use reference list instead
+fastp_adapter_fasta: 'adapters.fa'        # Reference adapter list (user must provide)
+
+# -----------------------------------------------------------------------------
+# rRNA Filtering
+# -----------------------------------------------------------------------------
+run_rrna_filter: false
+
+# -----------------------------------------------------------------------------
+# Alignment (STAR) - same as baseline
+# -----------------------------------------------------------------------------
+mismatches: 3
+alignment_type: 'EndToEnd'
+allow_introns: true
+max_multimappers: 10
+min_mapq: 0
+trim_front: 0
+
+# -----------------------------------------------------------------------------
+# Read Length Filtering
+# -----------------------------------------------------------------------------
+filter_by_length: false
+
+# -----------------------------------------------------------------------------
+# RiboMetric
+# -----------------------------------------------------------------------------
+ribometric_offset_method: 'tripsviz'
+ribometric_sample_size: 10000000
+
+# -----------------------------------------------------------------------------
+# RiboWaltz
+# -----------------------------------------------------------------------------
+ribowaltz_exclude_start: 0
+ribowaltz_exclude_stop: 0
+ribowaltz_flanking: 6
+ribowaltz_extremity: 'auto'
+ribowaltz_confidence_level: 99
+ribowaltz_utr5_length: 25
+ribowaltz_cds_length: 40
+ribowaltz_utr3_length: 25
+
+# -----------------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------------
+normalize_coverage: false

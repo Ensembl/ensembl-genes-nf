@@ -35,6 +35,8 @@ def read_offset_file(offset_file: str) -> Dict[int, int]:
     with open(offset_file) as f:
         next(f)  # Skip header
         for line in f:
+            if not line.strip():
+                continue
             read_length, offset = line.strip().split('\t')
             offsets[int(read_length)] = int(offset)
     return offsets
@@ -77,30 +79,44 @@ class CoverageAccumulator:
                 yield 'combined', chunk_indices, self.combined[chunk_indices]
 
 def process_reads_chunk(chunk_reads, length_offsets: Dict[int, int], accumulator: CoverageAccumulator):
-    '''Process a chunk of reads efficiently'''
+    '''Process a chunk of reads efficiently
+
+    Uses aligned length (number of reference positions) rather than query length
+    to properly handle soft-clipped reads from Local alignment mode.
+    '''
     # Pre-calculate valid read lengths
     valid_lengths = set(length_offsets.keys())
-    
+
     for read in chunk_reads:
-        read_length = read.qlen
-        
-        # Skip invalid reads
-        if read_length < 25 or read_length not in valid_lengths:
+        # Get aligned positions (excludes soft-clipped bases)
+        positions = read.positions
+        if not positions:
             continue
-            
-        # Get positions and offset
-        positions = np.array(read.positions)
-        offset = length_offsets[read_length]
-        
+
+        # Use aligned length, not query length
+        # This ensures correct offset application for soft-clipped reads
+        aligned_length = len(positions)
+
+        # Skip invalid reads
+        if aligned_length < 25 or aligned_length not in valid_lengths:
+            continue
+
+        positions = np.array(positions)
+        offset = length_offsets[aligned_length]
+
+        # Validate offset is within bounds
+        if offset >= aligned_length:
+            continue
+
         # Calculate read count
         read_count = int(read.qname.split("_x")[1]) if "_x" in read.qname else 1
-        
+
         # Calculate A-site
         if not read.is_reverse:
             Asite = positions[offset]
         else:
             Asite = positions[-1 - offset]
-            
+
         accumulator.add_coverage(Asite, read_count, read.is_reverse)
 
 def write_coverage_chunk(chrom: str, indices: np.ndarray, values: np.ndarray, outfile: str):
@@ -202,6 +218,12 @@ def main():
         logger.info("Reading offsets file")
         length_offsets = read_offset_file(args.offsets)
         logger.info(f"Loaded offsets for {len(length_offsets)} read lengths")
+        if not length_offsets:
+            raise ValueError(
+                f"No usable offsets found in {args.offsets}. "
+                "This usually means QC gating found no passing read lengths; "
+                "do not send this sample to BEDgraph/BigWig generation."
+            )
         
         # Process BAM and write output(s)
         logger.info(f"Processing BAM file {'with' if args.stranded else 'without'} strand separation")

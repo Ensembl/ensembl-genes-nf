@@ -1,6 +1,6 @@
 process EXTRACT_RPFS {
     tag "${meta.id}"
-    label 'process_medium'
+    label 'process_high'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
     container "ghcr.io/jackcurragh/get-rpf:0.2.2"
@@ -15,7 +15,6 @@ process EXTRACT_RPFS {
     tuple val(meta), path("*.collapsed.fa"), emit: trimmed_collapsed
     tuple val(meta), path("*.seqspec.yaml"), emit: seqspec
     tuple val(meta), path("*.extraction_report.json"), emit: report
-    tuple val(meta), path("*.report.html"), emit: html_report
     path "versions.yml", emit: versions
 
     when:
@@ -24,10 +23,12 @@ process EXTRACT_RPFS {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    // Ensure format is specified or inferred. Usually input_file identifies it.
-    // Assuming fastq input from pipeline.
+    def sample_size = params.getrpf_max_reads ?: 10000
+    def preserve_umi = params.getrpf_preserve_umi ? '--preserve-umi' : ''
     """
-    getRPF extract-rpf \\
+    # Use the recommended 'extract' command (alignment-based extraction)
+    # Optimized with --collapsed-only for speed and disk space
+    getRPF extract \\
         ${input_file} \\
         ${prefix}_trimmed.fastq \\
         -f fastq \\

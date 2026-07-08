@@ -1,0 +1,57 @@
+# =============================================================================
+# BASELINE CONFIGURATION
+# =============================================================================
+# This is the default/baseline configuration for validation comparisons.
+# All other configs should vary from this baseline.
+#
+# Usage: nextflow run main.nf -params-file validation/configs/baseline.yaml
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# RPF Extraction
+# -----------------------------------------------------------------------------
+rpf_extraction_method: 'getrpf'        # Architecture detection (default)
+getrpf_max_reads: 5000
+
+# -----------------------------------------------------------------------------
+# rRNA Filtering
+# -----------------------------------------------------------------------------
+run_rrna_filter: false                  # No rRNA filtering in baseline
+
+# -----------------------------------------------------------------------------
+# Alignment (STAR)
+# -----------------------------------------------------------------------------
+mismatches: 3                           # Allow 3 mismatches
+alignment_type: 'EndToEnd'              # End-to-end alignment
+allow_introns: true                     # Allow spliced alignments
+max_multimappers: 10                    # Report up to 10 multi-mappers
+min_mapq: 0                             # No MAPQ filtering
+trim_front: 0                           # No 3' trimming
+
+# -----------------------------------------------------------------------------
+# Read Length Filtering
+# -----------------------------------------------------------------------------
+filter_by_length: false                 # No post-alignment length filtering
+
+# -----------------------------------------------------------------------------
+# RiboMetric
+# -----------------------------------------------------------------------------
+ribometric_offset_method: 'tripsviz'
+ribometric_sample_size: 10000000
+
+# -----------------------------------------------------------------------------
+# RiboWaltz
+# -----------------------------------------------------------------------------
+ribowaltz_exclude_start: 0
+ribowaltz_exclude_stop: 0
+ribowaltz_flanking: 6
+ribowaltz_extremity: 'auto'
+ribowaltz_confidence_level: 99
+ribowaltz_utr5_length: 25
+ribowaltz_cds_length: 40
+ribowaltz_utr3_length: 25
+
+# -----------------------------------------------------------------------------
+# Output
+# -----------------------------------------------------------------------------
+normalize_coverage: false

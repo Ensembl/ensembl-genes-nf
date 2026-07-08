@@ -23,13 +23,14 @@ process DETECT_ARCHITECTURE {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    def max_reads = params.getrpf_max_reads ?: 5000
     """
     getRPF detect-architecture \\
         ${input_file} \\
         ${prefix}_rpfs.fastq \\
         -f collapsed \\
         --generate-seqspec \\
-        --max-reads 5000 \\
+        --max-reads ${max_reads} \\
         $args
 
     cat <<-END_VERSIONS > versions.yml

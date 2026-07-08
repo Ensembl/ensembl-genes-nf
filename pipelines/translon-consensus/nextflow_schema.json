@@ -6,7 +6,12 @@
     "properties": {
       "bed_results_dir": {
         "type": "string",
-        "description": "Path to directory containing BED12 results organized by tool (e.g., results/*/sample.bed12). BED files must be in proper BED12 format with one entry per ORF. Use conversion scripts in scripts/ directory to convert tool-specific formats.",
+        "description": "Path to directory containing BED12 results organized by tool (e.g., results/*/sample.bed12). BED files must be in proper BED12 format with one entry per translon. Use conversion scripts in scripts/ directory to convert tool-specific formats.",
+        "format": "directory-path"
+      },
+      "consensus_bed_results_dir": {
+        "type": "string",
+        "description": "Optional path to a tool/sample tree used only for BED12 standardisation and consensus reporting. If omitted, bed_results_dir is used for both Translon DB ingest and consensus.",
         "format": "directory-path"
       },
       "gencode_gtf": {
@@ -24,6 +29,16 @@
         "type": "string",
         "description": "Path to gencode FASTA FAI.",
         "format": "file-path"
+      },
+      "build_translon_db": {
+        "type": "boolean",
+        "default": true,
+        "description": "Build a Translon SQLite database and sidecar TSV tables from all supported caller outputs under bed_results_dir."
+      },
+      "run_consensus_report": {
+        "type": "boolean",
+        "default": true,
+        "description": "Run the BED12 standardisation, cross-tool consensus, and HTML report branch. Set false for Translon DB-only runs."
       },
       "ucsc_session_url": {
         "type": "string",
@@ -46,6 +61,12 @@
         "type": "string",
         "description": "Optional FTP directory path for moving the HTML report. If not provided, report will only be saved locally.",
         "format": "directory-path"
+      },
+      "manifest_tsv": {
+        "type": "string",
+        "description": "Optional audit manifest TSV produced by scripts/build_translon_manifest.py. When provided, translon_db_standardise.py parses only rows with ingest_status=matched and keeps native caller class separate from the central reference-derived source_feature_class.",
+        "format": "file-path",
+        "pattern": "\\.tsv$"
       }
     },
     "required": ["bed_results_dir"]
