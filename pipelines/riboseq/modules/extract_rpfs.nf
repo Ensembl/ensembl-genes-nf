@@ -3,7 +3,7 @@ process EXTRACT_RPFS {
     label 'process_high'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
-    container "ghcr.io/jackcurragh/get-rpf:0.2.2"
+    container "ghcr.io/jackcurragh/get-rpf:0.2.3"
 
     publishDir "${params.outdir}/getRPF/extract", mode: 'copy', pattern: "*.{collapsed.fa,seqspec.yaml,extraction_report.json,report.html}"
 
@@ -55,7 +55,7 @@ process EXTRACT_RPFS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        getRPF: 0.2.2
+        getRPF: 0.2.3
     END_VERSIONS
     """
 }

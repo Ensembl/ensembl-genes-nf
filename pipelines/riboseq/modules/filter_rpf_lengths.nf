@@ -3,7 +3,7 @@ process FILTER_RPF_LENGTHS {
     label 'process_light'
 
     conda "conda-forge::python=3.10"
-    container "ghcr.io/jackcurragh/get-rpf:0.2.2"
+    container "ghcr.io/jackcurragh/get-rpf:0.2.3"
 
     publishDir "${params.outdir}/getRPF/gated", mode: 'copy', pattern: "*.{collapsed.fa,summary.tsv}"
 
