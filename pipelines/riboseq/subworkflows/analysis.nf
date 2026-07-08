@@ -63,6 +63,7 @@ workflow ANALYSIS {
     ribometric_html = ribometric_annotation ? RIBOMETRIC.out.html : Channel.empty()
     ribometric_json = ribometric_annotation ? RIBOMETRIC.out.json : Channel.empty()
     ribometric_csv = ribometric_annotation ? RIBOMETRIC.out.csv : Channel.empty()
+    ribometric_offsets = ribometric_annotation ? RIBOMETRIC.out.offsets : Channel.empty()
 
     // RiboWaltz outputs
     psite_offsets = RIBOWALTZ.out.psite_offsets     // tuple: [ meta, tsv.gz ]

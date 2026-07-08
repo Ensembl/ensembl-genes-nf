@@ -19,6 +19,7 @@ include { FASTQ_DL } from '../modules/fastq_dl.nf'
 include { FASTQC } from '../modules/fastqc.nf'
 include { FIND_ADAPTERS } from '../modules/find_adapters.nf'
 include { EXTRACT_RPFS } from '../modules/extract_rpfs.nf'
+include { FILTER_RPF_LENGTHS } from '../modules/filter_rpf_lengths.nf'
 include { FASTP } from '../modules/fastp.nf'
 include { BOWTIE_RRNA_FILTER } from '../modules/bowtie_rrna_filter.nf'
 include { RIBODETECTOR } from '../modules/ribodetector.nf'
@@ -98,8 +99,9 @@ workflow DATA_ACQUISITION {
                 star_index
             )
 
-            newly_collapsed_reads = EXTRACT_RPFS.out.collapsed_fasta
-
+            // Preserve all trimmed reads from getRPF, then gate the downstream RPF set.
+            FILTER_RPF_LENGTHS(EXTRACT_RPFS.out.trimmed_collapsed)
+            newly_collapsed_reads = FILTER_RPF_LENGTHS.out.collapsed_fasta
         } else {
             // Traditional fastp-based approach
             // Determine adapter source based on params:

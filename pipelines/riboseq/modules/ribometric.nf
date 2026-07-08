@@ -3,10 +3,10 @@ process RIBOMETRIC {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
-    container "ghcr.io/jackcurragh/ribometric:latest"
+    container "ghcr.io/jackcurragh/ribometric:1.4.1"
 
     publishDir "${params.outdir}/RiboMetric", mode: 'copy', pattern: "*RiboMetric.{html,json,csv}"
-    publishDir "${params.outdir}/RiboMetric/offsets", mode: 'copy', pattern: "*.offsets.tsv"
+    publishDir "${params.outdir}/RiboMetric", mode: 'copy', pattern: "*_offsets.tsv"
 
     errorStrategy 'ignore'
 
@@ -18,9 +18,9 @@ process RIBOMETRIC {
     output:
     tuple val(meta), path("*RiboMetric.html"), emit: html
     tuple val(meta), path("*RiboMetric.json"), emit: json
-    tuple val(meta), path("*RiboMetric.csv"),  emit: csv
-    tuple val(meta), path("*.offsets.tsv"), optional: true, emit: offsets
-    path "versions.yml",                       emit: versions
+    tuple val(meta), path("*RiboMetric.csv"), emit: csv
+    tuple val(meta), path("*_offsets.tsv"), emit: offsets
+    path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -68,11 +68,11 @@ process RIBOMETRIC {
     touch ${prefix}_RiboMetric.html
     touch ${prefix}_RiboMetric.json
     touch ${prefix}_RiboMetric.csv
-    printf 'read_len\toffset\n28\t12\n29\t12\n30\t12\n' > ${prefix}.offsets.tsv
+    touch ${prefix}_offsets.tsv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        ribometric: 1.0.0
+        ribometric: 1.4.1
     END_VERSIONS
     """
 }

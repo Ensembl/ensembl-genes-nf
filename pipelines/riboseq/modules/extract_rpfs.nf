@@ -3,18 +3,17 @@ process EXTRACT_RPFS {
     label 'process_high'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
-    container "ghcr.io/jackcurragh/get-rpf:main"
+    container "ghcr.io/jackcurragh/get-rpf:0.2.2"
 
-    publishDir "${params.outdir}/getRPF/extract", mode: 'copy', pattern: "*.extraction_report.json"
-    publishDir "${params.outdir}/collapsed_fa", mode: 'copy', pattern: "*.collapsed.fa"
+    publishDir "${params.outdir}/getRPF/extract", mode: 'copy', pattern: "*.{collapsed.fa,seqspec.yaml,extraction_report.json,report.html}"
 
     input:
     tuple val(meta), path(input_file)
     path star_index
 
     output:
-    tuple val(meta), path("*.collapsed.fa"), emit: collapsed_fasta
-    tuple val(meta), path("*_rpfs.fastq"), emit: rpfs, optional: true
+    tuple val(meta), path("*.collapsed.fa"), emit: trimmed_collapsed
+    tuple val(meta), path("*.seqspec.yaml"), emit: seqspec
     tuple val(meta), path("*.extraction_report.json"), emit: report
     path "versions.yml", emit: versions
 
@@ -31,12 +30,13 @@ process EXTRACT_RPFS {
     # Optimized with --collapsed-only for speed and disk space
     getRPF extract \\
         ${input_file} \\
-        ${prefix}_rpfs.fastq \\
+        ${prefix}_trimmed.fastq \\
+        -f fastq \\
+        --generate-seqspec \\
+        --output-format json \\
         --star-index ${star_index} \\
-        --sample-size ${sample_size} \\
-        --threads ${task.cpus} \\
+        --star-threads ${task.cpus} \\
         --collapsed-only \\
-        ${preserve_umi} \\
         $args
 
     cat <<-END_VERSIONS > versions.yml
@@ -48,12 +48,14 @@ process EXTRACT_RPFS {
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    touch ${prefix}_rpfs.collapsed.fa
-    touch ${prefix}_rpfs.extraction_report.json
+    touch ${prefix}_trimmed.collapsed.fa
+    touch ${prefix}_trimmed.seqspec.yaml
+    touch ${prefix}_trimmed.extraction_report.json
+    touch ${prefix}_trimmed.report.html
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        getRPF: 0.1.0
+        getRPF: 0.2.2
     END_VERSIONS
     """
 }

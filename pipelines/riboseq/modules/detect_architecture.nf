@@ -3,7 +3,7 @@ process DETECT_ARCHITECTURE {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
-    container "ghcr.io/lapti-ucc/riboseqorg-nf-getrpf:latest"
+    container "ghcr.io/jackcurragh/get-rpf:0.2.2"
 
     publishDir "${params.outdir}/getRPF/detect", mode: 'copy', pattern: "*.{seqspec.yaml,adapters.fa,extraction_report.json,fastq}"
 
@@ -49,7 +49,7 @@ process DETECT_ARCHITECTURE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        getRPF: 1.3.0
+        getRPF: 0.2.2
     END_VERSIONS
     """
 }
