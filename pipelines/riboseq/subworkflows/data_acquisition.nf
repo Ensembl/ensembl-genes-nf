@@ -8,6 +8,7 @@ include { FASTQ_DL } from '../modules/fastq_dl.nf'
 include { FASTQC } from '../modules/fastqc.nf'
 include { FIND_ADAPTERS } from '../modules/find_adapters.nf'
 include { EXTRACT_RPFS } from '../modules/extract_rpfs.nf'
+include { FILTER_RPF_LENGTHS } from '../modules/filter_rpf_lengths.nf'
 include { FASTP } from '../modules/fastp.nf'
 include { BOWTIE_RRNA_FILTER } from '../modules/bowtie_rrna_filter.nf'
 include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_INITIAL } from '../modules/collapse_fastq.nf'
@@ -78,9 +79,9 @@ workflow DATA_ACQUISITION {
                 file(params.star_index)
             )
 
-            // Re-collapse after extraction
-            COLLAPSE_FASTQ_FINAL(EXTRACT_RPFS.out.rpfs)
-            newly_collapsed_reads = COLLAPSE_FASTQ_FINAL.out.collapsed_fasta
+            // Preserve all trimmed reads from getRPF, then gate the downstream RPF set.
+            FILTER_RPF_LENGTHS(EXTRACT_RPFS.out.trimmed_collapsed)
+            newly_collapsed_reads = FILTER_RPF_LENGTHS.out.collapsed_fasta
         } else {
             // Traditional adapter finding approach
             FIND_ADAPTERS(
