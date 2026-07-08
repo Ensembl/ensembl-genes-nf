@@ -3,7 +3,7 @@ process CHECK_CLEANLINESS {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
-    container "ghcr.io/jackcurragh/get-rpf:0.2.2"
+    container "ghcr.io/jackcurragh/get-rpf:0.2.3"
 
     publishDir "${params.outdir}/getRPF/check", mode: 'copy', pattern: "*_{report,rpf_checks}.txt"
 
@@ -41,7 +41,7 @@ process CHECK_CLEANLINESS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        getRPF: 0.2.2
+        getRPF: 0.2.3
     END_VERSIONS
     """
 }

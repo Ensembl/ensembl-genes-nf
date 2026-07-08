@@ -3,7 +3,7 @@ process EXTRACT_RPFS {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
-    container "ghcr.io/jackcurragh/get-rpf:0.2.2"
+    container "ghcr.io/jackcurragh/get-rpf:0.2.3"
 
     publishDir "${params.outdir}/getRPF/extract", mode: 'copy', pattern: "*.{collapsed.fa,seqspec.yaml,extraction_report.json,report.html}"
 
@@ -27,7 +27,7 @@ process EXTRACT_RPFS {
     // Ensure format is specified or inferred. Usually input_file identifies it.
     // Assuming fastq input from pipeline.
     """
-    getRPF extract-rpf \\
+    getRPF extract \\
         ${input_file} \\
         ${prefix}_trimmed.fastq \\
         -f fastq \\
@@ -54,7 +54,7 @@ process EXTRACT_RPFS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        getRPF: 0.2.2
+        getRPF: 0.2.3
     END_VERSIONS
     """
 }
