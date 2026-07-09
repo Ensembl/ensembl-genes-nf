@@ -1,0 +1,41 @@
+%%metro title: Human Pangenome Projection
+%%metro style: nfcore
+%%metro line_order: definition
+%%metro line: main | hpp pipeline | #2db572
+
+graph LR
+    subgraph inputs [Inputs]
+        sample_sheet([Sample sheet])
+        ref_fasta([Reference FASTA])
+        ref_gff([Reference GFF3])
+    end
+
+    subgraph alignment [Whole-genome alignment]
+        minimap2_wga([MINIMAP2_WGA])
+    end
+
+    subgraph projection [hpp projection stages]
+        build_synteny([BUILD_SYNTENY])
+        project_features([PROJECT_FEATURES])
+        validate_models([VALIDATE_MODELS])
+        rescue_projections([RESCUE_PROJECTIONS])
+        refine_models([REFINE_MODELS])
+        finalise([FINALISE])
+    end
+
+    subgraph outputs [Outputs]
+        gff([Mapped GFF3])
+        stats([Stats + audit])
+    end
+
+    sample_sheet -->|main| minimap2_wga
+    ref_fasta -->|main| minimap2_wga
+    minimap2_wga -->|main| build_synteny
+    ref_gff -->|main| build_synteny
+    build_synteny -->|main| project_features
+    project_features -->|main| validate_models
+    validate_models -->|main| rescue_projections
+    rescue_projections -->|main| refine_models
+    refine_models -->|main| finalise
+    finalise -->|main| gff
+    finalise -->|main| stats

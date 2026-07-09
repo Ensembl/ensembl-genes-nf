@@ -1,0 +1,45 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Human Pangenome Projection Parameters",
+    "description": "Parameter schema for the human pangenome annotation projection pipeline",
+    "type": "object",
+    "properties": {
+        "sample_sheet": {
+            "type": "string",
+            "description": "Path to CSV sample sheet with columns: target_id,target_fasta (one row per target assembly)"
+        },
+        "ref_fasta": {
+            "type": "string",
+            "description": "Path to the reference genome FASTA (e.g. GRCh38)"
+        },
+        "ref_gff": {
+            "type": "string",
+            "description": "Path to the reference annotation GFF3 (e.g. GENCODE)"
+        },
+        "outdir": {
+            "type": "string",
+            "default": "./results",
+            "description": "Output directory for pipeline results"
+        },
+        "chromosomes": {
+            "type": "string",
+            "description": "Optional comma-separated subset of chromosomes to project (e.g. 'chr20')"
+        },
+        "minimap2_preset": {
+            "type": "string",
+            "default": "asm5",
+            "enum": ["asm5", "asm10", "asm20"],
+            "description": "minimap2 preset for the whole-genome alignment, by divergence"
+        },
+        "hpp_container": {
+            "type": "string",
+            "default": "ghcr.io/ensembl/hpp:0.1.0",
+            "description": "Container image providing the hpp tool (built from containers/Dockerfile)"
+        },
+        "hpp_extra_args": {
+            "type": "string",
+            "description": "Extra flags forwarded to the projection stages (e.g. rescue caps, thresholds)"
+        }
+    },
+    "required": ["sample_sheet", "ref_fasta", "ref_gff"]
+}
