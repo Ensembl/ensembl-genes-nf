@@ -276,10 +276,15 @@ workflow {
             file(rules_path)
         )
 
-        // Only selected offsets drive downstream BEDgraph/BigWig generation.
+        // Good and great QC tiers drive separate BEDgraph/BigWig tracks.
         // Failed samples still publish QC audit files, but do not enter
         // post-processing.
-        def offsets_for_post = QC_GATE.out.selected_offsets
+        def offsets_for_post = QC_GATE.out.good_offsets
+            .map { meta, offsets -> [meta + [track_tier: 'good'], offsets] }
+            .mix(
+                QC_GATE.out.great_offsets
+                    .map { meta, offsets -> [meta + [track_tier: 'great'], offsets] }
+            )
 
         IMPORT_QC_DB(
             COLLECT_QC_METRICS.out.metrics.map { meta, metrics -> metrics }.collect(),

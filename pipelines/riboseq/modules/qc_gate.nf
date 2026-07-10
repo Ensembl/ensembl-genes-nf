@@ -5,7 +5,7 @@ process QC_GATE {
     conda "conda-forge::python=3.10 conda-forge::pyyaml"
     container "community.wave.seqera.io/library/pip_pyyaml_duckdb_pandas:5ede6677f4262ec2"
 
-    publishDir "${params.outdir}/qc_gate", mode: 'copy', pattern: "*.{offsets.pass.tsv,offsets.selected.tsv,pass_lengths.tsv,qc.json,qc_eval.tsv,qc_rule_set.tsv,gate_selection.tsv,translon.selected.txt}"
+    publishDir "${params.outdir}/qc_gate", mode: 'copy', pattern: "*.{offsets.pass.tsv,offsets.selected.tsv,offsets.good.tsv,offsets.great.tsv,pass_lengths.tsv,good.pass_lengths.tsv,great.pass_lengths.tsv,qc.json,qc_eval.tsv,qc_rule_set.tsv,gate_selection.tsv,translon.selected.txt}"
 
     input:
     val run_id
@@ -15,6 +15,8 @@ process QC_GATE {
     output:
     tuple val(meta), path("*.offsets.pass.tsv"), emit: filtered_offsets
     tuple val(meta), path("*.offsets.selected.tsv"), optional: true, emit: selected_offsets
+    tuple val(meta), path("*.offsets.good.tsv"), emit: good_offsets
+    tuple val(meta), path("*.offsets.great.tsv"), emit: great_offsets
     tuple val(meta), path("*.translon.selected.txt"), optional: true, emit: translon_selected
     tuple val(meta), path("*.pass_lengths.tsv"), emit: pass_lengths
     tuple val(meta), path("*.qc.json"), emit: qc_json

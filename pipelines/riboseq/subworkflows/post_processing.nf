@@ -55,7 +55,8 @@ workflow POST_PROCESSING {
             bam_meta.id == offset_meta.id
         }
         .map { bam_meta, bam, bai, offset_meta, offset ->
-            [bam_meta, bam, bai, offset]
+            def tier = offset_meta.track_tier ?: 'selected'
+            [bam_meta + [track_tier: tier], bam, bai, offset]
         }
 
     BAM_TO_BED(bam_with_offsets)
@@ -73,13 +74,13 @@ workflow POST_PROCESSING {
             // Flatten stranded bedgraphs, keeping bam_type from meta
             def bg_list = bedgraph instanceof List ? bedgraph : [bedgraph]
             bg_list.collect { bg ->
-                [meta.bam_type, bg]
+                [meta.track_tier ?: 'selected', meta.bam_type, bg]
             }
         }
-        .groupTuple()  // Group by bam_type
-        .map { bam_type, bedgraph_list ->
+        .groupTuple(by: [0, 1])  // Group by track tier and bam_type
+        .map { track_tier, bam_type, bedgraph_list ->
             // Create meta with bam_type as id
-            def meta = [id: "merged_${bam_type}"]
+            def meta = [id: "merged_${track_tier}_${bam_type}", track_tier: track_tier, bam_type: bam_type]
             [meta, bedgraph_list]
         }
 

@@ -65,6 +65,47 @@ def write_filtered_offsets(in_path, out_path, keep_lengths):
                 dest.write(line)
 
 
+def collect_named_rules(rules):
+    named = {}
+    for section in ("sample_rules", "length_rules", "additional_rules"):
+        for rule in rules.get(section, []):
+            named[rule["name"]] = rule
+    return named
+
+
+def resolve_tier_rules(rules, tier_config, scope):
+    defaults = rules.get(f"{scope}_rules", [])
+    requested = (tier_config or {}).get(f"{scope}_rules")
+    if not requested:
+        return defaults
+    named = collect_named_rules(rules)
+    return [named[name] for name in requested if name in named]
+
+
+def evaluate_sample_rules(metrics, args, sample_rules, rule_set_id, eval_records):
+    passed_all = True
+    for rule in sample_rules:
+        passed, record = evaluate_rule(metrics, args, rule, rule_set_id, "sample")
+        eval_records.append(record)
+        if not passed:
+            passed_all = False
+    return passed_all
+
+
+def evaluate_length_rules(metrics, args, offsets, length_rules, rule_set_id, eval_records):
+    keep_lengths = set()
+    for read_len, _offset in offsets:
+        passed_all = True
+        for rule in length_rules:
+            passed, record = evaluate_rule(metrics, args, rule, rule_set_id, "length", read_len)
+            eval_records.append(record)
+            if not passed:
+                passed_all = False
+        if passed_all:
+            keep_lengths.add(read_len)
+    return keep_lengths
+
+
 def evaluate_rule(metrics, args, rule, rule_set_id, scope, length=None):
     metric = rule["metric"]
     op = rule["op"]
@@ -120,7 +161,7 @@ def write_qc_eval(path, records):
         writer.writerows(records)
 
 
-def write_gate_selection(path, args, rule_set_id, selected_for_translon, selected_for_trackhub, reason, keep_lengths):
+def write_gate_selection(path, records):
     with open(path, "w", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t")
         writer.writerow(
@@ -128,23 +169,14 @@ def write_gate_selection(path, args, rule_set_id, selected_for_translon, selecte
                 "run_id",
                 "sample_id",
                 "rule_set_id",
+                "tier",
                 "selected_for_translon",
                 "selected_for_trackhub",
                 "selected_reason",
                 "pass_lengths_json",
             ]
         )
-        writer.writerow(
-            [
-                args.run_id,
-                args.sample_id,
-                rule_set_id,
-                bool(selected_for_translon),
-                bool(selected_for_trackhub),
-                reason,
-                json.dumps(sorted(keep_lengths)),
-            ]
-        )
+        writer.writerows(records)
 
 
 def write_rule_set(path, rule_set_id, name, version, yaml_text):
@@ -173,31 +205,56 @@ def main():
     rule_set_version = int(rules.get("version", 1))
     rule_set_id = f"{rule_set_name}_v{rule_set_version}"
 
-    keep_lengths = set()
+    offsets = read_offsets_table(args.best_offset)
     eval_records = []
 
-    for read_len, _offset in read_offsets_table(args.best_offset):
-        passed_all = True
-        for rule in rules.get("length_rules", []):
-            passed, record = evaluate_rule(metrics, args, rule, rule_set_id, "length", read_len)
-            eval_records.append(record)
-            if not passed:
-                passed_all = False
-        if passed_all:
-            keep_lengths.add(read_len)
-
-    sample_pass = True
-    for rule in rules.get("sample_rules", []):
-        passed, record = evaluate_rule(metrics, args, rule, rule_set_id, "sample")
-        eval_records.append(record)
-        if not passed:
-            sample_pass = False
-
     apply_for = {item.strip() for item in args.apply_for.split(",") if item.strip()}
-    selected = sample_pass and len(keep_lengths) > 0
-    selected_for_translon = "translon" in apply_for and selected
-    selected_for_trackhub = "trackhub" in apply_for and selected
-    reason = "sample rules pass and at least one passing length" if selected else "rules not met"
+    tier_configs = rules.get("track_tiers") or {"good": {}}
+    tier_results = {}
+    gate_selection_records = []
+
+    for tier_name, tier_config in tier_configs.items():
+        tier_rule_set_id = f"{rule_set_id}_{tier_name}"
+        sample_rules = resolve_tier_rules(rules, tier_config, "sample")
+        length_rules = resolve_tier_rules(rules, tier_config, "length")
+        sample_pass = evaluate_sample_rules(metrics, args, sample_rules, tier_rule_set_id, eval_records)
+        length_passes = evaluate_length_rules(metrics, args, offsets, length_rules, tier_rule_set_id, eval_records)
+        keep_lengths = length_passes if sample_pass else set()
+        selected = sample_pass and len(keep_lengths) > 0
+        selected_for_translon = "translon" in apply_for and selected
+        selected_for_trackhub = "trackhub" in apply_for and selected
+        reason = "sample rules pass and at least one passing length" if selected else "rules not met"
+        tier_results[tier_name] = {
+            "selected_for_translon": selected_for_translon,
+            "selected_for_trackhub": selected_for_trackhub,
+            "reason": reason,
+            "keep_lengths": keep_lengths,
+        }
+        gate_selection_records.append(
+            [
+                args.run_id,
+                args.sample_id,
+                tier_rule_set_id,
+                tier_name,
+                bool(selected_for_translon),
+                bool(selected_for_trackhub),
+                reason,
+                json.dumps(sorted(keep_lengths)),
+            ]
+        )
+
+        with open(f"{args.out_prefix}.{tier_name}.pass_lengths.tsv", "w") as handle:
+            handle.write("length\n")
+            for read_len in sorted(keep_lengths):
+                handle.write(f"{read_len}\n")
+
+        write_filtered_offsets(args.best_offset, f"{args.out_prefix}.offsets.{tier_name}.tsv", keep_lengths)
+
+    primary_result = tier_results.get("good", next(iter(tier_results.values())))
+    keep_lengths = primary_result["keep_lengths"]
+    selected_for_translon = primary_result["selected_for_translon"]
+    selected_for_trackhub = primary_result["selected_for_trackhub"]
+    reason = primary_result["reason"]
 
     with open(f"{args.out_prefix}.pass_lengths.tsv", "w") as handle:
         handle.write("length\n")
@@ -212,15 +269,7 @@ def main():
         Path(f"{args.out_prefix}.translon.selected.txt").write_text(f"{args.sample_id}\n")
 
     write_qc_eval(f"{args.out_prefix}.qc_eval.tsv", eval_records)
-    write_gate_selection(
-        f"{args.out_prefix}.gate_selection.tsv",
-        args,
-        rule_set_id,
-        selected_for_translon,
-        selected_for_trackhub,
-        reason,
-        keep_lengths,
-    )
+    write_gate_selection(f"{args.out_prefix}.gate_selection.tsv", gate_selection_records)
     write_rule_set(f"{args.out_prefix}.qc_rule_set.tsv", rule_set_id, rule_set_name, rule_set_version, rules_text)
 
     with open(f"{args.out_prefix}.qc.json", "w") as handle:
@@ -232,6 +281,15 @@ def main():
                 "selected_for_trackhub": selected_for_trackhub,
                 "selected_reason": reason,
                 "pass_lengths": sorted(keep_lengths),
+                "track_tiers": {
+                    tier: {
+                        "selected_for_translon": result["selected_for_translon"],
+                        "selected_for_trackhub": result["selected_for_trackhub"],
+                        "selected_reason": result["reason"],
+                        "pass_lengths": sorted(result["keep_lengths"]),
+                    }
+                    for tier, result in tier_results.items()
+                },
             },
             handle,
         )

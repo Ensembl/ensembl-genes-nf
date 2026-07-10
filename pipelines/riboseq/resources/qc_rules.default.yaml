@@ -44,3 +44,36 @@ length_rules:
 selection:
   selected_for_translon: true
   selected_for_trackhub: true
+track_tiers:
+  good:
+    sample_rules:
+      - min_unique_mapped_reads
+      - min_recommended_read_lengths
+      - min_recommended_read_proportion
+    length_rules:
+      - min_reads_per_length
+      - ribometric_recommended_length
+  great:
+    sample_rules:
+      - min_unique_mapped_reads
+      - min_recommended_read_lengths
+      - min_great_recommended_read_proportion
+    length_rules:
+      - min_reads_per_length
+      - ribometric_recommended_length
+      - min_great_periodicity_dominance
+additional_rules:
+  - name: min_great_recommended_read_proportion
+    metric: ribometric.recommended_read_proportion
+    scope: sample
+    op: ">="
+    threshold: 0.6
+    severity: fail
+    include_if_missing: false
+  - name: min_great_periodicity_dominance
+    metric: ribometric.periodicity_dominance
+    scope: length
+    op: ">="
+    threshold: 0.6
+    severity: fail
+    include_if_missing: false

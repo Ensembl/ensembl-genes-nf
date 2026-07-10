@@ -20,7 +20,8 @@ process BAM_TO_BED {
     script:
     def args = task.ext.args ?: ''
     // Use BAM filename (without .bam extension) as prefix to preserve filtering type names
-    def prefix = task.ext.prefix ?: "${bam.baseName}"
+    def tier_suffix = meta.track_tier ? ".${meta.track_tier}" : ""
+    def prefix = task.ext.prefix ?: "${bam.baseName}${tier_suffix}"
     def is_stranded = args.contains('--stranded')
     """
     python3 $projectDir/bin/bam_to_bed.py \\
@@ -46,7 +47,8 @@ process BAM_TO_BED {
 
     stub:
     // Use BAM filename (without .bam extension) as prefix to preserve filtering type names
-    def prefix = task.ext.prefix ?: "${bam.baseName}"
+    def tier_suffix = meta.track_tier ? ".${meta.track_tier}" : ""
+    def prefix = task.ext.prefix ?: "${bam.baseName}${tier_suffix}"
     def is_stranded = task.ext.args?.contains('--stranded') ?: false
     """
     if [ "${is_stranded}" == "true" ]; then
