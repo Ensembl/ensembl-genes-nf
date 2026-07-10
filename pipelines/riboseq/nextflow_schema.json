@@ -258,6 +258,38 @@
       "default": 10000000,
       "description": "Number of reads to sample for RiboMetric analysis"
     },
+    "run_choros": {
+      "type": "boolean",
+      "default": false,
+      "description": "Run the optional per-sample ChOROS codon-level sequence-bias correction pilot after good QC gating"
+    },
+    "transcriptome_fasta": {
+      "type": "string",
+      "format": "path",
+      "description": "Transcriptome FASTA matching the STAR transcriptome BAM and RiboMetric annotation; generated automatically by organism setup"
+    },
+    "choros_container": {
+      "type": "string",
+      "description": "Pinned ChOROS container image built from pipelines/riboseq/containers/choros/Dockerfile"
+    },
+    "choros_num_genes": {
+      "type": "integer",
+      "default": 250,
+      "minimum": 2,
+      "description": "Maximum number of high-coverage transcripts used to train each ChOROS model"
+    },
+    "choros_min_coverage": {
+      "type": "number",
+      "default": 5,
+      "minimum": 0,
+      "description": "Minimum mean footprints per codon for a ChOROS training transcript"
+    },
+    "choros_min_nonzero": {
+      "type": "integer",
+      "default": 100,
+      "minimum": 1,
+      "description": "Minimum non-zero codon positions for a ChOROS training transcript"
+    },
     "ribowaltz_exclude_start": {
       "type": "integer",
       "default": 0,

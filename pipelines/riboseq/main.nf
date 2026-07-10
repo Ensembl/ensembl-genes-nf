@@ -36,6 +36,7 @@ include { POST_PROCESSING } from './subworkflows/post_processing.nf'
 include { TRACKHUB_GENERATION } from './subworkflows/trackhub_generation.nf'
 include { UNIQUE_READS_MATRIX } from './subworkflows/unique_reads_matrix.nf'
 include { TRANSLONSCORER } from './modules/translonscorer.nf'
+include { CHOROS } from './modules/choros.nf'
 
 include { COLLECT_QC_METRICS } from './modules/collect_qc_metrics.nf'
 include { QC_GATE } from './modules/qc_gate.nf'
@@ -165,6 +166,27 @@ workflow {
             Channel.fromPath(params.ribometric_annotation, checkIfExists: true).first() :
             Channel.value(file('NO_FILE')))
 
+    transcriptome_fasta_ch = use_organism_setup ?
+        ORGANISM_SETUP.out.transcriptome :
+        (params.transcriptome_fasta ?
+            Channel.fromPath(params.transcriptome_fasta, checkIfExists: true).first() :
+            Channel.value(file('NO_FILE')))
+
+    if (params.run_choros) {
+        if (!use_organism_setup && !params.ribometric_annotation) {
+            error "--run_choros requires --ribometric_annotation (or organism setup)."
+        }
+        if (!use_organism_setup && !params.transcriptome_fasta) {
+            error "--run_choros requires --transcriptome_fasta (or organism setup)."
+        }
+        if (!params.choros_container) {
+            error "--run_choros requires a pinned --choros_container image. See containers/choros/Dockerfile."
+        }
+        if (params.ribometric_offset_target != 'a_site') {
+            error "--run_choros requires --ribometric_offset_target a_site."
+        }
+    }
+
     //
     // SUBWORKFLOW: Data acquisition and read collapsing
     //
@@ -275,6 +297,21 @@ workflow {
             qc_gate_inputs,
             file(rules_path)
         )
+
+        // Optional codon-level sequence-bias correction. Run once per sample
+        // after the sample has passed the good QC gate; great is a stricter
+        // subset and must not create a duplicate ChOROS task.
+        if (params.run_choros) {
+            choros_inputs = ALIGNMENT.out.transcriptome_bam
+                .join(QC_GATE.out.good_offsets)
+                .map { meta, bam, bai, offsets -> [meta, bam, bai, offsets] }
+
+            CHOROS(
+                choros_inputs,
+                ribometric_anno_ch,
+                transcriptome_fasta_ch
+            )
+        }
 
         // Good and great QC tiers drive separate BEDgraph/BigWig tracks.
         // Failed samples still publish QC audit files, but do not enter

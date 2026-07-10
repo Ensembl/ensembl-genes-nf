@@ -89,3 +89,32 @@ nextflow run pipelines/riboseq/main.nf \
 ```
 
 Outputs per sample: `<outdir>/translonscorer/<sample>/<sample>_orfs_scored.csv`, `<sample>_report.html`.
+
+### ChOROS sequence-bias correction pilot
+
+ChOROS can be run once per sample after the `good` QC gate. It consumes the
+STAR transcriptome BAM and RiboMetric A-site offsets, preserves collapsed-read
+abundance through the `ZW` BAM tag, and publishes corrected transcript/codon
+counts without replacing the baseline BigWigs.
+
+Build and publish a pinned runtime from
+`containers/choros/Dockerfile`, then enable the stage with:
+
+```bash
+nextflow run pipelines/riboseq/main.nf \
+  --sample_sheet <samples.csv> \
+  --star_index <STAR_index> \
+  --gtf <annotation.gtf> \
+  --fasta <genome.fa> \
+  --transcriptome_fasta <transcripts.fa> \
+  --ribometric_annotation <ribometric.tsv> \
+  --chrom_sizes_file <chrom.sizes> \
+  --run_choros true \
+  --choros_container <registry>/choros:23d3e424 \
+  -profile slurm
+```
+
+Organism setup supplies `transcriptome_fasta` and `ribometric_annotation`
+automatically. ChOROS requires `ribometric_offset_target = 'a_site'`. Outputs
+are written under `<outdir>/choros/<sample>/`; the BAM preparation metrics
+report how many query groups survived the conservative single-transcript rule.
