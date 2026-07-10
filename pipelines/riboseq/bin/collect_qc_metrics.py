@@ -228,6 +228,31 @@ def collect_ribometric(rows, args):
                 continue
             add_metric(rows, args.run_id, args.sample_id, "RiboMetric", "ribometric.periodicity_dominance", "length", read_len, value)
 
+    recommended = report.get("recommended_read_lengths")
+    n_recommended = (
+        report.get("n_recommended_read_lengths")
+        if report.get("n_recommended_read_lengths") is not None
+        else metrics.get("n_recommended_read_lengths")
+    )
+    recommended_read_proportion = (
+        report.get("recommended_read_proportion")
+        if report.get("recommended_read_proportion") is not None
+        else metrics.get("recommended_read_proportion")
+    )
+
+    if not isinstance(recommended, dict):
+        recommended = derive_recommended_read_lengths(report)
+        if n_recommended is None:
+            n_recommended = recommended.get("n_recommended")
+        if recommended_read_proportion is None:
+            recommended_read_proportion = recommended.get("recommended_read_proportion")
+
+    if n_recommended is not None:
+        add_metric(rows, args.run_id, args.sample_id, "RiboMetric", "ribometric.n_recommended_read_lengths", "sample", None, n_recommended)
+    if recommended_read_proportion is not None:
+        add_metric(rows, args.run_id, args.sample_id, "RiboMetric", "ribometric.recommended_read_proportion", "sample", None, recommended_read_proportion)
+    collect_recommended_read_length_metrics(rows, args, recommended)
+
     f0 = report.get("frame0_fraction") or (report.get("frames", {}).get("frame0") if isinstance(report.get("frames"), dict) else None)
     if f0 is not None:
         add_metric(rows, args.run_id, args.sample_id, "RiboMetric", "ribometric.frame0_frac_overall", "sample", None, f0)
@@ -301,15 +326,137 @@ def collect_ribometric(rows, args):
 
 
 def collect_ribometric_csv_supplements(rows, args):
-    for row in load_csv_rows(args.ribometric_csv):
-        metric = row.get("Metric") or row.get("metric")
-        score = row.get("Score") or row.get("score") or row.get("value")
+    for row in iter_metric_score_rows(args.ribometric_csv):
+        metric = row.get("metric")
+        score = row.get("score")
         metric_base, read_len = parse_ribometric_metric_name(metric)
         if metric_base in {"periodicity_information", "periodicity_information_weighted_score"}:
             add_metric_if_missing(rows, args.run_id, args.sample_id, "RiboMetric", "ribometric.information_content", "sample", None, score)
         elif metric_base == "periodicity_dominance":
             scope = "sample" if read_len is None else "length"
             add_metric_if_missing(rows, args.run_id, args.sample_id, "RiboMetric", "ribometric.periodicity_dominance", scope, read_len, score)
+        elif metric_base == "recommended_read_proportion":
+            add_metric_if_missing(rows, args.run_id, args.sample_id, "RiboMetric", "ribometric.recommended_read_proportion", "sample", None, score)
+        elif metric_base == "n_recommended_read_lengths":
+            add_metric_if_missing(rows, args.run_id, args.sample_id, "RiboMetric", "ribometric.n_recommended_read_lengths", "sample", None, score)
+
+
+def iter_metric_score_rows(path):
+    if not path or not Path(path).exists():
+        return []
+    rows = []
+    with open(path, newline="") as handle:
+        reader = csv.reader(handle)
+        all_rows = [row for row in reader if row]
+    if not all_rows:
+        return rows
+
+    first = [cell.strip().lower() for cell in all_rows[0]]
+    if "metric" in first:
+        metric_idx = first.index("metric")
+        score_idx = (
+            first.index("score")
+            if "score" in first
+            else first.index("value")
+            if "value" in first
+            else 1
+        )
+        data_rows = all_rows[1:]
+    else:
+        metric_idx = 0
+        score_idx = 1
+        data_rows = all_rows
+
+    for row in data_rows:
+        if len(row) <= max(metric_idx, score_idx):
+            continue
+        rows.append({"metric": row[metric_idx], "score": row[score_idx]})
+    return rows
+
+
+def derive_recommended_read_lengths(report, min_periodicity=0.5, min_read_proportion=0.05):
+    read_lengths = report.get("read_length_distribution", {})
+    read_frames = report.get("read_frame_distribution", {})
+    if not isinstance(read_lengths, dict) or not isinstance(read_frames, dict):
+        return {}
+
+    try:
+        total_reads = sum(float(count) for count in read_lengths.values())
+    except (TypeError, ValueError):
+        return {}
+    if not total_reads:
+        return {}
+
+    by_read_length = {}
+    recommended_lengths = []
+    for key, frames in read_frames.items():
+        if not isinstance(frames, dict):
+            continue
+        try:
+            read_len = int(float(key))
+            frame_counts = [float(frames.get(str(frame), frames.get(frame, 0))) for frame in (0, 1, 2)]
+            frame_total = sum(frame_counts)
+            read_count = float(read_lengths.get(str(read_len), read_lengths.get(read_len, 0)))
+        except (TypeError, ValueError):
+            continue
+        periodicity = max(frame_counts) / frame_total if frame_total else 0.0
+        read_proportion = read_count / total_reads
+        is_recommended = periodicity >= min_periodicity and read_proportion >= min_read_proportion
+        by_read_length[str(read_len)] = {
+            "periodicity": periodicity,
+            "read_proportion": read_proportion,
+            "recommended": is_recommended,
+        }
+        if is_recommended:
+            recommended_lengths.append(read_len)
+
+    recommended_read_proportion = sum(
+        float(read_lengths.get(str(read_len), read_lengths.get(read_len, 0)))
+        for read_len in recommended_lengths
+    ) / total_reads
+    return {
+        "by_read_length": by_read_length,
+        "recommended_lengths": sorted(recommended_lengths),
+        "n_recommended": len(recommended_lengths),
+        "recommended_read_proportion": recommended_read_proportion,
+    }
+
+
+def collect_recommended_read_length_metrics(rows, args, recommended):
+    if not isinstance(recommended, dict):
+        return
+    by_read_length = recommended.get("by_read_length", {})
+    if not isinstance(by_read_length, dict):
+        return
+    for key, values in by_read_length.items():
+        if not isinstance(values, dict):
+            continue
+        try:
+            read_len = int(float(key))
+        except (TypeError, ValueError):
+            continue
+        if values.get("recommended") is not None:
+            add_metric_if_missing(
+                rows,
+                args.run_id,
+                args.sample_id,
+                "RiboMetric",
+                "ribometric.recommended_length",
+                "length",
+                read_len,
+                1.0 if values.get("recommended") else 0.0,
+            )
+        if values.get("read_proportion") is not None:
+            add_metric_if_missing(
+                rows,
+                args.run_id,
+                args.sample_id,
+                "RiboMetric",
+                "ribometric.read_proportion",
+                "length",
+                read_len,
+                values.get("read_proportion"),
+            )
 
 
 def write_tsv(path, rows, fieldnames):

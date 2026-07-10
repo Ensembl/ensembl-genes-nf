@@ -82,6 +82,10 @@ def test_collect_qc_metrics_emits_ribometric_metrics_from_json(tmp_path):
     assert metrics[("ribometric.reads_at_length", "length", "29")] == 10000
     assert metrics[("ribometric.frame0_frac", "length", "29")] == 0.72
     assert metrics[("ribometric.periodicity_dominance", "length", "29")] == 0.72
+    assert metrics[("ribometric.n_recommended_read_lengths", "sample", "")] == 1
+    assert round(metrics[("ribometric.recommended_read_proportion", "sample", "")], 4) == 0.5556
+    assert metrics[("ribometric.recommended_length", "length", "29")] == 1
+    assert metrics[("ribometric.recommended_length", "length", "30")] == 0
 
 
 def test_collect_qc_metrics_accepts_csv_read_len_alias_and_frame_counts(tmp_path):

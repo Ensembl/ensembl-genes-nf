@@ -5,16 +5,25 @@ sample_rules:
     metric: star.unique_mapped_reads
     scope: sample
     op: ">="
-    threshold: 500000
+    threshold: 100000
     severity: fail
     include_if_missing: false
-  - name: min_information_content
-    metric: ribometric.information_content
+  - name: min_recommended_read_lengths
+    metric: ribometric.n_recommended_read_lengths
     scope: sample
     op: ">="
-    # RiboMetric periodicity_information is normalized to 0-1.
-    # 0.4 is roughly equivalent to a dominant-frame fraction near 0.65.
-    threshold: 0.4
+    threshold: 1
+    severity: fail
+    include_if_missing: false
+  - name: min_recommended_read_proportion
+    metric: ribometric.recommended_read_proportion
+    scope: sample
+    op: ">="
+    # RiboMetric recommends lengths with periodicity >= 0.5 and read
+    # proportion >= 0.05. Requiring 0.3 keeps samples where a substantial
+    # fraction remains usable without rejecting mixed public libraries by a
+    # single hard periodicity score.
+    threshold: 0.3
     severity: fail
     include_if_missing: false
 length_rules:
@@ -25,11 +34,11 @@ length_rules:
     threshold: 5000
     severity: fail
     include_if_missing: false
-  - name: min_periodicity_dominance
-    metric: ribometric.periodicity_dominance
+  - name: ribometric_recommended_length
+    metric: ribometric.recommended_length
     scope: length
     op: ">="
-    threshold: 0.65
+    threshold: 1
     severity: fail
     include_if_missing: false
 selection:

@@ -89,15 +89,52 @@ process COLLECT_PARTITION_QC_MANIFEST {
 
     paths = sorted(Path('.').glob('*.partition_qc.json'))
     with open('partition_qc_manifest.tsv', 'w') as out:
-        out.write('sample_id\\tpassed\\taction\\tfailures\\twarnings\\n')
+        out.write(
+            '\\t'.join(
+                [
+                    'sample_id',
+                    'passed',
+                    'action',
+                    'total_records',
+                    'total_counts',
+                    'total_unique_sequences',
+                    'catch_all_partition',
+                    'catch_all_unique_sequences',
+                    'catch_all_counts',
+                    'catch_all_unique_fraction',
+                    'catch_all_count_fraction',
+                    'min_total_records',
+                    'min_total_counts',
+                    'max_catch_all_unique_fraction',
+                    'max_catch_all_count_fraction',
+                    'failures',
+                    'warnings',
+                ]
+            )
+            + '\\n'
+        )
         for path in paths:
             report = json.loads(path.read_text())
+            observed = report.get('observed') or {}
+            thresholds = report.get('thresholds') or {}
             out.write(
                 '\\t'.join(
                     [
                         str(report.get('sample_id', path.name)),
                         str(bool(report.get('passed', False))).lower(),
                         str(report.get('action', '')),
+                        str(observed.get('total_records', '')),
+                        str(observed.get('total_counts', '')),
+                        str(observed.get('total_unique_sequences', '')),
+                        str(observed.get('catch_all_partition', '')),
+                        str(observed.get('catch_all_unique_sequences', '')),
+                        str(observed.get('catch_all_counts', '')),
+                        str(observed.get('catch_all_unique_fraction', '')),
+                        str(observed.get('catch_all_count_fraction', '')),
+                        str(thresholds.get('min_total_records', '')),
+                        str(thresholds.get('min_total_counts', '')),
+                        str(thresholds.get('max_catch_all_unique_fraction', '')),
+                        str(thresholds.get('max_catch_all_count_fraction', '')),
                         '; '.join(report.get('failures') or []),
                         '; '.join(report.get('warnings') or []),
                     ]
@@ -115,8 +152,8 @@ process COLLECT_PARTITION_QC_MANIFEST {
     stub:
     """
     cat <<-EOF > partition_qc_manifest.tsv
-    sample_id\tpassed\taction\tfailures\twarnings
-    stub\ttrue\tstub\t\t
+    sample_id\tpassed\taction\ttotal_records\ttotal_counts\ttotal_unique_sequences\tcatch_all_partition\tcatch_all_unique_sequences\tcatch_all_counts\tcatch_all_unique_fraction\tcatch_all_count_fraction\tmin_total_records\tmin_total_counts\tmax_catch_all_unique_fraction\tmax_catch_all_count_fraction\tfailures\twarnings
+    stub\ttrue\tstub\t1\t1\t1\tNNNN\t0\t0\t0.0\t0.0\t1\t1\t0.05\t0.05\t\t
     EOF
 
     cat <<-END_VERSIONS > versions.yml
