@@ -8,7 +8,7 @@
     - Data acquisition and read collapsing
     - Quality control
     - STAR alignment (genome + transcriptome)
-    - RiboMetric and RiboWaltz analysis (offsets, QC, profiles)
+    - RiboMetric analysis (QC and offsets), with RiboWaltz offset fallback
     - BEDgraph and BigWig generation
     - Track hub generation (optional)
 ----------------------------------------------------------------------------------------
@@ -132,8 +132,8 @@ workflow {
         if (!params.gtf) {
             error "GTF annotation (--gtf) is required."
         }
-        if (!params.fasta) {
-            error "Reference genome FASTA (--fasta) is required for RiboWaltz analysis."
+        if (!params.fasta && !params.ribometric_annotation) {
+            error "Reference genome FASTA (--fasta) is required when --ribometric_annotation is not supplied, because the pipeline must fall back to RiboWaltz offsets."
         }
         if (!params.chrom_sizes_file) {
             error "Chromosome sizes file (--chrom_sizes_file) is required."
@@ -151,7 +151,9 @@ workflow {
 
     fasta_ch = use_organism_setup ?
         ORGANISM_SETUP.out.fasta :
-        Channel.fromPath(params.fasta, checkIfExists: true).first()
+        (params.fasta ?
+            Channel.fromPath(params.fasta, checkIfExists: true).first() :
+            Channel.value(file('NO_FILE')))
 
     chrom_sizes_ch = use_organism_setup ?
         ORGANISM_SETUP.out.chrom_sizes :
@@ -225,7 +227,8 @@ workflow {
         )
 
         //
-        // SUBWORKFLOW: Analysis - RiboMetric and RiboWaltz
+        // SUBWORKFLOW: Analysis - prefer RiboMetric QC and offsets.
+        // RiboWaltz is used only as an explicit or fallback offset source.
         //
         ANALYSIS(
             ALIGNMENT.out.transcriptome_bam,

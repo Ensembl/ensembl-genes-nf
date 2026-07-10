@@ -23,11 +23,11 @@
     },
     "fasta": {
       "type": "string",
-      "description": "Path to reference genome FASTA file (required for RiboWaltz P-site analysis)"
+      "description": "Path to reference genome FASTA file (required only when RiboWaltz offset fallback is used)"
     },
     "ribometric_annotation": {
       "type": "string",
-      "description": "Path to RiboMetric annotation file (optional, for RiboMetric QC)"
+      "description": "Path to RiboMetric annotation file. When supplied, RiboMetric provides QC and downstream offsets without running RiboWaltz by default."
     },
     "chrom_sizes_file": {
       "type": "string",
@@ -244,6 +244,15 @@
       "default": "tripsviz",
       "description": "RiboMetric offset calculation method"
     },
+    "ribometric_offset_target": {
+      "type": "string",
+      "default": "a_site",
+      "enum": [
+        "a_site",
+        "p_site"
+      ],
+      "description": "Site represented by RiboMetric-calculated offsets"
+    },
     "ribometric_sample_size": {
       "type": "integer",
       "default": 10000000,
@@ -252,12 +261,12 @@
     "ribowaltz_exclude_start": {
       "type": "integer",
       "default": 0,
-      "description": "Number of nucleotides to exclude from start codon in RiboWaltz coverage"
+      "description": "Number of nucleotides to exclude from start codon in RiboWaltz fallback coverage"
     },
     "ribowaltz_exclude_stop": {
       "type": "integer",
       "default": 0,
-      "description": "Number of nucleotides to exclude from stop codon in RiboWaltz coverage"
+      "description": "Number of nucleotides to exclude from stop codon in RiboWaltz fallback coverage"
     },
     "ribowaltz_flanking": {
       "type": "integer",
