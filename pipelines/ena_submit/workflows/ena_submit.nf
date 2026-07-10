@@ -8,15 +8,15 @@ include { ENA_SUBMIT_WEBIN as ENA_SUBMIT_ANALYSIS } from '../modules/submit_webi
 include { ENA_POLL_WEBIN as ENA_POLL_PROJECT } from '../modules/poll_webin.nf'
 include { ENA_POLL_WEBIN as ENA_POLL_ANALYSIS } from '../modules/poll_webin.nf'
 include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
+include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
 
-// Parse manifest and dispatch one analysis per row/file
+// Parse an annotation-level manifest and dispatch all files for each analysis.
 workflow ENA_SUBMIT_WORKFLOW {
     assert params.manifest,       "--manifest is required"
     assert params.webin_user,     "--webin_user is required"
     assert params.webin_password, "--webin_password is required"
     assert params.mode in ['test', 'prod'], "--mode must be 'test' or 'prod'"
     assert params.outdir,        "--outdir is required"
-    assert params.release,       "--release is required (e.g. Ensembl_110)"
 
     def ch_webin_user     = Channel.value(params.webin_user)
     def ch_webin_password = Channel.value(params.webin_password)
@@ -27,22 +27,26 @@ workflow ENA_SUBMIT_WORKFLOW {
       .fromPath(params.manifest)
       .splitCsv(header:true, sep:'\t')
       .map { row ->
-          def f = file(row.file_path)
-          if (!f.exists()) { throw new RuntimeException("Missing file: ${row.file_path}") }
-          if (!row.assembly_accession) { throw new RuntimeException("Manifest row missing assembly_accession for file: ${row.file_path}") }
-          def id = row.analysis_alias ?: f.getBaseName()
-          def release = params.release.toString()
-          def prj_alias = ("prj_${row.assembly_accession}_${release}").replaceAll('[^A-Za-z0-9._-]', '_')
-          // Use derived project alias as a refname (not accession). XML generator will place it as refname, not accession.
-          row.study = prj_alias
-          def meta = [ id:id, remote_name: (row.remote_name ?: f.getName()), project_alias: prj_alias, assembly: row.assembly_accession, release: release ]
-          tuple(meta, row, f)
+          if (!row.files_tsv) { throw new RuntimeException("Manifest row missing files_tsv") }
+          if (!row.assembly_accession) { throw new RuntimeException("Manifest row missing assembly_accession") }
+          if (!row.last_geneset_update && !row.partial_release_label) { throw new RuntimeException("Manifest row missing last_geneset_update/partial_release_label") }
+          def release = row.partial_release_label ?: "${row.assembly_accession}-Ensembl-${row.last_geneset_update}"
+          def prj_alias = row.project_alias ?: ("prj_${release}").replaceAll('[^A-Za-z0-9._-]', '_')
+          // Use derived child project alias as a refname (not accession) unless an existing study is provided.
+          if (!row.study) { row.study = prj_alias }
+          if (params.umbrella_study && !row.umbrella_study) { row.umbrella_study = params.umbrella_study }
+          if (row.umbrella_study && !(row.analysis_attributes ?: '').contains('attr_umbrella_study=')) {
+              row.analysis_attributes = [row.analysis_attributes, "attr_umbrella_study=${row.umbrella_study}"].findAll { it }.join('; ')
+          }
+          def id = row.analysis_alias ?: "rnaseq_alignment_evidence_${row.assembly_accession}_${release}".replaceAll('[^A-Za-z0-9._-]', '_')
+          def meta = [ id:id, project_alias: prj_alias, assembly: row.assembly_accession, release: release ]
+          tuple(meta, row)
       }
-      .set { inputs }
+      .set { analyses }
 
     // Single approach: derive unique Projects from manifest (assembly + release), always
-    def ch_proj_rows = inputs
-        .map { meta, row, f ->
+    def ch_proj_rows = analyses
+        .map { meta, row ->
             def alias = meta.project_alias
             def title = "Annotation evidence project for ${meta.assembly}, ${meta.release}"
             def description = params.project_description ?: "Annotation evidence project for ${meta.assembly}, ${meta.release}"
@@ -64,8 +68,48 @@ workflow ENA_SUBMIT_WORKFLOW {
         Channel.value(params.poll_max_attempts ?: 30)
         )
 
+    ENA_EXPAND_FILE_MANIFEST(analyses)
+
+    def file_inputs = ENA_EXPAND_FILE_MANIFEST.out.expanded
+        .map { meta, row, expanded_tsv -> expanded_tsv }
+        .splitCsv(header:true, sep:'\t')
+        .map { file_row ->
+            def meta = [
+                id: file_row.analysis_id,
+                project_alias: file_row.project_alias,
+                assembly: file_row.assembly,
+                release: file_row.release,
+            ]
+            def row = [
+                study: file_row.study,
+                umbrella_study: file_row.umbrella_study,
+                analysis_alias: file_row.analysis_alias,
+                title: file_row.title,
+                description: file_row.description,
+                assembly_accession: file_row.assembly_accession,
+                last_geneset_update: file_row.last_geneset_update,
+                partial_release_label: file_row.partial_release_label,
+                species: file_row.species,
+                taxon_id: file_row.taxon_id,
+                ref_seqs: file_row.ref_seqs,
+                analysis_links: file_row.analysis_links,
+                analysis_attributes: file_row.analysis_attributes,
+                analysis_type: file_row.analysis_type,
+                omit_run_refs_in_test: file_row.omit_run_refs_in_test,
+            ]
+            def file_meta = [
+                analysis_id: file_row.analysis_id,
+                file_type: file_row.file_type,
+                remote_name: file_row.remote_name,
+                run_accession: file_row.run_accession,
+                sample_accession: file_row.sample_accession,
+                experiment_accession: file_row.experiment_accession,
+            ]
+            tuple(meta, row, file_meta, file(file_row.file_path))
+        }
+
     // Compute md5 per file
-    md5s = ENA_COMPUTE_MD5( inputs )
+    md5s = ENA_COMPUTE_MD5( file_inputs )
 
     ENA_FTP_UPLOAD(
         md5s,
@@ -77,16 +121,18 @@ workflow ENA_SUBMIT_WORKFLOW {
 
     def uploaded_after_projects = ENA_FTP_UPLOAD.out.uploaded
         .combine(ENA_POLL_PROJECT.out.accessions)
-        .map { meta, row, f, md5, accessions -> tuple(meta, row, f, md5) }
+        .map { meta, row, file_meta, f, md5, accessions -> tuple(meta.id, meta, row, file_meta, f, md5) }
+        .groupTuple(by: 0)
+        .map { id, metas, rows, file_metas, files, md5s -> tuple(metas[0], rows[0], file_metas, files, md5s) }
 
-    // Generate XMLs after the derived project has been accepted by Webin.
+    // Generate one analysis XML after the derived project has been accepted by Webin.
     ENA_GENERATE_XML(
         uploaded_after_projects,
         params.remote_dir ?: '',
         params.hold_until ?: ''
         )
 
-    // Submit to async queue — one POST per file, returns immediately with a submission ID
+    // Submit to async queue — one POST per annotation analysis, returns immediately with a submission ID.
     ENA_SUBMIT_ANALYSIS(
         ENA_GENERATE_XML.out.xml,
         ch_webin_base,

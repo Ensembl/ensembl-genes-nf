@@ -10,18 +10,19 @@ process ENA_GENERATE_PROJECT_XML {
     output:
     tuple val(meta), path('webin_project.xml'), emit: xml
 
+    script:
+    def generator = "${moduleDir}/../bin/generate_project_xml.py"
     // Use shell block to avoid Groovy string interpolation issues with $ and $(...)
-    shell:
-    '''
-    set -euo pipefail
-    hold_until_arg=""
-    if [ -n "!{meta.hold_until}" ]; then hold_until_arg="--hold-until !{meta.hold_until}"; fi
-    python3 $(command -v generate_project_xml.py) \
-      --alias !{meta.alias} \
-      --name "!{meta.name}" \
-      --title "!{meta.title}" \
-      --description "!{meta.description}" \
-      ${hold_until_arg} \
-      --outdir .
-    '''
+    """
+set -euo pipefail
+hold_until_arg=""
+if [ -n "${meta.hold_until}" ]; then hold_until_arg="--hold-until ${meta.hold_until}"; fi
+python3 ${generator} \
+  --alias ${meta.alias} \
+  --name "${meta.name}" \
+  --title "${meta.title}" \
+  --description "${meta.description}" \
+  \${hold_until_arg} \
+  --outdir .
+"""
 }

@@ -1,106 +1,135 @@
-# ENA Submission Pipeline
+# ENA RNA-seq Alignment Evidence Submission
 
-This pipeline uploads analysis files (e.g. BAM/CRAM) to ENA Webin drop-box and submits an ANALYSIS linking them to public runs.
-See also: `pipelines/ena_submit/SUBMISSION_STRATEGY.md` for project/alias and idempotency conventions.
+This pipeline submits processed RNA-seq alignments to ENA as annotation evidence.
 
-## Inputs
+The current production model is one ENA `ANALYSIS` per annotation/assembly partial release. Each analysis can contain many BAM/CRAM files and links back to all source runs with `RUN_REF`.
 
-Provide a tab-separated `manifest.tsv` with the following columns (header required):
+## Step 1: Build The Annotation Manifest
 
-- file_path: Absolute or relative path to the file to submit (BAM/CRAM).
-- file_type: One of `bam`, `cram`.
-- study: ENA Study accession or alias (e.g. PRJEB12345 or your alias).
-- analysis_alias: Unique alias for the analysis (string). If empty, the pipeline generates one.
-- title: Human-readable title.
-- description: Short description.
-- run_accessions: Comma-separated ENA run accessions that the file derives from (e.g. ERR123,ERR456).
-- run_list_path: Optional path to a text/TSV file containing run accessions (commas and whitespace allowed). Merged with `run_accessions` and de-duplicated.
-- experiment_accessions: Optional comma-separated ENA experiment accessions (if you prefer linking experiments).
-- assembly_accession: ENA/INSDC assembly accession the reads were aligned to (e.g. GCA_000001405.28 or GCF_...).
-- sample_accession: Optional sample accession to associate (e.g. ERS1234567). Leave blank for cross-sample merges.
-- ref_seqs: Optional comma-separated list of reference sequence accessions (for <SEQUENCE> entries) when relevant.
-- remote_name: Optional alternate remote filename (defaults to the source basename).
-- analysis_type: Optional; one of `READ_ALIGNMENT` or `REFERENCE_ALIGNMENT` (default). The pipeline coerces `READ_ALIGNMENT` to `REFERENCE_ALIGNMENT` to satisfy current ENA schema validation.
-- analysis_links: Optional; `Label|URL; Label2|URL2`.
-- analysis_attributes: Optional; `key=value; key2=value2`. You can also supply `attr_*` columns; e.g., `attr_pipeline=ensembl-genes-nf` becomes a TAG/VALUE pair.
-- omit_run_refs_in_test: Optional; `true|false` to omit or emit RUN_REF when `--mode test` (default true/omit).
+For an Ensembl genebuild RNA-seq directory like:
 
-Example: see `pipelines/ena_submit/examples/manifest.tsv`.
-
-## Credentials
-
-Set Webin credentials via environment variables before running:
-
-- `WEBIN_USER` (e.g. `Webin-XXXXX`)
-- `WEBIN_PASSWORD`
-
-## Running
-
+```text
+.../<species>/<assembly_accession>/rnaseq
+  <species>.csv
+  output/<RUN>_Aligned.sortedByCoord.out.bam
 ```
+
+build a manifest with:
+
+```bash
+python3 pipelines/ena_submit/bin/build_manifest_from_rnaseq_annotation.py \
+  --rnaseq-dir /hps/.../annot_vert/rattus_rattus/GCA_011064425.1/rnaseq \
+  --assembly-accession GCA_011064425.1 \
+  --last-geneset-update 2025-12 \
+  --species rattus_rattus \
+  --file-format bam \
+  --umbrella-study PRJEB000000 \
+  --outdir /path/to/ena_manifest/GCA_011064425.1
+```
+
+Outputs:
+
+- `manifest.tsv`: one row for the annotation-level ENA analysis.
+- `files.tsv`: one row per BAM/CRAM file with run/sample/file metadata.
+- `missing_files.tsv`: runs from the RNA-seq CSV without a matching alignment file.
+- `summary.tsv`: counts and derived aliases.
+
+The partial release label is derived as:
+
+```text
+<assembly_accession>-Ensembl-<last_geneset_update>
+```
+
+For example:
+
+```text
+GCA_052040795.1-Ensembl-2025-12
+```
+
+The builder currently uses the headerless RNA-seq TSV format where column 1 is sample accession, column 2 is run accession, column 9 is platform, column 11 is FASTQ URL, and column 12 is FASTQ MD5.
+
+If `samtools` is available, the builder inspects BAM/CRAM headers for basic alignment provenance such as sort order, `@PG` programs, and STAR version. Use `--no-bam-header` to skip this.
+
+## Step 2: Submit To ENA
+
+Run the Nextflow workflow with the generated annotation manifest:
+
+```bash
 nextflow run pipelines/ena_submit/main.nf \
-  --manifest pipelines/ena_submit/examples/manifest.tsv \
+  -c pipelines/ena_submit/nextflow.config \
+  --manifest /path/to/ena_manifest/GCA_011064425.1/manifest.tsv \
   --mode test \
-  --release Ensembl_110 \
-  --upload_protocol aspera \
+  --webin_user "$WEBIN_USER" \
+  --webin_password "$WEBIN_PASSWORD" \
+  --umbrella_study PRJEB000000 \
+  --remote_dir GCA_011064425.1-Ensembl-2025-12 \
   --upload_parallelism 2 \
-  --ascp_limit 300M \
-  --remote_dir myproject/subset1 \
-  --submit_api v1 \
-  --outdir results
+  --outdir /path/to/ena_submit_results/GCA_011064425.1
 ```
 
-Notes:
-- Use `--mode prod` to switch to production endpoints.
-- Use `--upload_protocol ftp` if Aspera is unavailable.
-- Keep `--upload_parallelism` low to avoid overwhelming ENA (2–3 typical).
-- In TEST mode, the pipeline omits RUN_REF by default so ENA TEST doesn’t 404 production run accessions. Set `omit_run_refs_in_test=false` in your manifest row to include RUN_REF in TEST.
-- Projects are auto‑derived and registered per assembly+release; supply `--release`.
+Use `--mode prod` for production endpoints after Webin test validation.
+
+## Manifest Schema
+
+`manifest.tsv` has one row per annotation/release:
+
+- `files_tsv`: Path to the file-level manifest.
+- `study`: Existing child study accession/alias. Leave blank to use the generated project alias.
+- `project_alias`: Child project alias, usually `prj_<assembly_accession>_Ensembl_<YYYY_MM>`.
+- `umbrella_study`: Umbrella study accession/alias. Recorded as analysis metadata for now.
+- `analysis_alias`: Stable ENA analysis alias.
+- `title`: Human-readable analysis title.
+- `description`: Human-readable description.
+- `assembly_accession`: INSDC assembly accession, e.g. `GCA_052040795.1`.
+- `last_geneset_update`: Genome metadata value, e.g. `2025-12`.
+- `partial_release_label`: Derived release label.
+- `species`: Production species name.
+- `taxon_id`: Optional taxon ID.
+- `ref_seqs`: Optional comma-separated reference sequence accessions when assembly accession is not enough.
+- `analysis_links`: Optional `Label|URL; Label2|URL2`.
+- `analysis_attributes`: Optional `key=value; key2=value2`. The builder writes `attr_*` keys.
+- `analysis_type`: `REFERENCE_ALIGNMENT`.
+- `omit_run_refs_in_test`: `true` by default because production runs may not exist in ENA test.
+
+`files.tsv` has one row per alignment file:
+
+- `file_path`: Local BAM/CRAM path.
+- `file_type`: `bam` or `cram`.
+- `remote_name`: Filename to use in the Webin drop-box.
+- `run_accession`: Source ENA/SRA/DRA run accession.
+- `sample_accession`: Source sample accession from the RNA-seq CSV.
+- `experiment_accession`: Optional experiment accession.
+- `platform`: Sequencing platform from the RNA-seq CSV.
+- `source_fastq_count`: Number of source FASTQ records for the run.
+- `source_fastq_urls`: Comma-separated source FASTQ URLs.
+- `source_fastq_md5s`: Comma-separated source FASTQ MD5s.
+- `bam_sort_order`: Header-derived sort order when available.
+- `bam_pg_programs`: Header-derived `@PG` program names when available.
+- `alignment_software`: Header-derived aligner name when available.
+- `alignment_software_version`: Header-derived aligner version when available.
 
 ## Outputs
 
-- `${outdir}/ena_submission/uploads/` – logs of uploads
-- `${outdir}/ena_submission/xml/` – generated XML per analysis (per-ID subfolders)
-- `${outdir}/ena_submission/receipts/` – ENA receipts (XML) per analysis
-- `${outdir}/pipeline_info/` – Nextflow execution reports
+- `${outdir}/ena_submission/projects/`: generated child project XML.
+- `${outdir}/ena_submission/xml/`: generated analysis XML.
+- `${outdir}/ena_submission/accessions.tsv`: Webin polling results.
+- Nextflow work directory: upload logs and task details.
 
-## Submission model
+## Current Production Decisions
 
-- One ANALYSIS per file (ENA permits a single BAM/CRAM per READ/REFERENCE_ALIGNMENT).
-- Files are uploaded first; the pipeline then submits metadata referencing the file with MD5.
-- The pipeline can use Webin REST drop-box (v1) or Webin REST v2 (async).
+Locked in:
 
-## Test vs prod
+- One ENA `ANALYSIS` per annotation/assembly partial release.
+- Include all source `RUN_REF` entries in production.
+- Support BAM and CRAM input files.
+- Derive partial release identity from assembly accession plus `last_geneset_update`.
+- Use RNA-seq flat files as run/sample metadata source for now.
+- Accept registry/core metadata later through CLI-compatible fields.
 
-- `--mode test` uses ENA test endpoints for submission. Files still upload to your Webin drop-box.
-- `--mode prod` uses production endpoints.
+Pending:
 
-## Safety
-
-- Upload concurrency is capped with `--upload_parallelism`.
-- Aspera uploads are bandwidth-limited with `--ascp_limit` (default 300M).
-
-## Requirements
-
-- For Aspera: `ascp` CLI available and Webin SSH access.
-- For FTP: `lftp` installed.
-- For submission: `curl` installed.
-- Credentials exported: `WEBIN_USER`, `WEBIN_PASSWORD`.
-
-## Utilities
-
-- Build a manifest from a runs/tissue CSV (like `tissueall.csv`):
-
-```
-python3 pipelines/ena_submit/bin/build_manifest_from_runs.py \
-  --input tissueall.csv \
-  --study PRJEB999999 \
-  --species-map species.tsv \
-  --release Ensembl_110 \
-  --group-by assembly,tissue \
-  --file-dir /path/to/merged/files \
-  --file-ext cram \
-  --outdir /tmp/ena_manifest \
-  --links-prefix https://example.org/runs
-```
-
-This writes `/tmp/ena_manifest/manifest.tsv` and per-group run lists under `/tmp/ena_manifest/runs/`. The manifest is compatible with this pipeline and supports per‑run mode by default. In TEST, `RUN_REF` are omitted unless overridden; in PROD they are included so your analyses link back to the submitter’s RUN and BioSample where available.
+- Final umbrella study accession/alias.
+- Whether child project-to-umbrella linkage should be represented in ENA XML or handled externally.
+- Whether production submissions should use BAMs as-is or CRAMs.
+- Whether `SAMD...` sample accessions validate as `SAMPLE_REF` in Webin, or need mapping to ENA sample accessions.
+- Which registry fields will replace CLI arguments for assembly/annotation metadata.

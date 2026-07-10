@@ -17,9 +17,10 @@ process ENA_POLL_WEBIN {
     script:
     def qlist = (queue_responses instanceof List) ? queue_responses : [ queue_responses ]
     def qargs = qlist.collect { "\"${it}\"" }.join(' ')
+    def poller = "${moduleDir}/../bin/poll_webin.py"
     """
     set -euo pipefail
-    poll_webin.py ${qargs} \
+    python3 ${poller} ${qargs} \
       --webin-user "${webin_user}" \
       --webin-password "${webin_password}" \
       --interval ${poll_interval} \

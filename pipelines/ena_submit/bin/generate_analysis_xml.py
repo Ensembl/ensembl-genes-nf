@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, os, sys, csv, re, datetime, xml.etree.ElementTree as ET
+import argparse, csv, os, re, sys, xml.etree.ElementTree as ET
 
 NS = {}
 
@@ -10,11 +10,52 @@ def mk_text(parent, tag, text=None, **attrib):
     return el
 
 
-def build_analysis_xml(row, remote_path, md5, mode='REFERENCE_ALIGNMENT'):
-    root = ET.Element('ANALYSIS_SET')
-    analysis = mk_text(root, 'ANALYSIS', alias=row.get('analysis_alias') or f"auto-{os.path.basename(remote_path)}")
+def split_values(value):
+    return [x.strip() for x in (value or '').split(',') if x.strip()]
 
-    mk_text(analysis, 'TITLE', row.get('title') or os.path.basename(remote_path))
+
+def unique(values):
+    seen = set()
+    out = []
+    for value in values:
+        if value and value not in seen:
+            seen.add(value)
+            out.append(value)
+    return out
+
+
+def read_md5(path):
+    with open(path) as handle:
+        return handle.read().split()[0]
+
+
+def read_files_manifest(path):
+    rows = []
+    with open(path, newline='') as handle:
+        reader = csv.DictReader(handle, delimiter='\t')
+        for row in reader:
+            if not row.get('remote_path'):
+                raise RuntimeError(f"files manifest row missing remote_path in {path}")
+            if not row.get('file_type'):
+                raise RuntimeError(f"files manifest row missing file_type for {row.get('remote_path')}")
+            if row.get('md5'):
+                md5 = row['md5'].strip()
+            elif row.get('md5_path'):
+                md5 = read_md5(row['md5_path'].strip())
+            else:
+                raise RuntimeError(f"files manifest row missing md5/md5_path for {row.get('remote_path')}")
+            row['md5'] = md5
+            rows.append(row)
+    if not rows:
+        raise RuntimeError(f"No files found in files manifest: {path}")
+    return rows
+
+
+def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
+    root = ET.Element('ANALYSIS_SET')
+    analysis = mk_text(root, 'ANALYSIS', alias=row.get('analysis_alias') or "rnaseq_alignment_evidence")
+
+    mk_text(analysis, 'TITLE', row.get('title') or row.get('analysis_alias') or 'RNA-seq alignment evidence')
     mk_text(analysis, 'DESCRIPTION', row.get('description') or 'Alignment of public runs')
 
     study = (row.get('study') or '').strip()
@@ -26,16 +67,18 @@ def build_analysis_xml(row, remote_path, md5, mode='REFERENCE_ALIGNMENT'):
         else:
             mk_text(analysis, 'STUDY_REF', refname=study)
 
-    # One or more samples can be associated
-    samples = [s.strip() for s in (row.get('sample_accession') or '').split(',') if s.strip()]
-    for s in samples:
+    samples = split_values(row.get('sample_accession'))
+    for file_row in files:
+        samples.extend(split_values(file_row.get('sample_accession')))
+    for s in unique(samples):
         mk_text(analysis, 'SAMPLE_REF', accession=s)
 
     # Link to runs/experiments directly under ANALYSIS (ENA schema)
     # Combine comma-separated list and optional file of run IDs
     runs = []
-    inline_runs = [r.strip() for r in (row.get('run_accessions') or '').split(',') if r.strip()]
-    runs.extend(inline_runs)
+    runs.extend(split_values(row.get('run_accessions')))
+    for file_row in files:
+        runs.extend(split_values(file_row.get('run_accession') or file_row.get('run_accessions')))
 
     run_list_path = (row.get('run_list_path') or '').strip()
     if run_list_path:
@@ -49,16 +92,14 @@ def build_analysis_xml(row, remote_path, md5, mode='REFERENCE_ALIGNMENT'):
         except FileNotFoundError:
             print(f"WARNING: run_list_path not found: {run_list_path}", file=sys.stderr)
 
-    # de-duplicate while preserving order
-    seen = set()
-    runs = [x for x in runs if not (x in seen or seen.add(x))]
-
     if not row.get('__omit_run_refs__'):
-        for r in runs:
+        for r in unique(runs):
             mk_text(analysis, 'RUN_REF', accession=r)
 
-    exps = [e.strip() for e in (row.get('experiment_accessions') or '').split(',') if e.strip()]
-    for e in exps:
+    exps = split_values(row.get('experiment_accessions'))
+    for file_row in files:
+        exps.extend(split_values(file_row.get('experiment_accession') or file_row.get('experiment_accessions')))
+    for e in unique(exps):
         mk_text(analysis, 'EXPERIMENT_REF', accession=e)
 
     # ANALYSIS_TYPE followed by FILES
@@ -80,10 +121,19 @@ def build_analysis_xml(row, remote_path, md5, mode='REFERENCE_ALIGNMENT'):
         mk_text(ra, 'SEQUENCE', accession=s)
 
     # FILES must appear before ANALYSIS_LINKS / ANALYSIS_ATTRIBUTES
-    files = mk_text(analysis, 'FILES')
-    ftype = (row.get('file_type') or '').lower()
-    filetype_attr = 'bam' if ftype == 'bam' else 'cram'
-    mk_text(files, 'FILE', filename=remote_path, filetype=filetype_attr, checksum_method='MD5', checksum=md5)
+    files_el = mk_text(analysis, 'FILES')
+    for file_row in files:
+        ftype = (file_row.get('file_type') or '').lower()
+        if ftype not in ('bam', 'cram'):
+            raise RuntimeError(f"Unsupported file_type '{ftype}' for {file_row.get('remote_path')}")
+        mk_text(
+            files_el,
+            'FILE',
+            filename=file_row['remote_path'],
+            filetype=ftype,
+            checksum_method='MD5',
+            checksum=file_row['md5'],
+        )
 
     # Optional: ANALYSIS_LINKS (URL_LINK only for now) and ANALYSIS_ATTRIBUTES
     links_val = (row.get('analysis_links') or '').strip()
@@ -151,8 +201,7 @@ def build_webin_submission_xml(analysis_tree, submission_tree):
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--manifest-row', required=True, help='Path to a one-row TSV with headers')
-    p.add_argument('--remote-path', required=True)
-    p.add_argument('--md5', required=True)
+    p.add_argument('--files-manifest', required=True, help='TSV with remote_path, file_type, md5 or md5_path')
     p.add_argument('--analysis-type', default='REFERENCE_ALIGNMENT', choices=['READ_ALIGNMENT', 'REFERENCE_ALIGNMENT'])
     p.add_argument('--omit-run-refs', action='store_true', help='Omit RUN_REF elements (useful in ENA TEST)')
     p.add_argument('--hold-until', default=None)
@@ -166,12 +215,11 @@ def main():
             # pass an internal flag via the row dict to avoid changing function signature
             row['__omit_run_refs__'] = '1'
 
-    with open(args.md5) as m:
-        md5val = m.read().split()[0]
+    files = read_files_manifest(args.files_manifest)
 
     os.makedirs(args.outdir, exist_ok=True)
 
-    analysis_tree = build_analysis_xml(row, args.remote_path, md5val, args.analysis_type)
+    analysis_tree = build_analysis_xml(row, files, args.analysis_type)
     analysis_path = os.path.join(args.outdir, 'analysis.xml')
     analysis_tree.write(analysis_path, encoding='UTF-8', xml_declaration=True)
 
