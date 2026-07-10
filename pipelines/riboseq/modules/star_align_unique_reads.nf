@@ -9,7 +9,8 @@ process STAR_ALIGN_UNIQUE_READS {
     cpus 16
     memory '48.GB'
     time '12.h'
-    errorStrategy 'terminate'
+    errorStrategy { task.attempt <= 1 ? 'retry' : 'ignore' }
+    maxRetries 1
 
     conda "bioconda::star=2.7.11a bioconda::samtools=1.19"
     container "oras://community.wave.seqera.io/library/samtools_star:1b5dd3ca5b761fb8"
@@ -83,7 +84,8 @@ process STAR_ALIGN_UNIQUE_READS_PARTITIONED {
     cpus 16
     memory '48.GB'
     time '12.h'
-    errorStrategy 'terminate'
+    errorStrategy { task.attempt <= 1 ? 'retry' : 'ignore' }
+    maxRetries 1
 
     conda "bioconda::star=2.7.11a bioconda::samtools=1.19"
     container "oras://community.wave.seqera.io/library/samtools_star:1b5dd3ca5b761fb8"

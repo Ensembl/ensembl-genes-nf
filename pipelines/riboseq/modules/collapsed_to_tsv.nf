@@ -9,7 +9,7 @@ process COLLAPSED_TO_TSV {
     cpus 1
     time '4.h'
     memory '4.GB'
-    errorStrategy 'retry'
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     maxRetries 3
 
     // Pure Python - no external dependencies
@@ -62,7 +62,7 @@ process COLLAPSED_TO_TSV_PARTITIONED {
     cpus 1
     time '8.h'
     memory '4.GB'
-    errorStrategy 'retry'
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     maxRetries 3
 
     conda "conda-forge::python=3.11"

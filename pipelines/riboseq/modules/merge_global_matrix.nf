@@ -9,7 +9,8 @@ process MERGE_GLOBAL_MATRIX {
     cpus 1
     memory '64.GB'
     time '24.h'
-    errorStrategy 'terminate'
+    errorStrategy { task.attempt <= 1 ? 'retry' : 'ignore' }
+    maxRetries 1
 
     // Dependencies: python, numpy, scipy, zarr, numcodecs, polars, xxhash
     // Use conda profile or enable Wave for automatic container generation
@@ -113,7 +114,8 @@ process MERGE_GLOBAL_MATRIX_PARTITIONED {
     cpus 1
     memory '64.GB'
     time '24.h'
-    errorStrategy 'terminate'
+    errorStrategy { task.attempt <= 1 ? 'retry' : 'ignore' }
+    maxRetries 1
 
     conda "conda-forge::python=3.11 conda-forge::numpy=1.26 conda-forge::scipy=1.12 conda-forge::zarr=2.18 conda-forge::numcodecs=0.12 conda-forge::polars=0.20 conda-forge::xxhash-python=3.4"
     container "oras://community.wave.seqera.io/library/pip_numpy_polars_scipy_pruned:ca114eb799eb08b3"

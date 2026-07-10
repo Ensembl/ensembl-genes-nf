@@ -8,7 +8,8 @@ process QC_PARTITIONED_TSV {
     cpus 1
     time '30.m'
     memory '1.GB'
-    errorStrategy 'terminate'
+    errorStrategy { task.attempt <= 1 ? 'retry' : 'ignore' }
+    maxRetries 1
 
     conda "conda-forge::python=3.11"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
