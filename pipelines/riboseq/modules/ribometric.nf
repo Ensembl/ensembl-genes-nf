@@ -3,7 +3,7 @@ process RIBOMETRIC {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
-    container "ghcr.io/jackcurragh/ribometric:1.4.1"
+    container "ghcr.io/jackcurragh/ribometric:1.4.2"
 
     publishDir "${params.outdir}/RiboMetric", mode: 'copy', pattern: "*RiboMetric.{html,json,csv}"
     publishDir "${params.outdir}/RiboMetric/offsets", mode: 'copy', pattern: "*.{offsets.tsv,best_offset.txt}"
@@ -134,7 +134,7 @@ process RIBOMETRIC {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        ribometric: 1.4.1
+        ribometric: 1.4.2
     END_VERSIONS
     """
 }
