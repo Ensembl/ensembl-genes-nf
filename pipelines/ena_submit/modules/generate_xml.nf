@@ -24,7 +24,7 @@ process ENA_GENERATE_XML {
     def omit_run_refs = (params.mode == 'test' && (row.containsKey('omit_run_refs_in_test') ? row.omit_run_refs_in_test?.toString()?.toLowerCase() in ['1','true','yes'] : true))
     def omit_arg = omit_run_refs ? '--omit-run-refs' : ''
     def generator = "${moduleDir}/../bin/generate_analysis_xml.py"
-    def fileRows = file_metas.withIndex().collect { fm, idx ->
+    def fileRows = file_metas.withIndex().findAll { fm, idx -> !fm.is_index }.collect { fm, idx ->
         def remoteName = fm.remote_name ?: files[idx].getName()
         def remotePath = remoteDir ? "${remoteDir}/${remoteName}" : remoteName
         [

@@ -69,6 +69,27 @@ nextflow run pipelines/ena_submit/main.nf \
 
 Use `--mode prod` for production endpoints after Webin test validation.
 
+### Optional BAM-to-CRAM conversion
+
+To convert BAM inputs to CRAM before MD5 calculation and upload, enable conversion
+and provide the matching reference FASTA and `.fai` index:
+
+```bash
+nextflow run pipelines/ena_submit/main.nf \
+  -c pipelines/ena_submit/nextflow.config \
+  --manifest /path/to/ena_manifest/GCA_011064425.1/manifest.tsv \
+  --mode test \
+  --convert_to_cram true \
+  --reference_fasta /path/to/reference.fa \
+  --webin_user "$WEBIN_USER" \
+  --webin_password "$WEBIN_PASSWORD" \
+  --outdir /path/to/ena_submit_results/GCA_011064425.1
+```
+
+The reference index must be at `/path/to/reference.fa.fai`. CRAM files and their
+CRAI indexes are uploaded; only the CRAM files are listed in the ENA analysis XML.
+Existing non-BAM inputs are passed through unchanged.
+
 ## Manifest Schema
 
 `manifest.tsv` has one row per annotation/release:
