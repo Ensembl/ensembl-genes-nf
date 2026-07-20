@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, base64, json, sys, time, urllib.request, urllib.error, re
+import argparse, base64, json, os, sys, time, urllib.request, urllib.error, re
 from pathlib import Path
 
 
@@ -50,13 +50,18 @@ def main():
     ap = argparse.ArgumentParser(description="Poll ENA Webin queue and produce accessions.tsv")
     ap.add_argument("queues", nargs="+", help="List of *.queue.json files")
     ap.add_argument("--webin-user", required=True)
-    ap.add_argument("--webin-password", required=True)
+    password_group = ap.add_mutually_exclusive_group()
+    password_group.add_argument("--webin-password", help="Password (discouraged: visible in task command files)")
+    password_group.add_argument("--webin-password-env", default="ENA_WEBIN_PASSWORD")
     ap.add_argument("--interval", type=int, default=20)
     ap.add_argument("--max-attempts", type=int, default=30)
     ap.add_argument("--out", default="accessions.tsv")
     args = ap.parse_args()
 
-    auth = basic_auth_header(args.webin_user, args.webin_password)
+    password = args.webin_password or os.environ.get(args.webin_password_env)
+    if not password:
+        ap.error(f"No Webin password supplied; set ${args.webin_password_env} or use --webin-password")
+    auth = basic_auth_header(args.webin_user, password)
 
     failures = 0
     with open(args.out, "w") as out:

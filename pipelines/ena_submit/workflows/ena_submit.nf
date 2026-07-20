@@ -11,16 +11,15 @@ include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
 include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
 include { ENA_CONVERT_TO_CRAM } from '../modules/convert_to_cram.nf'
 
-// Parse an annotation-level manifest and dispatch all files for each analysis.
+// Parse an annotation-level manifest and dispatch one ENA analysis per file.
 workflow ENA_SUBMIT_WORKFLOW {
     assert params.manifest,       "--manifest is required"
     assert params.webin_user,     "--webin_user is required"
-    assert params.webin_password, "--webin_password is required"
+    assert secrets.ENA_WEBIN_PASSWORD, "Nextflow secret ENA_WEBIN_PASSWORD is required (run: nextflow secrets set ENA_WEBIN_PASSWORD)"
     assert params.mode in ['test', 'prod'], "--mode must be 'test' or 'prod'"
     assert params.outdir,        "--outdir is required"
 
     def ch_webin_user     = Channel.value(params.webin_user)
-    def ch_webin_password = Channel.value(params.webin_password)
     // Base endpoint derived from mode unless overridden
     def ch_webin_base = Channel.value(params.webin_base ?: ((params.mode == 'prod') ? 'https://www.ebi.ac.uk/ena/submit/webin-v2' : 'https://wwwdev.ebi.ac.uk/ena/submit/webin-v2'))
 
@@ -58,13 +57,12 @@ workflow ENA_SUBMIT_WORKFLOW {
         .map { alias, metas -> metas[0] } // one meta per alias
 
     ENA_GENERATE_PROJECT_XML(ch_proj_rows)
-    ENA_SUBMIT_PROJECT(ENA_GENERATE_PROJECT_XML.out.xml, ch_webin_base, ch_webin_user, ch_webin_password)
+    ENA_SUBMIT_PROJECT(ENA_GENERATE_PROJECT_XML.out.xml, ch_webin_base, ch_webin_user)
     def ch_proj_files = ENA_SUBMIT_PROJECT.out.queued.map { meta, f -> f }
 
     ENA_POLL_PROJECT(
         ch_proj_files.collect(),
         ch_webin_user,
-        ch_webin_password,
         Channel.value(params.poll_interval    ?: 20),
         Channel.value(params.poll_max_attempts ?: 30)
         )
@@ -149,8 +147,7 @@ workflow ENA_SUBMIT_WORKFLOW {
         md5s,
         params.remote_dir ?: '',
         params.webin_ftp_host ?: 'webin2.ebi.ac.uk',
-        ch_webin_user,
-        ch_webin_password
+        ch_webin_user
         )
 
     def uploaded_after_projects = ENA_FTP_UPLOAD.out.uploaded
@@ -159,26 +156,24 @@ workflow ENA_SUBMIT_WORKFLOW {
         .groupTuple(by: 0)
         .map { id, metas, rows, file_metas, files, md5s -> tuple(metas[0], rows[0], file_metas, files, md5s) }
 
-    // Generate one analysis XML after the derived project has been accepted by Webin.
+    // Generate one analysis XML per alignment after the derived project has been accepted by Webin.
     ENA_GENERATE_XML(
         uploaded_after_projects,
         params.remote_dir ?: '',
         params.hold_until ?: ''
         )
 
-    // Submit to async queue — one POST per annotation analysis, returns immediately with a submission ID.
+    // Submit to async queue — one POST per alignment analysis, returns immediately with a submission ID.
     ENA_SUBMIT_ANALYSIS(
         ENA_GENERATE_XML.out.xml,
         ch_webin_base,
-        ch_webin_user,
-        ch_webin_password
+        ch_webin_user
         )
     def ch_analysis_files = ENA_SUBMIT_ANALYSIS.out.queued.map { meta, f -> f }
 
     ENA_POLL_ANALYSIS(
         ch_analysis_files.collect(),
         ch_webin_user,
-        ch_webin_password,
         Channel.value(params.poll_interval    ?: 20),
         Channel.value(params.poll_max_attempts ?: 30)
         )

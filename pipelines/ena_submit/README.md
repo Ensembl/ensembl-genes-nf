@@ -2,7 +2,7 @@
 
 This pipeline submits processed RNA-seq alignments to ENA as annotation evidence.
 
-The current production model is one ENA `ANALYSIS` per annotation/assembly partial release. Each analysis can contain many BAM/CRAM files and links back to all source runs with `RUN_REF`.
+The current production model is one ENA Project (Study) per annotation/assembly partial release and one ENA `ANALYSIS` per BAM/CRAM alignment file. ENA does not accept multiple BAM/CRAM files in a single `ANALYSIS`; the annotation-level manifest is expanded into one analysis per file during the workflow.
 
 ## Step 1: Build The Annotation Manifest
 
@@ -29,7 +29,7 @@ python3 pipelines/ena_submit/bin/build_manifest_from_rnaseq_annotation.py \
 
 Outputs:
 
-- `manifest.tsv`: one row for the annotation-level ENA analysis.
+- `manifest.tsv`: one row for the annotation-level release/project metadata.
 - `files.tsv`: one row per BAM/CRAM file with run/sample/file metadata.
 - `missing_files.tsv`: runs from the RNA-seq CSV without a matching alignment file.
 - `summary.tsv`: counts and derived aliases.
@@ -52,6 +52,19 @@ If `samtools` is available, the builder inspects BAM/CRAM headers for basic alig
 
 ## Step 2: Submit To ENA
 
+Before submitting, store the Webin password in Nextflow's local secrets store. This
+keeps it out of command-line parameters, `.command.sh` files, and task arguments:
+
+```bash
+read -rsp 'ENA Webin password: ' ENA_WEBIN_PASSWORD
+printf '\n'
+nextflow secrets set ENA_WEBIN_PASSWORD "$ENA_WEBIN_PASSWORD"
+unset ENA_WEBIN_PASSWORD
+```
+
+The secret name must be exactly `ENA_WEBIN_PASSWORD`. The username is passed as
+`--webin_user`; do not pass a password using `--webin_password`.
+
 Run the Nextflow workflow with the generated annotation manifest:
 
 ```bash
@@ -60,7 +73,6 @@ nextflow run pipelines/ena_submit/main.nf \
   --manifest /path/to/ena_manifest/GCA_011064425.1/manifest.tsv \
   --mode test \
   --webin_user "$WEBIN_USER" \
-  --webin_password "$WEBIN_PASSWORD" \
   --umbrella_study PRJEB000000 \
   --remote_dir GCA_011064425.1-Ensembl-2025-12 \
   --upload_parallelism 2 \
@@ -82,7 +94,6 @@ nextflow run pipelines/ena_submit/main.nf \
   --convert_to_cram true \
   --reference_fasta /path/to/reference.fa \
   --webin_user "$WEBIN_USER" \
-  --webin_password "$WEBIN_PASSWORD" \
   --outdir /path/to/ena_submit_results/GCA_011064425.1
 ```
 

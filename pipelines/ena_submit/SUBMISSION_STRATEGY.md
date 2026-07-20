@@ -4,8 +4,9 @@ This document captures decisions and conventions for submitting alignment eviden
 
 ## Scope
 - Submissions are ANALYSIS of type `REFERENCE_ALIGNMENT` pointing to BAM/CRAM aligned to a public assembly.
-- One ANALYSIS per annotation / assembly / partial release.
-- Each ANALYSIS contains all assessed processed RNA-seq alignment files for that annotation.
+- One Project (Study) per annotation / assembly / partial release.
+- One ANALYSIS per processed RNA-seq alignment file. ENA rejects multiple BAM/CRAM
+  files grouped in one ANALYSIS.
 - Every submission links to the original data submitter’s source runs with `RUN_REF` and, when known, `SAMPLE_REF`.
 
 ## Projects / Studies
@@ -32,7 +33,7 @@ Rationale: keeps evidence for a given assembly/release discoverable and isolated
 ## Manifest shape
 The workflow uses a two-step manifest:
 
-- `manifest.tsv`: one row per annotation analysis, with `files_tsv`, `assembly_accession`, `last_geneset_update`, `partial_release_label`, project/study fields, and analysis-level metadata.
+- `manifest.tsv`: one row per annotation-level release/project, with `files_tsv`, `assembly_accession`, `last_geneset_update`, `partial_release_label`, project/study fields, and shared analysis metadata. The workflow expands this into one analysis per file.
 - `files.tsv`: one row per BAM/CRAM with local file path, remote filename, run accession, sample accession, and optional header-derived alignment metadata.
 
 Defaults applied by the workflow:

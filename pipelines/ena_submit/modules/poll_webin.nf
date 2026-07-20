@@ -2,12 +2,12 @@ process ENA_POLL_WEBIN {
     label 'process_light'
     tag 'poll'
     container 'docker.io/library/python:3.11-slim'
+    secret 'ENA_WEBIN_PASSWORD'
     publishDir "${params.outdir}/ena_submission", mode: 'copy', pattern: 'accessions.tsv'
 
     input:
     val queue_responses
     val webin_user
-    val webin_password
     val poll_interval
     val poll_max_attempts
 
@@ -22,7 +22,7 @@ process ENA_POLL_WEBIN {
     set -euo pipefail
     python3 ${poller} ${qargs} \
       --webin-user "${webin_user}" \
-      --webin-password "${webin_password}" \
+      --webin-password-env ENA_WEBIN_PASSWORD \
       --interval ${poll_interval} \
       --max-attempts ${poll_max_attempts} \
       --out accessions.tsv

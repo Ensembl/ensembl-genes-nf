@@ -2,6 +2,7 @@
 import argparse
 import csv
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -40,6 +41,11 @@ def read_rows(path: Path):
         return list(csv.DictReader(handle, delimiter="\t"))
 
 
+def slug(value: str) -> str:
+    value = re.sub(r"[^A-Za-z0-9._-]+", "_", value.strip())
+    return re.sub(r"_+", "_", value).strip("_")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate and normalize one annotation files.tsv for Nextflow.")
     parser.add_argument("--files-tsv", required=True)
@@ -74,16 +80,22 @@ def main() -> int:
             raise RuntimeError(f"{args.files_tsv}:{idx}: file_type must be bam or cram")
 
         remote_name = (row.get("remote_name") or "").strip() or os.path.basename(file_path)
+        run_accession = (row.get("run_accession") or row.get("run_accessions") or "").strip()
+        analysis_suffix = slug(run_accession or Path(remote_name).stem)
+        file_analysis_alias = slug(f"{analysis.get('analysis_alias', args.analysis_id)}_{analysis_suffix}")
         out_rows.append(
             {
-                "analysis_id": args.analysis_id,
+                # ENA accepts one BAM or CRAM per ANALYSIS. The input manifest
+                # remains annotation-level, but each expanded file gets its
+                # own stable analysis identity.
+                "analysis_id": file_analysis_alias,
                 "project_alias": args.project_alias,
                 "assembly": args.assembly,
                 "release": args.release,
                 "study": analysis.get("study", ""),
                 "umbrella_study": analysis.get("umbrella_study", ""),
-                "analysis_alias": analysis.get("analysis_alias", ""),
-                "title": analysis.get("title", ""),
+                "analysis_alias": file_analysis_alias,
+                "title": f"{analysis.get('title', '')} ({run_accession or analysis_suffix})",
                 "description": analysis.get("description", ""),
                 "assembly_accession": analysis.get("assembly_accession", ""),
                 "last_geneset_update": analysis.get("last_geneset_update", ""),
@@ -98,7 +110,7 @@ def main() -> int:
                 "file_path": file_path,
                 "file_type": file_type,
                 "remote_name": remote_name,
-                "run_accession": (row.get("run_accession") or row.get("run_accessions") or "").strip(),
+                "run_accession": run_accession,
                 "sample_accession": (row.get("sample_accession") or "").strip(),
                 "experiment_accession": (
                     row.get("experiment_accession") or row.get("experiment_accessions") or ""
