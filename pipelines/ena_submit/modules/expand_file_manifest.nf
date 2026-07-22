@@ -4,7 +4,7 @@ process ENA_EXPAND_FILE_MANIFEST {
     container 'docker.io/library/python:3.11-slim'
 
     input:
-    tuple val(meta), val(row), path files_manifest
+    tuple val(meta), val(row), path(files_manifest)
     path expander_script
 
     output:
