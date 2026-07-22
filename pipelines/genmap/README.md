@@ -18,7 +18,9 @@ Provide one of:
 
 For very large genomes, GenMap's memory-saving index construction can be enabled with `--index_args '-S 20'`. This reduces memory use at the cost of slower indexing.
 
-Human-genome mapping requests 128 GB in the pipeline process configuration. For a site-specific override, provide an additional Nextflow config rather than a pipeline parameter:
+Human-genome mapping requests 128 GB in the pipeline process configuration. CSV output is disabled by default because it records per-k-mer locations and can be very large; enable it with `--csv true` only when required.
+
+For a site-specific resource override, provide an additional Nextflow config rather than a pipeline parameter:
 
 ```groovy
 process {
@@ -63,6 +65,6 @@ Outputs are written beneath `--outdir`:
 
 * `reference/reference.fa` and `reference/reference_source.txt`
 * `index/` containing the GenMap index
-* `mappability/` containing `.txt`, `.wig`, `.bedgraph`, and `.csv` files
+* `mappability/` containing `.txt`, `.wig`, and `.bedgraph` files; `.csv` is included when `--csv true` is used
 
 Use `-resume` to reuse a completed download and index.
