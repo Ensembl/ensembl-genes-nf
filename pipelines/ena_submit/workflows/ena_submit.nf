@@ -67,7 +67,8 @@ workflow ENA_SUBMIT_WORKFLOW {
         Channel.value(params.poll_max_attempts ?: 30)
         )
 
-    ENA_EXPAND_FILE_MANIFEST(analyses)
+    def ch_expander_script = Channel.value(file("${projectDir}/bin/expand_file_manifest.py"))
+    ENA_EXPAND_FILE_MANIFEST(analyses, ch_expander_script)
 
     def file_inputs = ENA_EXPAND_FILE_MANIFEST.out.expanded
         .map { meta, row, expanded_tsv -> expanded_tsv }
