@@ -82,10 +82,6 @@ nextflow run main.nf -stub --entry_point COMBINE_AND_COUNT --outdir results
 - Manual entry point override when needed
 - Clear error messages for missing dependencies
 
-**Explore the code:**
-- [advanced_entrypoints/main.nf](../pipelines/example/advanced_entrypoints/main.nf) - Dynamic entry point workflow
-- [advanced_entrypoints/lib/EntryPoints.groovy](../pipelines/example/advanced_entrypoints/lib/EntryPoints.groovy) - Entry point registry
-- [advanced_entrypoints/docs/advanced_design.md](../pipelines/example/advanced_entrypoints/docs/advanced_design.md) - System design documentation
 
 ---
 
@@ -202,7 +198,6 @@ workflow {
 
 - **Workflow patterns:** [PATTERNS.md](PATTERNS.md) - 12 common patterns
 - **Workflow examples:** [workflows.md](workflows.md) - Detailed examples
-- **Entry point design:** [advanced_entrypoints/docs/advanced_design.md](../pipelines/example/advanced_entrypoints/docs/advanced_design.md)
 - **Nextflow docs:** https://nextflow.io/docs/latest/
 - **nf-core guidelines:** https://nf-co.re/docs/guidelines
 

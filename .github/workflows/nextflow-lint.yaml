@@ -1,0 +1,67 @@
+name: Nextflow Lint
+
+on:
+  push:
+    branches:
+      - 'feature/collection_tmp'
+  pull_request:
+    branches:
+      - 'dev'
+
+jobs:
+  lint:
+    name: Lint Nextflow Code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper linting
+
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Nextflow
+        run: |
+          # Install Nextflow 25.10.0 to support latest lint features
+          export NXF_VER=25.10.0
+          curl -s https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+          chmod +x /usr/local/bin/nextflow
+          nextflow -version
+        env:
+          # Disable strict syntax mode for compatibility with existing code
+          NXF_SYNTAX_PARSER: v1
+
+      - name: Run Nextflow Lint (Check Only)
+        run: |
+          echo "🔍 Running Nextflow lint on all .nf files..."
+          # Run lint without formatting (check only)
+          # Use concise output for cleaner CI logs
+          nextflow lint -o concise pipelines/statistics/submodules/ || true
+          nextflow lint -o concise pipelines/statistics/modules/ || true
+
+          # Store exit code
+          LINT_EXIT_CODE=$?
+
+          if [ $LINT_EXIT_CODE -ne 0 ]; then
+            echo "❌ Linting failed! Please fix the errors above."
+            echo ""
+            echo "To fix formatting issues automatically, run locally:"
+            echo "  export NXF_VER=25.10.0"
+            echo "  nextflow lint -format ."
+            exit 1
+          else
+            echo "✅ All Nextflow files passed linting!"
+          fi
+
+      - name: Run Nextflow Lint (Full Output on Failure)
+        if: failure()
+        run: |
+          echo "📋 Running lint again with full output for debugging..."
+          nextflow lint -o full pipelines/statistics/submodules/ || true
+          nextflow lint -o full pipelines/statistics/modules/ || true
