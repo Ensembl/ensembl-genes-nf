@@ -100,6 +100,7 @@ process USE_LOCAL_REFERENCE {
 
 process MAKE_REGIONS {
     tag "${meta.id}:regions"
+    label 'default'
 
     input:
     tuple val(meta), path(reference)
