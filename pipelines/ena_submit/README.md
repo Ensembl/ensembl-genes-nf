@@ -140,6 +140,9 @@ Existing non-BAM inputs are passed through unchanged.
 - `alignment_software`: Header-derived aligner name when available.
 - `alignment_software_version`: Header-derived aligner version when available.
 
+Only values matching ENA sample accession formats are emitted as `SAMPLE_REF`
+elements. Tissue labels or other descriptive values in the source CSV are ignored.
+
 ## Outputs
 
 - `${outdir}/ena_submission/projects/`: generated child project XML.

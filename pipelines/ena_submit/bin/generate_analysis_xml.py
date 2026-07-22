@@ -24,6 +24,10 @@ def unique(values):
     return out
 
 
+def looks_like_sample_accession(value):
+    return bool(re.match(r'^(SAMEA|SAMD|ERS|SRS|DRS)\d+$', (value or '').strip(), flags=re.IGNORECASE))
+
+
 def read_md5(path):
     with open(path) as handle:
         return handle.read().split()[0]
@@ -71,7 +75,10 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
     for file_row in files:
         samples.extend(split_values(file_row.get('sample_accession')))
     for s in unique(samples):
-        mk_text(analysis, 'SAMPLE_REF', accession=s)
+        if looks_like_sample_accession(s):
+            mk_text(analysis, 'SAMPLE_REF', accession=s)
+        elif s:
+            print(f"WARNING: ignoring non-accession sample value '{s}'", file=sys.stderr)
 
     # Link to runs/experiments directly under ANALYSIS (ENA schema)
     # Combine comma-separated list and optional file of run IDs

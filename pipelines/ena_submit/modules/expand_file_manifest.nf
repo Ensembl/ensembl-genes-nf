@@ -4,7 +4,7 @@ process ENA_EXPAND_FILE_MANIFEST {
     container 'docker.io/library/python:3.11-slim'
 
     input:
-    tuple val(meta), val(row)
+    tuple val(meta), val(row), path files_manifest
     path expander_script
 
     output:
@@ -23,7 +23,7 @@ ${vals}
 EOF
 
 python3 ${expander_script} \
-  --files-tsv "${row.files_tsv}" \
+  --files-tsv "${files_manifest}" \
   --analysis-tsv analysis.tsv \
   --analysis-id "${meta.id}" \
   --project-alias "${meta.project_alias}" \

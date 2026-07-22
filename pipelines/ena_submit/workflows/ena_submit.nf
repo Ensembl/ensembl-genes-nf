@@ -68,7 +68,8 @@ workflow ENA_SUBMIT_WORKFLOW {
         )
 
     def ch_expander_script = Channel.value(file("${projectDir}/bin/expand_file_manifest.py"))
-    ENA_EXPAND_FILE_MANIFEST(analyses, ch_expander_script)
+    def analyses_with_files = analyses.map { meta, row -> tuple(meta, row, file(row.files_tsv)) }
+    ENA_EXPAND_FILE_MANIFEST(analyses_with_files, ch_expander_script)
 
     def file_inputs = ENA_EXPAND_FILE_MANIFEST.out.expanded
         .map { meta, row, expanded_tsv -> expanded_tsv }
