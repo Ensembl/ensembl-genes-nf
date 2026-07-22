@@ -20,6 +20,7 @@ nextflow.enable.dsl=2
 
 include { GENMAP_INDEX } from 'nf-core/genmap/index'
 include { GENMAP_MAP } from 'nf-core/genmap/map'
+include { UCSC_BEDGRAPHTOBIGWIG } from 'nf-core/ucsc/bedgraphtobigwig'
 
 def ensembl_species_name(String species) {
     def tokens = species.split('_')
@@ -101,38 +102,50 @@ process USE_LOCAL_REFERENCE {
 process MAKE_REGIONS {
     tag "${meta.id}:regions"
     label 'default'
+    publishDir "${params.outdir}/reference", mode: 'copy', pattern: 'reference.sizes'
 
     input:
     tuple val(meta), path(reference)
 
     output:
     tuple val(meta), path('regions.bed'), emit: regions
+    path 'reference.sizes', emit: sizes
 
     script:
     """
+    : > regions.bed
+    : > reference.sizes
     awk '
         /^>/ {
-            if (name) print name "\\t0\\t" seq_length
+            if (name) {
+                print name "\\t0\\t" seq_length >> "regions.bed"
+                print name "\\t" seq_length >> "reference.sizes"
+            }
             name = substr(\$1, 2)
             seq_length = 0
             next
         }
         { seq_length += length(\$0) }
-        END { if (name) print name "\\t0\\t" seq_length }
-    ' '${reference}' > regions.bed
+        END {
+            if (name) {
+                print name "\\t0\\t" seq_length >> "regions.bed"
+                print name "\\t" seq_length >> "reference.sizes"
+            }
+        }
+    ' '${reference}'
     test -s regions.bed
+    test -s reference.sizes
     """
 
     stub:
     """
     touch regions.bed
+    touch reference.sizes
     """
 }
 
 workflow {
     def species = params.species ?: 'reference'
-    def reference_id = species.replaceAll('[^A-Za-z0-9_.-]', '_')
-    def meta = [id: reference_id, species: species]
 
     if (!params.outdir) error 'Missing required parameter: --outdir'
     if (!params.kmer.toString().isInteger() || params.kmer.toInteger() <= 0) {
@@ -147,6 +160,19 @@ workflow {
     if (!params.reference_url && !params.reference && !params.species) {
         error 'Provide --reference_url, --reference, or --species'
     }
+
+    def source_id
+    if (params.species) {
+        source_id = "${params.species.toString().toLowerCase()}.release${params.release}"
+    } else if (params.reference_url) {
+        source_id = params.reference_url.toString().tokenize('/').last()
+    } else {
+        source_id = file(params.reference, checkIfExists: true).name
+    }
+    source_id = source_id.replaceAll(/(?i)\.(fa|fasta|fna)(\.gz)?$/, '')
+    source_id = source_id.replaceAll('[^A-Za-z0-9_.-]', '_')
+    def output_id = "${source_id}.k${params.kmer}.e${params.mismatches}"
+    def meta = [id: output_id, species: species, source: source_id]
 
     def reference
     if (params.reference_url) {
@@ -166,8 +192,12 @@ workflow {
 
     def indexed = GENMAP_INDEX(reference)
     def regions = MAKE_REGIONS(reference)
-    GENMAP_MAP(
+    def mappability = GENMAP_MAP(
         indexed.index,
         regions.regions
+    )
+    UCSC_BEDGRAPHTOBIGWIG(
+        mappability.bedgraph,
+        regions.sizes
     )
 }

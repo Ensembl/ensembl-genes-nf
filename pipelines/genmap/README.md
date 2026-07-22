@@ -1,6 +1,6 @@
 # GenMap mappability pipeline
 
-This pipeline calculates reference-genome mappability with [GenMap](https://github.com/cpockrandt/genmap). It uses the pinned `nf-core/genmap/index` and `nf-core/genmap/map` modules and produces text, WIG, bedGraph, and CSV outputs.
+This pipeline calculates reference-genome mappability with [GenMap](https://github.com/cpockrandt/genmap). It uses the pinned `nf-core/genmap/index`, `nf-core/genmap/map`, and `nf-core/ucsc/bedgraphtobigwig` modules and produces text, bedGraph, and bigWig outputs. WIG and CSV output are optional.
 
 The workflow derives a BED interval covering every reference sequence so the GenMap module computes mappability across the complete genome.
 
@@ -19,6 +19,7 @@ Provide one of:
 For very large genomes, GenMap's memory-saving index construction can be enabled with `--index_args '-S 20'`. This reduces memory use at the cost of slower indexing.
 
 Human-genome mapping requests 128 GB in the pipeline process configuration. CSV output is disabled by default because it records per-k-mer locations and can be very large; enable it with `--csv true` only when required.
+WIG output is disabled by default because bigWig is the more compact track format; enable it with `--wig true` only when required.
 
 For a site-specific resource override, provide an additional Nextflow config rather than a pipeline parameter:
 
@@ -65,6 +66,6 @@ Outputs are written beneath `--outdir`:
 
 * `reference/reference.fa` and `reference/reference_source.txt`
 * `index/` containing the GenMap index
-* `mappability/` containing `.txt`, `.wig`, and `.bedgraph` files; `.csv` is included when `--csv true` is used
+* `mappability/` containing source/parameter-named `.txt`, `.bedgraph`, and `.bigWig` files; `.wig` is included with `--wig true` and `.csv` with `--csv true`
 
 Use `-resume` to reuse a completed download and index.
