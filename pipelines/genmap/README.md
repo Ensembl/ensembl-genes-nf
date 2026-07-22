@@ -18,7 +18,17 @@ Provide one of:
 
 For very large genomes, GenMap's memory-saving index construction can be enabled with `--index_args '-S 20'`. This reduces memory use at the cost of slower indexing.
 
-Human-genome mapping defaults to a 128 GB memory request. Override this with `--map_memory`, for example `--map_memory 256.GB`, when required by the cluster.
+Human-genome mapping requests 128 GB in the pipeline process configuration. For a site-specific override, provide an additional Nextflow config rather than a pipeline parameter:
+
+```groovy
+process {
+    withName: 'GENMAP_MAP' {
+        memory = 256.GB
+    }
+}
+```
+
+Run with `-c /path/to/site-resources.config`.
 
 ## Usage
 
