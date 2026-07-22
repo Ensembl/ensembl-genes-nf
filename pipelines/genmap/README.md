@@ -18,6 +18,8 @@ Provide one of:
 
 For very large genomes, GenMap's memory-saving index construction can be enabled with `--index_args '-S 20'`. This reduces memory use at the cost of slower indexing.
 
+Human-genome mapping defaults to a 128 GB memory request. Override this with `--map_memory`, for example `--map_memory 256.GB`, when required by the cluster.
+
 ## Usage
 
 From this directory, using a container profile:
