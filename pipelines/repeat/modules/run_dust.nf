@@ -15,11 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*This process runs DustMasker to identify low-complexity regions in a genome file. 
+/*
+This process runs DustMasker to identify low-complexity regions in a genome file. 
 It uses the dustmasker tool to perform the analysis and generates a GTF file 
 containing the identified low-complexity regions. The output GTF file is saved 
 in the "dust" directory under the output directory for the given GCA accession. 
-The process also generates a versions.yml file containing the version of Dust used.*/
+The process also generates a versions.yml file containing the version of Dust used.
+*/
 
 process RUN_DUST {
     label "python"

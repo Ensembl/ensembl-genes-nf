@@ -15,7 +15,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*Collect software versions from all processes and merge them into a single file
+/*
+Collect software versions from all processes and merge them into a single file
 Inputs:
 - versions_*.yml: versions files from all processes
 Outputs:- software_versions.yml: merged versions file containing software versions used in the pipeline

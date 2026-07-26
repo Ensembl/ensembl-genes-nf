@@ -15,11 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*This process uploads the RepeatModeler library files (FASTA, STK, and log files)
+/*
+This process uploads the RepeatModeler library files (FASTA, STK, and log files)
 to the Ensembl FTP server for a given species. It creates a directory 
 for the species on the FTP server and copies the files into that directory. 
 The process also generates a versions.yml file containing the version 
-of the upload process used.*/
+of the upload process used.
+*/
 process UPLOAD_INTO_FTP {
     tag "$meta.gca:upload_into_ftp"
         label 'ensembl_ftp'

@@ -24,19 +24,17 @@ limitations under the License.
     RepeatModeler for library generation and RepeatMasker/DustMasker/TRF for repeat identification.
     
 
-
-
-
-
-
-
     Pipeline Stages:
     1. FETCH_GENOME           - Download genome assemblies from NCBI
     2. FETCH_REPEAT_MODEL     - Check for existing RepeatModeler libraries
     3a. GENERATE_REPEATMODELER_LIBRARY - Generate de novo libraries for genomes without existing ones
     3b. CHECK_AND_DOWNLOAD_RMLIBRARY   - Download pre-computed libraries when available
     4. RUN_REPEATMASKER       - Identify and mask repeats using combined libraries
-    
+    5. RUN_RED                 - Identify repetitive regions using RED
+    6. RUN_DUST                - Identify repetitive regions using DUST
+    7. RUN_TRF                 - Identify repetitive regions using TRF
+    8. UPLOAD_REPEATS_INTO_FTP - Upload RepeatModeler libraries and RepeatMasker results to Ensembl FTP server
+    9. COLLECT_SOFTWARE_VERSIONS - Collect software versions from all processes and merge them into a single file
     Input:
         CSV file with columns: species_name, GCA_accession
     

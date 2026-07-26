@@ -15,13 +15,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*This process runs RepeatMasker on a given genome file using a 
+/*
+This process runs RepeatMasker on a given genome file using a 
 specified RepeatModeler library. It uses the RepeatMasker tool
 to perform the analysis and generates GTF files containing the identified 
 repetitive regions. The output GTF files are saved in the "repeatmasker" 
 directory under the output directory for the given GCA accession. 
 The process also generates a versions.yml file containing the version 
-of RepeatMasker used.*/
+of RepeatMasker used.
+*/
 process RUN_REPEATMASKER {
     label "python"
     tag "${meta.gca}:genome"

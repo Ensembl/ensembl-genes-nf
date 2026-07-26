@@ -15,13 +15,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*This process runs RepeatModeler on a given genome file to generate a RepeatModeler library. 
+/*
+This process runs RepeatModeler on a given genome file to generate a RepeatModeler library. 
 It uses the BuildDatabase tool to create a database from the genome file and then runs 
 RepeatModeler with the specified engine and number of threads. 
 The output files are renamed to include the GCA accession in their names 
 and are saved in the "library" directory under the output directory for 
 the given GCA accession. The process also generates a versions.yml file 
-containing the version of RepeatModeler used.*/
+containing the version of RepeatModeler used.
+*/
 
 process GENERATE_REPEATMODELER_LIBRARY {
     tag "$meta.gca:run_repeatmodeler"
