@@ -1,11 +1,12 @@
 # FETCH_REPEAT_MODEL
 
-regarding copyright ownership.
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-distributed under the License is distributed on an "AS IS" BASIS,
-See the License for the specific language governing permissions and
-limitations under the License.
+This process fetches the RepeatModeler library file for a given GCA accession.
+If the file is available at the specified URL, it downloads the file
+and saves it with the name "<GCA>.repeatmodeler.fa".
+If the file is not available, it outputs a message indicating that
+the download was skipped and creates an empty file with the same name.
+The fetched library file is saved in the "library" directory under
+the output directory for the given GCA accession.
 
 ## Process Details
 

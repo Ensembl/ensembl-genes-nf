@@ -1,11 +1,9 @@
 # FETCH_GENOME
 
-regarding copyright ownership.
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-distributed under the License is distributed on an "AS IS" BASIS,
-See the License for the specific language governing permissions and
-limitations under the License.
+This process fetches the genome file for a given GCA accession.
+If a genome file is provided as part of the metadata,
+it uses that file instead of downloading it.
+The fetched genome file is saved with the name "genome.fna".
 
 ## Process Details
 

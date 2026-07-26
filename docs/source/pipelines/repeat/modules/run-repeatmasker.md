@@ -1,11 +1,12 @@
 # RUN_REPEATMASKER
 
-regarding copyright ownership.
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-distributed under the License is distributed on an "AS IS" BASIS,
-See the License for the specific language governing permissions and
-limitations under the License.
+This process runs RepeatMasker on a given genome file using a
+specified RepeatModeler library. It uses the RepeatMasker tool
+to perform the analysis and generates GTF files containing the identified
+repetitive regions. The output GTF files are saved in the "repeatmasker"
+directory under the output directory for the given GCA accession.
+The process also generates a versions.yml file containing the version
+of RepeatMasker used.
 
 ## Process Details
 

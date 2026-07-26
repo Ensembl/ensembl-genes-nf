@@ -39,9 +39,7 @@ def _write(path: Path, text: str) -> None:
             encoding="utf8",
         )
 
-        if not current.startswith(
-            "<!--\nAUTO-GENERATED FILE."
-        ):
+        if not current.startswith("<!--\nAUTO-GENERATED FILE."):
             return
 
     path.write_text(
@@ -53,6 +51,7 @@ def _write(path: Path, text: str) -> None:
 # ---------------------------------------------------------------------
 # Root index
 # ---------------------------------------------------------------------
+
 
 def generate_root_index(
     docs_root: Path,
@@ -68,13 +67,10 @@ def generate_root_index(
 
     lines.append("# Ensembl Genes Nextflow Pipelines")
     lines.append("")
-    lines.append(
-        "Documentation for the Ensembl Nextflow pipelines."
-    )
+    lines.append("Documentation for the Ensembl Nextflow pipelines.")
     lines.append("")
     lines.append(
-        "The documentation is organised by pipeline. "
-        "Each pipeline contains:"
+        "The documentation is organised by pipeline. " "Each pipeline contains:"#pylint: disable=implicit-str-concat
     )
     lines.append("")
     lines.append("- Overview")
@@ -97,6 +93,8 @@ def generate_root_index(
         docs_root / "index.md",
         "\n".join(lines),
     )
+
+
 def generate_navigation(
     docs_root: Path,
     pipelines: list[Pipeline],
@@ -112,9 +110,7 @@ def generate_navigation(
 
     lines.append("# Pipelines")
     lines.append("")
-    lines.append(
-        "Documentation for the available Ensembl Nextflow pipelines."
-    )
+    lines.append("Documentation for the available Ensembl Nextflow pipelines.")
     lines.append("")
     lines.append("```{toctree}")
     lines.append(":maxdepth: 1")

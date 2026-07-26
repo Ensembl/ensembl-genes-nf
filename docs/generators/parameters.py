@@ -1,3 +1,4 @@
+# pylint: disable=too-many-instance-attributes,missing-function-docstring,too-many-public-methods
 """
 Generate parameter reference documentation from Nextflow schemas.
 """
@@ -126,10 +127,7 @@ def render(schema: Schema) -> str:
 
     out.append(f"# {schema.pipeline.title()} Parameters")
     out.append("")
-    out.append(
-        "Automatically generated from the pipeline "
-        "`nextflow_schema.json`."
-    )
+    out.append("Automatically generated from the pipeline " "`nextflow_schema.json`.")#pylint: disable=implicit-str-concat
     out.append("")
 
     for group in schema.groups:
@@ -142,13 +140,9 @@ def render(schema: Schema) -> str:
             out.append(group.description)
             out.append("")
 
-        out.append(
-            "| Parameter | Type | Default | Required | Description |"
-        )
+        out.append("| Parameter | Type | Default | Required | Description |")
 
-        out.append(
-            "|-----------|------|---------|----------|-------------|"
-        )
+        out.append("|-----------|------|---------|----------|-------------|")
 
         for parameter in group.parameters:
 

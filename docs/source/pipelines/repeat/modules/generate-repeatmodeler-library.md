@@ -1,11 +1,12 @@
 # GENERATE_REPEATMODELER_LIBRARY
 
-regarding copyright ownership.
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-distributed under the License is distributed on an "AS IS" BASIS,
-See the License for the specific language governing permissions and
-limitations under the License.
+This process runs RepeatModeler on a given genome file to generate a RepeatModeler library.
+It uses the BuildDatabase tool to create a database from the genome file and then runs
+RepeatModeler with the specified engine and number of threads.
+The output files are renamed to include the GCA accession in their names
+and are saved in the "library" directory under the output directory for
+the given GCA accession. The process also generates a versions.yml file
+containing the version of RepeatModeler used.
 
 ## Process Details
 

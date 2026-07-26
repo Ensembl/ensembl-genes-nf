@@ -8,10 +8,15 @@ Do not edit manually.
 
 # Main
 
+See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
+Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 REPEAT ANNOTATION PIPELINE
@@ -23,6 +28,11 @@ Pipeline Stages:
 3a. GENERATE_REPEATMODELER_LIBRARY - Generate de novo libraries for genomes without existing ones
 3b. CHECK_AND_DOWNLOAD_RMLIBRARY   - Download pre-computed libraries when available
 4. RUN_REPEATMASKER       - Identify and mask repeats using combined libraries
+5. RUN_RED                 - Identify repetitive regions using RED
+6. RUN_DUST                - Identify repetitive regions using DUST
+7. RUN_TRF                 - Identify repetitive regions using TRF
+8. UPLOAD_REPEATS_INTO_FTP - Upload RepeatModeler libraries and RepeatMasker results to Ensembl FTP server
+9. COLLECT_SOFTWARE_VERSIONS - Collect software versions from all processes and merge them into a single file
 Input:
 CSV file with columns: species_name, GCA_accession
 Output:

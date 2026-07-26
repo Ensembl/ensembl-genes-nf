@@ -1,11 +1,10 @@
 # UPLOAD_INTO_FTP
 
-regarding copyright ownership.
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-distributed under the License is distributed on an "AS IS" BASIS,
-See the License for the specific language governing permissions and
-limitations under the License.
+This process uploads the RepeatModeler library files (FASTA, STK, and log files)
+to the Ensembl FTP server for a given species. It creates a directory
+for the species on the FTP server and copies the files into that directory.
+The process also generates a versions.yml file containing the version
+of the upload process used.
 
 ## Process Details
 

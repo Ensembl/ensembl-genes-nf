@@ -1,9 +1,11 @@
+#pylint: disable=too-many-instance-attributes,missing-function-docstring,too-many-public-methods
 """
 Data models used by the documentation generator.
 
 These dataclasses represent the documentation objects extracted from
 Nextflow pipelines and JSON schemas.
 """
+
 
 from __future__ import annotations
 

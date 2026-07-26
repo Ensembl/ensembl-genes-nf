@@ -63,13 +63,7 @@ def discover_pipelines(root: Path) -> list[Pipeline]:
 
     pipelines: list[Pipeline] = []
 
-    docs_root = (
-        root.parent
-        / "docs"
-        / "source"
-        / "pipelines"
-        
-    )
+    docs_root = root.parent / "docs" / "source" / "pipelines"
 
     for pipeline_dir in sorted(root.iterdir()):
 
@@ -91,9 +85,7 @@ def discover_pipelines(root: Path) -> list[Pipeline]:
 
             for nf in sorted(modules_dir.glob("*.nf")):
 
-                pipeline.add_module(
-                    parse_module(nf)
-                )
+                pipeline.add_module(parse_module(nf))
 
         #
         # workflow(s)
@@ -105,9 +97,7 @@ def discover_pipelines(root: Path) -> list[Pipeline]:
 
             pipeline.workflow_file = workflow
 
-            pipeline.add_workflow(
-                parse_workflow(workflow)
-            )
+            pipeline.add_workflow(parse_workflow(workflow))
 
         #
         # schema
@@ -125,33 +115,22 @@ def discover_pipelines(root: Path) -> list[Pipeline]:
 
         docs = docs_root / pipeline.name
 
-        pipeline.readme = _page(
-            docs / "README.md"
-        )
+        pipeline.readme = _page(docs / "README.md")
 
-        pipeline.index = _page(
-            docs / "index.md"
-        )
+        pipeline.index = _page(docs / "index.md")
 
-        pipeline.input_doc = _page(
-            docs / "input.md"
-        )
+        pipeline.input_doc = _page(docs / "input.md")
 
-        pipeline.output_doc = _page(
-            docs / "output.md"
-        )
+        pipeline.output_doc = _page(docs / "output.md")
 
-        pipeline.troubleshooting = _page(
-            docs / "troubleshooting.md"
-        )
+        pipeline.troubleshooting = _page(docs / "troubleshooting.md")
 
         pipeline.sort()
 
-        pipelines.append(
-            pipeline
-        )
+        pipelines.append(pipeline)
 
     return pipelines
+
 
 def parse_workflow(path: Path) -> Workflow:
     """
@@ -167,15 +146,14 @@ def parse_workflow(path: Path) -> Workflow:
         source=path,
     )
 
-    workflow.description = _clean_comment(
-        _all_comments(text)
-    )
+    workflow.description = _clean_comment(_all_comments(text))
 
     workflow.modules = _discover_workflow_modules(
         text,
     )
 
     return workflow
+
 
 def parse_module(path: Path) -> Module:
     """
@@ -224,14 +202,14 @@ def parse_module(path: Path) -> Module:
     )
 
     module.documented_inputs = documentation.get(
-    "inputs",
-    [],
-)
+        "inputs",
+        [],
+    )
 
-    module.documented_outputs = documentation.get(  
-    "outputs",
-    [],
-)
+    module.documented_outputs = documentation.get(
+        "outputs",
+        [],
+    )
 
     #
     # Nextflow directives
@@ -244,15 +222,14 @@ def parse_module(path: Path) -> Module:
         lines,
     )
     module.inputs = _parse_io(
-    lines,
-    "input:",
+        lines,
+        "input:",
     )
 
     module.outputs = _parse_io(
         lines,
         "output:",
     )
-
 
     module.script_summary = _summarise_script(
         lines,
@@ -294,6 +271,8 @@ def _process_name(text: str) -> str:
         return match.group(1)
 
     return "UNKNOWN"
+
+
 # ---------------------------------------------------------------------
 # Documentation block
 # ---------------------------------------------------------------------
@@ -311,46 +290,30 @@ DOCUMENTATION_TAGS = {
 
 def _parse_documentation(text: str) -> dict:
     """
-    Parse the first /* ... */ block.
+    Parse documentation blocks.
 
-    Supports both structured documentation
-
-        /*
-        @tool
-        RepeatMasker
-
-        @summary
-        ...
-
-        */
-
-    and legacy documentation
-
-        /*
-        This process runs RepeatMasker...
-        */
-
-    Returns
-    -------
-    dict
+    Supports both structured (@summary, @description, ...)
+    and legacy comments.
     """
 
     result: dict = {}
 
     blocks = re.findall(
-    r"/\*(.*?)\*/",
-    text,
-    re.S,
+        r"/\*(.*?)\*/",
+        text,
+        re.S,
     )
 
     if not blocks:
         return result
 
-    block = None
+    #
+    # 1. Structured documentation
+    #
 
-    for candidate in blocks:
+    for block in blocks:
         if any(
-            tag in candidate
+            tag in block
             for tag in (
                 "@summary",
                 "@description",
@@ -359,29 +322,22 @@ def _parse_documentation(text: str) -> dict:
                 "@tool",
                 "@category",
                 "@dependencies",
+                "@implementation",
             )
         ):
-            block = candidate
-            break
-
-    if block is None:
-        block = blocks[0]
+            return _parse_structured_doc(block)
 
     #
-    # Structured documentation?
+    # 2. Legacy documentation
     #
 
-    if "@summary" in block or "@tool" in block:
+    for block in blocks:
 
-        return _parse_structured_doc(block)
+        if "Licensed under the Apache License" in block:
+            continue
 
-    #
-    # Legacy documentation
-    #
-
-    result["description"] = _clean_comment(
-        block,
-    )
+        result["description"] = _clean_comment(block)
+        return result
 
     return result
 
@@ -405,11 +361,7 @@ def _parse_structured_doc(block: str) -> dict:
         if current is None:
             return
 
-        value = [
-            v
-            for v in values
-            if v
-        ]
+        value = [v for v in values if v]
 
         if current in (
             "inputs",
@@ -450,9 +402,7 @@ def _parse_structured_doc(block: str) -> dict:
 
         if current:
 
-            values.append(
-                line
-            )
+            values.append(line)
 
     flush()
 
@@ -463,30 +413,8 @@ def _parse_structured_doc(block: str) -> dict:
 
 
 def _clean_comment(comment: str) -> str:
-    """
-    Clean legacy comments.
-
-    Removes
-
-        *
-        =====
-        -----
-        Apache license
-        URLs
-
-    while preserving the documentation.
-    """
 
     lines = []
-
-    ignore = (
-        "Licensed under",
-        "See the NOTICE",
-        "http://",
-        "https://",
-        "Unless required",
-        "WITHOUT WARRANTIES",
-    )
 
     for raw in comment.splitlines():
 
@@ -497,24 +425,10 @@ def _clean_comment(comment: str) -> str:
         if not line:
             continue
 
-        if line.startswith("="):
+        if set(line) <= {"-", "="}:
             continue
 
-        if set(line) <= {"-"}:
-            continue
-
-        if set(line) <= {"="}:
-            continue
-
-        if any(
-            line.startswith(i)
-            for i in ignore
-        ):
-            continue
-
-        lines.append(
-            line
-        )
+        lines.append(line)
 
     return "\n".join(lines)
 
@@ -548,7 +462,7 @@ def _parse_directives(
             if not line.startswith(directive):
                 continue
 
-            value = line[len(directive):].strip()
+            value = line[len(directive) :].strip()
 
             module.directives.append(
                 Directive(
@@ -692,7 +606,7 @@ def _parse_io(
 # ---------------------------------------------------------------------
 
 
-def _summarise_script(
+def _summarise_script(#pylint: disable=too-many-branches,too-many-statements
     lines: list[str],
 ) -> list[str]:
     """
@@ -724,15 +638,9 @@ def _summarise_script(
 
         if line.startswith("run_"):
 
-            tool = (
-                line.split()[0]
-                .replace("_", " ")
-                .title()
-            )
+            tool = line.split()[0].replace("_", " ").title()
 
-            summary.append(
-                f"Execute {tool}"
-            )
+            summary.append(f"Execute {tool}")
 
         #
         # Python
@@ -740,9 +648,7 @@ def _summarise_script(
 
         elif line.startswith("python "):
 
-            summary.append(
-                "Execute Python script"
-            )
+            summary.append("Execute Python script")
 
         #
         # Perl
@@ -750,9 +656,7 @@ def _summarise_script(
 
         elif line.startswith("perl "):
 
-            summary.append(
-                "Execute Perl script"
-            )
+            summary.append("Execute Perl script")
 
         #
         # Downloads
@@ -760,9 +664,7 @@ def _summarise_script(
 
         elif line.startswith(("wget", "curl")):
 
-            summary.append(
-                "Download external resources"
-            )
+            summary.append("Download external resources")
 
         #
         # File operations
@@ -770,21 +672,15 @@ def _summarise_script(
 
         elif line.startswith("mv "):
 
-            summary.append(
-                "Rename output files"
-            )
+            summary.append("Rename output files")
 
         elif line.startswith("cp "):
 
-            summary.append(
-                "Copy output files"
-            )
+            summary.append("Copy output files")
 
         elif line.startswith("ln -s"):
 
-            summary.append(
-                "Create symbolic links"
-            )
+            summary.append("Create symbolic links")
 
         #
         # Version report
@@ -792,9 +688,7 @@ def _summarise_script(
 
         elif "versions.yml" in line:
 
-            summary.append(
-                "Generate software version report"
-            )
+            summary.append("Generate software version report")
 
     #
     # Remove duplicates preserving order
@@ -814,6 +708,8 @@ def _summarise_script(
         result.append(item)
 
     return result
+
+
 def _all_comments(text: str) -> str:
     """
     Return all /* ... */ comment blocks.
@@ -822,13 +718,12 @@ def _all_comments(text: str) -> str:
     blocks = re.findall(
         r"/\*(.*?)\*/",
         text,
-        re.S,
+        flags=re.S,
     )
+    print(blocks)
+    return "\n\n".join(block.strip() for block in blocks)
 
-    return "\n\n".join(
-        block.strip()
-        for block in blocks
-    )
+
 def _first_comment(text: str) -> str:
     """
     Return the first /* ... */ block.
@@ -844,6 +739,8 @@ def _first_comment(text: str) -> str:
         return match.group(1)
 
     return ""
+
+
 def _discover_workflow_modules(
     text: str,
 ) -> list[str]:

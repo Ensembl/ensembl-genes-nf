@@ -1,3 +1,4 @@
+#pylint: disable=duplicate-code,too-many-instance-attributes,missing-function-docstring,too-many-public-methods
 """
 Workflow documentation renderer.
 
@@ -51,9 +52,7 @@ def _write(path: Path, text: str) -> None:
             encoding="utf8",
         )
 
-        if not current.startswith(
-            "<!--\nAUTO-GENERATED FILE."
-        ):
+        if not current.startswith("<!--\nAUTO-GENERATED FILE."):
             return
 
     path.write_text(
@@ -67,7 +66,7 @@ def _write(path: Path, text: str) -> None:
 # ---------------------------------------------------------------------
 
 
-def render_workflow(
+def render_workflow(#pylint: disable=missing-function-docstring
     workflow: Workflow,
 ) -> str:
 
@@ -77,19 +76,13 @@ def render_workflow(
     # title
     #
 
-    lines.append(
-        _heading(
-            workflow.name.replace("_", " ").title()
-        )
-    )
+    lines.append(_heading(workflow.name.replace("_", " ").title()))
 
     lines.append("")
 
     if workflow.description:
 
-        lines.append(
-            workflow.description
-        )
+        lines.append(workflow.description)
 
         lines.append("")
 
@@ -106,9 +99,7 @@ def render_workflow(
 
     lines.append("")
 
-    lines.append(
-        f"This workflow invokes **{len(workflow.modules)}** modules."
-    )
+    lines.append(f"This workflow invokes **{len(workflow.modules)}** modules.")
 
     lines.append("")
 
@@ -125,22 +116,16 @@ def render_workflow(
 
     lines.append("")
 
-    lines.append(
-        "| Order | Module |"
-    )
+    lines.append("| Order | Module |")
 
-    lines.append(
-        "|------:|--------|"
-    )
+    lines.append("|------:|--------|")
 
     for idx, module in enumerate(
         workflow.modules,
         start=1,
     ):
 
-        lines.append(
-            f"| {idx} | `{module}` |"
-        )
+        lines.append(f"| {idx} | `{module}` |")
 
     lines.append("")
 
@@ -159,45 +144,25 @@ def render_workflow(
 
         lines.append("")
 
-        lines.append(
-            "```mermaid"
-        )
+        lines.append("```mermaid")
 
-        lines.append(
-            "flowchart TD"
-        )
+        lines.append("flowchart TD")
 
         lines.append("")
 
-        for i, module in enumerate(
-            workflow.modules
-        ):
+        for i, module in enumerate(workflow.modules):
 
-            node = (
-                module
-                .replace("-", "_")
-                .replace(".", "_")
-            )
+            node = module.replace("-", "_").replace(".", "_")
 
-            lines.append(
-                f"    {node}[{module}]"
-            )
+            lines.append(f"    {node}[{module}]")
 
             if i:
 
-                prev = (
-                    workflow.modules[i - 1]
-                    .replace("-", "_")
-                    .replace(".", "_")
-                )
+                prev = workflow.modules[i - 1].replace("-", "_").replace(".", "_")
 
-                lines.append(
-                    f"    {prev} --> {node}"
-                )
+                lines.append(f"    {prev} --> {node}")
 
-        lines.append(
-            "```"
-        )
+        lines.append("```")
 
         lines.append("")
 
@@ -214,9 +179,7 @@ def render_workflow(
 
     lines.append("")
 
-    lines.append(
-        f"`{workflow.source}`"
-    )
+    lines.append(f"`{workflow.source}`")
 
     lines.append("")
 
@@ -239,10 +202,7 @@ def render_pipeline_workflows(
     if not pipeline.workflows:
         return
 
-    workflow_dir = (
-        output_dir
-        / "workflows"
-    )
+    workflow_dir = output_dir / "workflows"
 
     workflow_dir.mkdir(
         parents=True,
@@ -282,10 +242,12 @@ def render_pipeline_workflows(
     ):
         lines.append(workflow.name)
 
-    lines.extend([
-        "```",
-        "",
-    ])
+    lines.extend(
+        [
+            "```",
+            "",
+        ]
+    )
 
     _write(
         workflow_dir / "index.md",

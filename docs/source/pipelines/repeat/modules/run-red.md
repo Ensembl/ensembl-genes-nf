@@ -1,11 +1,11 @@
 # RUN_RED
 
-regarding copyright ownership.
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-distributed under the License is distributed on an "AS IS" BASIS,
-See the License for the specific language governing permissions and
-limitations under the License.
+This process runs the Red to identify repetitive regions in a genome file.
+It uses the Red tool to perform the analysis and generates a GTF file
+containing the identified repetitive regions. The output GTF file is
+saved in the "red" directory under the output directory for the given
+GCA accession. The process also generates a versions.yml
+file containing the version of Red used.
 
 ## Process Details
 

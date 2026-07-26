@@ -125,7 +125,7 @@ def first_process(text: str) -> str:
 # ---------------------------------------------------------------------
 
 
-def md_heading(title: str, level: int = 1) -> str:
+def md_heading(title: str, level: int = 1) -> str:#pylint: disable=missing-function-docstring
     return "#" * level + f" {title}"
 
 
@@ -149,8 +149,4 @@ def md_code(lines: list[str], language: str = "text") -> list[str]:
     Create a fenced code block.
     """
 
-    return (
-        [f"```{language}"]
-        + lines
-        + ["```"]
-    )
+    return [f"```{language}"] + lines + ["```"]

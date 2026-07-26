@@ -12,14 +12,14 @@ from __future__ import annotations
 
 from pathlib import Path
 import logging
-import shutil
 
 from docs.generators.workflow_page import render_pipeline_workflows
 
 from .models import DocumentationPage
 from .models import Pipeline
 from .module_page import render_pipeline_modules
-#from .module_page import render_pipeline_modules
+
+# from .module_page import render_pipeline_modules
 from .parameters import load_schema
 from .parameters import render as render_parameters
 from .utils import write_file
@@ -55,12 +55,11 @@ def generate_pipeline(
 
     pipeline_dir = docs_root / "pipelines" / pipeline.name
 
-    
     pipeline_dir.mkdir(
-    parents=True,
-    exist_ok=True,
-)
-    
+        parents=True,
+        exist_ok=True,
+    )
+
     #
     # Ensure documentation skeleton exists.
     #
@@ -76,9 +75,7 @@ def generate_pipeline(
 
     if pipeline.schema:
 
-        logger.info(
-            "Generating parameter reference"
-        )
+        logger.info("Generating parameter reference")
 
         schema = load_schema(
             pipeline.schema,
@@ -93,9 +90,7 @@ def generate_pipeline(
     # Module documentation.
     #
 
-    logger.info(
-        "Generating module pages"
-    )
+    logger.info("Generating module pages")
 
     render_pipeline_modules(
         pipeline,
@@ -106,16 +101,13 @@ def generate_pipeline(
     # Workflow documentation.
     #
 
-    logger.info(
-        "Generating workflow pages"
-    )
+    logger.info("Generating workflow pages")
 
     render_pipeline_workflows(
         pipeline,
         pipeline_dir,
     )
 
-    
 
 # ---------------------------------------------------------------------
 # Manual pages

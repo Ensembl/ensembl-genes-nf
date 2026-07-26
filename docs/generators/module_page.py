@@ -1,15 +1,15 @@
+#pylint: disable=too-many-instance-attributes,missing-function-docstring,too-many-public-methods
 """
 Markdown renderer for generated documentation.
 """
 
 from __future__ import annotations
-
-from importlib.resources import path
 from pathlib import Path
 
 from .models import Module
 from .models import Pipeline
 
+from .utils import write_file
 
 # ---------------------------------------------------------------------
 # Utilities
@@ -30,10 +30,7 @@ def heading(title: str, level: int = 1) -> str:
 # Module pages
 # ---------------------------------------------------------------------
 
-from pathlib import Path
 
-from .models import Pipeline
-from .utils import write_file
 
 
 def render_pipeline_modules(
@@ -85,17 +82,20 @@ def render_pipeline_modules(
     ):
         lines.append(module.slug)
 
-    lines.extend([
-        "```",
-        "",
-    ])
+    lines.extend(
+        [
+            "```",
+            "",
+        ]
+    )
 
     write_file(
         modules_dir / "index.md",
         "\n".join(lines),
     )
-    
-def render_module(module: Module) -> str:
+
+
+def render_module(module: Module) -> str:#pylint: disable=too-many-statements,too-many-branches,too-many-locals
     """
     Render one module page.
     """
@@ -135,9 +135,7 @@ def render_module(module: Module) -> str:
         if directive.name in {"label", "tag", "publishDir"}:
             continue
 
-        lines.append(
-            f"| {directive.name} | `{directive.value}` |"
-        )
+        lines.append(f"| {directive.name} | `{directive.value}` |")
 
     lines.append("")
 
@@ -232,9 +230,7 @@ def render_module(module: Module) -> str:
     lines.append(heading("Source", 2))
     lines.append("")
 
-    lines.append(
-        f"`{module.source}`"
-    )
+    lines.append(f"`{module.source}`")
 
     lines.append("")
 
@@ -253,9 +249,7 @@ def render_pipeline_index(pipeline: Pipeline) -> str:
     lines.append(heading(f"{pipeline.title} Modules"))
     lines.append("")
 
-    lines.append(
-        "This page is generated automatically from the Nextflow modules."
-    )
+    lines.append("This page is generated automatically from the Nextflow modules.")
 
     lines.append("")
 
@@ -268,9 +262,7 @@ def render_pipeline_index(pipeline: Pipeline) -> str:
         description = module.description.split("\n")[0]
 
         lines.append(
-            "| "
-            f"[`{module.process}`](modules/{module.slug}.md)"
-            f" | {description} |"
+            "| " f"[`{module.process}`](modules/{module.slug}.md)" f" | {description} |"
         )
 
     lines.append("")
@@ -293,9 +285,7 @@ def render_global_index(
 
     lines.append("")
 
-    lines.append(
-        "The pages in this directory are generated automatically."
-    )
+    lines.append("The pages in this directory are generated automatically.")
 
     lines.append("")
 
@@ -304,9 +294,7 @@ def render_global_index(
         lines.append(heading(pipeline.title, 2))
         lines.append("")
 
-        lines.append(
-            f"- [{pipeline.title} modules]({pipeline.name}/index.md)"
-        )
+        lines.append(f"- [{pipeline.title} modules]({pipeline.name}/index.md)")
 
         lines.append(
             f"- [{pipeline.title} parameters](../generated/{pipeline.name}-parameters.md)"
