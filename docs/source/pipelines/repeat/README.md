@@ -6,12 +6,12 @@ The pipeline is designed to support the Ensembl Genes annotation workflow by pro
 
 ## Quick Links
 
-* **Input Specification** → `input.md`
-* **Output Reference** → `output.md`
-* **Parameter Reference** → `parameters.md`
-* **Workflow Documentation** → `workflows/index.md`
-* **Module Documentation** → `modules/index.md`
-* **Troubleshooting** → `troubleshooting.md`
+- **[Input Specification](input.md)**
+- **[Output Reference](output.md)**
+- **[Parameter Reference](parameters.md)**
+- **[Workflow Documentation](workflows/index.md)**
+- **[Module Documentation](modules/index.md)**
+- **[Troubleshooting](troubleshooting.md)**
 
 ---
 
@@ -80,7 +80,7 @@ The pipeline begins by downloading or locating the genome assembly specified in 
 
 **Module**
 
-* `FETCH_GENOME`
+- [FETCH_GENOME](modules/fetch-genome.md)
 
 ---
 
@@ -94,10 +94,10 @@ Otherwise a new RepeatModeler library is generated and uploaded for future reuse
 
 **Modules**
 
-* `FETCH_REPEAT_MODEL`
-* `GENERATE_REPEATMODELER_LIBRARY`
-* `CHECK_AND_DOWNLOAD_RMLIBRARY`
-* `UPLOAD_INTO_FTP`
+- [FETCH_REPEAT_MODEL](modules/fetch-repeat-model.md)
+- [GENERATE_REPEATMODELER_LIBRARY](modules/generate-repeatmodeler-library.md)
+- [CHECK_AND_DOWNLOAD_RMLIBRARY](modules/check-and-download-rmlibrary.md)
+- [UPLOAD_INTO_FTP](modules/upload-into-ftp.md)
 
 ---
 
@@ -109,10 +109,10 @@ Additional repeat annotation methods can be enabled independently.
 
 **Modules**
 
-* `RUN_REPEATMASKER`
-* `RUN_RED`
-* `RUN_DUST`
-* `RUN_TRF`
+- [RUN_REPEATMASKER](modules/run-repeatmasker.md)
+- [RUN_RED](modules/run-red.md)
+- [RUN_DUST](modules/run-dust.md)
+- [RUN_TRF]c
 
 Each method produces complementary repeat annotations.
 
@@ -124,7 +124,7 @@ Generated repeat annotation files can optionally be uploaded to the Ensembl FTP 
 
 **Module**
 
-* `UPLOAD_REPEATS_INTO_FTP`
+- [UPLOAD_REPEATS_INTO_FTP] - (modules/upload-repeats-into-ftp.md)
 
 ---
 
@@ -134,7 +134,7 @@ All modules report software versions that are merged into a single `versions.yml
 
 **Module**
 
-* `COLLECT_SOFTWARE_VERSIONS`
+- [COLLECT_SOFTWARE_VERSIONS](modules/collect-software-versions.md)
 
 ---
 
@@ -217,26 +217,23 @@ A detailed description of all outputs is available in **Output Reference**.
 
 Detailed documentation is available for every module, including:
 
-* purpose
-* inputs
-* outputs
-* parameters
-* implementation summary
-* dependencies
+- Overview
+- Inputs
+- Outputs
+- Parameters
+- Implementation
+- Dependencies
+- Source
 
-See:
-
-`modules/index.md`
+See the [Module Documentation](modules/index.md).
 
 ---
 
 ## Workflow Documentation
 
-Workflow-level documentation explains how the different modules interact and exchange data.
+Workflow-level documentation describes how the pipeline orchestrates individual modules and how data flows between them.
 
-See:
-
-`workflows/index.md`
+See the [Workflow Documentation](workflows/index.md).
 
 ---
 
