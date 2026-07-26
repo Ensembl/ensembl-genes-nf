@@ -112,7 +112,7 @@ Additional repeat annotation methods can be enabled independently.
 - [RUN_REPEATMASKER](modules/run-repeatmasker.md)
 - [RUN_RED](modules/run-red.md)
 - [RUN_DUST](modules/run-dust.md)
-- [RUN_TRF]c
+- [RUN_TRF](modules/run-trf.md)
 
 Each method produces complementary repeat annotations.
 
