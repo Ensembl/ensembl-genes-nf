@@ -61,31 +61,36 @@ include { RUN_RED }                          from './modules/run_red.nf'
 include { RUN_DUST }                         from './modules/run_dust.nf'
 include { RUN_TRF }                          from './modules/run_trf.nf'
 include { UPLOAD_INTO_FTP }                  from './modules/upload_into_ftp.nf'
+include { UPLOAD_REPEATS_INTO_FTP }          from './modules/upload_repeats_into_ftp.nf'
+include { COLLECT_SOFTWARE_VERSIONS }        from './modules/collect_software_versions.nf'
+
 /*
 ========================================================================================
     MAIN WORKFLOW
 ========================================================================================
 */
+
 // Helper function to clean cache directory
 def cleanCacheDirectory() {
     if (params.cleanCache) {
-            try {
-                        def cacheDir = file(params.cacheDir)
-                                    if (cacheDir.exists() && cacheDir.isDirectory()) {
-                                                    cacheDir.listFiles().each { f ->
-                                                                        if (f.isDirectory()) {
-                                                                                                f.deleteDir()
-                                                                                                                    } else {
-                                                                                                                                            f.delete()
-                                                                                                                                                                }
-                                                                                                                                                                                }
-                                                                                                                                                                                                log.info("Cleaning process completed successfully.")
-                                                                                                                                                                                                            }
-                                                                                                                                                                                                                    } catch (Exception e) {
-                                                                                                                                                                                                                                log.error("Exception occurred while executing cleaning command: ${e.message}")
-                                                                                                                                                                                                                                        }
-                                                                                                                                                                                                                                            }
-                                                                                                                                                                                                                                            }
+        try {
+            def cacheDir = file(params.cacheDir)
+            if (cacheDir.exists() && cacheDir.isDirectory()) {
+                cacheDir.listFiles().each { f ->
+            if (f.isDirectory()) {
+                f.deleteDir()
+            } else {
+                f.delete()
+            }
+        }
+        log.info("Cleaning process completed successfully.")
+        }
+        } catch (Exception e) {
+        log.error("Exception occurred while executing cleaning command: ${e.message}")
+        }
+    }
+}
+
 workflow REPEAT_ANNOTATION {
     take:
     csv_file
@@ -99,7 +104,8 @@ workflow REPEAT_ANNOTATION {
                 [
                     gca: row.get('gca'),
                     species_name: row.get('species_name'),
-                    genome_file: row.get('genome_file')
+                    genome_file: row.get('genome_file'),
+                    repeatmasker_library: row.get('repeatmasker_library')
                 ]
             }
     
@@ -154,28 +160,43 @@ workflow REPEAT_ANNOTATION {
         allLibraries = repeatModelerInput
             .mix(rmlibrary)
             .view { meta,  library -> "Library ready for ${meta.gca}: ${library}" }
-        
+        ch_repeat_output = channel.empty()
         if(params.run_repeatmasker) {
             // Stage 4: Run RepeatMasker to identify and mask repeats
             RUN_REPEATMASKER(allLibraries)
             ch_versions_file = ch_versions_file.mix(RUN_REPEATMASKER.out.versions_file)
+            ch_repeat_output = ch_repeat_output.mix(RUN_REPEATMASKER.out.repeatmasker_out)
             }
         }
         if (params.run_red) {
             // Run RED for repeat annotation
             RUN_RED(genomeData)
             ch_versions_file = ch_versions_file.mix(RUN_RED.out.versions_file)
+            ch_repeat_output = ch_repeat_output.mix(RUN_RED.out.repeat_output)
+
         }
         if (params.run_dust) {
             // Run DUST for repeat annotation
             RUN_DUST(genomeData) 
-            ch_versions_file = ch_versions_file.mix(RUN_DUST.out.versions_file)          
+            ch_versions_file = ch_versions_file.mix(RUN_DUST.out.versions_file)   
+            ch_repeat_output = ch_repeat_output.mix(RUN_DUST.out.repeat_output)       
         }
         if (params.run_trf) {
             // Run TRF for repeat annotation
             RUN_TRF(genomeData)
             ch_versions_file = ch_versions_file.mix(RUN_TRF.out.versions_file)  
+            ch_repeat_output = ch_repeat_output.mix(RUN_TRF.out.repeat_output)
+
         }
+        UPLOAD_REPEATS_INTO_FTP(ch_repeat_output)
+        ch_versions_file = ch_versions_file.mix(UPLOAD_REPEATS_INTO_FTP).out.versions_file
+        if (params.upload_repeats) {
+        UPLOAD_REPEATS_INTO_FTP(ch_repeat_output)
+        ch_versions_file = ch_versions_file.mix(UPLOAD_REPEATS_INTO_FTP.out.versions_file)
+        }
+
+        // Merge into single file and publish
+        COLLECT_SOFTWARE_VERSIONS(ch_versions_file.collect())
 
 }
 
@@ -195,13 +216,10 @@ workflow {
     REPEAT_ANNOTATION(params.csvFile)
 }
 
-workflow.onComplete {
-    log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
-    log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
-    cleanCacheDirectory()
-}
+//onComplete {
+ //   log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
+ //   log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
+ //   cleanCacheDirectory()
+//}
 
-workflow.onError {
-    def error_report = workflow.errorReport ?: workflow.errorMessage ?: 'Unknown error'
-    log.error("Pipeline execution stopped with the following message: ${error_report}")
-}
+

@@ -30,7 +30,7 @@ process RUN_RED {
     val(meta)
 
     output:
-    tuple val(meta), path("**/*.gtf"), emit: red_out
+    tuple val(meta), path("*.gtf"), emit: red_out
     path "versions.yml", emit: versions_file    
 
     script:
@@ -38,7 +38,7 @@ process RUN_RED {
     run_red --genome_file ${meta.genome_file} \
                     --output_dir . \
                     --red_bin ${params.red_path}
-
+    mv red_output/annotation.gtf ${meta.gca}_red.gtf  
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         red: \$(Red --version 2>&1 | head -n 1 | sed 's/.*Red version \\([0-9.]\\+\\).*/\\1/p')

@@ -1,25 +1,30 @@
 #!/usr/bin/env nextflow
+
 /*
-See the NOTICE file distributed with this work for additional information
-regarding copyright ownership.
+@category Check_and download RepeatModeler library
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+@summary
+Check if a RepeatModeler library file exists at the given URL and download it if it does.
 
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-/*
+@description
 This process checks if a RepeatModeler library file exists at the given URL.
 If the file exists, it downloads the file and saves it with the name "<GCA>.
 repeatmodeler.fa". If the file does not exist, it outputs an error message 
 and exits with a non-zero status.
+
+@implementation
+- Validates the remote URL using `wget --spider`.
+- Downloads the library as `<GCA>.repeatmodeler.fa`.
+- Stops the workflow if the download target is unavailable.
+- Generates `versions.yml` containing the wget version.
+
+@inputs
+meta             Genome metadata map
+url              RepeatModeler library URL
+
+@outputs
+meta          Genome metadata map
+fasta_file   RepeatModeler library file
 */
 process CHECK_AND_DOWNLOAD_RMLIBRARY {
     tag "$meta.gca"

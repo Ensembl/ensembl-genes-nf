@@ -30,7 +30,7 @@ process RUN_DUST {
     val(meta)
 
     output:
-    tuple val(meta), path("**/*.gtf"), emit: dust_out
+    tuple val(meta), path("*.gtf"), emit: dust_out
     path "versions.yml", emit: versions_file
 
     script:
@@ -40,6 +40,7 @@ process RUN_DUST {
                     --dust_bin /opt/linuxbrew/bin/dustmasker \
                     --num_threads ${task.cpus}  \
                     --bedtools_bin /opt/linuxbrew/bin/bedtools
+    mv dust_output/annotation.gtf ${meta.gca}_dust.gtf  
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         dust: \$(Dust -version 2>&1 | head -n 1 | sed 's/.*Dust version \\([0-9.]\\+\\).*/\\1/p')

@@ -33,10 +33,9 @@ process RUN_TRF {
     val(meta)
 
     output:
-    tuple val(meta), path("**/*.gtf"), emit: trf_out
+    tuple val(meta), path("*.gtf"), emit: trf_out
     path "versions.yml", emit: versions_file
-    //export PYTHONPATH=/hps/nobackup/flicek/ensembl/genebuild/ftricomi/stats_pipe/ensembl-anno/src/python
-    //python /hps/nobackup/flicek/ensembl/genebuild/ftricomi/stats_pipe/ensembl-anno/src/python/ensembl/tools/anno/repeat_annotation/trf.py
+    
     script:
     """
     run_trf --genome_file ${meta.genome_file} \
@@ -51,6 +50,7 @@ process RUN_TRF {
                     --maxperiod ${params.trf_maxperiod} \
                     --num_threads ${task.cpus} \
                     --bedtools_bin /opt/linuxbrew/bin/bedtools
+    mv trf_output/annotation.gtf ${meta.gca}_trf.gtf                
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         trf: \$(trf -version 2>&1 | head -n 1 | sed 's/.*Tandem Repeats Finder version \\([0-9.]\\+\\).*/\\1/p')

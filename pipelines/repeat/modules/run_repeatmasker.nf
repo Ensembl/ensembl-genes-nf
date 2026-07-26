@@ -32,10 +32,11 @@ process RUN_REPEATMASKER {
     tuple val(meta), val(library_file)
 
     output:
-    tuple val(meta), path("repeatmasker_output/*.gtf"), emit: repeatmasker_out
+    tuple val(meta), path("*.gtf"), emit: repeatmasker_out
     path "versions.yml", emit: versions_file
 
     script:
+    def library = meta.repeatmasker_library?.trim() ? meta.repeatmasker_library : library_file
     LD_LIBRARY_PATH='/hps/software/users/ensembl/genebuild/shared/libnsl/lib:/hps/software/users/ensembl/genebuild/shared/libnsl/libtirpc'
     """
     export LD_LIBRARY_PATH=/hps/software/users/ensembl/genebuild/shared/libnsl/lib:/hps/software/users/ensembl/genebuild/shared/libnsl/libtirpc:$LD_LIBRARY_PATH
@@ -44,10 +45,11 @@ process RUN_REPEATMASKER {
     run_repeatmasker  --genome_file ${meta.genome_file} \
                     --output_dir . \
                     --repeatmasker_bin /opt/linuxbrew/bin/RepeatMasker \
-                    --library ${library_file} \
+                    --library ${library} \
                     --repeatmasker_engine ${params.engine_repeatmasker} \
                     --num_threads ${task.cpus} \
                     --bedtools_bin /opt/linuxbrew/bin/bedtools
+    mv repeatmasker_output/annotation.gtf ${meta.gca}_repeatmasker.gtf  
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         repeatmasker: \$(RepeatMasker -version 2>&1 | head -n 1 | sed 's/.*RepeatMasker version \\([0-9.]\\+\\).*/\\1/p')
