@@ -1,230 +1,258 @@
-# Repeat Pipeline Modules Documentation
+# Repeat Pipeline
 
-This directory contains comprehensive documentation for all modules in the Ensembl genes repeat annotation pipeline.
+The **Repeat Pipeline** performs comprehensive repeat annotation of genome assemblies using a combination of de novo repeat detection and curated repeat libraries. Depending on the available resources and user configuration, the pipeline can generate species-specific RepeatModeler libraries, download existing libraries, annotate repeats with RepeatMasker, and perform complementary repeat detection using RED, DUST and Tandem Repeat Finder (TRF).
 
-## Module Overview
+The pipeline is designed to support the Ensembl Genes annotation workflow by producing repeat annotations suitable for downstream analysis and FTP publication.
 
-The repeat pipeline consists of 11 modules organised into functional categories:
+## Quick Links
 
-### Library Retrieval Modules
-
-**[check-and-download-rmlibrary](modules/check_and_download_rmlibrary.md)** – Downloads or validates RepeatModeler repeat libraries for the target assembly.
-
-
-### Repeat Annotation Modules
-
-**[run-repeatmasker](modules/run-repeatmasker.md)** – Identifies and masks repetitive elements using RepeatMasker.
-**[run-red](modules/run-red.md)** – Detects repeats de novo using RED.
-**[run-dust](modules/run-dust.md)** -  Detects repeats de novo using DUST.
-**[run-trf](modules/run-trf.md)** - Detects repeats de novo using TRF.
-
-
-
-### Resource Management Modules
-
-**[versions](modules/collect-software-versions.md)** – Collects software version information for reproducibility.
-
-> **Note:** Module names should be updated to match the final generated documentation if they differ from the current implementation.
+* **Input Specification** → `input.md`
+* **Output Reference** → `output.md`
+* **Parameter Reference** → `parameters.md`
+* **Workflow Documentation** → `workflows/index.md`
+* **Module Documentation** → `modules/index.md`
+* **Troubleshooting** → `troubleshooting.md`
 
 ---
 
-## Pipeline Flow
+## Pipeline Overview
 
-The typical execution flow of the repeat pipeline:
+The Repeat pipeline supports several repeat annotation strategies:
+
+* Download genome assemblies from NCBI.
+* Reuse existing RepeatModeler libraries when available.
+* Generate new RepeatModeler libraries for assemblies without existing repeat models.
+* Annotate repeats using RepeatMasker.
+* Detect repeats independently using RED.
+* Detect low-complexity regions using DUST.
+* Detect tandem repeats using TRF.
+* Upload generated repeat libraries and repeat annotations to the Ensembl FTP site.
+* Record software versions for reproducibility.
+
+Individual stages are enabled or disabled through pipeline parameters.
+
+---
+
+## Pipeline Workflow
+
+The pipeline executes the following logical stages.
 
 ```text
-1. Repeat Library Preparation
-   ├─> CHECK_AND_DOWNLOAD_RMLIBRARY
-   └─> CHECK_AND_DOWNLOAD_DFAM
-
-2. Repeat Annotation
-   ├─> RUN_REPEATMASKER
-   └─> RUN_RED
-
-3. Result Processing
-   ├─> MERGE_REPEAT_LIBRARIES
-   ├─> REPEAT_STATISTICS
-   └─> REPEAT_SUMMARY
-
-4. Database Population
-   ├─> POPULATE_REPEAT_DB
-   └─> REPEAT_DB_METADATA
-
-5. Cleanup
-   └─> CLEAN_REPEAT_CACHE
+Input CSV
+    │
+    ▼
+FETCH_GENOME
+    │
+    ▼
+FETCH_REPEAT_MODEL
+    │
+    ├──────────── Existing library ──────────────┐
+    │                                            │
+    ▼                                            ▼
+GENERATE_REPEATMODELER_LIBRARY     CHECK_AND_DOWNLOAD_RMLIBRARY
+    │                                            │
+    └──────────────────────┬─────────────────────┘
+                           ▼
+                  RepeatModeler library
+                           │
+                           ▼
+                    RUN_REPEATMASKER
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+      RUN_RED          RUN_DUST           RUN_TRF
+        │                  │                  │
+        └──────────────────┴──────────────────┘
+                           ▼
+              UPLOAD_REPEATS_INTO_FTP
+                           │
+                           ▼
+           COLLECT_SOFTWARE_VERSIONS
 ```
 
 ---
 
-## Module Categories by Function
+## Main Components
 
-### Repeat Library Management
+### Genome Retrieval
 
-* **RepeatModeler Library**: Retrieves or validates species-specific repeat libraries.
-* **Dfam Library**: Downloads curated repeat family databases.
+The pipeline begins by downloading or locating the genome assembly specified in the input CSV.
+
+**Module**
+
+* `FETCH_GENOME`
+
+---
+
+### Repeat Library Preparation
+
+When RepeatModeler library generation is enabled (`params.generate_lib`), the pipeline checks whether a species-specific repeat library already exists.
+
+If one is available it is downloaded from the Ensembl FTP site.
+
+Otherwise a new RepeatModeler library is generated and uploaded for future reuse.
+
+**Modules**
+
+* `FETCH_REPEAT_MODEL`
+* `GENERATE_REPEATMODELER_LIBRARY`
+* `CHECK_AND_DOWNLOAD_RMLIBRARY`
+* `UPLOAD_INTO_FTP`
+
+---
 
 ### Repeat Annotation
 
-* **RepeatMasker**: Identifies and classifies known repetitive elements.
-* **RED**: Detects repetitive regions using de novo sequence analysis.
-* **Library Merging**: Combines multiple repeat resources for downstream analysis.
+RepeatMasker can be executed using the RepeatModeler library.
 
-### Statistics & Reporting
+Additional repeat annotation methods can be enabled independently.
 
-* **Repeat Statistics**: Computes repeat coverage and annotation metrics.
-* **Repeat Summary**: Produces summary reports for downstream quality assessment.
+**Modules**
 
-### Database Management
+* `RUN_REPEATMASKER`
+* `RUN_RED`
+* `RUN_DUST`
+* `RUN_TRF`
 
-* **Populate Repeat Database**: Inserts repeat annotation results into Ensembl databases.
-* **Repeat Metadata**: Updates database metadata and version information.
-
-### Resource Management
-
-* **Cleaning**: Removes temporary files and cached intermediate data.
+Each method produces complementary repeat annotations.
 
 ---
 
-## Key Dependencies
+### Result Publication
 
-### External Tools
+Generated repeat annotation files can optionally be uploaded to the Ensembl FTP site.
 
-* **RepeatMasker** – Repeat annotation.
-* **RepeatModeler** – De novo repeat family generation.
-* **Dfam** – Curated repeat family database.
-* **RED** – Rapid de novo repeat detection.
+**Module**
 
-### Ensembl Dependencies
-
-* **Ensembl Perl API** – Database interaction.
-* **Ensembl Python libraries** – Pipeline utilities and metadata generation.
-* **Ensembl analysis scripts** – Database loading and reporting.
-
-### Databases
-
-* **Ensembl Core Database** – Stores repeat annotations.
-* **Dfam Database** – Reference repeat families.
-* **RepeatModeler Libraries** – Species-specific repeat libraries.
+* `UPLOAD_REPEATS_INTO_FTP`
 
 ---
 
-## Common Parameters
+### Reproducibility
 
-Most modules use the following common parameters.
+All modules report software versions that are merged into a single `versions.yml` file.
 
-### Database Connection
+**Module**
 
-* `params.host` – Database host.
-* `params.port` – Database port.
-* `params.user` – Database username.
-* `params.password` – Database password.
-
-### Paths
-
-* `params.outdir` – Output directory.
-* `params.cacheDir` – Cache directory.
-* `params.enscode` – Ensembl code checkout.
-
-### Execution Control
-
-* `params.files_latency` – File-system synchronisation delay.
-* `maxForks` – Maximum parallel processes.
+* `COLLECT_SOFTWARE_VERSIONS`
 
 ---
 
-## Caching Strategy
+## Execution Modes
 
-Several modules cache downloaded resources and intermediate files to avoid unnecessary recomputation.
+The pipeline supports multiple execution modes depending on the supplied parameters.
 
-Typical cached resources include:
+### Complete Repeat Annotation
 
+* Generate or retrieve RepeatModeler libraries.
+* Run RepeatMasker.
+* Run RED.
+* Run DUST.
+* Run TRF.
+* Publish repeat annotations.
+
+### RepeatMasker Only
+
+Generate or retrieve RepeatModeler libraries and execute RepeatMasker only.
+
+### RED Only
+
+Execute RED directly on the genome assembly.
+
+### DUST Only
+
+Run DUST low-complexity masking.
+
+### TRF Only
+
+Detect tandem repeats using TRF.
+
+Any combination of these analyses can be enabled.
+
+---
+
+## Pipeline Parameters
+
+The generated parameter documentation provides the complete list of available configuration options.
+
+See:
+
+* `parameters.md`
+
+---
+
+## Input
+
+The pipeline expects a CSV file describing the assemblies to process.
+
+Typical columns include:
+
+* `gca`
+* `species_name`
+* `genome_file`
+* `repeatmasker_library`
+
+See **Input Specification** for the complete format.
+
+---
+
+## Outputs
+
+Depending on the enabled analyses, the pipeline generates:
+
+* downloaded genome assemblies
 * RepeatModeler libraries
-* Dfam libraries
-* RepeatMasker intermediate outputs
-* RED intermediate files
+* RepeatMasker annotations
+* RED annotations
+* DUST annotations
+* TRF annotations
+* FTP-ready output files
+* software version reports
 
-This reduces download time and improves reproducibility when processing multiple assemblies.
-
----
-
-## Conditional Execution
-
-Some modules execute only when specific parameters are enabled.
-
-Typical examples include:
-
-* Use of RepeatModeler libraries versus Dfam libraries.
-* Database population steps.
-* Cleanup of working directories.
-* Optional statistics generation.
-
-Refer to the individual module documentation for the exact controlling parameters.
+A detailed description of all outputs is available in **Output Reference**.
 
 ---
 
-## Output Structure
+## Module Documentation
 
-Results are typically organised by genome assembly accession.
+Detailed documentation is available for every module, including:
 
-```text
-${params.outdir}/
-└── ${meta.gca}/
-    ├── repeatmasker/
-    ├── red/
-    ├── repeat_library/
-    ├── statistics/
-    ├── reports/
-    └── versions.yml
-```
+* purpose
+* inputs
+* outputs
+* parameters
+* implementation summary
+* dependencies
 
----
+See:
 
-## Metadata Requirements
-
-Most modules expect metadata maps containing fields such as:
-
-* `gca` – Genome assembly accession.
-* `dbname` – Ensembl core database.
-* `production_name` – Species production name.
-* `species_id` – Species identifier.
-
-Additional metadata may be required by individual modules.
+`modules/index.md`
 
 ---
 
-## Documentation Format
+## Workflow Documentation
 
-Each module documentation includes:
+Workflow-level documentation explains how the different modules interact and exchange data.
 
-* **Overview**
-* **Process Details**
-* **Inputs**
-* **Outputs**
-* **Parameters**
-* **Implementation Summary**
-* **Dependencies**
-* **Source**
+See:
+
+`workflows/index.md`
 
 ---
 
-## Version Tracking
+## Reproducibility
 
-Every module generates a `versions.yml` file recording software versions used during execution, including:
+Every execution records software versions using the dedicated version collection module.
 
-* RepeatMasker
-* RepeatModeler
-* RED
-* Perl
-* Python
-* Database client versions
-
-These files support reproducibility and troubleshooting.
+This produces a consolidated `versions.yml` file suitable for provenance tracking and reproducible analyses.
 
 ---
 
-## For More Information
+## Related Documentation
 
-* Refer to the individual module documentation for implementation details.
-* Consult the main repeat pipeline documentation for workflow orchestration.
-* See the Ensembl documentation for repeat annotation integration.
-* Refer to the RepeatMasker, RepeatModeler, Dfam and RED documentation for tool-specific guidance.
+* Input Specification
+* Output Reference
+* Parameter Reference
+* Module Documentation
+* Workflow Documentation
+* Troubleshooting

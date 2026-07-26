@@ -1,4 +1,4 @@
-# to
+# COLLECT_SOFTWARE_VERSIONS
 
 regarding copyright ownership.
 you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@ limitations under the License.
 
 | Property | Value |
 |----------|-------|
-| Process | `to` |
+| Process | `COLLECT_SOFTWARE_VERSIONS` |
 | Publish directory | `"${params.outdir}/pipeline_info", mode: 'copy'` |
 
 ## Inputs

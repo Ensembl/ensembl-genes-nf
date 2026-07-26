@@ -241,7 +241,6 @@ def render_pipeline_workflows(
 
     workflow_dir = (
         output_dir
-        / pipeline.name
         / "workflows"
     )
 
@@ -264,46 +263,29 @@ def render_pipeline_workflows(
         )
 
     #
-    # Index
+    # workflows/index.md
     #
 
-    lines = []
+    lines = [
+        "# Workflows",
+        "",
+        "Documentation for the workflows used by this pipeline.",
+        "",
+        "```{toctree}",
+        ":maxdepth: 1",
+        "",
+    ]
 
-    lines.append(
-        f"# {pipeline.title} Workflows"
-    )
+    for workflow in sorted(
+        pipeline.workflows,
+        key=lambda w: w.name,
+    ):
+        lines.append(workflow.name)
 
-    lines.append("")
-
-    lines.append(
-        "Automatically generated workflow documentation."
-    )
-
-    lines.append("")
-
-    lines.append(
-        "| Workflow | Description |"
-    )
-
-    lines.append(
-        "|----------|-------------|"
-    )
-
-    for workflow in pipeline.workflows:
-
-        description = (
-            workflow.description
-            if workflow.description
-            else "-"
-        )
-
-        lines.append(
-            "| "
-            f"[{workflow.name}]({workflow.name}.md)"
-            f" | {description} |"
-        )
-
-    lines.append("")
+    lines.extend([
+        "```",
+        "",
+    ])
 
     _write(
         workflow_dir / "index.md",

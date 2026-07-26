@@ -1,4 +1,4 @@
-# fetches
+# FETCH_REPEAT_MODEL
 
 regarding copyright ownership.
 you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@ limitations under the License.
 
 | Property | Value |
 |----------|-------|
-| Process | `fetches` |
+| Process | `FETCH_REPEAT_MODEL` |
 | Label | `'fetch_file'` |
 | Tag | `$meta.gca:repeatmodel` |
 | Publish directory | `"${params.outdir}/${meta.gca}/library/", mode: 'copy'` |

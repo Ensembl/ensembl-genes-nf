@@ -1,4 +1,4 @@
-# runs
+# RUN_RED
 
 regarding copyright ownership.
 you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@ limitations under the License.
 
 | Property | Value |
 |----------|-------|
-| Process | `runs` |
+| Process | `RUN_RED` |
 | Label | `python` |
 | Tag | `${meta.gca}:genome` |
 | Publish directory | `"${params.outdir}/${meta.gca}/red/", pattern: "**/*.gtf", mode: "copy"` |

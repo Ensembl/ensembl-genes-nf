@@ -14,6 +14,8 @@ from pathlib import Path
 import logging
 import shutil
 
+from docs.generators.workflow_page import render_pipeline_workflows
+
 from .models import DocumentationPage
 from .models import Pipeline
 from .module_page import render_pipeline_modules
@@ -104,13 +106,16 @@ def generate_pipeline(
     # Workflow documentation.
     #
 
-    #
-    # Placeholder for now.
-    # Later:
-    #
-    # render_workflows(...)
-    #
+    logger.info(
+        "Generating workflow pages"
+    )
 
+    render_pipeline_workflows(
+        pipeline,
+        pipeline_dir,
+    )
+
+    
 
 # ---------------------------------------------------------------------
 # Manual pages

@@ -1,4 +1,4 @@
-# uploads
+# UPLOAD_REPEATS_INTO_FTP
 
 regarding copyright ownership.
 you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@ limitations under the License.
 
 | Property | Value |
 |----------|-------|
-| Process | `uploads` |
+| Process | `UPLOAD_REPEATS_INTO_FTP` |
 | Label | `'ensembl_ftp'` |
 | Tag | `$meta.gca:upload_repeats_into_ftp` |
 

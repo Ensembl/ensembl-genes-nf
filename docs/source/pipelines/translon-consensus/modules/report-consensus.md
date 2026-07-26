@@ -1,10 +1,10 @@
-# to
+# REPORT_CONSENSUS
 
 ## Process Details
 
 | Property | Value |
 |----------|-------|
-| Process | `to` |
+| Process | `REPORT_CONSENSUS` |
 | Label | `'process_high'` |
 | Tag | `${meta.id}` |
 | Publish directory | `"${params.outdir}/consensus_reports/${meta.id}", mode: 'copy'` |

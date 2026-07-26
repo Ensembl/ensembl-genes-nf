@@ -40,16 +40,60 @@ def render_pipeline_modules(
     pipeline: Pipeline,
     pipeline_dir: Path,
 ) -> None:
-    modules_dir = pipeline_dir / "modules"
-    modules_dir.mkdir(parents=True, exist_ok=True)
-    print(f"{pipeline.name}: {len(pipeline.modules)} modules")
-    print("Writing modules to:", modules_dir.resolve())
-    for module in pipeline.modules:
-        path = modules_dir / f"{module.slug}.md"
-        print("Writing", path)
-        write_file(path, render_module(module))
+    """
+    Generate all module pages for one pipeline.
+    """
 
-    # render modules/index.md here as well
+    if not pipeline.modules:
+        return
+
+    modules_dir = pipeline_dir / "modules"
+
+    modules_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    #
+    # Individual module pages
+    #
+
+    for module in pipeline.modules:
+
+        write_file(
+            modules_dir / f"{module.slug}.md",
+            render_module(module),
+        )
+
+    #
+    # modules/index.md
+    #
+
+    lines = [
+        "# Modules",
+        "",
+        "Documentation for the modules used by this pipeline.",
+        "",
+        "```{toctree}",
+        ":maxdepth: 1",
+        "",
+    ]
+
+    for module in sorted(
+        pipeline.modules,
+        key=lambda m: m.slug,
+    ):
+        lines.append(module.slug)
+
+    lines.extend([
+        "```",
+        "",
+    ])
+
+    write_file(
+        modules_dir / "index.md",
+        "\n".join(lines),
+    )
     
 def render_module(module: Module) -> str:
     """

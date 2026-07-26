@@ -1,4 +1,4 @@
-# checks
+# CHECK_AND_DOWNLOAD_RMLIBRARY
 
 This process checks if a RepeatModeler library file exists at the given URL.
 If the file exists, it downloads the file and saves it with the name "<GCA>.
@@ -9,7 +9,7 @@ and exits with a non-zero status.
 
 | Property | Value |
 |----------|-------|
-| Process | `checks` |
+| Process | `CHECK_AND_DOWNLOAD_RMLIBRARY` |
 | Label | `'default'` |
 | Tag | `$meta.gca` |
 | Publish directory | `"${params.outdir}/${meta.gca}/rm_library", mode: 'copy'` |

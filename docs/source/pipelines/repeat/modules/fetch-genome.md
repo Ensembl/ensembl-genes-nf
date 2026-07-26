@@ -1,4 +1,4 @@
-# fetches
+# FETCH_GENOME
 
 regarding copyright ownership.
 you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@ limitations under the License.
 
 | Property | Value |
 |----------|-------|
-| Process | `fetches` |
+| Process | `FETCH_GENOME` |
 | Label | `'python'` |
 | Tag | `${meta.gca}:genome` |
 | storeDir | `"${params.cacheDir}/${meta.gca}/ncbi_dataset"` |

@@ -1,4 +1,4 @@
-# runs
+# GENERATE_REPEATMODELER_LIBRARY
 
 regarding copyright ownership.
 you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@ limitations under the License.
 
 | Property | Value |
 |----------|-------|
-| Process | `runs` |
+| Process | `GENERATE_REPEATMODELER_LIBRARY` |
 | Label | `'repeatmodeler'` |
 | Tag | `$meta.gca:run_repeatmodeler` |
 | Publish directory | `"${params.outdir}/${meta.gca}/library", mode: 'copy'` |

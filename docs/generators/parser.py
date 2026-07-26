@@ -168,7 +168,7 @@ def parse_workflow(path: Path) -> Workflow:
     )
 
     workflow.description = _clean_comment(
-        _first_comment(text)
+        _all_comments(text)
     )
 
     workflow.modules = _discover_workflow_modules(
@@ -285,8 +285,9 @@ def _page(path: Path) -> DocumentationPage | None:
 def _process_name(text: str) -> str:
 
     match = re.search(
-        r"process\s+([A-Za-z0-9_]+)",
+        r"^\s*process\s+([A-Za-z0-9_]+)\b",
         text,
+        re.MULTILINE,
     )
 
     if match:
@@ -813,6 +814,21 @@ def _summarise_script(
         result.append(item)
 
     return result
+def _all_comments(text: str) -> str:
+    """
+    Return all /* ... */ comment blocks.
+    """
+
+    blocks = re.findall(
+        r"/\*(.*?)\*/",
+        text,
+        re.S,
+    )
+
+    return "\n\n".join(
+        block.strip()
+        for block in blocks
+    )
 def _first_comment(text: str) -> str:
     """
     Return the first /* ... */ block.

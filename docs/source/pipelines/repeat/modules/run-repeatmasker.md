@@ -1,4 +1,4 @@
-# runs
+# RUN_REPEATMASKER
 
 regarding copyright ownership.
 you may not use this file except in compliance with the License.
@@ -11,7 +11,7 @@ limitations under the License.
 
 | Property | Value |
 |----------|-------|
-| Process | `runs` |
+| Process | `RUN_REPEATMASKER` |
 | Label | `python` |
 | Tag | `${meta.gca}:genome` |
 | Publish directory | `"${params.outdir}/${meta.gca}/repeatmasker/", pattern: "repeatmasker_output/*.gtf", mode: "copy"` |
