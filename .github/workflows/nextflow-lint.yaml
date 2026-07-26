@@ -2,11 +2,11 @@ name: Nextflow Lint
 
 on:
   push:
-    branches:
-      - 'feature/collection_tmp'
+    branches: 
+      - "**"
   pull_request:
-    branches:
-      - 'dev'
+    branches: 
+      - "main"
 
 jobs:
   lint:
