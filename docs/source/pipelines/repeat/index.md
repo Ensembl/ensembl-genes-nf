@@ -3,10 +3,14 @@
 Welcome to the documentation for the
 **Repeat** pipeline.
 
-## Documentation
+```{toctree}
+:maxdepth: 1
 
-- [Input](input.md)
-- [Output](output.md)
-- [Parameters](parameters.md)
-- [Modules](modules/index.md)
-
+README
+input
+output
+parameters
+modules/index
+workflows/index
+troubleshooting
+```

@@ -204,17 +204,21 @@ def _readme_template(
 
     return f"""# {pipeline.title}
 
-This directory contains the documentation for the
+Welcome to the documentation for the
 **{pipeline.title}** pipeline.
 
-The documentation is organised into:
+## Documentation
 
-- Input specification
-- Output description
-- Parameters
-- Workflows
-- Modules
+```{{toctree}}
+:maxdepth: 1
 
+input
+output
+parameters
+modules/index
+workflows/index
+troubleshooting
+```
 """
 
 
@@ -227,11 +231,15 @@ def _index_template(
 Welcome to the documentation for the
 **{pipeline.title}** pipeline.
 
-## Documentation
+```{{toctree}}
+:maxdepth: 1
 
-- [Input](input.md)
-- [Output](output.md)
-- [Parameters](parameters.md)
-- [Modules](modules/index.md)
-
+README
+input
+output
+parameters
+modules/index
+workflows/index
+troubleshooting
+```
 """

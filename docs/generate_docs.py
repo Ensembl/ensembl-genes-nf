@@ -25,8 +25,10 @@ from pathlib import Path
 #from generators.pipeline import generate_pipeline
 from docs.generators.parser import discover_pipelines
 from docs.generators.pipeline import generate_pipeline
-from docs.generators.navigation import generate_navigation
-
+from docs.generators.navigation import (
+    generate_navigation,
+    generate_root_index,
+)
 # ---------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------
@@ -89,6 +91,9 @@ def main() -> None:
     generate_navigation(
         docs_root=DOCS_DIR,
         pipelines=pipelines,
+    )
+    generate_root_index(
+        docs_root=DOCS_DIR,
     )
 
     logger.info("Documentation completed successfully.")

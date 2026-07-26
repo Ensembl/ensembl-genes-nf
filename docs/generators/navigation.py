@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from docs.generators.utils import write_file
+
 from .models import Pipeline
 
 
@@ -52,13 +54,58 @@ def _write(path: Path, text: str) -> None:
 # Root index
 # ---------------------------------------------------------------------
 
+def generate_root_index(
+    docs_root: Path,
+) -> None:
+    """
+    Generate the root Sphinx landing page.
 
+    This page is intentionally minimal. The complete list of
+    pipelines is generated in ``pipelines/index.md``.
+    """
+
+    lines = []
+
+    lines.append("# Ensembl Genes Nextflow Pipelines")
+    lines.append("")
+    lines.append(
+        "Documentation for the Ensembl Nextflow pipelines."
+    )
+    lines.append("")
+    lines.append(
+        "The documentation is organised by pipeline. "
+        "Each pipeline contains:"
+    )
+    lines.append("")
+    lines.append("- Overview")
+    lines.append("- Input")
+    lines.append("- Output")
+    lines.append("- Parameters")
+    lines.append("- Modules")
+    lines.append("- Workflows")
+    lines.append("- Troubleshooting")
+    lines.append("")
+    lines.append("```{toctree}")
+    lines.append(":maxdepth: 1")
+    lines.append(":caption: Pipelines")
+    lines.append("")
+    lines.append("pipelines/index")
+    lines.append("```")
+    lines.append("")
+
+    write_file(
+        docs_root / "index.md",
+        "\n".join(lines),
+    )
 def generate_navigation(
     docs_root: Path,
     pipelines: list[Pipeline],
 ) -> None:
     """
-    Generate the global documentation index.
+    Generate the pipelines index page.
+
+    This page is used by Sphinx to build the navigation for all
+    available pipelines.
     """
 
     lines = []
@@ -69,30 +116,20 @@ def generate_navigation(
         "Documentation for the available Ensembl Nextflow pipelines."
     )
     lines.append("")
-
-    lines.append("| Pipeline | Modules | Workflows | Parameters |")
-    lines.append("|----------|---------|-----------|------------|")
+    lines.append("```{toctree}")
+    lines.append(":maxdepth: 1")
+    lines.append("")
 
     for pipeline in sorted(
         pipelines,
         key=lambda p: p.name,
     ):
+        lines.append(f"{pipeline.name}/README")
 
-        lines.append(
-            "| "
-            f"[{pipeline.title}]({pipeline.name}/index.md)"
-            " | "
-            f"[Modules]({pipeline.name}/modules/index.md)"
-            " | "
-            f"[Workflows]({pipeline.name}/workflows/index.md)"
-            " | "
-            f"[Parameters]({pipeline.name}/parameters.md)"
-            " |"
-        )
-
+    lines.append("```")
     lines.append("")
 
     _write(
-        docs_root / "index.md",
+        docs_root / "pipelines" / "index.md",
         "\n".join(lines),
     )
