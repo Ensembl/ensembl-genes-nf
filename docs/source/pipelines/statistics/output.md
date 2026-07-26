@@ -927,4 +927,4 @@ Provide:
 | RUN_ENSEMBL_META | *.sql | outdir/${gca}/core_statistics/ | SQL |
 | All modules | versions.yml | outdir/${gca}/ | YAML |
 
----
+

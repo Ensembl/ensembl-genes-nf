@@ -8,29 +8,21 @@ The repeat pipeline consists of 11 modules organised into functional categories:
 
 ### Library Retrieval Modules
 
-1. **[check-and-download-rmlibrary](modules/check-and-download-rmlibrary.md)** – Downloads or validates RepeatModeler repeat libraries for the target assembly.
-2. **[check-and-download-dfam](modules/check-and-download-dfam.md)** – Downloads and prepares Dfam repeat libraries when required.
+**[check-and-download-rmlibrary](modules/check_and_download_rmlibrary.md)** – Downloads or validates RepeatModeler repeat libraries for the target assembly.
+
 
 ### Repeat Annotation Modules
 
-3. **[run-repeatmasker](modules/run-repeatmasker.md)** – Identifies and masks repetitive elements using RepeatMasker.
-4. **[run-red](modules/run-red.md)** – Detects repeats de novo using RED.
-5. **[merge-repeat-libraries](modules/merge-repeat-libraries.md)** – Combines multiple repeat libraries into a unified resource when required.
+**[run-repeatmasker](modules/run-repeatmasker.md)** – Identifies and masks repetitive elements using RepeatMasker.
+**[run-red](modules/run-red.md)** – Detects repeats de novo using RED.
+**[run-dust](modules/run-dust.md)** -  Detects repeats de novo using DUST.
+**[run-trf](modules/run-trf.md)** - Detects repeats de novo using TRF.
 
-### Statistics & Reporting Modules
 
-6. **[repeat-statistics](modules/repeat-statistics.md)** – Computes repeat annotation summary statistics.
-7. **[repeat-summary](modules/repeat-summary.md)** – Generates summary reports for repeat annotation results.
-
-### Database Operations Modules
-
-8. **[populate-repeat-db](modules/populate-repeat-db.md)** – Populates Ensembl databases with repeat annotation metadata.
-9. **[repeat-db-metadata](modules/repeat-db-metadata.md)** – Updates repeat-related metadata within the Ensembl core database.
 
 ### Resource Management Modules
 
-10. **[clean-repeat-cache](modules/clean-repeat-cache.md)** – Removes cached intermediate files and temporary resources.
-11. **[versions](modules/versions.md)** – Collects software version information for reproducibility.
+**[versions](modules/collect-software-versions.md)** – Collects software version information for reproducibility.
 
 > **Note:** Module names should be updated to match the final generated documentation if they differ from the current implementation.
 

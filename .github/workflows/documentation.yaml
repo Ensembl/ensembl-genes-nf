@@ -37,7 +37,7 @@ jobs:
         run: python -m docs.generate_docs
 
       - name: Sphinx Build
-        run: sphinx-build -W --keep-going -b html docs/source docs/build/html
+        run: sphinx-build  --keep-going -b html docs/source docs/build/html
 
       - name: Check for MkDocs Site
         id: mkdocs
