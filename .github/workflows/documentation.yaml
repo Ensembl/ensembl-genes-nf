@@ -2,10 +2,10 @@ name: Documentation
 
 on:
   push:
-    branches: ["main"]
+    branches: [**]
   pull_request:
     branches: ["main"]
-  workflow_dispatch:
+  workflow_dispatch: 
 
 permissions:
   contents: write
@@ -32,7 +32,7 @@ jobs:
           python -m pip install -r docs/requirements.txt
 
       - name: Generate Parameter Reference
-        run: python docs/scripts/render_schema_docs.py
+        run: python -m docs.generate_docs
 
       - name: Sphinx Build
         run: sphinx-build -W --keep-going -b html docs/source docs/build/html
