@@ -74,7 +74,10 @@ jobs:
         if: ${{ github.event_name != 'pull_request' }}
         continue-on-error: true
         run: sphinx-build -b linkcheck docs/source docs/build/linkcheck
-
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/build/html
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
