@@ -40,7 +40,7 @@ process GENERATE_REPEATMODELER_LIBRARY {
     script:
     """
     echo "Running RepeatModeler for ${meta.gca} using genome file ${meta.genome_file}"
-    ${params.builddatabase_path} -name ${meta.gca}.repeatmodeler  ${meta.genome_file}
+    BuildDatabase -name ${meta.gca}.repeatmodeler  ${meta.genome_file}
     echo "Database files after BuildDatabase:"
     RepeatModeler -engine ${params.engine_repeatmodeler} -threads ${task.cpus} -database ${meta.gca}.repeatmodeler
     # Rename outputs to the desired published names
