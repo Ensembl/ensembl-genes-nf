@@ -4,6 +4,10 @@ This pipeline submits processed RNA-seq alignments to ENA as annotation evidence
 
 The current production model is one ENA Project (Study) per annotation/assembly partial release and one ENA `ANALYSIS` per BAM/CRAM alignment file. ENA does not accept multiple BAM/CRAM files in a single `ANALYSIS`; the annotation-level manifest is expanded into one analysis per file during the workflow.
 
+For a complete first-time walkthrough, including TEST/PROD setup, credential
+handling, manifest validation, output inspection, and troubleshooting, see
+[WALKTHROUGH.md](WALKTHROUGH.md).
+
 ## Step 1: Build The Annotation Manifest
 
 For an Ensembl genebuild RNA-seq directory like:
@@ -154,7 +158,7 @@ elements. Tissue labels or other descriptive values in the source CSV are ignore
 
 Locked in:
 
-- One ENA `ANALYSIS` per annotation/assembly partial release.
+- One ENA `ANALYSIS` per alignment file within an annotation/assembly partial release.
 - Include all source `RUN_REF` entries in production.
 - Support BAM and CRAM input files.
 - Derive partial release identity from assembly accession plus `last_geneset_update`.
