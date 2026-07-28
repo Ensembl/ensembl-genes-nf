@@ -22,7 +22,8 @@ process ENA_FTP_UPLOAD {
     """
     set -euo pipefail
     command -v lftp >/dev/null 2>&1 || { echo 'lftp is required' >&2; exit 127; }
-    lftp -u ${webin_user},\$ENA_WEBIN_PASSWORD ${ftp_host} \
+    LFTP_PASSWORD="\$ENA_WEBIN_PASSWORD" \
+    lftp --user "${webin_user}" --env-password "${ftp_host}" \
         -e '${mkdir_cmd}put ${file} -o ${remote_path}; put ${md5} -o ${remote_path}.md5; bye'
     """
 }
