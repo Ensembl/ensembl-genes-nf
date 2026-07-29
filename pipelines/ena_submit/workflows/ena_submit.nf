@@ -12,6 +12,10 @@ include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
 include { ENA_CONVERT_TO_CRAM } from '../modules/convert_to_cram.nf'
 include { ENA_REHEADER_BAM } from '../modules/reheader_bam.nf'
 include { ENA_PREPARE_REFERENCE } from '../modules/prepare_reference.nf'
+include { ENA_EXTRACT_BAM_HEADER } from '../modules/extract_bam_header.nf'
+include { ENA_BUILD_BAM_HEADER } from '../modules/build_bam_header.nf'
+include { ENA_INDEX_BAM } from '../modules/index_bam.nf'
+include { ENA_INDEX_CRAM } from '../modules/index_cram.nf'
 
 // Parse an annotation-level manifest and dispatch one ENA analysis per file.
 workflow ENA_SUBMIT_WORKFLOW {
@@ -116,7 +120,7 @@ workflow ENA_SUBMIT_WORKFLOW {
 
     def reheader_bams = params.reheader_bams?.toString()?.toLowerCase() in ['1', 'true', 'yes']
     if (reheader_bams) {
-        def reheader_script = file("${projectDir}/bin/reheader_bam.py")
+        def header_script = file("${projectDir}/bin/build_reheader_header.py")
         def bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
             (file_meta.file_type ?: '').toString().toLowerCase() == 'bam'
         }.map { meta, row, file_meta, bam ->
@@ -139,13 +143,25 @@ workflow ENA_SUBMIT_WORKFLOW {
             .distinct()
         ENA_PREPARE_REFERENCE(reference_inputs)
         def prepared_references = ENA_PREPARE_REFERENCE.out.prepared
-        def reheader_inputs = bam_inputs
+        def prepared_bams = bam_inputs
             .join(prepared_references, by: 0)
             .map { reference_key, meta, row, file_meta, bam, fasta, report, reference_fai, prepared_report ->
-                tuple(meta, row, file_meta, bam, reference_fai, prepared_report, reheader_script)
+                tuple(reference_key, meta, row, file_meta, bam)
+            }
+        ENA_EXTRACT_BAM_HEADER(prepared_bams)
+        def header_inputs = ENA_EXTRACT_BAM_HEADER.out.extracted
+            .join(prepared_references, by: 0)
+            .map { reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report ->
+                tuple(reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report, header_script)
+            }
+        ENA_BUILD_BAM_HEADER(header_inputs)
+        def reheader_inputs = ENA_BUILD_BAM_HEADER.out.built
+            .map { reference_key, meta, row, file_meta, bam, header ->
+                tuple(reference_key, meta, row, file_meta, bam, header)
             }
         ENA_REHEADER_BAM(reheader_inputs)
-        def reheadered_bams = ENA_REHEADER_BAM.out.reheadered.map { meta, row, file_meta, bam, bai ->
+        ENA_INDEX_BAM(ENA_REHEADER_BAM.out.reheadered)
+        def reheadered_bams = ENA_INDEX_BAM.out.indexed.map { reference_key, meta, row, file_meta, bam, bai ->
             tuple(meta, row, file_meta, bam)
         }
         file_inputs = reheadered_bams.mix(non_bam_inputs)
@@ -169,7 +185,8 @@ workflow ENA_SUBMIT_WORKFLOW {
             (file_meta.file_type ?: '').toString().toLowerCase() != 'bam'
         }
         ENA_CONVERT_TO_CRAM(bam_inputs, Channel.value(reference), Channel.value(reference_fai))
-        def converted_inputs = ENA_CONVERT_TO_CRAM.out.converted.flatMap { meta, row, file_meta, cram, crai ->
+        ENA_INDEX_CRAM(ENA_CONVERT_TO_CRAM.out.converted)
+        def converted_inputs = ENA_INDEX_CRAM.out.indexed.flatMap { meta, row, file_meta, cram, crai ->
             def cram_name = (file_meta.remote_name ?: cram.getName()).replaceFirst(/\.bam$/, '.cram')
             def cram_meta = file_meta + [file_type: 'cram', remote_name: cram_name, is_index: false]
             def crai_meta = file_meta + [file_type: 'crai', remote_name: "${cram_name}.crai", is_index: true]
