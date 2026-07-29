@@ -56,6 +56,22 @@ If `samtools` is available, the builder inspects BAM/CRAM headers for basic alig
 
 ## Step 2: Submit To ENA
 
+### BAM reference-name preparation
+
+By default, BAM files are reheadered before checksumming and upload so their
+`@SQ SN:` values match the supplied INSDC reference FASTA. Provide the matching
+FASTA, `.fai`, and NCBI `assembly_report.txt`:
+
+```bash
+--reference_fasta /path/to/insdc-reference.fa \
+--reference_assembly_report /path/to/GCA_xxx_assembly_report.txt
+```
+
+The process validates every BAM reference name and sequence length, preserves
+`@SQ` order and all other header records, writes a new BAM, and rebuilds its
+index. Set `--reheader_bams false` only when the input BAMs have already been
+validated against the exact INSDC reference.
+
 Before submitting, store the Webin password in Nextflow's local secrets store. This
 keeps it out of command-line parameters, `.command.sh` files, and task arguments:
 

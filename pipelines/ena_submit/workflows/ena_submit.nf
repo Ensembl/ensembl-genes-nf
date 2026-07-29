@@ -10,6 +10,7 @@ include { ENA_POLL_WEBIN as ENA_POLL_ANALYSIS } from '../modules/poll_webin.nf'
 include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
 include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
 include { ENA_CONVERT_TO_CRAM } from '../modules/convert_to_cram.nf'
+include { ENA_REHEADER_BAM } from '../modules/reheader_bam.nf'
 
 // Parse an annotation-level manifest and dispatch one ENA analysis per file.
 workflow ENA_SUBMIT_WORKFLOW {
@@ -109,6 +110,30 @@ workflow ENA_SUBMIT_WORKFLOW {
             ]
             tuple(meta, row, file_meta, file(file_row.file_path))
         }
+
+    def reheader_bams = params.reheader_bams?.toString()?.toLowerCase() in ['1', 'true', 'yes']
+    if (reheader_bams) {
+        assert params.reference_fasta, "--reference_fasta is required with --reheader_bams true"
+        assert params.reference_assembly_report, "--reference_assembly_report is required with --reheader_bams true"
+        def reference = file(params.reference_fasta)
+        def reference_fai = file("${params.reference_fasta}.fai")
+        def assembly_report = file(params.reference_assembly_report)
+        assert reference.exists(), "Reference FASTA not found: ${params.reference_fasta}"
+        assert reference_fai.exists(), "Reference FASTA index not found: ${params.reference_fasta}.fai"
+        assert assembly_report.exists(), "Assembly report not found: ${params.reference_assembly_report}"
+        def reheader_script = file("${projectDir}/bin/reheader_bam.py")
+        def bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
+            (file_meta.file_type ?: '').toString().toLowerCase() == 'bam'
+        }
+        def non_bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
+            (file_meta.file_type ?: '').toString().toLowerCase() != 'bam'
+        }
+        ENA_REHEADER_BAM(bam_inputs, Channel.value(reference_fai), Channel.value(assembly_report), Channel.value(reheader_script))
+        def reheadered_bams = ENA_REHEADER_BAM.out.reheadered.map { meta, row, file_meta, bam, bai ->
+            tuple(meta, row, file_meta, bam)
+        }
+        file_inputs = reheadered_bams.mix(non_bam_inputs)
+    }
 
     // Optionally convert BAMs to CRAM and retain the CRAI as an upload-only
     // companion file. The CRAI is excluded from the ANALYSIS XML itself.
