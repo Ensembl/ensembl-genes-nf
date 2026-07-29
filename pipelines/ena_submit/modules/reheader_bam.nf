@@ -4,10 +4,7 @@ process ENA_REHEADER_BAM {
     container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
 
     input:
-    tuple val(meta), val(row), val(file_meta), path(file)
-    path reference_fai
-    path assembly_report
-    path script
+    tuple val(meta), val(row), val(file_meta), path(file), path(reference_fai), path(assembly_report), path(script)
 
     output:
     tuple val(meta), val(row), val(file_meta), path('reheadered.bam'), path('reheadered.bam.bai'), emit: reheadered

@@ -59,8 +59,12 @@ If `samtools` is available, the builder inspects BAM/CRAM headers for basic alig
 ### BAM reference-name preparation
 
 By default, BAM files are reheadered before checksumming and upload so their
-`@SQ SN:` values match the supplied INSDC reference FASTA. Provide the matching
-FASTA, `.fai`, and NCBI `assembly_report.txt`:
+`@SQ SN:` values match the INSDC reference FASTA. The manifest builder
+automatically finds the matching genomic FASTA and NCBI assembly report beside
+the assembly directory. The workflow creates the FASTA `.fai` index once in a
+reference-preparation task and shares it with the reheadering tasks.
+
+Use these options only to override automatic manifest discovery:
 
 ```bash
 --reference_fasta /path/to/insdc-reference.fa \
@@ -133,6 +137,8 @@ Existing non-BAM inputs are passed through unchanged.
 - `title`: Human-readable analysis title.
 - `description`: Human-readable description.
 - `assembly_accession`: INSDC assembly accession, e.g. `GCA_052040795.1`.
+- `reference_fasta`: Absolute path to the discovered INSDC genomic FASTA.
+- `assembly_report`: Absolute path to the discovered NCBI assembly report.
 - `last_geneset_update`: Genome metadata value, e.g. `2025-12`.
 - `partial_release_label`: Derived release label.
 - `species`: Production species name.

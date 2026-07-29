@@ -19,6 +19,8 @@ MANIFEST_COLUMNS = [
     "title",
     "description",
     "assembly_accession",
+    "reference_fasta",
+    "assembly_report",
     "last_geneset_update",
     "partial_release_label",
     "species",
@@ -134,6 +136,48 @@ def find_alignment_file(output_dir: Path, run: str, file_format: str, file_patte
     return candidate if candidate.exists() else None
 
 
+def find_reference_files(
+    assembly_dir: Path,
+    assembly_accession: str,
+    reference_fasta: Optional[str],
+    assembly_report: Optional[str],
+) -> tuple[Path, Path]:
+    """Resolve the INSDC FASTA and NCBI assembly report beside the assembly."""
+    if reference_fasta:
+        fasta = Path(reference_fasta).expanduser().resolve()
+    else:
+        candidates = sorted(
+            path for path in assembly_dir.glob(f"{assembly_accession}_*_genomic.fna*")
+            if path.is_file() and not path.name.endswith(".fai")
+        )
+        if len(candidates) != 1:
+            raise RuntimeError(
+                f"Expected exactly one INSDC genomic FASTA under {assembly_dir}; found {candidates}. "
+                "Use --reference-fasta to select one."
+            )
+        fasta = candidates[0].resolve()
+
+    if assembly_report:
+        report = Path(assembly_report).expanduser().resolve()
+    else:
+        candidates = sorted(
+            path for path in assembly_dir.glob(f"{assembly_accession}_*_assembly_report.txt")
+            if path.is_file()
+        )
+        if len(candidates) != 1:
+            raise RuntimeError(
+                f"Expected exactly one assembly report under {assembly_dir}; found {candidates}. "
+                "Use --assembly-report to select one."
+            )
+        report = candidates[0].resolve()
+
+    if not fasta.exists():
+        raise FileNotFoundError(f"INSDC reference FASTA not found: {fasta}")
+    if not report.exists():
+        raise FileNotFoundError(f"Assembly report not found: {report}")
+    return fasta, report
+
+
 def parse_bam_header(path: Path) -> Dict[str, str]:
     if not shutil.which("samtools"):
         return {}
@@ -194,6 +238,8 @@ def main() -> int:
     parser.add_argument("--rnaseq-dir", required=True, help="Path to .../<species>/<assembly>/rnaseq")
     parser.add_argument("--runs-csv", help="Headerless RNA-seq run metadata TSV; defaults to <species>.csv")
     parser.add_argument("--assembly-accession", required=True)
+    parser.add_argument("--reference-fasta", help="INSDC genomic FASTA; auto-discovered beside the assembly")
+    parser.add_argument("--assembly-report", help="NCBI assembly report; auto-discovered beside the assembly")
     parser.add_argument("--last-geneset-update", required=True, help="YYYY-MM value from genome metadata")
     parser.add_argument("--species", help="Production species name; defaults from directory layout")
     parser.add_argument("--taxon-id", default="")
@@ -218,6 +264,10 @@ def main() -> int:
     args = parser.parse_args()
 
     rnaseq_dir = Path(args.rnaseq_dir).resolve()
+    assembly_dir = rnaseq_dir.parent
+    reference_fasta, assembly_report = find_reference_files(
+        assembly_dir, args.assembly_accession, args.reference_fasta, args.assembly_report
+    )
     output_dir = rnaseq_dir / args.output_subdir
     if not output_dir.exists():
         raise FileNotFoundError(f"Alignment output directory not found: {output_dir}")
@@ -323,6 +373,8 @@ def main() -> int:
         "title": title,
         "description": description,
         "assembly_accession": args.assembly_accession,
+        "reference_fasta": str(reference_fasta),
+        "assembly_report": str(assembly_report),
         "last_geneset_update": args.last_geneset_update,
         "partial_release_label": release_label,
         "species": species,

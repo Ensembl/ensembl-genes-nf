@@ -11,6 +11,7 @@ include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
 include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
 include { ENA_CONVERT_TO_CRAM } from '../modules/convert_to_cram.nf'
 include { ENA_REHEADER_BAM } from '../modules/reheader_bam.nf'
+include { ENA_PREPARE_REFERENCE } from '../modules/prepare_reference.nf'
 
 // Parse an annotation-level manifest and dispatch one ENA analysis per file.
 workflow ENA_SUBMIT_WORKFLOW {
@@ -89,6 +90,8 @@ workflow ENA_SUBMIT_WORKFLOW {
                 title: file_row.title,
                 description: file_row.description,
                 assembly_accession: file_row.assembly_accession,
+                reference_fasta: file_row.reference_fasta,
+                assembly_report: file_row.assembly_report,
                 last_geneset_update: file_row.last_geneset_update,
                 partial_release_label: file_row.partial_release_label,
                 species: file_row.species,
@@ -113,22 +116,35 @@ workflow ENA_SUBMIT_WORKFLOW {
 
     def reheader_bams = params.reheader_bams?.toString()?.toLowerCase() in ['1', 'true', 'yes']
     if (reheader_bams) {
-        assert params.reference_fasta, "--reference_fasta is required with --reheader_bams true"
-        assert params.reference_assembly_report, "--reference_assembly_report is required with --reheader_bams true"
-        def reference = file(params.reference_fasta)
-        def reference_fai = file("${params.reference_fasta}.fai")
-        def assembly_report = file(params.reference_assembly_report)
-        assert reference.exists(), "Reference FASTA not found: ${params.reference_fasta}"
-        assert reference_fai.exists(), "Reference FASTA index not found: ${params.reference_fasta}.fai"
-        assert assembly_report.exists(), "Assembly report not found: ${params.reference_assembly_report}"
         def reheader_script = file("${projectDir}/bin/reheader_bam.py")
         def bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
             (file_meta.file_type ?: '').toString().toLowerCase() == 'bam'
+        }.map { meta, row, file_meta, bam ->
+            def fasta_path = params.reference_fasta ?: row.reference_fasta
+            def report_path = params.reference_assembly_report ?: row.assembly_report
+            if (!fasta_path) { throw new RuntimeException("Manifest row missing reference_fasta") }
+            if (!report_path) { throw new RuntimeException("Manifest row missing assembly_report") }
+            def fasta = file(fasta_path)
+            def report = file(report_path)
+            if (!fasta.exists()) { throw new RuntimeException("Reference FASTA not found: ${fasta}") }
+            if (!report.exists()) { throw new RuntimeException("Assembly report not found: ${report}") }
+            def reference_key = "${fasta_path}|${report_path}"
+            tuple(reference_key, meta, row, file_meta, bam, fasta, report)
         }
         def non_bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
             (file_meta.file_type ?: '').toString().toLowerCase() != 'bam'
         }
-        ENA_REHEADER_BAM(bam_inputs, Channel.value(reference_fai), Channel.value(assembly_report), Channel.value(reheader_script))
+        def reference_inputs = bam_inputs
+            .map { reference_key, meta, row, file_meta, bam, fasta, report -> tuple(reference_key, fasta, report) }
+            .distinct()
+        ENA_PREPARE_REFERENCE(reference_inputs)
+        def prepared_references = ENA_PREPARE_REFERENCE.out.prepared
+        def reheader_inputs = bam_inputs
+            .join(prepared_references, by: 0)
+            .map { reference_key, meta, row, file_meta, bam, fasta, report, reference_fai, prepared_report ->
+                tuple(meta, row, file_meta, bam, reference_fai, prepared_report, reheader_script)
+            }
+        ENA_REHEADER_BAM(reheader_inputs)
         def reheadered_bams = ENA_REHEADER_BAM.out.reheadered.map { meta, row, file_meta, bam, bai ->
             tuple(meta, row, file_meta, bam)
         }
