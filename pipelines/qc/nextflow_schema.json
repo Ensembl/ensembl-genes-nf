@@ -4,9 +4,9 @@
   "description": "Parameter schema for the QC pipeline",
   "type": "object",
   "properties": {
-    "gff_csv": {
+    "input_csv": {
       "type": "string",
-      "description": "Path to a CSV file with at least sample and gff3 columns"
+      "description": "Path to a CSV file with at least sample column and path to gff3 and to protein file are optional"
     },
     "ensembl_genes_repo": {
       "type": "string",
@@ -25,6 +25,19 @@
       "default": true,
       "description": "Enable the AGAT metrics branch"
     },
+    "run_interproscan": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable the AGAT metrics branch"
+    },
+    "data_file_path": {
+      "type": "string",
+      "description": "Optional explicit path to InterProScan data library"
+    },
+    "database": {
+      "type": "string",
+      "description": "Optional database to run InterProScan on (default: Pfam)"
+    },
     "outdir": {
       "type": "string",
       "default": "./results",
@@ -36,7 +49,7 @@
     }
   },
   "required": [
-    "gff_csv",
+    "input_csv",
     "ensembl_genes_repo"
   ]
 }
