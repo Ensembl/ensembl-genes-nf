@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ensembl Import Pipeline Parameters",
+  "description": "Parameter schema for the Ensembl import pipeline",
+  "type": "object",
+  "properties": {
+    "input_csv": {
+      "type": "string",
+      "description": "Path to the input CSV file"
+    },
+    "server_settings": {
+      "type": "string",
+      "description": "Path to the server settings file"
+    },
+    "ensembl_genes_repo": {
+      "type": "string",
+      "description": "Path to a local ensembl-genes checkout"
+    },
+    "outdir": {
+      "type": "string",
+      "default": "./results",
+      "description": "Output directory"
+    }
+  },
+  "required": [
+    "input_csv",
+    "ensembl_genes_repo",
+    "server_settings"
+  ]
+}

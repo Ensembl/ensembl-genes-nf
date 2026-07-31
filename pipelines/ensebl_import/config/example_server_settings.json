@@ -1,0 +1,6 @@
+{
+    "db_host": "host",
+    "db_port": 1234,
+    "db_user": "user_name",
+    "db_password": "secret"
+}
