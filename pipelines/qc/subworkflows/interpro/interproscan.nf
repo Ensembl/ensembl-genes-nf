@@ -11,6 +11,8 @@ workflow INTERPRO_SCAN {
         data_file_path
         // optional database to run against - defaults to pfam
         database
+        // path to ensembl-genes checkout
+        ensembl_genes_repo
 
     main:
         interpro_tsv = INTERPRO_RUN(
@@ -25,5 +27,5 @@ workflow INTERPRO_SCAN {
         )
 
     emit:
-        interpro_tsv
+        stats_tsv
 }

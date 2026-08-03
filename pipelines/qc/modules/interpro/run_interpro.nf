@@ -10,17 +10,18 @@ process INTERPRO_RUN {
             "-B ${data_file_path.resolve()}:/opt/interproscan/data" :
              ""}
     input:
-        tuple val(meta), path(protein), val(database)
-        val  data_file_path
+        tuple val(meta), path(protein)
+        val database
+        val data_file_path
 
 
     output:
         tuple val(meta), path("${meta}.tsv"), emit: stats_txt
 
     script:
-        mkdir -p tmp
         """
-            interproscan.sh \\
+        mkdir -p tmp
+        interproscan.sh \\
               -i ${protein} \\
                -b ${meta} \\
                -appl ${database}
