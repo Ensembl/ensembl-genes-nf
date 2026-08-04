@@ -16,9 +16,11 @@ process ENA_SUBMIT_WEBIN {
     '''
     set -euo pipefail
     ID="!{meta.id ?: meta.alias ?: 'submission'}"
-    curl -sS -u "!{webin_user}:\$ENA_WEBIN_PASSWORD" \
+    curl -sS --fail-with-body -u "!{webin_user}:\$ENA_WEBIN_PASSWORD" \
       -H 'Content-Type: application/xml' \
       --data-binary @!{webin_xml} \
-      "!{webin_base}/submit/queue" > "$ID.queue.json"
+      -o "$ID.queue.json" \
+      "!{webin_base}/submit/queue"
+    test -s "$ID.queue.json" || { echo "ENA returned an empty queue response for $ID" >&2; exit 1; }
     '''
 }

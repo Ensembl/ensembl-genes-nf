@@ -15,6 +15,12 @@ def http_get(url: str, auth_header: str, timeout: int = 30) -> bytes:
 
 
 def parse_queue_json(path: Path):
+    if not path.exists():
+        raise RuntimeError(f"Queue response does not exist: {path}")
+    if path.stat().st_size == 0:
+        raise RuntimeError(
+            f"Queue response is empty: {path}; the submit step likely failed or returned no body"
+        )
     try:
         with path.open() as fh:
             data = json.load(fh)

@@ -20,12 +20,14 @@ include { ENA_INDEX_CRAM } from '../modules/index_cram.nf'
 // Parse an annotation-level manifest and dispatch one ENA analysis per file.
 workflow ENA_SUBMIT_WORKFLOW {
     assert params.manifest,       "--manifest is required"
-    assert params.webin_user,     "--webin_user is required"
+    def webin_user = params.webin_user?.toString()?.trim()
+    assert webin_user, "--webin_user is required"
+    assert !(webin_user.toLowerCase() in ['true', 'false']), "--webin_user resolved to '${webin_user}'; check WEBIN_USER before launching Nextflow"
     assert secrets.ENA_WEBIN_PASSWORD, "Nextflow secret ENA_WEBIN_PASSWORD is required (run: nextflow secrets set ENA_WEBIN_PASSWORD)"
     assert params.mode in ['test', 'prod'], "--mode must be 'test' or 'prod'"
     assert params.outdir,        "--outdir is required"
 
-    def ch_webin_user     = Channel.value(params.webin_user)
+    def ch_webin_user     = Channel.value(webin_user)
     // Base endpoint derived from mode unless overridden
     def ch_webin_base = Channel.value(params.webin_base ?: ((params.mode == 'prod') ? 'https://www.ebi.ac.uk/ena/submit/webin-v2' : 'https://wwwdev.ebi.ac.uk/ena/submit/webin-v2'))
 
