@@ -119,6 +119,21 @@ def build_mapping(bam_names, target_lengths, report: Path, names_file: Optional[
                 if target is not None:
                     break
         if target is None:
+            report_candidates = []
+            for row in rows:
+                if source in row.values() or canonical_name(source) in {
+                    canonical_name(value) for value in row.values()
+                }:
+                    for key in ("Sequence-Name", "Assigned-Molecule", "GenBank-Accn", "RefSeq-Accn", "UCSC-style-name"):
+                        value = row.get(key, "")
+                        if value and value != "na" and value not in report_candidates:
+                            report_candidates.append(value)
+            if report_candidates:
+                raise ValueError(
+                    f"BAM reference {source} is represented in the assembly report by "
+                    f"{report_candidates}, but none are present in reference.fai; "
+                    "use an INSDC FASTA containing that sequence"
+                )
             raise ValueError(f"No INSDC FASTA name for {source}; check assembly/report")
         if bam_length != target_lengths[target]:
             raise ValueError(
