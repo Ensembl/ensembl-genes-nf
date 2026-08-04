@@ -7,7 +7,7 @@ include { INTERPRO_SCAN } from './subworkflows/interpro/interproscan.nf'
 def validate_params() {
     def errors = []
     def repoRoot = params.ensembl_genes_repo ? file(params.ensembl_genes_repo) : null
-    def defaultFeatureLevelsPath = "${repoRoot}/src/python/ensembl/genes/annotation-qc/metrics/config/feature_levels.yaml"
+    def defaultFeatureLevelsPath = "${repoRoot}/src/python/ensembl/genes/annotation_qc/config/feature_levels.yaml"
 
     if (!params.input_csv)
         errors << "  --input_csv is required"
@@ -68,6 +68,9 @@ def validate_params() {
                 errors << "  --interpro_parser does not exist: ${params.interpro_parser}"
         }
 
+        if (params.database == null || params.database.toString().trim().isEmpty())
+            errors << "  --database is required when --run_interproscan is enabled"
+
         if (!(params.database in allowed_dbs)) {
             errors << "--database must be one of: ${allowed_dbs.join(', ')}"
         }
@@ -107,23 +110,40 @@ workflow {
             if (protein_path)
                 meta.protein = protein_path.name
 
+            if (params.run_agat_metrics && !gff_path)
+                error "Sample ${row.sample} is missing gff3, but --run_agat_metrics is enabled"
+
+            if (params.run_interproscan && !protein_path)
+                error "Sample ${row.sample} is missing protein, but --run_interproscan is enabled"
+
             tuple(meta, gff_path, protein_path)
         }
-        .set { input_ch }
+        .set { sample_ch }
+
+    gff_ch = sample_ch
+        .filter { meta, gff_path, protein_path -> gff_path }
+        .map { meta, gff_path, protein_path -> tuple(meta, gff_path) }
+
+    protein_ch = sample_ch
+        .filter { meta, gff_path, protein_path -> protein_path }
+        .map { meta, gff_path, protein_path -> tuple(meta, protein_path) }
 
     // Singletons
     ensembl_genes_repo = file(params.ensembl_genes_repo)
     agat_parser = params.agat_parser ? file(params.agat_parser) : ''
+    interpro_parser = params.interpro_parser \
+        ? file(params.interpro_parser) \
+        : ''
 
     // Optional: feature levels YAML
     feature_levels_yaml = params.feature_levels \
         ? file(params.feature_levels) \
-        : file("${ensembl_genes_repo}/src/python/ensembl/genes/annotation-qc/metrics/config/feature_levels.yaml")
+        : file("${ensembl_genes_repo}/src/python/ensembl/genes/annotation_qc/config/feature_levels.yaml")
 
     // Run AGAT metrics
     if (params.run_agat_metrics) {
         agat = AGAT_METRICS(
-            input_ch,
+            gff_ch,
             feature_levels_yaml,
             ensembl_genes_repo,
             agat_parser
@@ -137,10 +157,11 @@ workflow {
     // Run InterProScan
     if (params.run_interproscan) {
         interpro = INTERPRO_SCAN(
-            input_ch,
+            protein_ch,
             params.database,
             params.data_file_path,
-            params.ensembl_genes_repo
+            params.ensembl_genes_repo,
+            interpro_parser
         )
     }
 }

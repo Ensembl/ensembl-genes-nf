@@ -5,27 +5,28 @@ include { PROCESS_INTERPRO } from '../../modules/interpro/interpro_stats.nf'
 workflow INTERPRO_SCAN {
 
     take:
-        // [meta, protein]
         protein_ch
-        //optional path to interpro database file
         data_file_path
-        // optional database to run against - defaults to pfam
         database
-        // path to ensembl-genes checkout
         ensembl_genes_repo
+        interpro_parser
 
     main:
-        interpro_tsv = INTERPRO_RUN(
+        interpro_run = INTERPRO_RUN(
             protein_ch,
             data_file_path,
             database
         )
 
-        stats_tsv = PROCESS_INTERPRO(
-            interpro_tsv,
-            protein_ch
+        interpro_stats_input = interpro_run.stats_txt.join(protein_ch)
+
+        interpro_stats = PROCESS_INTERPRO(
+            interpro_stats_input,
+            ensembl_genes_repo,
+            interpro_parser
         )
 
     emit:
-        stats_tsv
+        stats_tsv = interpro_stats.interpro_stats_tsv
+        versions = interpro_run.versions.mix(interpro_stats.versions)
 }
