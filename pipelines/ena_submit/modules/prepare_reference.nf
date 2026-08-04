@@ -7,7 +7,7 @@ process ENA_PREPARE_REFERENCE {
     tuple val(reference_key), path(reference_fasta), path(assembly_report)
 
     output:
-    tuple val(reference_key), path('reference.fai'), path('assembly_report.txt'), emit: prepared
+    tuple val(reference_key), path('reference.fai'), path('assembly_report.txt'), path('reference.names'), emit: prepared
 
     script:
     """
@@ -15,5 +15,6 @@ process ENA_PREPARE_REFERENCE {
     samtools faidx ${reference_fasta}
     mv ${reference_fasta}.fai reference.fai
     cp ${assembly_report} assembly_report.txt
+    awk 'BEGIN { OFS="\\t" } /^>/ { header=substr(\$0, 2); name=header; sub(/[ \\t].*/, "", name); description=header; sub(/^[^ \\t]+[ \\t]*/, "", description); print name, description }' ${reference_fasta} > reference.names
     """
 }

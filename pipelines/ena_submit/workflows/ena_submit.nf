@@ -145,14 +145,14 @@ workflow ENA_SUBMIT_WORKFLOW {
         def prepared_references = ENA_PREPARE_REFERENCE.out.prepared
         def prepared_bams = bam_inputs
             .join(prepared_references, by: 0)
-            .map { reference_key, meta, row, file_meta, bam, fasta, report, reference_fai, prepared_report ->
+            .map { reference_key, meta, row, file_meta, bam, fasta, report, reference_fai, prepared_report, reference_names ->
                 tuple(reference_key, meta, row, file_meta, bam)
             }
         ENA_EXTRACT_BAM_HEADER(prepared_bams)
         def header_inputs = ENA_EXTRACT_BAM_HEADER.out.extracted
             .join(prepared_references, by: 0)
-            .map { reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report ->
-                tuple(reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report, header_script)
+            .map { reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report, reference_names ->
+                tuple(reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report, reference_names, header_script)
             }
         ENA_BUILD_BAM_HEADER(header_inputs)
         def reheader_inputs = ENA_BUILD_BAM_HEADER.out.built
