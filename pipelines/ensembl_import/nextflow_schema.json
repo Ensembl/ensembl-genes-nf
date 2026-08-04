@@ -20,6 +20,10 @@
       "type": "string",
       "default": "./results",
       "description": "Output directory"
+    },
+    "tracedir": {
+      "type": "string",
+      "description": "Directory for Nextflow execution reports"
     }
   },
   "required": [

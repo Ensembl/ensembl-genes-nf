@@ -33,21 +33,21 @@ workflow {
     validateParameters()
     validate_params()
 
-    //Read CSV with columns: gcf, species
+    // Read CSV with columns: gcf, species.
     Channel
         .fromPath(params.input_csv, checkIfExists: true)
         .splitCsv(header: true)
         .map { row ->
-            // row is a map: [gcf: 'GCF23442512.1', species: 'Homo sapiens']
+            if (!row.gcf || !row.species) {
+                throw new IllegalArgumentException("input_csv must contain non-empty gcf and species columns")
+            }
             def meta = [
-                id     : row.gcf,
-                species: row.species
+                id     : row.gcf.toString().trim(),
+                species: row.species.toString().trim()
             ]
-            tuple(meta)
+            meta
         }
         .set { sample_ch }
-
-    // Read server_settings file
 
     def settings = new JsonSlurper().parse(file(params.server_settings))
 
@@ -62,11 +62,6 @@ workflow {
         )
         .set { db_config_ch }
 
-    // Repository location
-
-    ensembl_genes_repo = file(params.ensembl_genes_repo)
-
-    // Run import_refseq pipeline
     IMPORT_REFSEQ(
         sample_ch,
         db_config_ch
