@@ -34,7 +34,7 @@ The `FETCH_PROTEINS` process retrieves protein translations from an Ensembl core
 
 ### Required
 - `params.cacheDir`: Cache directory for storing protein files
-- `params.enscode`: Path to Ensembl code repository
+- `params.legacy_enscode`: Temporary path to the legacy Ensembl code repository
 - `params.host`: Database host
 - `params.port`: Database port
 - `params.production_name`: Default production name (can be overridden by metadata)

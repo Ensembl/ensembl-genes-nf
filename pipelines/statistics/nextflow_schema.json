@@ -101,15 +101,6 @@
             "schema": "assets/schema_input.json",
             "description": "Path to the input CSV metadata file."
     },
-    "enscode": {
-      "type": "string",
-      "description":"Enscode path"
-    },
-    "bioperl": {
-      "type": "string",
-      "default": "/bioperl-1.6.924",
-      "description":"BioPerl path"
-    },
     "cacheDir": {
       "type": "string",
       "default": "./results/cache",

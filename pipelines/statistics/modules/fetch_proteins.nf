@@ -26,6 +26,7 @@ Outputs:
 process FETCH_PROTEINS {
     tag "${meta.dbname}:protein"
     label 'fetch_file'
+    container 'dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-analysis:e52659d38da5af45bb4d8822cef00ea66915bdad'
     storeDir "${params.cacheDir}/${meta.gca}/fasta"
     afterScript "sleep ${params.files_latency}"
     // Needed because of file system latency
@@ -45,7 +46,7 @@ process FETCH_PROTEINS {
         echo "Using provided protein file: ${meta.protein_file}"
         cp -L "${meta.protein_file}" ${translations_file}
     else
-        perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
+        dump_translations.pl \
             -host ${params.host} \
             -port ${params.port} \
             -dbname ${meta.dbname} \

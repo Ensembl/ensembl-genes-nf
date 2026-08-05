@@ -25,6 +25,7 @@ Outputs:
 process RUN_STATISTICS {
     label 'fetch_file'
     tag "${meta.gca}"
+    container 'dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-analysis:e52659d38da5af45bb4d8822cef00ea66915bdad'
     storeDir "${params.cacheDir}/${meta.gca}/core_statistics/statistics"
     publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
     afterScript "sleep ${params.files_latency}"
@@ -40,7 +41,7 @@ process RUN_STATISTICS {
 
     script:
     """
-    perl ${params.enscode}/ensembl-genes/src/perl/ensembl/genes/generate_species_homepage_stats.pl \
+    generate_species_homepage_stats.pl \
         -dbname ${meta.dbname} \
         -host ${params.host} \
         -port ${params.port} \

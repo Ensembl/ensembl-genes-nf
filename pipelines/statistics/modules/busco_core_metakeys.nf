@@ -28,6 +28,7 @@ process BUSCO_CORE_METAKEYS {
 
     label 'python'
     tag "${meta.gca}"
+    container 'dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-analysis:e52659d38da5af45bb4d8822cef00ea66915bdad'
     cache false
     publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
     afterScript "sleep ${params.files_latency}"
@@ -43,12 +44,13 @@ process BUSCO_CORE_METAKEYS {
     params.apply_busco_metakeys
 
     script:
+    def ensemblHome = params.legacy_enscode ?: params.ensembl_home
     def versions_file = "versions_busco_${meta.busco_mode}_metakeys.yml"
 
     """
-    export PYTHONPATH="${params.enscode}/ensembl-genes/src/python:\${PYTHONPATH:-}"
+    export PYTHONPATH="${ensemblHome}/ensembl-genes/src/python:\${PYTHONPATH:-}"
 
-    python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metrics/busco_metakeys_patch.py \
+    python ${ensemblHome}/ensembl-genes/src/python/ensembl/genes/metrics/busco_metakeys_patch.py \
     -db ${meta.dbname} -file ${summary_file} \
     -output_dir "./"  -host ${params.host} \
     -port ${params.port} -user ${params.user}  \

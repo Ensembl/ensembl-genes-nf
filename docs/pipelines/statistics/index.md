@@ -49,7 +49,7 @@ nextflow run main.nf \
   --run_ensembl_stats \
   --host mysql-server.example.com \
   --user_r ensro \
-  --enscode /path/to/ENSCODE \
+  --legacy_enscode /path/to/ENSCODE \
   --outdir qc_results
 ```
 
@@ -74,7 +74,7 @@ nextflow run main.nf \
   --host staging-db.example.com \
   --user ensadmin \
   --password ${DB_PASS} \
-  --enscode /path/to/ENSCODE \
+  --legacy_enscode /path/to/ENSCODE \
   --team genebuild \
   --outdir release_validation
 ```
@@ -295,7 +295,7 @@ nextflow run main.nf \
   --run_ensembl_stats \
   --host mysql-server.example.com \
   --user_r ensro \
-  --enscode /software/ensembl/ENSCODE
+  --legacy_enscode /software/ensembl/ENSCODE
 ```
 
 ### Assembly Completeness
@@ -319,7 +319,7 @@ nextflow run main.nf \
   --host mysql-server.example.com \
   --user ensadmin \
   --password ${DB_PASS} \
-  --enscode /software/ensembl/ENSCODE \
+  --legacy_enscode /software/ensembl/ENSCODE \
   --team genebuild
 ```
 
@@ -432,7 +432,7 @@ Most modules use these common parameters:
 ### Paths
 - `params.outdir`: Output directory for published results
 - `params.cacheDir`: Cache directory for intermediate files
-- `params.enscode`: Path to Ensembl code repository
+- `params.legacy_enscode`: Temporary compatibility path to the legacy Ensembl code repository
 
 ### Execution Control
 - `params.files_latency`: Delay after file operations (file system sync)
@@ -543,5 +543,4 @@ And the relevant tools:
 - **BUSCO**: Manni et al. (2021). DOI: 10.1093/molbev/msab199
 - **OMArk**: Nevers et al. (2022). DOI: 10.1101/2022.11.25.517970
 - **Ensembl**: Cunningham et al. (2022). DOI: 10.1093/nar/gkab1049
-
 

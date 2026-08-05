@@ -109,7 +109,7 @@ Most modules use these common parameters:
 ### Paths
 - `params.outdir`: Output directory for published results
 - `params.cacheDir`: Cache directory for intermediate files
-- `params.enscode`: Path to Ensembl code repository
+- `params.legacy_enscode`: Temporary path to the legacy Ensembl code repository
 
 ### Execution Control
 - `params.files_latency`: Delay after file operations (file system sync)

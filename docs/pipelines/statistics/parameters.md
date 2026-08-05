@@ -156,8 +156,7 @@ nextflow run main.nf \
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `--enscode` | string | - | Path to Ensembl API/modules directory |
-| `--bioperl` | string | `/bioperl-1.6.924` | Path to BioPerl installation |
+| `--legacy_enscode` | string | - | Temporary path to the legacy Ensembl API/modules directory; compatibility-only and omitted from the public schema |
 | `--mysql_ensadmin` | string | `/hps/software/users/ensembl/ensw/mysql-cmds/ensembl/ensadmin` | Path to ensadmin script |
 | `--meta_query_file` | string | `../bin/meta.sql` | SQL query file for metadata |
 | `--project` | string | `ensembl` | Project name for metadata |
@@ -181,7 +180,7 @@ nextflow run main.nf \
 nextflow run main.nf \
   --csvFile databases.csv \
   --run_ensembl_stats \
-  --enscode /nfs/software/ensembl/ENSCODE \
+  --legacy_enscode /nfs/software/ensembl/ENSCODE \
   --host mysql-server.example.com \
   --user_r ensro
 
@@ -190,7 +189,7 @@ nextflow run main.nf \
   --csvFile databases.csv \
   --run_ensembl_stats \
   --apply_ensembl_stats \
-  --enscode /nfs/software/ensembl/ENSCODE \
+  --legacy_enscode /nfs/software/ensembl/ENSCODE \
   --host mysql-server.example.com \
   --user ensadmin \
   --password secret123 \
@@ -299,7 +298,7 @@ nextflow run main.nf \
   --host mysql-ens-sta-5.ebi.ac.uk \
   --port 4686 \
   --user_r ensro \
-  --enscode /nfs/software/ensembl/ENSCODE \
+  --legacy_enscode /nfs/software/ensembl/ENSCODE \
   --cacheDir /scratch/cache \
   --cleanCache true \
   --max_cpus 32 \
@@ -322,7 +321,7 @@ busco_mode: "both"
 host: "mysql-server.example.com"
 port: 3306
 user_r: "ensro"
-enscode: "/software/ensembl/ENSCODE"
+legacy_enscode: "/software/ensembl/ENSCODE"
 max_cpus: 32
 max_memory: "128 GB"
 ```

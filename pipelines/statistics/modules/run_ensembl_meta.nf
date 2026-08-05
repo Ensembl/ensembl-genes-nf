@@ -25,6 +25,7 @@ Outputs:
 process RUN_ENSEMBL_META {
     label 'python'
     tag "${meta.gca}"
+    container 'dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-analysis:e52659d38da5af45bb4d8822cef00ea66915bdad'
     storeDir "${params.cacheDir}/${meta.gca}/core_statistics/metakeys"
     publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
     afterScript "sleep ${params.files_latency}"
@@ -37,10 +38,11 @@ process RUN_ENSEMBL_META {
     path "versions.yml", emit: versions_file
 
     script:
+    def ensemblHome = params.legacy_enscode ?: params.ensembl_home
     """
-    export PYTHONPATH="${params.enscode}/ensembl-genes/src/python:\${PYTHONPATH:-}"
+    export PYTHONPATH="${ensemblHome}/ensembl-genes/src/python:\${PYTHONPATH:-}"
 
-    python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py \
+    python ${ensemblHome}/ensembl-genes/src/python/ensembl/genes/metadata/core_meta_data.py \
     --output_dir core_statistics --db_name ${meta.dbname} \
     --host ${params.host} --port ${params.port}  \
     --team ${params.team}  \

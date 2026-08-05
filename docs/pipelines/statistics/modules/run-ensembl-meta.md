@@ -35,7 +35,7 @@ The `RUN_ENSEMBL_META` process generates SQL files containing Ensembl core datab
 ### Required
 - `params.cacheDir`: Cache directory for stored process outputs
 - `params.outdir`: Output directory for results
-- `params.enscode`: Path to Ensembl code repository
+- `params.legacy_enscode`: Temporary path to the legacy Ensembl code repository
 - `params.host`: Database host
 - `params.port`: Database port
 - `params.team`: Team identifier for metadata attribution

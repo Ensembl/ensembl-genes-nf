@@ -26,6 +26,7 @@ process BUSCO_DATASET {
 
     label 'python'
     tag "${meta.gca}"
+    container 'dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-analysis:e52659d38da5af45bb4d8822cef00ea66915bdad'
 
     input:
     val meta
@@ -35,13 +36,14 @@ process BUSCO_DATASET {
     path "versions.yml", emit: versions_file
 
     script:
+    def ensemblHome = params.legacy_enscode ?: params.ensembl_home
     def busco_dataset = params.busco_dataset ?: meta.busco_dataset ?: ''
     busco_dataset = busco_dataset ? busco_dataset.trim() : ''
     """
-    export PYTHONPATH="${params.enscode}/ensembl-genes/src/python:\${PYTHONPATH:-}"
+    export PYTHONPATH="${ensemblHome}/ensembl-genes/src/python:\${PYTHONPATH:-}"
 
     if [[ -z "${busco_dataset}" ]]; then
-        python ${params.enscode}/ensembl-genes/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}
+        python ${ensemblHome}/ensembl-genes/src/python/ensembl/genes/metrics/busco_lineage_selector.py -d ${params.busco_datasets_file} -t ${meta.taxon_id}
     else
         echo "${busco_dataset}"
     fi

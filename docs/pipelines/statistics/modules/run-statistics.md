@@ -36,7 +36,7 @@ The `RUN_STATISTICS` process generates comprehensive gene annotation statistics 
 ### Required
 - `params.cacheDir`: Cache directory for stored process outputs
 - `params.outdir`: Output directory for results
-- `params.enscode`: Path to Ensembl code repository
+- `params.legacy_enscode`: Temporary path to the legacy Ensembl code repository
 - `params.host`: Database host
 - `params.port`: Database port
 

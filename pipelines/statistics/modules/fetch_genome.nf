@@ -27,6 +27,7 @@ process FETCH_GENOME {
     tag "${meta.gca}:genome"
     label 'fetch_file'
     label 'python'
+    container 'dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-analysis:e52659d38da5af45bb4d8822cef00ea66915bdad'
     storeDir "${params.cacheDir}/${meta.gca}/ncbi_dataset"
 
 

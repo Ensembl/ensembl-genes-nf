@@ -166,7 +166,7 @@ nextflow run main.nf \
   --busco_mode both \
   --host mysql-server.example.com \
   --user_r ensro \
-  --enscode /software/ensembl/ENSCODE
+  --legacy_enscode /software/ensembl/ENSCODE
 ```
 
 ### Example 4: Mixed Lineages

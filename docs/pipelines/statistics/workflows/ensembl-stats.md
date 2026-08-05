@@ -24,7 +24,7 @@ nextflow run main.nf \
   --host mysql-server.example.com \
   --port 3306 \
   --user_r ensro \
-  --enscode /path/to/ensembl/modules \
+  --legacy_enscode /path/to/ensembl/modules \
   --outdir results
 ```
 
@@ -38,7 +38,7 @@ nextflow run main.nf \
   --run_ensembl_beta_metakeys \
   --host mysql-server.example.com \
   --user_r ensro \
-  --enscode /path/to/ensembl/modules
+  --legacy_enscode /path/to/ensembl/modules
 ```
 
 ### 3. Apply to Database
@@ -53,7 +53,7 @@ nextflow run main.nf \
   --host mysql-server.example.com \
   --user ensadmin \
   --password secret123 \
-  --enscode /path/to/ensembl/modules \
+  --legacy_enscode /path/to/ensembl/modules \
   --team genebuild
 ```
 
@@ -61,7 +61,7 @@ nextflow run main.nf \
 
 | Parameter | Description | Example |
 |-----------|-------------|---------|
-| `--enscode` | Path to Ensembl API modules | `/nfs/software/ensembl/ENSCODE` |
+| `--legacy_enscode` | Temporary path to Ensembl API modules | `/nfs/software/ensembl/ENSCODE` |
 | `--host` | Database host server | `mysql-ens-sta-5.ebi.ac.uk` |
 | `--port` | Database port | `4686` |
 | `--user_r` | Read-only user (for generation) | `ensro` |
@@ -179,7 +179,7 @@ nextflow run main.nf \
   --host mysql-ens-sta-5.ebi.ac.uk \
   --port 4686 \
   --user_r ensro \
-  --enscode /nfs/software/ensembl/ENSCODE \
+  --legacy_enscode /nfs/software/ensembl/ENSCODE \
   --outdir release_110_stats
 ```
 
@@ -202,7 +202,7 @@ nextflow run main.nf \
   --port 4686 \
   --user ensadmin \
   --password ${DB_PASSWORD} \
-  --enscode /nfs/software/ensembl/ENSCODE \
+  --legacy_enscode /nfs/software/ensembl/ENSCODE \
   --team genebuild \
   --project ensembl
 ```
@@ -227,7 +227,7 @@ nextflow run main.nf \
   --run_ensembl_stats \
   --host mysql-server.example.com \
   --user_r ensro \
-  --enscode /software/ensembl/ENSCODE
+  --legacy_enscode /software/ensembl/ENSCODE
 ```
 
 Then analyze:
@@ -268,7 +268,7 @@ nextflow run main.nf \
   --run_ensembl_stats \
   --host mysql-server.example.com \
   --user_r ensro \
-  --enscode /software/ensembl/ENSCODE
+  --legacy_enscode /software/ensembl/ENSCODE
 ```
 
 ## Beta Metakeys
@@ -290,7 +290,7 @@ nextflow run main.nf \
   --run_ensembl_beta_metakeys \
   --host mysql-ens-staging.ebi.ac.uk \
   --user_r ensro \
-  --enscode /software/ensembl/ENSCODE \
+  --legacy_enscode /software/ensembl/ENSCODE \
   --team genebuild
 ```
 
@@ -304,7 +304,7 @@ nextflow run main.nf \
   --host mysql-ens-staging.ebi.ac.uk \
   --user ensadmin \
   --password ${DB_PASSWORD} \
-  --enscode /software/ensembl/ENSCODE \
+  --legacy_enscode /software/ensembl/ENSCODE \
   --team genebuild \
   --project ensembl
 ```
@@ -345,7 +345,7 @@ nextflow run main.nf \
 ### Prerequisites
 
 - Write access to database (`--user` and `--password`)
-- Ensembl API modules configured (`--enscode`)
+- Legacy Ensembl API modules configured (`--legacy_enscode`)
 - Valid `meta` table in core database
 
 ### Process
@@ -391,7 +391,7 @@ Error: Can't locate Bio/EnsEMBL/DBSQL/DBAdaptor.pm
 ls /nfs/software/ensembl/ENSCODE/ensembl/modules
 
 # Set in pipeline
---enscode /nfs/software/ensembl/ENSCODE
+--legacy_enscode /nfs/software/ensembl/ENSCODE
 ```
 
 ### Database Connection Failed
@@ -416,7 +416,6 @@ mysql -h mysql-server.example.com -P 3306 -u ensro -e "SHOW DATABASES;"
 **Solution:** Specify BioPerl path:
 
 ```bash
---bioperl /usr/local/bioperl-1.6.924
 ```
 
 ### Permission Denied (Apply Mode)
@@ -494,7 +493,7 @@ nextflow run main.nf \
   --run_ensembl_stats \
   --host mysql-server.example.com \
   --user_r ensro \
-  --enscode /software/ensembl/ENSCODE
+  --legacy_enscode /software/ensembl/ENSCODE
 ```
 
 ### Integration with Ensembl Production
@@ -509,7 +508,7 @@ nextflow run main.nf \
   --host ${ENSEMBL_STAGING_HOST} \
   --user ${ENSEMBL_ADMIN_USER} \
   --password ${ENSEMBL_ADMIN_PASS} \
-  --enscode ${ENSCODE} \
+  --legacy_enscode ${ENSCODE} \
   --team genebuild \
   --project ensembl \
   --mysql_ensadmin /software/ensembl/ensadmin

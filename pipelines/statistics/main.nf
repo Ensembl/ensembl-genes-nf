@@ -62,11 +62,27 @@ def cleanCacheDirectory() {
         }
     }
 }
+
+def validateLegacyEnsemblCheckout() {
+    def usesLegacyCheckout = params.run_busco_core || params.run_busco_ncbi ||
+        params.run_omark || params.run_ensembl_stats || params.run_ensembl_beta_metakeys
+
+    if (usesLegacyCheckout && !params.legacy_enscode && !workflow.containerEngine) {
+        error("This pipeline needs either the legacy Ensembl checkout (--legacy_enscode) or a containerised run " +
+              "with the bundled Ensembl image.")
+    }
+
+    if (params.legacy_enscode && !file(params.legacy_enscode).isDirectory()) {
+        error("--legacy_enscode must be an existing directory: ${params.legacy_enscode}")
+    }
+}
+
 workflow {
     log.info("Pipeline started at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
 
     // Validate input parameters
     validateParameters()
+    validateLegacyEnsemblCheckout()
 
     // Print summary of supplied parameters
     log.info(paramsSummaryLog(workflow))
@@ -116,4 +132,3 @@ workflow.onError {
     COMPLETION HANDLERS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
