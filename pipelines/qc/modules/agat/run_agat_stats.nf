@@ -8,7 +8,8 @@ process AGAT_RUN_STATS {
     containerOptions {
         feature_levels_yaml ?
             "-B ${feature_levels_yaml.resolve()}:/usr/local/lib/perl5/site_perl/auto/share/dist/AGAT/feature_levels.yaml:ro" :
-             ""}
+            ""
+    }
 
     input:
         tuple val(meta), path(gff3)
@@ -16,15 +17,37 @@ process AGAT_RUN_STATS {
 
     output:
         tuple val(meta), path("${meta.sample ?: meta.id ?: gff3.simpleName}_agat_stats.txt"), emit: stats_txt
+        path "versions.yml", emit: versions
+
+    when:
+        task.ext.when == null || task.ext.when
 
     script:
-        def stem     = meta.sample ?: meta.id ?: gff3.simpleName
+        def stem = meta.sample ?: meta.id ?: gff3.simpleName
+        def args = task.ext.args ?: ''
 
         """
             agat_sp_statistics.pl \\
               --gff ${gff3} \\
               -o ${stem}_agat_stats.txt \\
               --cpu 0 \\
-              --verbose 3
+              --verbose 3 \\
+              ${args}
+
+            cat <<-END_VERSIONS > versions.yml
+            "${task.process}":
+                agat: \$(agat_sp_statistics.pl --version 2>&1 | head -n 1 | sed 's/^.*AGAT //')
+            END_VERSIONS
+        """
+
+    stub:
+        def stem = meta.sample ?: meta.id ?: gff3.simpleName
+        """
+        touch ${stem}_agat_stats.txt
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            agat: 1.7.0
+        END_VERSIONS
         """
 }

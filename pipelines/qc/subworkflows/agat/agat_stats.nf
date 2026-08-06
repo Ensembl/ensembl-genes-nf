@@ -19,7 +19,7 @@ workflow AGAT_METRICS {
         stripped_gff = STRIP_GFF_REGIONS(gff3_ch)
 
         agat_txt = AGAT_RUN_STATS(
-            stripped_gff,
+            stripped_gff.cleaned_gff,
             feature_levels_yaml
         )
 
@@ -33,4 +33,5 @@ workflow AGAT_METRICS {
     emit:
         stats_txt     = agat_txt.stats_txt
         genebuild_csv = genebuild.genebuild_csv
+        versions      = stripped_gff.versions.mix(agat_txt.versions).mix(genebuild.versions)
 }
