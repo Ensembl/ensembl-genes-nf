@@ -63,5 +63,4 @@ jobs:
         if: failure()
         run: |
           echo "📋 Running lint again with full output for debugging..."
-          nextflow lint -o full pipelines/repeat/submodules/ || true
-          nextflow lint -o full pipelines/repeat/modules/ || true
+          nextflow lint -o full pipelines/ || true
