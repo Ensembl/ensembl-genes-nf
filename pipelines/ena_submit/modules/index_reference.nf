@@ -8,6 +8,7 @@ process ENA_INDEX_REFERENCE {
 
     output:
     tuple val(reference_key), path('reference.fasta'), path('reference.fai'), path('assembly_report.txt'), path('reference.names'), emit: indexed
+    path 'versions.yml', emit: versions
 
     script:
     """
@@ -16,5 +17,12 @@ process ENA_INDEX_REFERENCE {
     mv ${reference_fasta}.fai reference.fai
     cp ${assembly_report} assembly_report.txt
     cp ${reference_names} reference.names
+    printf 'ENA_INDEX_REFERENCE:\n  samtools: "%s"\n' "\$(samtools --version | awk 'NR==1 {print \$2}')" > versions.yml
+    """
+
+    stub:
+    """
+    touch reference.fasta reference.fai assembly_report.txt reference.names
+    printf 'ENA_INDEX_REFERENCE:\n  samtools: "stub"\n' > versions.yml
     """
 }

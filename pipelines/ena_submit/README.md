@@ -91,6 +91,10 @@ unset ENA_WEBIN_PASSWORD
 The secret name must be exactly `ENA_WEBIN_PASSWORD`. The username is passed as
 `--webin_user`; do not pass a password using `--webin_password`.
 
+Stub runs do not require the secret because they do not execute network commands.
+All real TEST and PROD runs still require `ENA_WEBIN_PASSWORD` in the Nextflow
+secrets store.
+
 Run the Nextflow workflow with the generated annotation manifest:
 
 ```bash

@@ -139,3 +139,7 @@ cython_debug/
 
 
 examples_*/
+
+# Nextflow runtime state
+.nextflow*
+work/

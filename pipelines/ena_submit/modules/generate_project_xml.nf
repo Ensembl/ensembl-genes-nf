@@ -1,7 +1,7 @@
 process ENA_GENERATE_PROJECT_XML {
     label 'process_light'
     tag { meta.alias }
-    container 'docker.io/library/python:3.11-slim'
+    container 'docker.io/library/python:3.11.13-slim-bookworm'
     publishDir "${params.outdir}/ena_submission/projects", mode: 'copy', pattern: '*.xml', saveAs: { fn -> "${meta.alias}/$fn" }
 
     input:
@@ -9,6 +9,7 @@ process ENA_GENERATE_PROJECT_XML {
 
     output:
     tuple val(meta), path('webin_project.xml'), emit: xml
+    path 'versions.yml', emit: versions
 
     script:
     def generator = "${moduleDir}/../bin/generate_project_xml.py"
@@ -24,5 +25,12 @@ python3 ${generator} \
   --description "${meta.description}" \
   \${hold_until_arg} \
   --outdir .
+printf 'ENA_GENERATE_PROJECT_XML:\n  python: "%s"\n' "\$(python3 --version 2>&1 | awk '{print \$2}')" > versions.yml
 """
+
+    stub:
+    """
+    touch webin_project.xml
+    printf 'ENA_GENERATE_PROJECT_XML:\n  python: "stub"\n' > versions.yml
+    """
 }

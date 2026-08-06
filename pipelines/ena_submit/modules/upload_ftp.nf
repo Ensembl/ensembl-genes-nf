@@ -1,7 +1,7 @@
 process ENA_FTP_UPLOAD {
     label 'process_single_long'
     tag { file_meta.remote_name ?: file.getName() }
-    container 'minidocks/lftp'
+    container 'docker.io/minidocks/lftp@sha256:0eb637d5fd61bfef82d94a9774880bff9b48e3ff35ac79f0bc5219e095592a94'
     secret 'ENA_WEBIN_PASSWORD'
 
     input:
@@ -12,6 +12,7 @@ process ENA_FTP_UPLOAD {
 
     output:
     tuple val(meta), val(row), val(file_meta), path(file, includeInputs: true), path(md5, includeInputs: true), emit: uploaded
+    path 'versions.yml', emit: versions
 
     script:
     def basename    = file.getName()
@@ -25,5 +26,12 @@ process ENA_FTP_UPLOAD {
     LFTP_PASSWORD="\$ENA_WEBIN_PASSWORD" \
     lftp --user "${webin_user}" --env-password "${ftp_host}" \
         -e '${mkdir_cmd}put ${file} -o ${remote_path}; put ${md5} -o ${remote_path}.md5; bye'
+    printf 'ENA_FTP_UPLOAD:\n  lftp: "%s"\n' "\$(lftp --version | awk 'NR==1 {print \$2}')" > versions.yml
+    """
+
+    stub:
+    """
+    touch ${md5}
+    printf 'ENA_FTP_UPLOAD:\n  lftp: "stub"\n' > versions.yml
     """
 }

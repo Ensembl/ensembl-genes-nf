@@ -11,6 +11,7 @@ process ENA_SUBMIT_WEBIN {
 
     output:
     tuple val(meta), path('*.queue.json'), emit: queued
+    path 'versions.yml', emit: versions
 
     shell:
     '''
@@ -22,5 +23,12 @@ process ENA_SUBMIT_WEBIN {
       -o "$ID.queue.json" \
       "!{webin_base}/submit/queue"
     test -s "$ID.queue.json" || { echo "ENA returned an empty queue response for $ID" >&2; exit 1; }
+    printf 'ENA_SUBMIT_WEBIN:\n  curl: "%s"\n' "\$(curl --version | awk 'NR==1 {print \$2}')" > versions.yml
     '''
+
+    stub:
+    """
+    touch submission.queue.json
+    printf 'ENA_SUBMIT_WEBIN:\n  curl: "stub"\n' > versions.yml
+    """
 }

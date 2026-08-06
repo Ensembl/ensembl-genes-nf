@@ -1,7 +1,7 @@
 process ENA_GENERATE_XML {
     label 'process_light'
     tag { meta.id }
-    container 'docker.io/library/python:3.11-slim'
+    container 'docker.io/library/python:3.11.13-slim-bookworm'
     publishDir "${params.outdir}/ena_submission/xml", mode: 'copy', pattern: '*.xml', saveAs: { fn -> "${meta.id}/$fn" }
 
     input:
@@ -13,11 +13,11 @@ process ENA_GENERATE_XML {
     tuple val(meta), path('webin_submission.xml'), emit: xml
     path('analysis.xml'), emit: analysis_xml
     path('submission.xml'), emit: submission_xml
+    path 'versions.yml', emit: versions
 
     script:
-    def escape = { v -> (v ?: '').toString().replace('\t', ' ').replace('\n', ' ') }
     def hdr = row.keySet().join('\t')
-    def vals = row.values().collect { escape(it) }.join('\t')
+    def vals = row.values().collect { value -> (value ?: '').toString().replace('\t', ' ').replace('\n', ' ') }.join('\t')
     def analysis_type = (row.containsKey('analysis_type') && row.analysis_type) ? row.analysis_type : 'REFERENCE_ALIGNMENT'
     def remoteDir = remote_dir ? remote_dir.replaceAll('/+$', '') : ''
     def hold_until_arg = hold_until ? "--hold-until ${hold_until}" : ''
@@ -28,12 +28,12 @@ process ENA_GENERATE_XML {
         def remoteName = fm.remote_name ?: files[idx].getName()
         def remotePath = remoteDir ? "${remoteDir}/${remoteName}" : remoteName
         [
-            escape(remotePath),
-            escape(fm.file_type ?: row.file_type ?: ''),
-            escape(md5s[idx].toString()),
-            escape(fm.run_accession ?: ''),
-            escape(fm.sample_accession ?: ''),
-            escape(fm.experiment_accession ?: '')
+            remotePath.replace('\t', ' ').replace('\n', ' '),
+            (fm.file_type ?: row.file_type ?: '').toString().replace('\t', ' ').replace('\n', ' '),
+            md5s[idx].toString().replace('\t', ' ').replace('\n', ' '),
+            (fm.run_accession ?: '').toString().replace('\t', ' ').replace('\n', ' '),
+            (fm.sample_accession ?: '').toString().replace('\t', ' ').replace('\n', ' '),
+            (fm.experiment_accession ?: '').toString().replace('\t', ' ').replace('\n', ' ')
         ].join('\t')
     }.join('\n')
     """
@@ -61,5 +61,12 @@ python3 ${generator} \
 cp xml_out/analysis.xml .
 cp xml_out/submission.xml .
 cp xml_out/webin_submission.xml .
+printf 'ENA_GENERATE_XML:\n  python: "%s"\n' "\$(python3 --version 2>&1 | awk '{print \$2}')" > versions.yml
 """
+
+    stub:
+    """
+    touch webin_submission.xml analysis.xml submission.xml
+    printf 'ENA_GENERATE_XML:\n  python: "stub"\n' > versions.yml
+    """
 }

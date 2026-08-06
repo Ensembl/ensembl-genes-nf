@@ -10,10 +10,18 @@ process ENA_CONVERT_TO_CRAM {
 
     output:
     tuple val(meta), val(row), val(file_meta), path('converted.cram'), emit: converted
+    path 'versions.yml', emit: versions
 
     script:
     """
     set -euo pipefail
     samtools view -@ ${task.cpus} -C -T ${reference_fasta} -o converted.cram ${file}
+    printf 'ENA_CONVERT_TO_CRAM:\n  samtools: "%s"\n' "\$(samtools --version | awk 'NR==1 {print \$2}')" > versions.yml
+    """
+
+    stub:
+    """
+    touch converted.cram
+    printf 'ENA_CONVERT_TO_CRAM:\n  samtools: "stub"\n' > versions.yml
     """
 }

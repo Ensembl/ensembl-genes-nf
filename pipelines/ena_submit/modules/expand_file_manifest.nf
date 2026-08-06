@@ -1,7 +1,7 @@
 process ENA_EXPAND_FILE_MANIFEST {
     label 'process_light'
     tag { meta.id }
-    container 'docker.io/library/python:3.11-slim'
+    container 'docker.io/library/python:3.11.13-slim-bookworm'
 
     input:
     tuple val(meta), val(row), path(files_manifest)
@@ -9,12 +9,12 @@ process ENA_EXPAND_FILE_MANIFEST {
 
     output:
     tuple val(meta), val(row), path('expanded_files.tsv'), emit: expanded
+    path 'versions.yml', emit: versions
 
     script:
     def defaultFileType = row.file_type ?: ''
-    def escape = { v -> (v ?: '').toString().replace('\t', ' ').replace('\n', ' ') }
     def hdr = row.keySet().join('\t')
-    def vals = row.values().collect { escape(it) }.join('\t')
+    def vals = row.values().collect { value -> (value ?: '').toString().replace('\t', ' ').replace('\n', ' ') }.join('\t')
     """
 set -euo pipefail
 cat > analysis.tsv <<'EOF'
@@ -31,5 +31,12 @@ python3 ${expander_script} \
   --release "${meta.release}" \
   --default-file-type "${defaultFileType}" \
   --out expanded_files.tsv
+python3 --version 2>&1 | awk '{print "ENA_EXPAND_FILE_MANIFEST:\\n  python: \"" \$2 "\""}' > versions.yml
 """
+
+    stub:
+    """
+    touch expanded_files.tsv
+    printf 'ENA_EXPAND_FILE_MANIFEST:\n  python: "stub"\n' > versions.yml
+    """
 }

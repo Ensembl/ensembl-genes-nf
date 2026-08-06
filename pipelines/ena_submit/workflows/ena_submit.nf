@@ -20,13 +20,16 @@ include { ENA_INDEX_CRAM } from '../modules/index_cram.nf'
 
 // Parse an annotation-level manifest and dispatch one ENA analysis per file.
 workflow ENA_SUBMIT_WORKFLOW {
-    assert params.manifest,       "--manifest is required"
+    main:
+    assert params.manifest :      "--manifest is required"
     def webin_user = params.webin_user?.toString()?.trim()
-    assert webin_user, "--webin_user is required"
-    assert !(webin_user.toLowerCase() in ['true', 'false']), "--webin_user resolved to '${webin_user}'; check WEBIN_USER before launching Nextflow"
-    assert secrets.ENA_WEBIN_PASSWORD, "Nextflow secret ENA_WEBIN_PASSWORD is required (run: nextflow secrets set ENA_WEBIN_PASSWORD)"
-    assert params.mode in ['test', 'prod'], "--mode must be 'test' or 'prod'"
-    assert params.outdir,        "--outdir is required"
+    assert webin_user : "--webin_user is required"
+    assert !(webin_user.toLowerCase() in ['true', 'false']) : "--webin_user resolved to '${webin_user}'; check WEBIN_USER before launching Nextflow"
+    if (!workflow.stubRun) {
+        assert secrets.ENA_WEBIN_PASSWORD : "Nextflow secret ENA_WEBIN_PASSWORD is required (run: nextflow secrets set ENA_WEBIN_PASSWORD)"
+    }
+    assert params.mode in ['test', 'prod'] : "--mode must be 'test' or 'prod'"
+    assert params.outdir :        "--outdir is required"
 
     def ch_webin_user     = Channel.value(webin_user)
     // Base endpoint derived from mode unless overridden
@@ -188,9 +191,9 @@ workflow ENA_SUBMIT_WORKFLOW {
         def reference = params.reference_fasta ? file(params.reference_fasta) : null
         def reference_fai = params.reference_fasta ? file("${params.reference_fasta}.fai") : null
         if (!prepared_reference_fasta) {
-            assert reference, "--reference_fasta is required with --convert_to_cram true when --reheader_bams is false"
-            assert reference.exists(), "Reference FASTA not found: ${params.reference_fasta}"
-            assert reference_fai.exists(), "Reference FASTA index not found: ${params.reference_fasta}.fai"
+            assert reference : "--reference_fasta is required with --convert_to_cram true when --reheader_bams is false"
+            assert reference.exists() : "Reference FASTA not found: ${params.reference_fasta}"
+            assert reference_fai.exists() : "Reference FASTA index not found: ${params.reference_fasta}.fai"
         }
 
         def bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
@@ -218,7 +221,8 @@ workflow ENA_SUBMIT_WORKFLOW {
     }
 
     // Compute md5 per file
-    md5s = ENA_COMPUTE_MD5(md5_inputs)
+    ENA_COMPUTE_MD5(md5_inputs)
+    def md5s = ENA_COMPUTE_MD5.out.md5
 
     ENA_FTP_UPLOAD(
         md5s,
@@ -231,7 +235,7 @@ workflow ENA_SUBMIT_WORKFLOW {
         .combine(ENA_POLL_PROJECT.out.accessions)
         .map { meta, row, file_meta, f, md5, accessions -> tuple(meta.id, meta, row, file_meta, f, md5) }
         .groupTuple(by: 0)
-        .map { id, metas, rows, file_metas, files, md5s -> tuple(metas[0], rows[0], file_metas, files, md5s) }
+        .map { id, metas, rows, file_metas, files, md5_list -> tuple(metas[0], rows[0], file_metas, files, md5_list) }
 
     // Generate one analysis XML per alignment after the derived project has been accepted by Webin.
     ENA_GENERATE_XML(
@@ -256,4 +260,7 @@ workflow ENA_SUBMIT_WORKFLOW {
         )
 
     ENA_POLL_ANALYSIS.out.accessions.view { f -> "Accessions written to: ${f}" }
+
+    emit:
+    accessions = ENA_POLL_ANALYSIS.out.accessions
 }

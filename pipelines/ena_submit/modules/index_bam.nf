@@ -8,11 +8,19 @@ process ENA_INDEX_BAM {
 
     output:
     tuple val(reference_key), val(meta), val(row), val(file_meta), path('reheadered.bam'), path('reheadered.bam.bai'), emit: indexed
+    path 'versions.yml', emit: versions
 
     script:
     """
     set -euo pipefail
     samtools index -@ ${task.cpus} ${file} reheadered.bam.bai
     samtools quickcheck ${file}
+    printf 'ENA_INDEX_BAM:\n  samtools: "%s"\n' "\$(samtools --version | awk 'NR==1 {print \$2}')" > versions.yml
+    """
+
+    stub:
+    """
+    touch reheadered.bam reheadered.bam.bai
+    printf 'ENA_INDEX_BAM:\n  samtools: "stub"\n' > versions.yml
     """
 }
