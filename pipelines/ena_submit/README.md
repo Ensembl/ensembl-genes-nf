@@ -150,7 +150,7 @@ Existing non-BAM inputs are passed through unchanged.
 - `analysis_links`: Optional `Label|URL; Label2|URL2`.
 - `analysis_attributes`: Optional `key=value; key2=value2`. The builder writes `attr_*` keys.
 - `analysis_type`: `REFERENCE_ALIGNMENT`.
-- `omit_run_refs_in_test`: `true` by default because production runs may not exist in ENA test.
+- `omit_run_refs_in_test`: `false` by default, so generated TEST analyses retain their source `RUN_REF` links. Set it to `true` when testing with runs that are absent from ENA TEST.
 
 `files.tsv` has one row per alignment file:
 

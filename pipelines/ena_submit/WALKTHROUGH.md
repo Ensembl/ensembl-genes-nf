@@ -172,7 +172,7 @@ for f in "$RESULTS"/ena_submission/xml/*/analysis.xml; do
 done
 \`\`\`
 
-In TEST mode, RUN_REF is omitted by default because source runs may only exist in PROD. Tissue labels and other non-accession sample values are ignored.
+In TEST mode, RUN_REF is included by default. Set `omit_run_refs_in_test=true` when source runs may only exist in PROD. Tissue labels and other non-accession sample values are ignored.
 
 ## 7. View the TEST submission in ENA
 

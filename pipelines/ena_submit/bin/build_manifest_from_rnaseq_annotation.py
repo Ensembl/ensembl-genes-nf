@@ -508,7 +508,7 @@ def main() -> int:
         "analysis_links": args.analysis_links,
         "analysis_attributes": "; ".join(f"attr_{key}={value}" for key, value in attributes.items() if value),
         "analysis_type": "REFERENCE_ALIGNMENT",
-        "omit_run_refs_in_test": "true",
+        "omit_run_refs_in_test": "false",
     }
 
     write_tsv(files_tsv, FILES_COLUMNS, file_rows)

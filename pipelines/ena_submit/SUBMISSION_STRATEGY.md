@@ -22,7 +22,7 @@ Rationale: keeps evidence for a given assembly/release discoverable and isolated
 - Safe to re‑run on partial failures; successful accessions are preserved in `accessions.tsv`.
 
 ## Linking rules
-- RUN_REF: always include in PROD. In TEST, the pipeline omits RUN_REF by default (many runs only exist in PROD).
+- RUN_REF: include by default in both PROD and TEST. Set `omit_run_refs_in_test=true` for a TEST submission whose source runs are not available in the TEST environment.
 - SAMPLE_REF: include when the BioSample is known; otherwise omit for cross‑sample evidence.
 - EXPERIMENT_REF: optional; use if you prefer experiment‑level links.
 
@@ -38,7 +38,7 @@ The workflow uses a two-step manifest:
 
 Defaults applied by the workflow:
 - `analysis_type` coerced to `REFERENCE_ALIGNMENT` (ENA schema requirement).
-- In TEST mode, `RUN_REF` omitted unless `omit_run_refs_in_test=false` for the row.
+- In TEST mode, `RUN_REF` is included unless `omit_run_refs_in_test=true` for the row.
 
 ## Operational notes
 - Upload via FTP with `lftp`. Aspera is not implemented in the current workflow.
