@@ -15,17 +15,17 @@ For each row in the input CSV, the pipeline:
 
 - Nextflow 25.x
 - Singularity available on the execution host
-- InterProScan 5.78-109.0 data available on shared storage when the InterProScan branch is enabled
+- InterProScan 5.78-109.0 data available on the execution host when the InterProScan branch is enabled
 - A local checkout of `ensembl-genes` containing:
-    - `src/python/ensembl/genes/annotation-qc/parsers/parse_agat.py`
-    - `src/python/ensembl/genes/annotation-qc/metrics/config/feature_levels.yaml`
-    - `src/python/ensembl/genes/annotation-qc/parsers/interpro.py` when `--run_interproscan` is enabled
+    - `src/python/ensembl/genes/annotation_qc/parsers/parse_agat.py`
+    - `src/python/ensembl/genes/annotation_qc/config/feature_levels.yaml`
+    - `src/python/ensembl/genes/annotation_qc/parsers/interpro.py` when `--run_interproscan` is enabled
 
 ## Inputs
 
 ### Sample Sheet
 
-The required input is `--input_csv`, a CSV file with a header and at least these columns:
+The required input is `--input_csv`, a CSV file with a header. Include the columns needed by the enabled branches:
 
 ```csv
 sample,gff3,protein
@@ -51,7 +51,7 @@ If `--run_interproscan` is enabled, `protein` must be present for every row.
 | `--run_agat_metrics`   | no       | `false`                                                                   | Enable the AGAT metrics branch            |
 | `--run_interproscan`   | no       | `false`                                                                   | Enable the InterProScan branch            |
 | `--database`           | no       | `Pfam`                                                                    | InterProScan application database         |
-| `--data_file_path`     | no       | `/nfs/production/flicek/ensembl/shared_data/interproscan-5.78-109.0/data` | Path to the InterProScan 5 data directory |
+| `--data_file_path`     | no       | none                                                                      | Path to the InterProScan 5 data directory |
 | `--interpro_parser`    | no       | derived from `ensembl_genes_repo`                                         | Path to `interpro.py`                     |
 | `--outdir`             | no       | `./results`                                                               | Output directory                          |
 
@@ -122,15 +122,22 @@ Per sample, the pipeline currently produces:
 
 ## Validation
 
-The workflow stops early if any of the following are missing or invalid:
+`nf-schema` validates parameter types, paths, file existence, the InterProScan database allow-list, branch requirements, and the sample-sheet structure. The workflow adds only checks that require deriving paths from the supplied repository:
 
-- `--input_csv`
-- `--ensembl_genes_repo`
 - derived or explicit `feature_levels.yaml`
 - derived or explicit `parse_agat.py`
 - derived or explicit `interpro.py` when `--run_interproscan` is enabled
-- sample rows missing `gff3` when AGAT is enabled
-- sample rows missing `protein` when InterProScan is enabled
+
+## Separation of Concerns
+
+Each layer has one job:
+
+- The schema validates inputs: parameter types, paths, allowed database names, and sample-sheet columns.
+- `main.nf` connects the input sheet to the selected branches and handles rules such as which columns are required for the enabled metrics.
+- The subworkflows describe reusable analysis chains, such as running InterProScan and then parsing its output.
+- The modules run one tool or parser each.
+
+This means another pipeline can reuse the InterProScan workflow with its own input channels and output handling, without depending on this QC pipeline's command-line parameters or sample-sheet format.
 
 ## Implementation Notes
 

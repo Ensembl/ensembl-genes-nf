@@ -20,7 +20,7 @@ process PROCESS_INTERPRO {
         def out_tsv = "${stem}_hits.tsv"
         def parser = interpro_parser ?: "${ensembl_genes_repo}/src/python/ensembl/genes/annotation_qc/parsers/interpro.py"
         """
-        python ${parser} \\
+        python3 ${parser} \\
             --input_tsv ${interpro_tsv} \\
             --output ${out_dir} \\
             --query_protein ${query_protein}
@@ -29,7 +29,7 @@ process PROCESS_INTERPRO {
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            python: \$(python --version 2>&1 | awk '{print \$2}')
+            python: \$(python3 --version 2>&1 | awk '{print \$2}')
         END_VERSIONS
         """
 

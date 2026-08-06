@@ -6,16 +6,16 @@ workflow INTERPRO_SCAN {
 
     take:
         protein_ch
-        data_file_path
         database
+        data_file_path
         ensembl_genes_repo
         interpro_parser
 
     main:
         interpro_run = INTERPRO_RUN(
             protein_ch,
-            data_file_path,
-            database
+            database,
+            data_file_path
         )
 
         interpro_stats_input = interpro_run.stats_txt.join(protein_ch)

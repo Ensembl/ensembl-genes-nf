@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sample": {
+        "type": "string",
+        "pattern": "^\\S+$"
+      },
+      "gff3": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true
+      },
+      "protein": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true
+      }
+    },
+    "required": ["sample", "gff3", "protein"],
+    "additionalProperties": true
+  }
+}

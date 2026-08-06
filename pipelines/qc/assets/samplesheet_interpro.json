@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sample": {
+        "type": "string",
+        "pattern": "^\\S+$"
+      },
+      "protein": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true
+      }
+    },
+    "required": ["sample", "protein"],
+    "additionalProperties": true
+  }
+}

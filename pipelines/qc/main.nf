@@ -1,84 +1,40 @@
 #!/usr/bin/env nextflow
 
-include { validateParameters } from 'plugin/nf-schema'
+include { validateParameters; samplesheetToList } from 'plugin/nf-schema'
 include { AGAT_METRICS } from './subworkflows/agat/agat_stats.nf'
 include { INTERPRO_SCAN } from './subworkflows/interpro/interproscan.nf'
 
 def validate_params() {
     def errors = []
     def repoRoot = params.ensembl_genes_repo ? file(params.ensembl_genes_repo) : null
-    def defaultFeatureLevelsPath = "${repoRoot}/src/python/ensembl/genes/annotation_qc/config/feature_levels.yaml"
 
-    if (!params.input_csv)
-        errors << "  --input_csv is required"
-    else if (!file(params.input_csv).exists())
-        errors << "  --input_csv does not exist: ${params.input_csv}"
+    if (params.run_agat_metrics && repoRoot) {
+        def defaultFeatureLevels = file("${repoRoot}/src/python/ensembl/genes/annotation_qc/config/feature_levels.yaml")
+        if (!params.feature_levels && !defaultFeatureLevels.exists())
+            errors << "feature_levels.yaml not found under --ensembl_genes_repo; pass --feature_levels explicitly"
 
-    if (!params.ensembl_genes_repo)
-        errors << "  --ensembl_genes_repo is required"
-    else if (!file(params.ensembl_genes_repo).exists())
-        errors << "  --ensembl_genes_repo does not exist: ${params.ensembl_genes_repo}"
-
-    if (params.run_agat_metrics) {
-
-        if (params.feature_levels) {
-            if (!file(params.feature_levels).exists())
-                errors << "--feature_levels does not exist: ${params.feature_levels}"
-        }
-        else if (repoRoot) {
-            def defaultFeatureLevels = file(defaultFeatureLevelsPath)
-            if (!defaultFeatureLevels.exists())
-                errors << "feature_levels.yaml not found under --ensembl_genes_repo; pass --feature_levels explicitly or point --ensembl_genes_repo to a checkout containing it"
-        }
-
-        if (params.agat_parser) {
-            if (!file(params.agat_parser).exists())
-                errors << "--agat_parser does not exist: ${params.agat_parser}"
-        }
+        def defaultAgatParser = file("${repoRoot}/src/python/ensembl/genes/annotation_qc/parsers/parse_agat.py")
+        if (!params.agat_parser && !defaultAgatParser.exists())
+            errors << "parse_agat.py not found under --ensembl_genes_repo; pass --agat_parser explicitly"
     }
 
-    def allowed_dbs = [
-        'TIGRFAM',
-        'SFLD',
-        'SUPERFAMILY',
-        'PANTHER',
-        'Gene3D',
-        'Hamap',
-        'ProSiteProfiles',
-        'Coils',
-        'SMART',
-        'CDD',
-        'PRINTS',
-        'PIRSR',
-        'ProSitePatterns',
-        'AntiFam',
-        'Pfam',
-        'MobiDBLite',
-        'PIRSF'
-    ]
-
-    if (params.run_interproscan) {
-        if (params.data_file_path) {
-            if (!file(params.data_file_path).exists())
-                errors << "  --data_file_path does not exist: ${params.data_file_path}"
-        }
-
-        if (params.interpro_parser) {
-            if (!file(params.interpro_parser).exists())
-                errors << "  --interpro_parser does not exist: ${params.interpro_parser}"
-        }
-
-        if (params.database == null || params.database.toString().trim().isEmpty())
-            errors << "  --database is required when --run_interproscan is enabled"
-
-        if (!(params.database in allowed_dbs)) {
-            errors << "--database must be one of: ${allowed_dbs.join(', ')}"
-        }
+    if (params.run_interproscan && repoRoot && !params.interpro_parser) {
+        def defaultInterproParser = file("${repoRoot}/src/python/ensembl/genes/annotation_qc/parsers/interpro.py")
+        if (!defaultInterproParser.exists())
+            errors << "interpro.py not found under --ensembl_genes_repo; pass --interpro_parser explicitly"
     }
 
     if (errors) {
         error "Missing or invalid parameters:\n${errors.join('\n')}"
     }
+}
+
+def samplesheet_schema() {
+    if (params.run_agat_metrics && params.run_interproscan)
+        return 'assets/samplesheet_agat_interpro.json'
+    if (params.run_agat_metrics)
+        return 'assets/samplesheet_agat.json'
+    return 'assets/samplesheet_interpro.json'
 }
 
 workflow {
@@ -88,33 +44,30 @@ workflow {
     println "run_interproscan = ${params.run_interproscan}"
     validate_params()
 
-    /*
-     * Read CSV with columns: sample,gff3,protein
-     */
+    samples = samplesheetToList(params.input_csv, samplesheet_schema())
+
     Channel
-        .fromPath(params.input_csv, checkIfExists: true)
-        .splitCsv(header: true)
+        .fromList(samples)
         .map { row ->
+            def sample = row[0]
+            def gff_path = params.run_agat_metrics
+                ? file(row[1])
+                : null
+            def protein_index = params.run_agat_metrics ? 2 : 1
+            def protein_path = params.run_interproscan
+                ? file(row[protein_index])
+                : null
 
             def meta = [
-                id     : row.sample,
-                sample : row.sample
+                id     : sample,
+                sample : sample
             ]
-
-            def gff_path = row.gff3 ? file(row.gff3, checkIfExists: true) : null
-            def protein_path = row.protein ? file(row.protein, checkIfExists: true) : null
 
             if (gff_path)
                 meta.gff3 = gff_path.name
 
             if (protein_path)
                 meta.protein = protein_path.name
-
-            if (params.run_agat_metrics && !gff_path)
-                error "Sample ${row.sample} is missing gff3, but --run_agat_metrics is enabled"
-
-            if (params.run_interproscan && !protein_path)
-                error "Sample ${row.sample} is missing protein, but --run_interproscan is enabled"
 
             tuple(meta, gff_path, protein_path)
         }
