@@ -139,11 +139,12 @@ Existing non-BAM inputs are passed through unchanged.
 - `assembly_accession`: INSDC assembly accession, e.g. `GCA_052040795.1`.
 - `reference_fasta`: Absolute path to the discovered INSDC genomic FASTA.
 - `assembly_report`: Absolute path to the discovered NCBI assembly report.
+- `reference_supplement`: Absolute path to an automatically generated FASTA containing report-listed non-nuclear sequences absent from the genomic FASTA.
 - `last_geneset_update`: Genome metadata value, e.g. `2025-12`.
 - `partial_release_label`: Derived release label.
 - `species`: Production species name.
 - `taxon_id`: Optional taxon ID.
-- `ref_seqs`: Optional comma-separated reference sequence accessions when assembly accession is not enough.
+- `ref_seqs`: Automatically populated with supplemental INSDC sequence accessions such as `NC_012374.1` when the assembly report identifies them.
 - `analysis_links`: Optional `Label|URL; Label2|URL2`.
 - `analysis_attributes`: Optional `key=value; key2=value2`. The builder writes `attr_*` keys.
 - `analysis_type`: `REFERENCE_ALIGNMENT`.

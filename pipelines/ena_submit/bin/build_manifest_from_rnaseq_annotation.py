@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import csv
+import gzip
 import re
 import shutil
 import subprocess
@@ -21,6 +22,7 @@ MANIFEST_COLUMNS = [
     "assembly_accession",
     "reference_fasta",
     "assembly_report",
+    "reference_supplement",
     "last_geneset_update",
     "partial_release_label",
     "species",
@@ -178,6 +180,113 @@ def find_reference_files(
     return fasta, report
 
 
+def assembly_report_rows(report: Path) -> list[dict[str, str]]:
+    columns = None
+    rows = []
+    with report.open() as handle:
+        for raw in handle:
+            line = raw.rstrip("\n")
+            if line.startswith("#"):
+                candidate = line.lstrip("# ").split("\t")
+                if "Sequence-Name" in candidate:
+                    columns = candidate
+                continue
+            if not line.strip():
+                continue
+            if columns is None:
+                columns = [
+                    "Sequence-Name", "Sequence-Role", "Assigned-Molecule",
+                    "Assigned-Molecule-Location/Type", "GenBank-Accn",
+                    "Relationship", "RefSeq-Accn", "Assembly-Unit",
+                    "Sequence-Length", "UCSC-style-name",
+                ]
+            rows.append(dict(zip(columns, line.split("\t"))) )
+    return rows
+
+
+def report_accessions(row: dict[str, str]) -> list[str]:
+    accessions = []
+    for key in ("RefSeq-Accn", "GenBank-Accn", "Sequence-Name"):
+        value = (row.get(key) or "").strip()
+        if value and value.lower() != "na" and value not in accessions:
+            accessions.append(value)
+    return accessions
+
+
+def locate_supplement(assembly_dir: Path, accession: str, excluded: set[Path]) -> Optional[Path]:
+    candidates = []
+    for path in sorted(assembly_dir.glob(f"{accession}*")):
+        if path.is_file() and path.resolve() not in excluded and not path.name.endswith(".fai"):
+            candidates.append(path.resolve())
+    if not candidates:
+        return None
+    if len(candidates) > 1:
+        raise RuntimeError(f"Multiple files found for assembly supplement {accession}: {candidates}")
+    return candidates[0]
+
+
+def supplement_to_fasta(source: Path, output, accession: str) -> None:
+    """Append a FASTA or a simple GenBank flatfile record to output."""
+    opener = gzip.open if source.name.endswith(".gz") else open
+    with opener(source, "rt") as handle:
+        first = handle.readline()
+        if first.startswith(">"):
+            output.write(first)
+            for line in handle:
+                output.write(line)
+            return
+        if not first.startswith("LOCUS"):
+            raise RuntimeError(f"Unsupported supplement format for {accession}: {source}")
+        in_origin = False
+        sequence = []
+        for line in handle:
+            if line.startswith("ORIGIN"):
+                in_origin = True
+                continue
+            if line.startswith("//"):
+                break
+            if in_origin:
+                sequence.append("".join(ch for ch in line if ch.isalpha()))
+        sequence = "".join(sequence).upper()
+        if not sequence:
+            raise RuntimeError(f"No sequence found in GenBank supplement {source}")
+        output.write(f">{accession}\n")
+        for start in range(0, len(sequence), 80):
+            output.write(sequence[start:start + 80] + "\n")
+
+
+def build_reference_supplement(assembly_dir: Path, fasta: Path, report: Path, output: Path) -> list[str]:
+    """Find report-listed non-nuclear records absent from the genomic FASTA."""
+    genomic_names = set()
+    with fasta.open() as handle:
+        for line in handle:
+            if line.startswith(">"):
+                genomic_names.add(line[1:].split()[0])
+
+    selected = []
+    excluded = {fasta.resolve(), report.resolve()}
+    for row in assembly_report_rows(report):
+        location_type = (row.get("Assigned-Molecule-Location/Type") or "").lower()
+        role = (row.get("Sequence-Role") or "").lower()
+        if "non-nuclear" not in location_type and "mitochond" not in location_type and "organel" not in role:
+            continue
+        accession = next((a for a in report_accessions(row) if a not in genomic_names), None)
+        if not accession:
+            continue
+        source = locate_supplement(assembly_dir, accession, excluded)
+        if source is None:
+            raise RuntimeError(
+                f"Assembly report lists non-nuclear sequence {accession}, but no matching record was found under {assembly_dir}"
+            )
+        selected.append((accession, source))
+        excluded.add(source)
+
+    with output.open("w") as handle:
+        for accession, source in selected:
+            supplement_to_fasta(source, handle, accession)
+    return [accession for accession, _ in selected]
+
+
 def parse_bam_header(path: Path) -> Dict[str, str]:
     if not shutil.which("samtools"):
         return {}
@@ -286,6 +395,10 @@ def main() -> int:
 
     outdir = Path(args.outdir).resolve()
     outdir.mkdir(parents=True, exist_ok=True)
+    reference_supplement = outdir / "reference_supplement.fasta"
+    supplement_accessions = build_reference_supplement(
+        assembly_dir, reference_fasta, assembly_report, reference_supplement
+    )
     files_tsv = outdir / "files.tsv"
     manifest_tsv = outdir / "manifest.tsv"
     missing_tsv = outdir / "missing_files.tsv"
@@ -375,11 +488,12 @@ def main() -> int:
         "assembly_accession": args.assembly_accession,
         "reference_fasta": str(reference_fasta),
         "assembly_report": str(assembly_report),
+        "reference_supplement": str(reference_supplement),
         "last_geneset_update": args.last_geneset_update,
         "partial_release_label": release_label,
         "species": species,
         "taxon_id": args.taxon_id,
-        "ref_seqs": "",
+        "ref_seqs": ",".join(supplement_accessions),
         "analysis_links": args.analysis_links,
         "analysis_attributes": "; ".join(f"attr_{key}={value}" for key, value in attributes.items() if value),
         "analysis_type": "REFERENCE_ALIGNMENT",

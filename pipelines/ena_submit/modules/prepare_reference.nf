@@ -1,20 +1,19 @@
 process ENA_PREPARE_REFERENCE {
     label 'process_single_long'
     tag { reference_key }
-    container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
+    container 'docker.io/library/python:3.11-slim'
 
     input:
-    tuple val(reference_key), path(reference_fasta), path(assembly_report)
+    tuple val(reference_key), path(reference_fasta), path(assembly_report), path(reference_supplement)
 
     output:
-    tuple val(reference_key), path('reference.fai'), path('assembly_report.txt'), path('reference.names'), emit: prepared
+    tuple val(reference_key), path('reference.fasta'), path('assembly_report.txt'), path('reference.names'), emit: prepared
 
     script:
     """
     set -euo pipefail
-    samtools faidx ${reference_fasta}
-    mv ${reference_fasta}.fai reference.fai
+    cat ${reference_fasta} ${reference_supplement} > reference.fasta
     cp ${assembly_report} assembly_report.txt
-    awk 'BEGIN { OFS="\\t" } /^>/ { header=substr(\$0, 2); name=header; sub(/[ \\t].*/, "", name); description=header; sub(/^[^ \\t]+[ \\t]*/, "", description); print name, description }' ${reference_fasta} > reference.names
+    awk 'BEGIN { OFS="\\t" } /^>/ { header=substr(\$0, 2); name=header; sub(/[ \\t].*/, "", name); description=header; sub(/^[^ \\t]+[ \\t]*/, "", description); print name, description }' reference.fasta > reference.names
     """
 }

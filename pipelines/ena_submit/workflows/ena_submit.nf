@@ -12,6 +12,7 @@ include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
 include { ENA_CONVERT_TO_CRAM } from '../modules/convert_to_cram.nf'
 include { ENA_REHEADER_BAM } from '../modules/reheader_bam.nf'
 include { ENA_PREPARE_REFERENCE } from '../modules/prepare_reference.nf'
+include { ENA_INDEX_REFERENCE } from '../modules/index_reference.nf'
 include { ENA_EXTRACT_BAM_HEADER } from '../modules/extract_bam_header.nf'
 include { ENA_BUILD_BAM_HEADER } from '../modules/build_bam_header.nf'
 include { ENA_INDEX_BAM } from '../modules/index_bam.nf'
@@ -98,6 +99,7 @@ workflow ENA_SUBMIT_WORKFLOW {
                 assembly_accession: file_row.assembly_accession,
                 reference_fasta: file_row.reference_fasta,
                 assembly_report: file_row.assembly_report,
+                reference_supplement: file_row.reference_supplement,
                 last_geneset_update: file_row.last_geneset_update,
                 partial_release_label: file_row.partial_release_label,
                 species: file_row.species,
@@ -120,6 +122,8 @@ workflow ENA_SUBMIT_WORKFLOW {
             tuple(meta, row, file_meta, file(file_row.file_path))
         }
 
+    def prepared_reference_fasta = null
+    def prepared_reference_fai = null
     def reheader_bams = params.reheader_bams?.toString()?.toLowerCase() in ['1', 'true', 'yes']
     if (reheader_bams) {
         def header_script = file("${projectDir}/bin/build_reheader_header.py")
@@ -128,32 +132,39 @@ workflow ENA_SUBMIT_WORKFLOW {
         }.map { meta, row, file_meta, bam ->
             def fasta_path = params.reference_fasta ?: row.reference_fasta
             def report_path = params.reference_assembly_report ?: row.assembly_report
+            def supplement_path = row.reference_supplement
             if (!fasta_path) { throw new RuntimeException("Manifest row missing reference_fasta") }
             if (!report_path) { throw new RuntimeException("Manifest row missing assembly_report") }
             def fasta = file(fasta_path)
             def report = file(report_path)
             if (!fasta.exists()) { throw new RuntimeException("Reference FASTA not found: ${fasta}") }
             if (!report.exists()) { throw new RuntimeException("Assembly report not found: ${report}") }
-            def reference_key = "${fasta_path}|${report_path}"
-            tuple(reference_key, meta, row, file_meta, bam, fasta, report)
+            if (!supplement_path) { throw new RuntimeException("Manifest row missing reference_supplement") }
+            def supplement = file(supplement_path)
+            if (!supplement.exists()) { throw new RuntimeException("Reference supplement not found: ${supplement}") }
+            def reference_key = "${fasta_path}|${report_path}|${supplement_path}"
+            tuple(reference_key, meta, row, file_meta, bam, fasta, report, supplement)
         }
         def non_bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
             (file_meta.file_type ?: '').toString().toLowerCase() != 'bam'
         }
         def reference_inputs = bam_inputs
-            .map { reference_key, meta, row, file_meta, bam, fasta, report -> tuple(reference_key, fasta, report) }
+            .map { reference_key, meta, row, file_meta, bam, fasta, report, supplement -> tuple(reference_key, fasta, report, supplement) }
             .distinct()
         ENA_PREPARE_REFERENCE(reference_inputs)
-        def prepared_references = ENA_PREPARE_REFERENCE.out.prepared
+        ENA_INDEX_REFERENCE(ENA_PREPARE_REFERENCE.out.prepared)
+        def prepared_references = ENA_INDEX_REFERENCE.out.indexed
+        prepared_reference_fasta = prepared_references.map { reference_key, fasta, fai, report, names -> fasta }
+        prepared_reference_fai = prepared_references.map { reference_key, fasta, fai, report, names -> fai }
         def prepared_bams = bam_inputs
             .join(prepared_references, by: 0)
-            .map { reference_key, meta, row, file_meta, bam, fasta, report, reference_fai, prepared_report, reference_names ->
+            .map { reference_key, meta, row, file_meta, bam, fasta, report, supplement, prepared_fasta, reference_fai, prepared_report, reference_names ->
                 tuple(reference_key, meta, row, file_meta, bam)
             }
         ENA_EXTRACT_BAM_HEADER(prepared_bams)
         def header_inputs = ENA_EXTRACT_BAM_HEADER.out.extracted
             .join(prepared_references, by: 0)
-            .map { reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report, reference_names ->
+            .map { reference_key, meta, row, file_meta, bam, header, prepared_fasta, reference_fai, prepared_report, reference_names ->
                 tuple(reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report, reference_names, header_script)
             }
         ENA_BUILD_BAM_HEADER(header_inputs)
@@ -174,11 +185,13 @@ workflow ENA_SUBMIT_WORKFLOW {
     def md5_inputs
     def convert_to_cram = params.convert_to_cram?.toString()?.toLowerCase() in ['1', 'true', 'yes']
     if (convert_to_cram) {
-        assert params.reference_fasta, "--reference_fasta is required with --convert_to_cram true"
-        def reference = file(params.reference_fasta)
-        def reference_fai = file("${params.reference_fasta}.fai")
-        assert reference.exists(), "Reference FASTA not found: ${params.reference_fasta}"
-        assert reference_fai.exists(), "Reference FASTA index not found: ${params.reference_fasta}.fai"
+        def reference = params.reference_fasta ? file(params.reference_fasta) : null
+        def reference_fai = params.reference_fasta ? file("${params.reference_fasta}.fai") : null
+        if (!prepared_reference_fasta) {
+            assert reference, "--reference_fasta is required with --convert_to_cram true when --reheader_bams is false"
+            assert reference.exists(), "Reference FASTA not found: ${params.reference_fasta}"
+            assert reference_fai.exists(), "Reference FASTA index not found: ${params.reference_fasta}.fai"
+        }
 
         def bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
             (file_meta.file_type ?: '').toString().toLowerCase() == 'bam'
@@ -186,7 +199,9 @@ workflow ENA_SUBMIT_WORKFLOW {
         def non_bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
             (file_meta.file_type ?: '').toString().toLowerCase() != 'bam'
         }
-        ENA_CONVERT_TO_CRAM(bam_inputs, Channel.value(reference), Channel.value(reference_fai))
+        def cram_reference = prepared_reference_fasta ?: Channel.value(reference)
+        def cram_reference_fai = prepared_reference_fai ?: Channel.value(reference_fai)
+        ENA_CONVERT_TO_CRAM(bam_inputs, cram_reference, cram_reference_fai)
         ENA_INDEX_CRAM(ENA_CONVERT_TO_CRAM.out.converted)
         def converted_inputs = ENA_INDEX_CRAM.out.indexed.flatMap { meta, row, file_meta, cram, crai ->
             def cram_name = (file_meta.remote_name ?: cram.getName()).replaceFirst(/\.bam$/, '.cram')
