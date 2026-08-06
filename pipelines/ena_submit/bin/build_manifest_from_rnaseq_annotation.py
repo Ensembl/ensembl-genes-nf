@@ -368,7 +368,12 @@ def main() -> int:
     parser.add_argument("--description", help="Analysis description.")
     parser.add_argument("--analysis-links", default="")
     parser.add_argument("--extra-attribute", action="append", default=[], help="Extra attr key=value; repeatable.")
-    parser.add_argument("--allow-missing-files", action="store_true")
+    parser.add_argument(
+        "--fail-on-missing-files",
+        action="store_true",
+        help="Fail instead of continuing when runs have no matching alignment file.",
+    )
+    parser.add_argument("--allow-missing-files", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--no-bam-header", action="store_true", help="Do not inspect BAM/CRAM headers with samtools.")
     args = parser.parse_args()
 
@@ -430,9 +435,15 @@ def main() -> int:
             }
         )
 
-    if missing_rows and not args.allow_missing_files:
+    if missing_rows:
         write_tsv(missing_tsv, ["run_accession", "sample_accession"], missing_rows)
-        raise RuntimeError(f"{len(missing_rows)} runs had no alignment file; see {missing_tsv}")
+        message = (
+            f"WARNING: {len(missing_rows)} runs had no alignment file; "
+            f"continuing with {len(file_rows)} available alignments. See {missing_tsv}"
+        )
+        if args.fail_on_missing_files:
+            raise RuntimeError(message.removeprefix("WARNING: "))
+        print(message, file=sys.stderr)
     if not file_rows:
         raise RuntimeError("No alignment files found for submission")
 

@@ -81,7 +81,7 @@ find "$RNASEQ/output" -maxdepth 1 -type f -name '*.bam' | wc -l
 find "$RNASEQ/output" -maxdepth 1 -type f \( -name '*.bam' -o -name '*.cram' \) | head
 \`\`\`
 
-If files are nested, inaccessible, or named differently, fix discovery before treating them as missing. Use \`--allow-missing-files\` only for an intentional partial test.
+If files are nested, inaccessible, or named differently, fix discovery before treating them as missing. Missing files are reported as warnings by default; use \`--fail-on-missing-files\` when a complete set is required.
 
 ## 4. Build a TEST manifest
 
@@ -271,7 +271,7 @@ Use \`-profile singularity,slurm\` and pull the branch containing shared resourc
 
 ### \`47 runs had no alignment file\`
 
-Check \`missing_files.tsv\`, directory permissions, and the naming pattern. Use \`--allow-missing-files\` only when the partial set is intentional.
+Check \`missing_files.tsv\`, directory permissions, and the naming pattern. Missing files are warnings by default; use \`--fail-on-missing-files\` when the partial set is not intentional.
 
 ## 11. What to retain
 
@@ -286,4 +286,3 @@ Keep these items together:
 - the final Nextflow summary and ENA receipts.
 
 Never retain passwords in presentations, shell history, task logs, or shared output directories.
-

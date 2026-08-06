@@ -52,6 +52,8 @@ GCA_052040795.1-Ensembl-2025-12
 
 The builder currently uses the headerless RNA-seq TSV format where column 1 is sample accession, column 2 is run accession, column 9 is platform, column 11 is FASTQ URL, and column 12 is FASTQ MD5.
 
+Runs without a matching alignment are recorded in `missing_files.tsv` and reported as a loud warning; manifest creation continues with the alignments that are available. Use `--fail-on-missing-files` when a complete alignment set is required. The older `--allow-missing-files` option remains accepted for compatibility.
+
 If `samtools` is available, the builder inspects BAM/CRAM headers for basic alignment provenance such as sort order, `@PG` programs, and STAR version. Use `--no-bam-header` to skip this.
 
 ## Step 2: Submit To ENA
