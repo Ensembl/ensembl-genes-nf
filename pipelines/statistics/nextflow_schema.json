@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com///nextflow_schema.json",
+  "title": "pipeline parameters",
+  "description": "",
+  "type": "object",
+  "$defs": {
+    "main_parameters": {
+      "title": "Input/output options",
+      "type": "object",
+      "fa_icon": "fas fa-terminal",
+      "description": "Define where the pipeline should find input data and save output data.",
+            "required": ["csvFile", "outdir"],
+  "properties": {
+    "run_busco_core": {
+      "type": "boolean",
+"description":"Run BUSCO (protein or genome mode see --busco_mode) given a mysql db"
+    },
+    "run_busco_ncbi": {
+      "type": "boolean",
+      "description":"Run BUSCO given a assembly_accession and taxonomy id in genome mode only"
+    },
+    "run_omark": {
+      "type": "boolean",
+      "description":"Run OMARK given a mysql db"
+    },
+    "run_ensembl_stats": {
+      "type": "boolean",
+      "description":"Run Ensembl statistics given a mysql db"
+    },
+    "run_ensembl_beta_metakeys": {
+      "type": "boolean",
+      "description":"Run Ensembl beta metakeys given a mysql db"
+    },
+    "apply_ensembl_stats": {
+      "type": "boolean",
+      "description":"Insert Ensembl statistics into a mysql db"
+    },
+    "apply_ensembl_beta_metakeys": {
+      "type": "boolean",
+      "description":"Insert Ensembl beta metakeys into a mysql db"
+    },
+    "apply_busco_metakeys": {
+      "type": "boolean",
+      "description":"Create JSON file with Busco metakeys and load it into the db"
+    },
+    "dbname": {
+      "type": "string",
+      "hidden": true
+    },
+    "host": {
+      "type": "string",
+      "description":"Db host server"
+    },
+    "port": {
+      "type": "integer",
+      "description":"Db port"
+    },
+    "user": {
+      "type": "string",
+      "description":"Db user"
+    },
+    "user_r": {
+      "type": "string",
+      "description":"Db user read_only"
+    },
+    "password": {
+      "type": "string",
+      "description":"Server password"
+    },
+    "busco_dataset": {
+      "type": "string",
+      "description":"Busco lineage specified by the user"
+    },
+    "mysql_ensadmin": {
+      "type": "string",
+      "default": "/hps/software/users/ensembl/ensw/mysql-cmds/ensembl/ensadmin"
+    },
+    "ncbiBaseUrl": {
+      "type": "string",
+      "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession",
+      "description":"NCBI API"
+    },
+    "readme": {
+      "type": "string",
+      "default": "README.txt"
+    },
+    "project": {
+      "type": "string",
+      "default": "ensembl"
+    },
+    "team": {
+      "type": "string",
+      "description":"Team responsible metakey"
+    },
+    "csvFile": {
+      "type": "string",
+      "format": "file-path",
+            "exists": true,
+            "mimetype": "text/csv",
+            "schema": "assets/schema_input.json",
+            "description": "Path to the input CSV metadata file."
+    },
+    "enscode": {
+      "type": "string",
+      "description":"Enscode path"
+    },
+    "bioperl": {
+      "type": "string",
+      "default": "/bioperl-1.6.924",
+      "description":"BioPerl path"
+    },
+    "cacheDir": {
+      "type": "string",
+      "default": "./results/cache",
+      "description": "Directory for caching files."
+    },
+    "outdir": {
+      "type": "string",
+      "default": "./results",
+      "description": "Output directory."
+    },
+    "tracedir": {
+      "type": "string",
+      "default": "./results/pipeline_info",
+      "description": "Directory for tracing pipeline."
+    },
+    "files_latency": {
+      "type": "integer",
+      "default": 60,
+      "description": "Latency in seconds for file operations."
+    },
+    "cleanCache": {
+      "type": "boolean",
+      "default": false,
+      "description": "Option to clean the cache directory after running the pipeline."
+    },
+    "busco_version": {
+      "type": "string",
+      "default": "v6.0.0_cv1",
+      "description":"BUSCO image version"
+    },
+    "download_path": {
+      "type": "string",
+      "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data_odb12/",
+      "description":"BUSCO lineages path"
+    },
+    "busco_mode": {
+      "type": "string",
+      "default": "both",
+      "enum": ["protein", "genome", "both"],
+      "description":"Busco mode: genome, protein or both"
+    },
+    "busco_datasets_file": {
+      "type": "string",
+      "default": "data/busco_lineage.json"
+    },
+    "dump_params": {
+      "type": "string",
+      "default": "--canonical_only"
+    },
+    "omamer_database": {
+      "type": "string",
+      "default": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/omamer_db/LUCA_MinFamSize6_OR_MinFamComp05_A21_k6.h5"
+    },
+    "omark_singularity_path": {
+      "type": "string",
+      "default": "/hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif"
+    },
+    "meta_query_file": {
+      "type": "string",
+      "default": "../bin/meta.sql"
+    }
+  }
+}
+  },
+"allOf": [
+        {
+            "$ref": "#/$defs/main_parameters"
+        }
+    ]
+}  

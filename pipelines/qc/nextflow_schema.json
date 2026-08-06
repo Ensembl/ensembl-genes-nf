@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "QC Pipeline Parameters",
+  "description": "Parameter schema for the QC pipeline",
+  "type": "object",
+  "properties": {
+    "gff_csv": {
+      "type": "string",
+      "description": "Path to a CSV file with at least sample and gff3 columns"
+    },
+    "ensembl_genes_repo": {
+      "type": "string",
+      "description": "Path to a local ensembl-genes checkout"
+    },
+    "feature_levels": {
+      "type": "string",
+      "description": "Optional explicit path to feature_levels.yaml"
+    },
+    "agat_parser": {
+      "type": "string",
+      "description": "Optional explicit path to parse_agat.py"
+    },
+    "run_agat_metrics": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable the AGAT metrics branch"
+    },
+    "outdir": {
+      "type": "string",
+      "default": "./results",
+      "description": "Output directory"
+    },
+    "tracedir": {
+      "type": "string",
+      "description": "Directory for Nextflow execution reports and trace files"
+    }
+  },
+  "required": [
+    "gff_csv",
+    "ensembl_genes_repo"
+  ]
+}
