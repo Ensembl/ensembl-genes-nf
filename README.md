@@ -99,6 +99,32 @@ The example pipeline demonstrates patterns from simple to complex:
 - Nextflow ≥ 21.04.0 (DSL2)
 - Singularity 
 
+## Private Container Registry
+
+Some implementation pipelines use private images from the EBI Docker registry.
+Authenticate Singularity or Apptainer outside Nextflow with an EBI/GitLab
+account or token that has registry-read permission:
+
+```bash
+read -s EBI_REGISTRY_TOKEN
+printf '%s\n' "$EBI_REGISTRY_TOKEN" | singularity registry login \
+  --username "$EBI_REGISTRY_USER" \
+  --password-stdin \
+  docker://dockerhub.ebi.ac.uk
+unset EBI_REGISTRY_TOKEN
+```
+
+Check access before launching a pipeline:
+
+```bash
+singularity registry list
+singularity pull docker://dockerhub.ebi.ac.uk/<project>/<image>:<tag>
+```
+
+For CI, use masked `APPTAINER_DOCKER_USERNAME` and
+`APPTAINER_DOCKER_PASSWORD` secrets. Never put registry credentials in a
+sample sheet, Nextflow parameter, or committed configuration file.
+
 ## Branch Structure
 
 - **`template`** (this branch) - Templates, examples, and documentation
@@ -121,4 +147,3 @@ Contributions to improve templates and documentation are welcome! Consider:
 ## License
 
 [Add license information]
-

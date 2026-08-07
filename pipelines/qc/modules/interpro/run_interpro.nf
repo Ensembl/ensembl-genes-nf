@@ -16,7 +16,7 @@ process INTERPRO_RUN {
         val data_file_path
 
     output:
-        tuple val(meta), path("${meta.sample ?: meta.id ?: protein.simpleName}.tsv"), emit: stats_txt
+        tuple val(meta), path("*.tsv"), emit: stats_txt
         path "versions.yml", emit: versions
 
     when:

@@ -1,56 +1,79 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "QC Pipeline Parameters",
-    "description": "Parameter schema for the QC pipeline",
-    "type": "object",
-    "properties": {
-        "input_csv": {
-            "type": "string",
-            "description": "Path to a CSV file with at least sample, gff3, and protein columns"
-        },
-        "ensembl_genes_repo": {
-            "type": "string",
-            "description": "Path to a local ensembl-genes checkout"
-        },
-        "feature_levels": {
-            "type": ["string", "null"],
-            "description": "Optional explicit path to feature_levels.yaml"
-        },
-        "agat_parser": {
-            "type": ["string", "null"],
-            "description": "Optional explicit path to parse_agat.py"
-        },
-        "run_agat_metrics": {
-            "type": "boolean",
-            "default": false,
-            "description": "Enable the AGAT metrics branch"
-        },
-        "run_interproscan": {
-            "type": "boolean",
-            "default": false,
-            "description": "Enable the InterProScan branch"
-        },
-        "data_file_path": {
-            "type": ["string", "null"],
-            "description": "Optional explicit path to InterProScan data library"
-        },
-        "database": {
-            "type": "string",
-            "description": "Optional database to run InterProScan on (default: Pfam)"
-        },
-        "interpro_parser": {
-            "type": ["string", "null"],
-            "description": "Optional explicit path to interpro_parser.py"
-        },
-        "outdir": {
-            "type": "string",
-            "default": "./results",
-            "description": "Output directory"
-        },
-        "tracedir": {
-            "type": ["string", "null"],
-            "description": "Directory for Nextflow execution reports and trace files"
-        }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Annotation QC pipeline parameters",
+  "description": "Run one or more QC analyses from a genome and GFF3 annotation manifest.",
+  "type": "object",
+  "properties": {
+    "input_csv": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "pattern": "^\\S+\\.csv$",
+      "description": "CSV containing sample, genome_fasta, and gff3 columns."
     },
-    "required": ["input_csv", "ensembl_genes_repo"]
+    "mode": {
+      "type": "string",
+      "enum": ["agat", "interproscan", "diamond", "combined"],
+      "description": "QC analysis to run. combined runs all available analyses."
+    },
+    "database": {
+      "type": "string",
+      "enum": [
+        "TIGRFAM", "SFLD", "SUPERFAMILY", "PANTHER", "Gene3D", "Hamap",
+        "ProSiteProfiles", "Coils", "SMART", "CDD", "PRINTS", "PIRSR",
+        "ProSitePatterns", "AntiFam", "Pfam", "MobiDBLite", "PIRSF"
+      ],
+      "default": "Pfam",
+      "description": "InterProScan application database."
+    },
+    "data_file_path": {
+      "type": "string",
+      "format": "directory-path",
+      "exists": true,
+      "description": "Local InterProScan data directory."
+    },
+    "diamond_reference_proteins": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "description": "Reference protein FASTA used to build the Diamond database."
+    },
+    "diamond_reference_db": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "description": "Existing Diamond database file. When supplied, the reference protein FASTA is not used."
+    },
+    "outdir": {
+      "type": "string",
+      "default": "./results",
+      "description": "Output directory."
+    },
+    "tracedir": {
+      "type": "string",
+      "description": "Directory for Nextflow execution reports and trace files."
+    }
+  },
+  "required": ["input_csv", "mode"],
+  "allOf": [
+    {
+      "if": {
+        "properties": {"mode": {"enum": ["interproscan", "combined"]}},
+        "required": ["mode"]
+      },
+      "then": {"required": ["data_file_path"]}
+    },
+    {
+      "if": {
+        "properties": {"mode": {"enum": ["diamond", "combined"]}},
+        "required": ["mode"]
+      },
+      "then": {
+        "oneOf": [
+          {"required": ["diamond_reference_db"]},
+          {"required": ["diamond_reference_proteins"]}
+        ]
+      }
+    }
+  ]
 }

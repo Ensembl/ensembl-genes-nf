@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sample": {
+        "type": "string",
+        "pattern": "^\\S+$"
+      },
+      "genome_fasta": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true
+      },
+      "gff3": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true
+      },
+      "protein_fasta": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true,
+        "description": "Optional precomputed protein FASTA. If absent, proteins are derived with gffread."
+      }
+    },
+    "required": ["sample", "genome_fasta", "gff3"],
+    "additionalProperties": false
+  }
+}
