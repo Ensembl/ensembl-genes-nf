@@ -6,8 +6,8 @@ workflow INTERPRO_SCAN {
 
     take:
         protein_ch
-        data_file_path
         database
+        data_file_path
         ensembl_genes_repo
         interpro_parser
 

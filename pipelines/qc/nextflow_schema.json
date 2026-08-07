@@ -38,6 +38,10 @@
             "type": "string",
             "description": "Optional database to run InterProScan on (default: Pfam)"
         },
+        "interpro_parser": {
+            "type": ["string", "null"],
+            "description": "Optional explicit path to interpro_parser.py"
+        },
         "outdir": {
             "type": "string",
             "default": "./results",
