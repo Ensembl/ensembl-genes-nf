@@ -4,6 +4,8 @@ nextflow.enable.dsl = 2
 
 include { FETCH_REFSEQ } from '../modules/fetch_refseq.nf'
 include { LOAD_REFSEQ } from '../modules/load_refseq.nf'
+include { GET_SAMPLE_GENE } from '../modules/get_sample_gene.nf'
+include { ADD_STATIC_METAKEYS } from '../modules/add_static_metakeys.nf'
 include { GET_METADATA } from '../modules/get_metadata.nf'
 include { LOAD_METADATA } from '../modules/load_metadata.nf'
 
@@ -39,13 +41,31 @@ workflow IMPORT_REFSEQ {
 
                 def dbName = "${speciesToken}_${accessionToken}_rs_core_114_1"
 
-                meta + [db_name: dbName]
+                tuple(meta + [db_name: dbName], loaded_marker)
             }
 
+        GET_SAMPLE_GENE(
+            metadata_input,
+            db_config_ch
+        )
+
+        sample_gene_input = GET_SAMPLE_GENE.out.sample_gene.map { meta, sample_gene_marker ->
+            meta
+        }
+
+        ADD_STATIC_METAKEYS(
+            sample_gene_input,
+            db_config_ch
+        )
+
+        metadata_post_static = ADD_STATIC_METAKEYS.out.loaded.map { meta, static_marker ->
+            meta
+        }
+
         GET_METADATA(
-                metadata_input,
-                db_config_ch
-            )
+            metadata_post_static,
+            db_config_ch
+        )
 
         LOAD_METADATA(
             GET_METADATA.out.sql,
@@ -54,6 +74,8 @@ workflow IMPORT_REFSEQ {
 
         versions_ch = FETCH_REFSEQ.out.versions
             .mix(LOAD_REFSEQ.out.versions)
+            .mix(GET_SAMPLE_GENE.out.versions)
+            .mix(ADD_STATIC_METAKEYS.out.versions)
             .mix(GET_METADATA.out.versions)
             .mix(LOAD_METADATA.out.versions)
 
