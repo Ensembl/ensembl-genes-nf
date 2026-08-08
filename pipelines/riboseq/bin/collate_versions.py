@@ -13,11 +13,12 @@ def main() -> int:
     merged: dict[str, dict[str, str]] = {}
     for raw_path in sys.argv[1:]:
         path = Path(raw_path)
-        data = yaml.safe_load(path.read_text()) or {}
-        for process, tools in data.items():
-            merged.setdefault(str(process), {}).update(
-                {str(tool): str(version) for tool, version in (tools or {}).items()}
-            )
+        for data in yaml.safe_load_all(path.read_text()):
+            data = data or {}
+            for process, tools in data.items():
+                merged.setdefault(str(process), {}).update(
+                    {str(tool): str(version) for tool, version in (tools or {}).items()}
+                )
 
     for process in sorted(merged):
         print(f"{process}:")

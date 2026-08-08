@@ -5,15 +5,14 @@ process COLLATE_VERSIONS {
     container 'community.wave.seqera.io/library/pip_pyyaml_duckdb_pandas:5ede6677f4262ec2'
 
     input:
-    val version_files
+    path version_bundle
 
     output:
     path 'software_versions.yml', emit: report
 
     script:
-    def version_args = version_files.collect { value -> "'${value}'" }.join(' ')
     """
-    collate_versions.py ${version_args} > software_versions.yml
+    collate_versions.py ${version_bundle} > software_versions.yml
     """
 
     stub:

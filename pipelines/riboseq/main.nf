@@ -114,7 +114,10 @@ workflow {
     // All modules publish their runtime-generated versions.yml files to the
     // shared versions topic. Collate them once after the workflow completes.
     def topic_versions = channel.topic('versions')
-    COLLATE_VERSIONS(topic_versions.collect())
+    def version_bundle = topic_versions
+        .map { version_file -> "---\n${version_file.text}" }
+        .collectFile(name: 'versions_bundle.yml')
+    COLLATE_VERSIONS(version_bundle)
 
     //
     // MODE 1: Standalone organism setup only
