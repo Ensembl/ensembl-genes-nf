@@ -401,11 +401,11 @@ workflow {
             )
 
         IMPORT_QC_DB(
-            COLLECT_QC_METRICS.out.metrics.map { _meta, metrics -> metrics }.collect(),
-            COLLECT_QC_METRICS.out.artifacts.map { _meta, artifacts -> artifacts }.collect(),
-            QC_GATE.out.qc_rule_set.map { _meta, rule_set -> rule_set }.collect(),
-            QC_GATE.out.qc_eval.map { _meta, qc_eval -> qc_eval }.collect(),
-            QC_GATE.out.gate_selection.map { _meta, gate_selection -> gate_selection }.collect()
+            COLLECT_QC_METRICS.out.metrics.map { _meta, metrics -> metrics }.distinct().collect(),
+            COLLECT_QC_METRICS.out.artifacts.map { _meta, artifacts -> artifacts }.distinct().collect(),
+            QC_GATE.out.qc_rule_set.map { _meta, rule_set -> rule_set }.distinct().collect(),
+            QC_GATE.out.qc_eval.map { _meta, qc_eval -> qc_eval }.distinct().collect(),
+            QC_GATE.out.gate_selection.map { _meta, gate_selection -> gate_selection }.distinct().collect()
         )
 
         POST_PROCESSING(

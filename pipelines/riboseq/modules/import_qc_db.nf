@@ -6,11 +6,11 @@ process IMPORT_QC_DB {
     container "community.wave.seqera.io/library/pip_pyyaml_duckdb_pandas:5ede6677f4262ec2"
 
     input:
-    path metrics
-    path artifacts
-    path rule_sets
-    path qc_evals
-    path gate_selections
+    path metrics, stageAs: 'metrics/*'
+    path artifacts, stageAs: 'artifacts/*'
+    path rule_sets, stageAs: 'rule_sets/*'
+    path qc_evals, stageAs: 'qc_evals/*'
+    path gate_selections, stageAs: 'gate_selections/*'
 
     output:
     path "qc.duckdb", emit: db
