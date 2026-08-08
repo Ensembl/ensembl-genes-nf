@@ -98,6 +98,7 @@ include { COLLECT_QC_METRICS } from './modules/collect_qc_metrics.nf'
 include { QC_GATE } from './modules/qc_gate.nf'
 include { IMPORT_QC_DB } from './modules/import_qc_db.nf'
 include { SAMPLE_COMPLETENESS } from './modules/sample_completeness.nf'
+include { COLLATE_VERSIONS } from './modules/collate_versions.nf'
 
 /*
 ========================================================================================
@@ -109,6 +110,11 @@ workflow {
 
     // Validate parameters inside the entry workflow for strict DSL2 syntax.
     validateParameters()
+
+    // All modules publish their runtime-generated versions.yml files to the
+    // shared versions topic. Collate them once after the workflow completes.
+    def topic_versions = channel.topic('versions')
+    COLLATE_VERSIONS(topic_versions.collect())
 
     //
     // MODE 1: Standalone organism setup only
@@ -337,7 +343,7 @@ workflow {
             .join(QUALITY_CONTROL.out.rpf_checks)
             .join(ribometric_triplet)
             .map { meta, star_log, getrpf_report, getrpf_checks, ribometric_json, ribometric_csv, offsets ->
-                [meta, star_log, getrpf_report, getrpf_checks, ribometric_json, ribometric_csv, offsets]
+                tuple(meta, star_log, getrpf_report, getrpf_checks, ribometric_json, ribometric_csv, offsets)
             }
 
         COLLECT_QC_METRICS(
@@ -348,7 +354,7 @@ workflow {
         qc_gate_inputs = ANALYSIS.out.offsets
             .join(COLLECT_QC_METRICS.out.metrics)
             .map { meta, offsets, metrics ->
-                [meta, offsets, metrics]
+                tuple(meta, offsets, metrics)
             }
 
         QC_GATE(
@@ -361,9 +367,9 @@ workflow {
         // Structural validation errors still fail the workflow before this point.
         SAMPLE_COMPLETENESS(
             DATA_ACQUISITION.out.expected.collect(),
-            DATA_ACQUISITION.out.samples.map { meta, collapsed -> meta.id }.collect(),
-            ALIGNMENT.out.transcriptome_bam.map { meta, bam, bai -> meta.id }.collect(),
-            QC_GATE.out.qc_json.map { meta, qc_json -> meta.id }.collect()
+            DATA_ACQUISITION.out.samples.map { meta, _collapsed -> meta.id }.collect(),
+            ALIGNMENT.out.transcriptome_bam.map { meta, _bam, _bai -> meta.id }.collect(),
+            QC_GATE.out.qc_json.map { meta, _qc_json -> meta.id }.collect()
         )
 
         // Optional codon-level sequence-bias correction. Run once per sample
@@ -372,7 +378,7 @@ workflow {
         if (params.run_choros) {
             choros_inputs = ALIGNMENT.out.transcriptome_bam
                 .join(QC_GATE.out.good_offsets)
-                .map { meta, bam, bai, offsets -> [meta, bam, bai, offsets] }
+                .map { meta, bam, bai, offsets -> tuple(meta, bam, bai, offsets) }
 
             CHOROS(
                 choros_inputs,
@@ -385,18 +391,18 @@ workflow {
         // Failed samples still publish QC audit files, but do not enter
         // post-processing.
         def offsets_for_post = QC_GATE.out.good_offsets
-            .map { meta, offsets -> [meta + [track_tier: 'good'], offsets] }
+                .map { meta, offsets -> tuple(meta + [track_tier: 'good'], offsets) }
             .mix(
                 QC_GATE.out.great_offsets
-                    .map { meta, offsets -> [meta + [track_tier: 'great'], offsets] }
+                    .map { meta, offsets -> tuple(meta + [track_tier: 'great'], offsets) }
             )
 
         IMPORT_QC_DB(
-            COLLECT_QC_METRICS.out.metrics.map { meta, metrics -> metrics }.collect(),
-            COLLECT_QC_METRICS.out.artifacts.map { meta, artifacts -> artifacts }.collect(),
-            QC_GATE.out.qc_rule_set.map { meta, rule_set -> rule_set }.collect(),
-            QC_GATE.out.qc_eval.map { meta, qc_eval -> qc_eval }.collect(),
-            QC_GATE.out.gate_selection.map { meta, gate_selection -> gate_selection }.collect()
+            COLLECT_QC_METRICS.out.metrics.map { _meta, metrics -> metrics }.collect(),
+            COLLECT_QC_METRICS.out.artifacts.map { _meta, artifacts -> artifacts }.collect(),
+            QC_GATE.out.qc_rule_set.map { _meta, rule_set -> rule_set }.collect(),
+            QC_GATE.out.qc_eval.map { _meta, qc_eval -> qc_eval }.collect(),
+            QC_GATE.out.gate_selection.map { _meta, gate_selection -> gate_selection }.collect()
         )
 
         POST_PROCESSING(
@@ -433,19 +439,19 @@ workflow {
 
             // Filter for the chosen BAM type and group multiple stranded bigwigs per sample
             bigwigs_per_sample = POST_PROCESSING.out.bigwigs
-                .filter { meta, bw -> meta.bam_type == chosen_type }
-                .map { meta, bw -> [ [ id: meta.id ], bw ] }
+                .filter { meta, _bw -> meta.bam_type == chosen_type }
+                .map { meta, bw -> tuple([ id: meta.id ], bw) }
                 .groupTuple(by: 0)
-                .map { meta, files -> [ meta, files ] }
+                .map { meta, files -> tuple(meta, files) }
 
             // Gate by QC decision: selected_for_translon must be true
             def selected_ids = QC_GATE.out.translon_selected
-                .map { meta, selected -> meta.id }
+                .map { meta, _selected -> meta.id }
 
             // Key join on sample id
-            def keyed_bw = bigwigs_per_sample.map { meta, files -> [ meta.id, [meta, files] ] }
-            def keyed_sel = selected_ids.map { id -> [ id, true ] }
-            allowed = keyed_bw.join(keyed_sel).map { id, pair, unused -> pair }
+            def keyed_bw = bigwigs_per_sample.map { meta, files -> tuple(meta.id, tuple(meta, files)) }
+            def keyed_sel = selected_ids.map { id -> tuple(id, true) }
+            allowed = keyed_bw.join(keyed_sel).map { _id, pair, _unused -> pair }
 
             TRANSLONSCORER(
                 allowed,

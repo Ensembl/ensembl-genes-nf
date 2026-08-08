@@ -11,8 +11,6 @@ process TRANSLONSCORER {
     // Prefer pinned container; falls back to pip install if not present
     container "${ params.translonscorer_container ?: 'ghcr.io/jackcurragh/translonscorer:latest' }"
 
-    publishDir "${params.outdir}/translonscorer", mode: 'copy', pattern: "*"
-
     input:
     // Either a single BigWig or a list [forward.bw, reverse.bw]
     tuple val(meta), path(bigwigs)
@@ -29,7 +27,6 @@ process TRANSLONSCORER {
 
     script:
     // User-tunable options
-    def scoring = params.translonscorer_scoring_method ?: 'modern'
     def plotrng = params.translonscorer_plot_range ?: 30
 
     // Resolve BigWig arguments
@@ -38,8 +35,8 @@ process TRANSLONSCORER {
     def rv = null
     if (bigwigs instanceof List && bigwigs.size() >= 2) {
         // Try to detect by filename
-        fw = bigwigs.find { it.toString().toLowerCase().contains('forward') } ?: bigwigs[0]
-        rv = bigwigs.find { it.toString().toLowerCase().contains('reverse') } ?: bigwigs[1]
+        fw = bigwigs.find { value -> value.toString().toLowerCase().contains('forward') } ?: bigwigs[0]
+        rv = bigwigs.find { value -> value.toString().toLowerCase().contains('reverse') } ?: bigwigs[1]
     }
 
     def out_base = meta.id

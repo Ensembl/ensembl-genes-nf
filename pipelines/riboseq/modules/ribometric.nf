@@ -5,9 +5,6 @@ process RIBOMETRIC {
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
     container "ghcr.io/jackcurragh/ribometric:1.4.2"
 
-    publishDir "${params.outdir}/RiboMetric", mode: 'copy', pattern: "*RiboMetric.{html,json,csv}"
-    publishDir "${params.outdir}/RiboMetric/offsets", mode: 'copy', pattern: "*.{offsets.tsv,best_offset.txt}"
-
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
     path ribometric_annotation
@@ -19,7 +16,7 @@ process RIBOMETRIC {
     tuple val(meta), path("*RiboMetric.csv"), emit: csv
     tuple val(meta), path("*.offsets.tsv"), optional: true, emit: offsets_audit
     tuple val(meta), path("*.best_offset.txt"), emit: offsets
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

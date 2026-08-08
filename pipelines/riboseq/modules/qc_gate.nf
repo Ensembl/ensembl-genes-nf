@@ -5,8 +5,6 @@ process QC_GATE {
     conda "conda-forge::python=3.10 conda-forge::pyyaml"
     container "community.wave.seqera.io/library/pip_pyyaml_duckdb_pandas:5ede6677f4262ec2"
 
-    publishDir "${params.outdir}/qc_gate", mode: 'copy', pattern: "*.{offsets.pass.tsv,offsets.selected.tsv,offsets.good.tsv,offsets.great.tsv,pass_lengths.tsv,good.pass_lengths.tsv,great.pass_lengths.tsv,qc.json,qc_eval.tsv,qc_rule_set.tsv,gate_selection.tsv,translon.selected.txt}"
-
     input:
     val run_id
     tuple val(meta), path(best_offset), path(metrics)

@@ -7,14 +7,12 @@ process FASTQ_DL {
         'https://depot.galaxyproject.org/singularity/fastq-dl:2.0.1--pyhdfd78af_0' :
         'biocontainers/fastq-dl:2.0.1--pyhdfd78af_0' }"
 
-    // publishDir "${params.outdir}/fastq", mode: 'copy', pattern: '*.fastq.gz'
-
     input:
     tuple val(meta), val(run), path(needs_processing)
 
     output:
     tuple val(meta), path("*.fastq.gz"), emit: fastq
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

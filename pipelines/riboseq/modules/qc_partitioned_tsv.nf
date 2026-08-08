@@ -15,14 +15,12 @@ process QC_PARTITIONED_TSV {
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/python:3.11' :
         'quay.io/biocontainers/python:3.11' }"
-    publishDir "${params.outdir}/matrix_partition_qc", mode: 'copy'
-
     input:
     tuple val(meta), path(stats_json)
 
     output:
     tuple val(meta), path("${meta.id}.partition_qc.json"), emit: qc_json
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -72,14 +70,12 @@ process COLLECT_PARTITION_QC_MANIFEST {
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/python:3.11' :
         'quay.io/biocontainers/python:3.11' }"
-    publishDir "${params.outdir}/matrix_partition_qc", mode: 'copy'
-
     input:
     path(qc_jsons)
 
     output:
     path "partition_qc_manifest.tsv", emit: manifest
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     script:
     """

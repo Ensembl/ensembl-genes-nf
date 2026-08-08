@@ -16,8 +16,6 @@ process MERGE_GLOBAL_MATRIX {
     // Use conda profile or enable Wave for automatic container generation
     conda "conda-forge::python=3.11 conda-forge::numpy=1.26 conda-forge::scipy=1.12 conda-forge::zarr=2.18 conda-forge::numcodecs=0.12 conda-forge::polars=0.20 conda-forge::xxhash-python=3.4"
     container "oras://community.wave.seqera.io/library/pip_numpy_polars_scipy_pruned:ca114eb799eb08b3"
-    publishDir "${params.outdir}/global", mode: 'copy'
-
     input:
     path study_files  // Collected study files (flat: *_matrix.npz, *_vocab.pkl, *_sequences.txt.gz)
 
@@ -34,7 +32,7 @@ process MERGE_GLOBAL_MATRIX {
     path "global_config.json", emit: config
     path "global_matrix_manifest.json", emit: manifest, optional: true
     path "samples.json", emit: samples, optional: true
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -119,8 +117,6 @@ process MERGE_GLOBAL_MATRIX_PARTITIONED {
 
     conda "conda-forge::python=3.11 conda-forge::numpy=1.26 conda-forge::scipy=1.12 conda-forge::zarr=2.18 conda-forge::numcodecs=0.12 conda-forge::polars=0.20 conda-forge::xxhash-python=3.4"
     container "oras://community.wave.seqera.io/library/pip_numpy_polars_scipy_pruned:ca114eb799eb08b3"
-    publishDir "${params.outdir}/global_partitioned", mode: 'copy'
-
     input:
     tuple val(partition), val(partition_ordinal), val(partition_stride), path(study_files)
 
@@ -135,7 +131,7 @@ process MERGE_GLOBAL_MATRIX_PARTITIONED {
     tuple val(partition), path("global.${partition}_metadata.parquet"), emit: metadata
     tuple val(partition), path("global.${partition}_config.json"), emit: config
     tuple val(partition), path("global.${partition}_matrix_manifest.json"), emit: manifest, optional: true
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

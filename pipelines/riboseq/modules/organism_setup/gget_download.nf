@@ -11,8 +11,6 @@ process GGET_DOWNLOAD {
         'https://depot.galaxyproject.org/singularity/gget:0.29.0--pyhdfd78af_0' :
         'quay.io/biocontainers/gget:0.29.0--pyhdfd78af_0' }"
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     val(organism)
     val(ensembl_version)
@@ -21,7 +19,7 @@ process GGET_DOWNLOAD {
     output:
     path "*.fa",           emit: genome_fasta, optional: true
     path "*.gtf",          emit: genome_gtf, optional: true
-    path "versions.yml",   emit: versions
+    path "versions.yml",   emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

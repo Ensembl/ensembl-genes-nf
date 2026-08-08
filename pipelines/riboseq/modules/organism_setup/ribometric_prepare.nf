@@ -9,8 +9,6 @@ process RIBOMETRIC_PREPARE {
 
     container "ghcr.io/lapti-ucc/riboseqorg-nf-ribometric:latest"
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     path(gtf)
     path(fasta)
@@ -19,7 +17,7 @@ process RIBOMETRIC_PREPARE {
 
     output:
     path "*.tsv",          emit: ribometric_tsv
-    path "versions.yml",   emit: versions
+    path "versions.yml",   emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

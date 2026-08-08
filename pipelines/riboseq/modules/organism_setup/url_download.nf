@@ -10,8 +10,6 @@ process URL_DOWNLOAD {
 
     container 'oras://community.wave.seqera.io/library/curl:4bd76f737af7f9c0'
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     val(fasta_url)
     val(gtf_url)
@@ -21,13 +19,12 @@ process URL_DOWNLOAD {
     output:
     path "*.fa",           emit: genome_fasta
     path "*.gtf",          emit: genome_gtf
-    path "versions.yml",   emit: versions
+    path "versions.yml",   emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
     def fasta_filename = fasta_url.tokenize('/')[-1].replaceAll(/\.gz$/, '')
     def gtf_filename = gtf_url.tokenize('/')[-1].replaceAll(/\.gz$/, '')
     """

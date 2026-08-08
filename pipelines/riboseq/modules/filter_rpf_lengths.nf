@@ -5,15 +5,13 @@ process FILTER_RPF_LENGTHS {
     conda "conda-forge::python=3.10"
     container "ghcr.io/jackcurragh/get-rpf:0.3.0"
 
-    publishDir "${params.outdir}/getRPF/gated", mode: 'copy', pattern: "*.{collapsed.fa,summary.tsv}"
-
     input:
     tuple val(meta), path(trimmed_collapsed_fasta)
 
     output:
-    tuple val(meta), path("*_rpf_20_40.collapsed.fa"), emit: collapsed_fasta
-    tuple val(meta), path("*_rpf_20_40.summary.tsv"), emit: summary
-    path "versions.yml", emit: versions
+    tuple val(meta), path("*_rpf_20_40.collapsed.fa", arity: '1'), emit: collapsed_fasta
+    tuple val(meta), path("*_rpf_20_40.summary.tsv", arity: '1'), emit: summary
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

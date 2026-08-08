@@ -9,8 +9,6 @@ process BUILD_BOWTIE_INDEX {
 
     container "quay.io/biocontainers/bowtie:1.2.2--py36h2d50403_1"
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     path(fasta)
     val(index_name)
@@ -19,7 +17,7 @@ process BUILD_BOWTIE_INDEX {
 
     output:
     path "${index_name}_index",   emit: index
-    path "versions.yml",          emit: versions
+    path "versions.yml",          emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

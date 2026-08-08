@@ -7,8 +7,6 @@ process FILTER_BAM {
         'https://depot.galaxyproject.org/singularity/pysam:0.23.3--py39hdd5828d_0' :
         'biocontainers/pysam:0.23.3--py39hdd5828d_0' }"
 
-    publishDir "${params.outdir}/filtered_bams", mode: 'copy', pattern: "*.bam"
-
     input:
     tuple val(meta), path(bam)
 
@@ -18,7 +16,7 @@ process FILTER_BAM {
     tuple val(meta), path("${prefix}.multi_no_junction.bam"), emit: multi_no_junction
     tuple val(meta), path("${prefix}.multi_with_junction.bam"), emit: multi_with_junction
     tuple val(meta), path("${prefix}*.bam"), emit: all_bams
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -33,7 +31,7 @@ process FILTER_BAM {
     def eq_args = (eq_delta != null) ? "--keep-all-hits --eq-delta ${eq_delta} --score-tag ${score_tag}" : ''
 
     """
-    python3 $projectDir/bin/filter_bam.py \\
+    filter_bam.py \\
         --bam ${bam} \\
         --prefix ${prefix} \\
         --max-multimappers ${max_mm} \\

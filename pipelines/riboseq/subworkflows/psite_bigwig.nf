@@ -28,7 +28,7 @@ workflow PSITE_BIGWIG {
 
     main:
     SORT_TRANSCRIPTOME(
-        transcriptome_bam.map { meta, bam, bai -> tuple(meta, bam) }
+        transcriptome_bam.map { meta, bam, _bai -> tuple(meta, bam) }
     )
 
     INDEX_TRANSCRIPTOME(SORT_TRANSCRIPTOME.out.bam)
@@ -42,7 +42,7 @@ workflow PSITE_BIGWIG {
     // Step 2: Optionally filter genome BAMs
     if (params.filter_bams != false) {
         FILTER_BAM(
-            genome_bam.map { meta, bam, bai -> tuple(meta, bam) }
+            genome_bam.map { meta, bam, _bai -> tuple(meta, bam) }
         )
 
         // Flatten filtered BAMs into individual emissions with type annotation
@@ -52,7 +52,7 @@ workflow PSITE_BIGWIG {
                     def bam_name = bam.name
                     def bam_type = bam_name.replaceAll(/.*\.([^.]+)\.bam$/, '$1')
                     def meta_with_type = meta + [bam_type: bam_type]
-                    [meta_with_type, bam]
+                    tuple(meta_with_type, bam)
                 }
             }
 
@@ -63,7 +63,7 @@ workflow PSITE_BIGWIG {
         // Use original genome BAMs without filtering
         bams_to_process = genome_bam.map { meta, bam, bai ->
             def meta_with_type = meta + [bam_type: 'all']
-            [meta_with_type, bam, bai]
+            tuple(meta_with_type, bam, bai)
         }
     }
 
@@ -71,11 +71,11 @@ workflow PSITE_BIGWIG {
     // Normalize the key to the sample name before '.Aligned' to match across
     // sortedByCoord (genome) and toTranscriptome (transcriptome) naming conventions
     bam_with_offsets = bams_to_process
-        .map { meta, bam, bai -> [meta.id.split('\\.Aligned')[0], meta, bam, bai] }
+        .map { meta, bam, bai -> tuple(meta.id.split('\\.Aligned')[0], meta, bam, bai) }
         .join(
-            RIBOMETRIC.out.offsets.map { meta, offset -> [meta.id.split('\\.Aligned')[0], offset] }
+            RIBOMETRIC.out.offsets.map { meta, offset -> tuple(meta.id.split('\\.Aligned')[0], offset) }
         )
-        .map { key, bam_meta, bam, bai, offset -> [bam_meta, bam, bai, offset] }
+        .map { _key, bam_meta, bam, bai, offset -> tuple(bam_meta, bam, bai, offset) }
 
     // Step 4: Convert BAMs to BEDgraph using offsets
     BAM_TO_BED(bam_with_offsets)

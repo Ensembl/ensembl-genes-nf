@@ -9,8 +9,6 @@ process DOWNLOAD_SILVA {
 
     container 'oras://community.wave.seqera.io/library/curl:4bd76f737af7f9c0'
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     val(silva_url)
     val(organism)
@@ -18,13 +16,12 @@ process DOWNLOAD_SILVA {
 
     output:
     path "rRNA.fa",        emit: rrna_fasta
-    path "versions.yml",   emit: versions
+    path "versions.yml",   emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
     """
     # Download SILVA rRNA database
     # Common URLs:

@@ -23,7 +23,7 @@ process COLLAPSED_TO_TSV {
 
     output:
     tuple val(meta), path("${meta.id}.tsv"), emit: tsv
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -76,7 +76,7 @@ process COLLAPSED_TO_TSV_PARTITIONED {
     output:
     tuple val(meta), path("*.tsv"), emit: tsvs
     tuple val(meta), path("${meta.id}.partition_stats.json"), emit: stats
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

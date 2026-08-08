@@ -6,8 +6,6 @@ process RIBOWALTZ {
         'https://depot.galaxyproject.org/singularity/ribowaltz:2.0--r43hdfd78af_0' :
         'biocontainers/ribowaltz:2.0--r43hdfd78af_0' }"
 
-    publishDir "${params.outdir}/ribowaltz", mode: 'copy', pattern: "*.{tsv.gz,pdf}", saveAs: { filename -> filename.endsWith('.pdf') ? "offset_plot/${filename}" : filename }
-
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
     tuple val(meta2), path(gtf)
@@ -23,13 +21,12 @@ process RIBOWALTZ {
     tuple val(meta), path("*.codon_coverage_psite.tsv.gz"), optional: true, emit: codon_psite
     tuple val(meta), path("ribowaltz_qc/*.pdf"), optional: true, emit: qc_plots
     tuple val(meta), path("*.best_offset.txt"), optional: true, emit: best_offset
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def start_nts = params.ribowaltz_exclude_start ?: 0
     def stop_nts = params.ribowaltz_exclude_stop ?: 0

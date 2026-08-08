@@ -5,8 +5,6 @@ process CHECK_CLEANLINESS {
     conda "conda-forge::python=3.10 conda-forge::biopython"
     container "ghcr.io/jackcurragh/get-rpf:0.3.0"
 
-    publishDir "${params.outdir}/getRPF/check", mode: 'copy', pattern: "*_{report,rpf_checks}.txt"
-
     input:
     tuple val(meta), path(input_file)
     val count_pattern
@@ -14,7 +12,7 @@ process CHECK_CLEANLINESS {
     output:
     tuple val(meta), path("*_report.txt"), emit: report
     tuple val(meta), path("*rpf_checks.txt"), emit: rpf_checks
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

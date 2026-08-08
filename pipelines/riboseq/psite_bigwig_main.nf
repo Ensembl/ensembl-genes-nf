@@ -48,7 +48,7 @@ workflow {
             def bai = file("${bam}.bai")
             if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai")
             def meta = [id: bam.baseName.replaceAll(/\.sorted$/, '')]
-            [meta, bam, bai]
+            tuple(meta, bam, bai)
         }
 
     // Load transcriptome BAMs with their index files
@@ -58,7 +58,7 @@ workflow {
             def bai = file("${bam}.bai")
             if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai")
             def meta = [id: bam.baseName.replaceAll(/\.sorted$/, '').replaceAll(/\.toTranscriptome$/, '')]
-            [meta, bam, bai]
+            tuple(meta, bam, bai)
         }
 
     // Load reference files as value channels

@@ -22,8 +22,8 @@ workflow ANALYSIS {
         if (params.ribometric_use_ribowaltz_offsets) {
             // Optional legacy mode: calculate offsets with RiboWaltz, then pass
             // them into RiboMetric.
-            gtf_ch = gtf.map { [[ id: 'reference' ], it] }
-            fasta_ch = fasta.map { [[ id: 'reference' ], it] }
+            gtf_ch = gtf.map { value -> [[ id: 'reference' ], value] }
+            fasta_ch = fasta.map { value -> [[ id: 'reference' ], value] }
 
             RIBOWALTZ(
                 transcriptome_bam,
@@ -37,13 +37,13 @@ workflow ANALYSIS {
             ribometric_input = transcriptome_bam
                 .join(RIBOWALTZ.out.best_offset)
                 .map { meta, bam, bai, offset_file ->
-                    [ meta, bam, bai, offset_file ]
+                    tuple(meta, bam, bai, offset_file)
                 }
 
             RIBOMETRIC(
-                ribometric_input.map { meta, bam, bai, offset -> [ meta, bam, bai ] },
+                ribometric_input.map { meta, bam, bai, _offset -> tuple(meta, bam, bai) },
                 ribometric_annotation,
-                ribometric_input.map { meta, bam, bai, offset -> offset }
+                ribometric_input.map { _meta, _bam, _bai, offset -> offset }
             )
 
             psite_offsets_ch = RIBOWALTZ.out.psite_offsets
@@ -81,8 +81,8 @@ workflow ANALYSIS {
     } else {
         // No RiboMetric annotation: fall back to RiboWaltz offsets so
         // downstream BEDgraph generation can still proceed.
-        gtf_ch = gtf.map { [[ id: 'reference' ], it] }
-        fasta_ch = fasta.map { [[ id: 'reference' ], it] }
+        gtf_ch = gtf.map { value -> [[ id: 'reference' ], value] }
+        fasta_ch = fasta.map { value -> [[ id: 'reference' ], value] }
 
         RIBOWALTZ(
             transcriptome_bam,

@@ -7,8 +7,6 @@ process BOWTIE_RRNA_FILTER {
         'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/6f/6f5ca09fd5aab931d9b87c532c69e0122ce5ff8ec88732f906e12108d48425e9/data' :
         'community.wave.seqera.io/library/bowtie_htslib_samtools:e1e242368ffcb5d3' }"
 
-    publishDir "${params.outdir}/rrna_filter", mode: 'copy', pattern: "*_rrna_filter.log"
-
     input:
     tuple val(meta), path(reads)
     path index  // Bowtie index directory or files
@@ -16,7 +14,7 @@ process BOWTIE_RRNA_FILTER {
     output:
     tuple val(meta), path("*_no_rrna.fastq.gz"), emit: filtered_fastq
     tuple val(meta), path("*_rrna_filter.log"), emit: log
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

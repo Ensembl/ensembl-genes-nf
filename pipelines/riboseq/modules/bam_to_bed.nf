@@ -5,14 +5,12 @@ process BAM_TO_BED {
     conda "conda-forge::python=3.9 bioconda::pysam=0.23.3 bioconda::samtools=1.20 conda-forge::biopython conda-forge::numpy"
     container "ghcr.io/lapti-ucc/riboseqorg-nf-bam-to-bed:latest"
 
-    publishDir "${params.outdir}/bedgraphs", mode: 'copy', pattern: "*.sorted.bedgraph"
-
     input:
     tuple val(meta), path(bam), path(bai), path(offsets)
 
     output:
     tuple val(meta), path("*.sorted.bedgraph"), emit: bedgraph
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -24,7 +22,7 @@ process BAM_TO_BED {
     def prefix = task.ext.prefix ?: "${bam.baseName}${tier_suffix}"
     def is_stranded = args.contains('--stranded')
     """
-    python3 $projectDir/bin/bam_to_bed.py \\
+    bam_to_bed.py \\
         --bam ${bam} \\
         --offsets ${offsets} \\
         --prefix ${prefix} \\

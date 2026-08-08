@@ -16,19 +16,16 @@ workflow TRACKHUB_GENERATION {
     annotation_regex  // val: Optional regex for annotation type extraction
 
     main:
-    // Initialize version tracking
-    ch_versions = channel.empty()
-
     // Collect all BigWig files into a single list
     // First, extract just the BigWig paths from the tuples
     all_bigwigs = bigwigs
-        .map { meta, bw_files ->
+        .map { _meta, bw_files ->
             bw_files
         }
         .flatten()
         .mix(
             merged_bigwigs
-                .map { meta, bw_files ->
+                .map { _meta, bw_files ->
                     bw_files
                 }
                 .flatten()
@@ -44,9 +41,7 @@ workflow TRACKHUB_GENERATION {
         sample_regex,
         annotation_regex
     )
-    ch_versions = ch_versions.mix(GENERATE_TRACKHUB.out.versions)
 
     emit:
-    trackhub = GENERATE_TRACKHUB.out.trackhub   // path: trackhub directory
-    versions = ch_versions                       // channel: versions
+    GENERATE_TRACKHUB.out.trackhub              // path: trackhub directory
 }

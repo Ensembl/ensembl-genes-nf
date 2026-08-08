@@ -18,9 +18,6 @@ process FASTP {
         'https://depot.galaxyproject.org/singularity/fastp:0.23.4--h5f740d0_0' :
         'biocontainers/fastp:0.23.4--h5f740d0_0' }"
 
-    publishDir "${params.outdir}/fastp", mode: 'copy', pattern: '*.json'
-    publishDir "${params.outdir}/fastp", mode: 'copy', pattern: '*.html'
-
     input:
     tuple val(meta), path(reads)
     path adapter_fasta  // Optional: can be empty/placeholder file
@@ -29,7 +26,7 @@ process FASTP {
     tuple val(meta), path("*_trimmed.fastq.gz"), emit: trimmed_fastq
     tuple val(meta), path("*_fastp.json"), emit: json
     tuple val(meta), path("*_fastp.html"), emit: html
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

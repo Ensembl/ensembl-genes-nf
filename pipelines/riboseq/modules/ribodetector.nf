@@ -7,8 +7,6 @@ process RIBODETECTOR {
         'https://depot.galaxyproject.org/singularity/ribodetector:0.3.1--pyhdfd78af_0' :
         'biocontainers/ribodetector:0.3.1--pyhdfd78af_0' }"
 
-    publishDir "${params.outdir}/rrna_filter", mode: 'copy', pattern: "*_rrna_filter.log"
-
     input:
     tuple val(meta), path(reads)
 
@@ -16,7 +14,7 @@ process RIBODETECTOR {
     tuple val(meta), path("*_no_rrna.fastq.gz"), emit: filtered_fastq
     tuple val(meta), path("*_rrna.fastq.gz"), emit: rrna_fastq
     tuple val(meta), path("*_rrna_filter.log"), emit: log
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

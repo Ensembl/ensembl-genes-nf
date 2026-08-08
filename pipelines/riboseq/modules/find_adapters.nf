@@ -5,15 +5,14 @@ process FIND_ADAPTERS {
     conda "conda-forge::python=3.11 conda-forge::biopython conda-forge::pandas"
     container "ghcr.io/lapti-ucc/riboseqorg-nf-python-pandas-sqlite:latest"
 
-    publishDir "${params.outdir}/adapter_reports", mode: 'copy', pattern: "*_adapter_report.fa"
-
     input:
     tuple val(meta), path(raw_fastq)
     tuple val(meta2), path(fastqc_data)
+    path adapter_list
 
     output:
     tuple val(meta), path("*_adapter_report.fa"), emit: adapter_report
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -22,16 +21,16 @@ process FIND_ADAPTERS {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    python3 $projectDir/bin/get_adapters.py \\
+    get_adapters.py \\
         -i $fastqc_data \\
-        -a $projectDir/resources/adapter_list.tsv \\
+        -a ${adapter_list} \\
         -o "${prefix}_adapter_report.fa" \\
         $args
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        get_adapters.py: \$(python3 $projectDir/bin/get_adapters.py --version 2>&1 | sed 's/get_adapters.py v//g')
+        get_adapters.py: \$(get_adapters.py --version 2>&1 | sed 's/get_adapters.py v//g')
     END_VERSIONS
     """
 

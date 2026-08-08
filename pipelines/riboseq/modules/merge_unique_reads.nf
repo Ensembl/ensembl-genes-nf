@@ -5,11 +5,6 @@ process MERGE_UNIQUE_READS {
     conda "conda-forge::python=3.10 conda-forge::polars=0.20.0"
     container 'community.wave.seqera.io/library/pip_polars:50bb6fae7997c472' 
 
-    publishDir "${params.outdir}/unique_reads", mode: 'copy', pattern: "unique_reads*"
-    publishDir "${params.outdir}/unique_reads", mode: 'copy', pattern: "count_matrix*"
-    publishDir "${params.outdir}/unique_reads", mode: 'copy', pattern: "read_mapping*"
-    publishDir "${params.outdir}/unique_reads", mode: 'copy', pattern: "processing_summary*"
-
     input:
     path collapsed_fastas       // List of all collapsed FASTA files from current run
     path previous_index         // Optional: previous unique_reads.fa, count_matrix.parquet, read_mapping.json
@@ -20,7 +15,7 @@ process MERGE_UNIQUE_READS {
     path "count_matrix*.parquet", emit: count_matrix
     path "read_mapping*.json", emit: read_mapping
     path "processing_summary*.json", emit: summary
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

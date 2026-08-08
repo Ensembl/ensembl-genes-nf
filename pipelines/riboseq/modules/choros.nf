@@ -4,8 +4,6 @@ process CHOROS {
 
     container "${params.choros_container}"
 
-    publishDir "${params.outdir}/choros", mode: 'copy', pattern: "*.choros_*"
-
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bai), path(best_offsets)
     path ribometric_annotation
@@ -17,7 +15,7 @@ process CHOROS {
     tuple val(meta), path("*.choros_metrics.tsv"), emit: metrics
     tuple val(meta), path("*.choros_bam_metrics.tsv"), emit: bam_metrics
     tuple val(meta), path("*.choros_offsets.tsv"), emit: offset_rules
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     params.run_choros
@@ -30,18 +28,18 @@ process CHOROS {
     """
     samtools collate -@ $task.cpus -o ${prefix}.collated.bam ${transcriptome_bam}
 
-    python3 $projectDir/bin/prepare_choros_bam.py \
+    prepare_choros_bam.py \
         --bam ${prefix}.collated.bam \
         --output ${prefix}.choros_input.bam \
         --metrics ${prefix}.choros_bam_metrics.tsv
 
-    python3 $projectDir/bin/prepare_choros_inputs.py \
+    prepare_choros_inputs.py \
         --annotation ${ribometric_annotation} \
         --offsets ${best_offsets} \
         --lengths-output ${prefix}.choros_lengths.tsv \
         --offsets-output ${prefix}.choros_offsets.tsv
 
-    Rscript $projectDir/bin/run_choros.R \
+    run_choros.R \
         ${prefix}.choros_input.bam \
         ${transcriptome_fasta} \
         ${prefix}.choros_lengths.tsv \

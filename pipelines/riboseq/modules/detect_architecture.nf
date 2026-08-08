@@ -5,8 +5,6 @@ process DETECT_ARCHITECTURE {
     conda "conda-forge::python=3.10 conda-forge::biopython"
     container "ghcr.io/jackcurragh/get-rpf:0.3.0"
 
-    publishDir "${params.outdir}/getRPF/detect", mode: 'copy', pattern: "*.{seqspec.yaml,adapters.fa,extraction_report.json,fastq}"
-
     input:
     tuple val(meta), path(input_file)
 
@@ -15,7 +13,7 @@ process DETECT_ARCHITECTURE {
     tuple val(meta), path("*.adapters.fa"), emit: adapters
     tuple val(meta), path("*.extraction_report.json"), emit: report
     tuple val(meta), path("*_rpfs.fastq"), emit: rpfs, optional: true
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

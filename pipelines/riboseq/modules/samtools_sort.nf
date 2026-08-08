@@ -15,7 +15,7 @@ process SAMTOOLS_SORT {
 
     output:
     tuple val(meta), path("*.sorted.bam"), emit: bam
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

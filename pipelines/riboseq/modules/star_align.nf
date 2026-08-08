@@ -7,26 +7,19 @@ process STAR_ALIGN {
         'https://depot.galaxyproject.org/singularity/star:2.7.11b--h43eeafb_1' :
         'biocontainers/star:2.7.11b--h43eeafb_1' }"
 
-    // BAMs are intermediate files: the genome BAM is indexed directly and the
-    // transcriptome BAM is sorted/indexed downstream. Preserve STAR diagnostics
-    // for audit/QC while leaving alignment BAMs in the internal dataflow.
-    publishDir path: "${params.outdir}/star_align", mode: 'copy', saveAs: {
-        filename -> (filename.contains('.Log.') || filename.endsWith('.SJ.out.tab')) ? "logs/$filename" : null
-    }
-
     input:
     tuple val(meta), path(reads)
     path index
     path gtf
 
     output:
-    tuple val(meta), path("*.Aligned.sortedByCoord.out.bam"), emit: bam
-    tuple val(meta), path("*.Aligned.toTranscriptome.out.bam"), emit: transcriptome_bam
-    tuple val(meta), path("*.Log.final.out"), emit: log
-    tuple val(meta), path("*.Log.out"), emit: log_out
-    tuple val(meta), path("*.Log.progress.out"), emit: log_progress
-    tuple val(meta), path("*.SJ.out.tab"), emit: splice_junctions
-    path "versions.yml", emit: versions
+    tuple val(meta), path("*.Aligned.sortedByCoord.out.bam", arity: '1'), emit: bam
+    tuple val(meta), path("*.Aligned.toTranscriptome.out.bam", arity: '1'), emit: transcriptome_bam
+    tuple val(meta), path("*.Log.final.out", arity: '1'), emit: log
+    tuple val(meta), path("*.Log.out", arity: '1'), emit: log_out
+    tuple val(meta), path("*.Log.progress.out", arity: '1'), emit: log_progress
+    tuple val(meta), path("*.SJ.out.tab", arity: '1'), emit: splice_junctions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

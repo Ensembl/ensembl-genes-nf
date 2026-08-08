@@ -9,8 +9,6 @@ process SAMPLE_COMPLETENESS {
     tag "sample-completeness"
     label 'process_light'
 
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy', pattern: 'sample_status.tsv'
-
     input:
     val expected_runs
     val acquired_runs
@@ -21,10 +19,10 @@ process SAMPLE_COMPLETENESS {
     path 'sample_status.tsv', emit: status
 
     script:
-    def expected_text = expected_runs.unique().sort().collect { it.toString() }.join('\n')
-    def acquired_text = acquired_runs.unique().sort().collect { it.toString() }.join('\n')
-    def aligned_text = aligned_runs.unique().sort().collect { it.toString() }.join('\n')
-    def qc_text = qc_runs.unique().sort().collect { it.toString() }.join('\n')
+    def expected_text = expected_runs.unique().sort().collect { value -> value.toString() }.join('\n')
+    def acquired_text = acquired_runs.unique().sort().collect { value -> value.toString() }.join('\n')
+    def aligned_text = aligned_runs.unique().sort().collect { value -> value.toString() }.join('\n')
+    def qc_text = qc_runs.unique().sort().collect { value -> value.toString() }.join('\n')
     """
     cat > expected_runs.txt <<'EOF_EXPECTED'
 ${expected_text}

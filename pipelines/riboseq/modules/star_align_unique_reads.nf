@@ -15,8 +15,6 @@ process STAR_ALIGN_UNIQUE_READS {
     conda "bioconda::star=2.7.11a bioconda::samtools=1.19"
     container "oras://community.wave.seqera.io/library/samtools_star:1b5dd3ca5b761fb8"
 
-    publishDir "${params.outdir}/global", mode: 'copy'
-
     input:
     path fasta           // unique_reads.fasta
     path star_index      // STAR genome index
@@ -25,7 +23,7 @@ process STAR_ALIGN_UNIQUE_READS {
     path "unique_reads.bam", emit: bam
     path "unique_reads.bam.bai", emit: bai
     path "unique_reads_Log.final.out", emit: log
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     (task.ext.when == null || task.ext.when) && (params.matrix_align_unique_reads == null || params.matrix_align_unique_reads)
@@ -90,8 +88,6 @@ process STAR_ALIGN_UNIQUE_READS_PARTITIONED {
     conda "bioconda::star=2.7.11a bioconda::samtools=1.19"
     container "oras://community.wave.seqera.io/library/samtools_star:1b5dd3ca5b761fb8"
 
-    publishDir "${params.outdir}/global_partitioned", mode: 'copy'
-
     input:
     tuple val(partition), path(fasta)
     path star_index
@@ -100,7 +96,7 @@ process STAR_ALIGN_UNIQUE_READS_PARTITIONED {
     tuple val(partition), path("unique_reads.${partition}.bam"), emit: bam
     tuple val(partition), path("unique_reads.${partition}.bam.bai"), emit: bai
     tuple val(partition), path("unique_reads.${partition}_Log.final.out"), emit: log
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     (task.ext.when == null || task.ext.when) && (params.matrix_align_unique_reads == null || params.matrix_align_unique_reads)

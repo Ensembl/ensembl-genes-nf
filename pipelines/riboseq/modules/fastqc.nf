@@ -7,19 +7,15 @@ process FASTQC {
         'https://depot.galaxyproject.org/singularity/fastqc:0.12.1--hdfd78af_0' :
         'biocontainers/fastqc:0.12.1--hdfd78af_0' }"
 
-    publishDir "${params.outdir}/fastqc", mode: 'copy', saveAs: { filename ->
-        filename.endsWith(".html") ? filename : null
-    }
-
     input:
     tuple val(meta), path(fastq)
     path adapter_list
 
     output:
-    tuple val(meta), path("*_fastqc.html"), emit: html
-    tuple val(meta), path("*_fastqc.zip"), emit: zip
-    tuple val(meta), path("*/*_fastqc_data.txt"), emit: txt
-    path "versions.yml", emit: versions
+    tuple val(meta), path("*_fastqc.html", arity: '1'), emit: html
+    tuple val(meta), path("*_fastqc.zip", arity: '1'), emit: zip
+    tuple val(meta), path("*/*_fastqc_data.txt", arity: '1'), emit: txt
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

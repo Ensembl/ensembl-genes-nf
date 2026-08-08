@@ -9,8 +9,6 @@ process GENERATE_TRACKHUB {
 
     container "community.wave.seqera.io/library/pip_trackhub:b1b9686e5cada428"
 
-    publishDir "${params.outdir}/trackhubs", mode: 'copy'
-
     input:
     path(bigwig_files)
     val(hub_name)
@@ -21,14 +19,14 @@ process GENERATE_TRACKHUB {
 
     output:
     path "trackhub_output/**",   emit: trackhub
-    path "versions.yml",         emit: versions
+    path "versions.yml",         emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
-    def bigwig_paths = bigwig_files ? "--bigwig " + bigwig_files.collect { "'$it'" }.join(' ') : ''
+    def bigwig_paths = bigwig_files ? "--bigwig " + bigwig_files.collect { value -> "'$value'" }.join(' ') : ''
     def sample_regex_param = sample_regex ? "--sample-regex '${sample_regex}'" : ''
     def annotation_regex_param = annotation_regex ? "--annotation-regex '${annotation_regex}'" : ''
     """

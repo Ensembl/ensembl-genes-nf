@@ -5,8 +5,6 @@ process COLLECT_QC_METRICS {
     conda "conda-forge::python=3.10"
     container "community.wave.seqera.io/library/pip_pyyaml_duckdb_pandas:5ede6677f4262ec2"
     
-    publishDir "${params.outdir}/qc_gate", mode: 'copy', pattern: "*.qc_*.tsv"
-
     input:
     val run_id
     tuple val(meta), path(star_log), path(getrpf_report), path(getrpf_checks), path(ribometric_json), path(ribometric_csv), path(offsets)

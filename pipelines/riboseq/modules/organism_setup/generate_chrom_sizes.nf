@@ -9,8 +9,6 @@ process GENERATE_CHROM_SIZES {
 
     container "quay.io/biocontainers/samtools:0.1.19--2"
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     path(genome_fasta)
     val(organism)
@@ -18,13 +16,12 @@ process GENERATE_CHROM_SIZES {
 
     output:
     path "*.chrom.sizes",   emit: chrom_sizes
-    path "versions.yml",    emit: versions
+    path "versions.yml",    emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
     def prefix = genome_fasta.baseName
     """
     # Generate .fai index file

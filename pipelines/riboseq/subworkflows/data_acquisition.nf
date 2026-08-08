@@ -54,7 +54,7 @@ workflow DATA_ACQUISITION {
                 study_id: row.study_accession ?: 'unknown',  // Used for matrix grouping
                 study_accession: row.study_accession ?: 'unknown',  // Keep for backwards compat
             ]
-            [ meta, row.Run ]
+            tuple(meta, row.Run)
         }
 
     // Locate existing collapsed reads or runs that need processing
@@ -62,11 +62,11 @@ workflow DATA_ACQUISITION {
 
     // Preserve the complete expected run set so ignored sample-level failures
     // can be reported instead of disappearing from downstream joins.
-    expected_samples = samples_ch.map { meta, id -> id }
+    expected_samples = samples_ch.map { _meta, id -> id }
 
     // Log runs that need processing
     LOCATE.out.needs_processing
-        .map { meta, id, file -> id }
+        .map { _meta, id, _file -> id }
         .collectFile(name: "${params.outdir}/runs_needing_processing.txt", newLine: true)
 
     // Handle different combinations of fetch and force_fetch
@@ -76,7 +76,7 @@ workflow DATA_ACQUISITION {
             needs_processing = LOCATE.out.needs_processing
                 .mix(
                     LOCATE.out.collapsed_reads.map { meta, collapsed_file ->
-                        [meta, meta.id, collapsed_file]
+                        tuple(meta, meta.id, collapsed_file)
                     }
                 )
             collapsed_reads = channel.empty()
@@ -128,25 +128,26 @@ workflow DATA_ACQUISITION {
             } else if (params.fastp_adapter_sequence) {
                 // Explicit sequence - pass placeholder, module uses param
                 fastq_with_adapter = FASTQ_DL.out.fastq
-                    .map { meta, fastq -> [ meta, fastq, file('NO_ADAPTER_FILE') ] }
+                    .map { meta, fastq -> tuple(meta, fastq, file('NO_ADAPTER_FILE')) }
             } else if (params.adapter_detection_method == 'fastqc_tophit') {
                 // Use FASTQC to find top-hit adapter
                 FIND_ADAPTERS(
                     FASTQ_DL.out.fastq,
-                    FASTQC.out.txt
+                    FASTQC.out.txt,
+                    file("${projectDir}/resources/adapter_list.tsv")
                 )
                 fastq_with_adapter = FASTQ_DL.out.fastq
                     .join(FIND_ADAPTERS.out.adapter_report)
             } else {
                 // fastp auto-detection (default for traditional)
                 fastq_with_adapter = FASTQ_DL.out.fastq
-                    .map { meta, fastq -> [ meta, fastq, file('NO_ADAPTER_FILE') ] }
+                    .map { meta, fastq -> tuple(meta, fastq, file('NO_ADAPTER_FILE')) }
             }
 
             // Unpack and run FASTP with appropriate inputs
             FASTP(
-                fastq_with_adapter.map { meta, fastq, adapter -> [ meta, fastq ] },
-                fastq_with_adapter.map { meta, fastq, adapter -> adapter }.first()
+                fastq_with_adapter.map { meta, fastq, _adapter -> tuple(meta, fastq) },
+                fastq_with_adapter.map { _meta, _fastq, adapter -> adapter }.first()
             )
 
             // Filter rRNA contamination (if explicitly enabled)

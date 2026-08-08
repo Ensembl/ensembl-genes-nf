@@ -7,34 +7,18 @@ process BEDGRAPH_TO_BIGWIG {
         'https://depot.galaxyproject.org/singularity/ucsc-bedgraphtobigwig:469--h9b8f530_0' :
         'biocontainers/ucsc-bedgraphtobigwig:469--h9b8f530_0' }"
 
-    // Keep tier-qualified names inside the workflow so good/great tracks cannot
-    // collide when staged together, but expose cleaner published filenames.
-    // The tier remains explicit in the output directory and in tuple metadata.
-    publishDir {
-        meta.track_tier ? "${params.outdir}/bigwigs/${meta.track_tier}" : "${params.outdir}/bigwigs"
-    }, mode: 'copy', pattern: "*.bw", saveAs: { filename ->
-        if (!meta.track_tier) {
-            return filename
-        }
-
-        filename
-            .replace(".${meta.track_tier}.", ".")
-            .replace("_${meta.track_tier}_", "_")
-    }
-
     input:
     tuple val(meta), path(bedgraph)
     path chrom_sizes
 
     output:
     tuple val(meta), path("*.bw"), emit: bigwig
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def args = task.ext.args ?: ''
     // Handle both single and multiple bedgraph files (stranded output)
     if (bedgraph instanceof List) {
         // Stranded output: process each bedgraph file

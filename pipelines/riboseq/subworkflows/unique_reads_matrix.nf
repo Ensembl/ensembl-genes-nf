@@ -42,14 +42,14 @@ workflow UNIQUE_READS_MATRIX {
 
         COLLAPSED_TO_TSV_PARTITIONED(samples)
         QC_PARTITIONED_TSV(COLLAPSED_TO_TSV_PARTITIONED.out.stats)
-        COLLECT_PARTITION_QC_MANIFEST(QC_PARTITIONED_TSV.out.qc_json.map { meta, qc_json -> qc_json }.collect())
+        COLLECT_PARTITION_QC_MANIFEST(QC_PARTITIONED_TSV.out.qc_json.map { _meta, qc_json -> qc_json }.collect())
 
         partitioned_tsvs = COLLAPSED_TO_TSV_PARTITIONED.out.tsvs
             .join(QC_PARTITIONED_TSV.out.qc_json)
-            .filter { meta, tsvs, qc_json ->
+            .filter { _meta, _tsvs, qc_json ->
                 new groovy.json.JsonSlurper().parse(qc_json.toFile()).passed
             }
-            .flatMap { meta, tsvs, qc_json ->
+            .flatMap { meta, tsvs, _qc_json ->
                 def files = tsvs instanceof List ? tsvs : [tsvs]
                 files.collect { tsv ->
                     def name = tsv.name
@@ -79,7 +79,7 @@ workflow UNIQUE_READS_MATRIX {
         partition_study_files = partitioned_matrix_keyed
             .join(partitioned_sequences_keyed)
             .join(partitioned_metadata_keyed)
-            .map { key, partition, study_id, matrix, sequences, metadata ->
+            .map { _key, partition, _study_id, matrix, sequences, metadata ->
                 tuple(partition, [matrix, sequences, metadata])
             }
             .groupTuple(by: 0)
@@ -117,12 +117,6 @@ workflow UNIQUE_READS_MATRIX {
         unique_reads_bam_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.bam : channel.empty()
         unique_reads_bai_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.bai : channel.empty()
         unique_reads_log_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.log : channel.empty()
-        versions_ch = COLLAPSED_TO_TSV_PARTITIONED.out.versions.first()
-            .mix(QC_PARTITIONED_TSV.out.versions.first())
-            .mix(COLLECT_PARTITION_QC_MANIFEST.out.versions.first())
-            .mix(BUILD_STUDY_MATRIX_PARTITIONED.out.versions.first())
-            .mix(MERGE_GLOBAL_MATRIX_PARTITIONED.out.versions)
-            .mix(params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.versions : channel.empty())
     } else {
         COLLAPSED_TO_TSV(samples)
 
@@ -145,7 +139,7 @@ workflow UNIQUE_READS_MATRIX {
         study_files = BUILD_STUDY_MATRIX.out.matrix
             .join(BUILD_STUDY_MATRIX.out.sequences)
             .join(BUILD_STUDY_MATRIX.out.metadata)
-            .map { study_id, matrix, sequences, metadata ->
+            .map { _study_id, matrix, sequences, metadata ->
                 [matrix, sequences, metadata]
             }
             .flatten()
@@ -175,10 +169,6 @@ workflow UNIQUE_READS_MATRIX {
         unique_reads_bam_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.bam : channel.empty()
         unique_reads_bai_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.bai : channel.empty()
         unique_reads_log_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.log : channel.empty()
-        versions_ch = COLLAPSED_TO_TSV.out.versions.first()
-            .mix(BUILD_STUDY_MATRIX.out.versions.first())
-            .mix(MERGE_GLOBAL_MATRIX.out.versions)
-            .mix(params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.versions : channel.empty())
     }
 
     emit:
@@ -208,6 +198,4 @@ workflow UNIQUE_READS_MATRIX {
     unique_reads_bai = unique_reads_bai_ch
     unique_reads_log = unique_reads_log_ch
 
-    // Version tracking
-    versions = versions_ch
 }

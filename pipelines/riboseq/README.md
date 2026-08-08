@@ -8,6 +8,47 @@ Ribosome profiling pipeline: organism setup, data acquisition/collapsing, QC, ST
 nextflow run main.nf -stub --outdir results
 ```
 
+## Reusing an existing run context
+
+For a rerun, generate a small config from the reference bundle, sample sheet,
+and existing collapsed-read directory. This validates the paths and records
+the resolved inputs in `pipeline_info/run_context.json`; processing choices
+remain explicit command-line options.
+
+If the reference directory contains the generated `params.config`, it is read
+automatically. Otherwise the script discovers the reference files below the
+directory. A generic species parameter file containing only settings such as
+`base` and `genome_version` is not a reference bundle and will be rejected;
+point `--reference-config` at the generated config or use the directory that
+contains the actual organism-setup outputs.
+
+```bash
+python3 pipelines/riboseq/bin/make_riboseq_run_config.py \
+  --reference-dir "$REF" \
+  --collapsed-read-path "$OLD_COLLAPSED" \
+  --sample-sheet "$MANIFEST" \
+  --outdir "$OUT" \
+  --output "$OUT/pipeline_info/run_context.config"
+
+export NXF_VER=26.04.6
+nextflow run pipelines/riboseq/main.nf \
+  -profile slurm \
+  -resume \
+  -work-dir "$WORK" \
+  -c "$OUT/pipeline_info/run_context.config" \
+  --fetch true \
+  --force_fetch true \
+  --rpf_extraction_method getrpf \
+  --getrpf_command extract \
+  --run_matrix_mode false
+```
+
+Use the same work directory for retries so Nextflow can reuse completed tasks.
+The input-resolution table is published under
+`$OUT/pipeline_info/input_resolution/`. Published sample outputs are not used
+as pipeline inputs: `-resume` is the mechanism for task reuse, while
+`storeDir` should be reserved for stable reference/cache data.
+
 ## Structure
 
 ```

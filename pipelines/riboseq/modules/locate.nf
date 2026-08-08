@@ -8,6 +8,7 @@ process LOCATE {
     output:
     tuple val(meta), path("${run}.collapsed.fa.gz"), emit: collapsed_reads, optional: true
     tuple val(meta), val(run), path("${run}_needs_processing"), emit: needs_processing, optional: true
+    path "${run}_input_resolution.tsv", arity: '1', emit: resolution
 
     when:
     task.ext.when == null || task.ext.when
@@ -39,9 +40,13 @@ process LOCATE {
             *) gzip -c "\$found" > "${run}.collapsed.fa.gz" ;;
         esac
         echo "Found collapsed file for $run: \$found"
+        printf 'Run\\tStatus\\tPath\\n' > "${run}_input_resolution.tsv"
+        printf '%s\\tFOUND\\t%s\\n' "$run" "\$found" >> "${run}_input_resolution.tsv"
     else
         echo "Collapsed file not found for $run. Needs processing."
         touch "${run}_needs_processing"
+        printf 'Run\\tStatus\\tPath\\n' > "${run}_input_resolution.tsv"
+        printf '%s\\tNEEDS_PROCESSING\\t\\n' "$run" >> "${run}_input_resolution.tsv"
     fi
     """
 
@@ -49,5 +54,6 @@ process LOCATE {
     """
     touch "${run}.collapsed.fa.gz"
     touch "${run}_needs_processing"
+    printf 'Run\\tStatus\\tPath\\n%s\\tSTUB\\t\\n' "${run}" > "${run}_input_resolution.tsv"
     """
 }

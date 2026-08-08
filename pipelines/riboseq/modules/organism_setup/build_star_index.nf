@@ -9,8 +9,6 @@ process BUILD_STAR_INDEX {
 
     container "quay.io/biocontainers/star:2.7.6a--0"
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     path(genome_fasta)
     path(gtf)
@@ -19,7 +17,7 @@ process BUILD_STAR_INDEX {
 
     output:
     path "star_index",     emit: index
-    path "versions.yml",   emit: versions
+    path "versions.yml",   emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

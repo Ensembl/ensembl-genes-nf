@@ -9,8 +9,6 @@ process EXTRACT_RRNA {
 
     container "quay.io/biocontainers/gffread:0.9.12--0"
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     path(gtf)
     path(genome_fasta)
@@ -19,7 +17,7 @@ process EXTRACT_RRNA {
 
     output:
     path "rRNA.fa",        emit: rrna_fasta, optional: true
-    path "versions.yml",   emit: versions
+    path "versions.yml",   emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

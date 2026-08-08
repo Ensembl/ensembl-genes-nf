@@ -5,14 +5,12 @@ process COLLAPSE_FASTQ {
     conda "conda-forge::python=3.10 pip::riboseq-dp-tools=0.1.10"
     container "ghcr.io/lapti-ucc/riboseqorg-nf-rdp-tools:latest"
 
-    publishDir "${params.outdir}/collapsed_fa", mode: 'copy', pattern: "*collapsed.fa"
-
     input:
     tuple val(meta), path(fastq)
 
     output:
     tuple val(meta), path("*collapsed.fa"), emit: collapsed_fasta
-    path "versions.yml", emit: versions
+    path "versions.yml", emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

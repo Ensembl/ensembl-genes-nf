@@ -23,7 +23,7 @@ workflow POST_PROCESSING {
     main:
     // Filter genome BAM by mapping quality and multiplicity
     FILTER_BAM(
-        genome_bam.map { meta, bam, bai -> tuple(meta, bam) }
+        genome_bam.map { meta, bam, _bai -> tuple(meta, bam) }
     )
 
     // Flatten all 4 filtered BAM outputs into individual emissions with type annotation
@@ -38,7 +38,7 @@ workflow POST_PROCESSING {
 
                 // Add bam_type to meta for tracking
                 def meta_with_type = meta + [bam_type: bam_type]
-                [meta_with_type, bam]
+                tuple(meta_with_type, bam)
             }
         }
 
@@ -51,12 +51,12 @@ workflow POST_PROCESSING {
     // Match by sample ID (meta.id) regardless of bam_type
     bam_with_offsets = all_bams_indexed
         .combine(offsets)
-        .filter { bam_meta, bam, bai, offset_meta, offset ->
+        .filter { bam_meta, _bam, _bai, offset_meta, _offset ->
             bam_meta.id == offset_meta.id
         }
         .map { bam_meta, bam, bai, offset_meta, offset ->
             def tier = offset_meta.track_tier ?: 'selected'
-            [bam_meta + [track_tier: tier], bam, bai, offset]
+            tuple(bam_meta + [track_tier: tier], bam, bai, offset)
         }
 
     BAM_TO_BED(bam_with_offsets)
@@ -81,7 +81,7 @@ workflow POST_PROCESSING {
         .map { track_tier, bam_type, bedgraph_list ->
             // Create meta with bam_type as id
             def meta = [id: "merged_${track_tier}_${bam_type}", track_tier: track_tier, bam_type: bam_type]
-            [meta, bedgraph_list]
+            tuple(meta, bedgraph_list)
         }
 
     // Merge bedgraphs separately for each BAM type
@@ -97,7 +97,7 @@ workflow POST_PROCESSING {
     // Only run if explicitly enabled via params.enable_unique_reads_tracking
     if (params.enable_unique_reads_tracking) {
         all_collapsed_fastas = collapsed_fastas
-            .map { meta, fasta -> fasta }
+            .map { _meta, fasta -> fasta }
             .collect()
 
         // Determine mode and previous index

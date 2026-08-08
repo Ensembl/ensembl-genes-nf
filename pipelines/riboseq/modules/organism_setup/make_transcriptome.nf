@@ -9,8 +9,6 @@ process MAKE_TRANSCRIPTOME {
 
     container "quay.io/biocontainers/gffread:0.9.12--0"
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     path(gtf)
     path(fasta)
@@ -19,7 +17,7 @@ process MAKE_TRANSCRIPTOME {
 
     output:
     path "*.transcripts.fa",   emit: transcripts
-    path "versions.yml",       emit: versions
+    path "versions.yml",       emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when

@@ -9,8 +9,6 @@ process GENERATE_CONFIG {
 
     container "quay.io/biocontainers/python:3.11"
 
-    publishDir "${params.outdir}/organism_setup", mode: 'copy'
-
     input:
     path(star_index)
     path(bowtie_index)
@@ -25,7 +23,7 @@ process GENERATE_CONFIG {
 
     output:
     path "riboseq_params.config",   emit: config
-    path "versions.yml",            emit: versions
+    path "versions.yml",            emit: versions, topic: versions
 
     when:
     task.ext.when == null || task.ext.when
