@@ -3,8 +3,8 @@ process COLLECT_ORF_CALLS {
     publishDir "${params.outdir}/01_consensus", mode: 'copy'
 
     input:
-    path standardized_tsvs
-    path bed12s
+    path standardized_tsvs, stageAs: 'standardized/*'
+    path bed12s, stageAs: 'bed12/*'
     path genome_fasta
     val min_caller_agreement
 
@@ -18,8 +18,8 @@ process COLLECT_ORF_CALLS {
     script:
     """
     mkdir -p caller_inputs
-    for f in ${standardized_tsvs}; do cp "\$f" caller_inputs/; done
-    for f in ${bed12s}; do cp "\$f" caller_inputs/; done
+    for f in standardized/*; do cp "\$f" caller_inputs/; done
+    for f in bed12/*; do cp "\$f" caller_inputs/; done
     consensus_translons.py \\
         --input-dir caller_inputs \\
         --genome-fasta ${genome_fasta} \\

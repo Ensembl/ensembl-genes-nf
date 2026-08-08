@@ -17,32 +17,35 @@ workflow TRANSLON_ANALYSIS {
     )
 
     gtf = channel.value(file(params.gtf, checkIfExists: true))
+    orf_gtf = params.canonical_gtf
+        ? channel.value(file(params.canonical_gtf, checkIfExists: true))
+        : gtf
     fasta = channel.value(file(params.fasta, checkIfExists: true))
     tx = LOAD_RIBOSEQ_OUTPUTS.out.transcriptome
     gn = LOAD_RIBOSEQ_OUTPUTS.out.genome
 
     if (params.tool in ['ribocode', 'all', 'all-wave1']) {
-        PREP_RIBOCODE(tx, gtf, fasta)
+        PREP_RIBOCODE(tx, orf_gtf, fasta)
         RUN_RIBOCODE(PREP_RIBOCODE.out.prepared)
         PARSE_RIBOCODE(RUN_RIBOCODE.out.raw)
     }
     if (params.tool in ['ribotricer', 'all', 'all-wave1']) {
-        PREP_RIBOTRICER(tx, gtf, fasta)
+        PREP_RIBOTRICER(tx, orf_gtf, fasta)
         RUN_RIBOTRICER(PREP_RIBOTRICER.out.prepared)
         PARSE_RIBOTRICER(RUN_RIBOTRICER.out.raw)
     }
     if (params.tool in ['ribotaper', 'all', 'all-wave1']) {
-        PREP_RIBOTAPER(gn, gtf, fasta)
+        PREP_RIBOTAPER(gn, orf_gtf, fasta)
         RUN_RIBOTAPER(PREP_RIBOTAPER.out.prepared)
         PARSE_RIBOTAPER(RUN_RIBOTAPER.out.raw)
     }
     if (params.tool in ['orfquant', 'all', 'all-wave1']) {
-        PREP_ORFQUANT(tx, gtf, fasta)
+        PREP_ORFQUANT(tx, orf_gtf, fasta)
         RUN_ORFQUANT(PREP_ORFQUANT.out.prepared)
         PARSE_ORFQUANT(RUN_ORFQUANT.out.raw)
     }
     if (params.tool in ['rpbp', 'all', 'all-wave1']) {
-        PREP_RPBP(gn, gtf, fasta)
+        PREP_RPBP(gn, orf_gtf, fasta)
         RUN_RPBP(PREP_RPBP.out.prepared)
         PARSE_RPBP(RUN_RPBP.out.raw)
     }

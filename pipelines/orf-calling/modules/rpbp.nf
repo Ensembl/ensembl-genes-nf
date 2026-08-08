@@ -4,7 +4,7 @@ process PREP_RPBP {
   tag "${meta.id}"
   label 'process_low'
   container "ubuntu:22.04"
-  publishDir "${params.outdir}/orf_calls/rpbp/${meta.id}", mode: 'copy', pattern: "prep/**"
+  publishDir "${params.outdir}/orf_calls/rpbp", mode: 'copy', pattern: "prep/**"
 
   input:
   tuple val(meta), path(bam), path(bai)
@@ -31,7 +31,7 @@ process RUN_RPBP {
   tag "${meta.id}"
   label 'process_medium'
   container "continuumio/miniconda3"
-  publishDir "${params.outdir}/orf_calls/rpbp/${meta.id}", mode: 'copy', pattern: "raw/**"
+  publishDir "${params.outdir}/orf_calls/rpbp", mode: 'copy', pattern: "raw/**"
 
   input:
   tuple val(meta), path(prepdir)
@@ -74,14 +74,14 @@ process PARSE_RPBP {
   tag "${meta.id}"
   label 'process_low'
   container "ubuntu:22.04"
-  publishDir "${params.outdir}/orf_calls/rpbp/${meta.id}", mode: 'copy', pattern: "*"
+  publishDir "${params.outdir}/orf_calls/rpbp", mode: 'copy', pattern: "*"
 
   input:
   tuple val(meta), path(rawdir)
 
   output:
-  tuple val(meta), path("${meta.id}.orf_calls.tsv"), emit: standardized
-  tuple val(meta), path("${meta.id}.orf_calls.bed12"), emit: bed12
+  tuple val(meta), path("${meta.id}.rpbp.orf_calls.tsv"), emit: standardized
+  tuple val(meta), path("${meta.id}.rpbp.orf_calls.bed12"), emit: bed12
   path "versions.yml", emit: versions
 
   script:
@@ -133,8 +133,8 @@ def score_from_fields(score_str, pval_str):
         pass
     return 0
 
-tsv = Path("${meta.id}.orf_calls.tsv")
-bed = Path("${meta.id}.orf_calls.bed12")
+tsv = Path("${meta.id}.rpbp.orf_calls.tsv")
+bed = Path("${meta.id}.rpbp.orf_calls.bed12")
 with open(tsv, newline='') as fh, open(bed, 'w') as out:
     r = csv.DictReader(fh, delimiter='\t')
     for row in r:
@@ -161,8 +161,8 @@ PY
   """
   stub:
   """
-  echo -e "sample_id\ttool\tchrom\tstart\tend\tstrand\tframe\ttranscript_id\torf_id\tscore\tpval\tqval\textra_json" > ${meta.id}.orf_calls.tsv
-  echo -e "chr1\t300\t420\torf|NA|rpbp\t0\t+\t300\t420\t0,0,0\t1\t120,\t0," > ${meta.id}.orf_calls.bed12
+  echo -e "sample_id\ttool\tchrom\tstart\tend\tstrand\tframe\ttranscript_id\torf_id\tscore\tpval\tqval\textra_json" > ${meta.id}.rpbp.orf_calls.tsv
+  echo -e "chr1\t300\t420\torf|NA|rpbp\t0\t+\t300\t420\t0,0,0\t1\t120,\t0," > ${meta.id}.rpbp.orf_calls.bed12
   cat <<-END_VERSIONS > versions.yml
   "${task.process}":
       parser: stub

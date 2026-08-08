@@ -58,6 +58,12 @@ conversion. For genome-space calls it translates the normalised interval from
 the supplied genome FASTA to populate the characterisation hand-off; spliced
 transcript-space calls still require an upstream coordinate conversion.
 
+Use `--canonical_gtf` when ORF discovery should use a canonical/transcript-
+restricted annotation while the full `--gtf` remains the annotation for
+characterisation. Caller agreement is the trust criterion; scores are not
+ranked across callers, and Ribotricer scores are therefore not treated as
+cross-caller comparable evidence.
+
 Wave 2 caller modules remain available in `pipelines/orf-calling`, but are not
 claimed as production support until their real run wrappers and parsers replace
 the existing placeholders.

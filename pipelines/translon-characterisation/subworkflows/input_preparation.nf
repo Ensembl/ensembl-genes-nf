@@ -9,12 +9,12 @@ workflow INPUT_PREPARATION {
     genome
 
     main:
-    interval_input = Channel.of([[id: 'translon-input'], intervals])
+    interval_input = intervals.map { path -> tuple([id: 'translon-input'], path) }
     NORMALISE_INTERVALS(interval_input)
-    annotation_input = Channel.of([[id: 'gencode-reference'], gencode_gff3])
-    verdict_input = Channel.of([[id: 'translonscorer-verdicts'], verdicts])
-    proteome_input = Channel.of([[id: 'gencode-proteome'], proteome])
-    genome_input = Channel.of([[id: 'genome-reference'], genome])
+    annotation_input = gencode_gff3.map { path -> tuple([id: 'gencode-reference'], path) }
+    verdict_input = verdicts.map { path -> tuple([id: 'translonscorer-verdicts'], path) }
+    proteome_input = proteome.map { path -> tuple([id: 'gencode-proteome'], path) }
+    genome_input = genome.map { path -> tuple([id: 'genome-reference'], path) }
 
     emit:
     intervals = NORMALISE_INTERVALS.out.intervals

@@ -20,10 +20,17 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
     }
 
     def root = file(riboseq_outdir, checkIfExists: true)
-    def tx_pattern = transcriptome_bam_glob ?: "${root}/**/*Aligned.toTranscriptome.out.bam"
-    def gn_pattern = genome_bam_glob ?: "${root}/**/*Aligned.sortedByCoord.out.bam"
+    def discovered_bams = []
+    root.toFile().eachFileRecurse { candidate ->
+        if (candidate.isFile() && candidate.name.endsWith('.bam')) discovered_bams << candidate.toPath()
+    }
+    def tx_pattern = transcriptome_bam_glob
+    def gn_pattern = genome_bam_glob
 
-    transcriptome = channel.fromPath(tx_pattern, checkIfExists: true)
+    transcriptome = tx_pattern
+        ? channel.fromPath(tx_pattern, checkIfExists: true)
+        : channel.fromList(discovered_bams)
+        .filter { bam -> bam.name.endsWith('Aligned.toTranscriptome.out.bam') }
         .map { bam ->
             def bai = file("${bam}.bai")
             if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai")
@@ -31,7 +38,10 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
             tuple([id: id, bam_type: 'transcriptome'], bam, bai)
         }
 
-    genome = channel.fromPath(gn_pattern, checkIfExists: true)
+    genome = gn_pattern
+        ? channel.fromPath(gn_pattern, checkIfExists: true)
+        : channel.fromList(discovered_bams)
+        .filter { bam -> bam.name.endsWith('Aligned.sortedByCoord.out.bam') }
         .map { bam ->
             def bai = file("${bam}.bai")
             if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai")
