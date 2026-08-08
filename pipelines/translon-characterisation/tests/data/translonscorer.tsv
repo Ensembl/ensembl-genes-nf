@@ -1,0 +1,2 @@
+interval_id	frame	mechanism_class	confidence	condition_state	peptide_sequence	biotype_with_frameshift
+orf1	0	canonical	0.99	constitutive-baseline-detectable	M*	uORF

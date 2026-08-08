@@ -1,0 +1,4 @@
+##gff-version 3
+chr1	GENCODE	mRNA	1	20	.	+	.	ID=transcript:tx1
+chr1	GENCODE	exon	1	10	.	+	.	ID=exon:e1;Parent=transcript:tx1
+chr1	GENCODE	CDS	11	20	.	+	0	ID=CDS:c1;Parent=transcript:tx1

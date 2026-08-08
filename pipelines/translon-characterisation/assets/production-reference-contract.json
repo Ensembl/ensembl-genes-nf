@@ -1,0 +1,53 @@
+{
+  "contract_version": "1.0.0",
+  "assembly": "hg38",
+  "redistribution_policy": "freely redistributable inputs and tools only",
+  "phylocsf": {
+    "engine": "PhyloCSF++",
+    "alignment": "UCSC hg38 multiz100way",
+    "alignment_base_url": "https://hgdownload.soe.ucsc.edu/goldenPath/hg38/multiz100way/maf",
+    "checksum_manifest": "https://hgdownload.soe.ucsc.edu/goldenPath/hg38/multiz100way/maf/md5sum.txt",
+    "species_subset": "58 placental mammals",
+    "parameter_set": "58mammals",
+    "mode": "mle",
+    "strategy": "AsIs",
+    "exclude_terminal_stop": true,
+    "rationale": "Method-native configuration used for the hg38 whole-genome GENCODE PhyloCSF analysis; retained for calibrated coding-potential inference."
+  },
+  "gpn_star": [
+    {
+      "axis": "gpn_star_primate",
+      "required": true,
+      "model": "songlab/gpn-star-hg38-p243-200m",
+      "model_revision": "16773016130e826cd3d72e91ed312a3cb27ba2b5",
+      "alignment_dataset": "songlab/hg38_cactus447way",
+      "alignment_revision": "f523f0467bc143b62fb5b3b9a91c510e8dc2a7f6",
+      "alignment_members": ["243.tar.gz"],
+      "timescale": "primate"
+    },
+    {
+      "axis": "gpn_star_mammal",
+      "required": true,
+      "model": "songlab/gpn-star-hg38-m447-200m",
+      "model_revision": "0d8f5164fba8e8108200c160370b86652bfb6244",
+      "alignment_dataset": "songlab/hg38_cactus447way",
+      "alignment_revision": "f523f0467bc143b62fb5b3b9a91c510e8dc2a7f6",
+      "alignment_members": ["243.tar.gz", "204.tar.gz"],
+      "timescale": "mammal"
+    }
+  ],
+  "gpn_star_optional": {
+    "axis": "gpn_star_vertebrate",
+    "required": false,
+    "model": "songlab/gpn-star-hg38-v100-200m",
+    "alignment_dataset": "songlab/multiz100way-pigz",
+    "timescale": "vertebrate",
+    "reason_not_default": "PhyloCSF already supplies deep vertebrate/mammalian coding evidence; a third GPU model is retained for targeted sensitivity analysis."
+  },
+  "decision_rules": [
+    "Never feed GPN-MSA output into GPN-Star; GPN-Star consumes its own alignment directly.",
+    "Never merge scores across phylogenetic timescales into one numeric score.",
+    "GPN-Star is a constraint and variant-effect axis, not a coding-potential classifier.",
+    "Reference acquisition must verify upstream checksums or content-addressed repository revisions before scoring."
+  ]
+}

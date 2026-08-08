@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unified translon analysis pipeline",
+  "type": "object",
+  "properties": {
+    "outdir": {"type": "string", "default": "./results/translon-analysis"},
+    "tracedir": {"type": "string"},
+    "riboseq_outdir": {"type": "string", "description": "Published output directory from pipelines/riboseq"},
+    "transcriptome_bam_glob": {"type": "string", "description": "Optional override glob for transcriptome BAMs"},
+    "genome_bam_glob": {"type": "string", "description": "Optional override glob for genome BAMs"},
+    "qc_pass_lengths_dir": {"type": "string", "description": "Optional directory of QC pass-length files"},
+    "offsets_glob": {"type": "string", "description": "Optional glob for QC-gated offset files"},
+    "translonscorer_glob": {"type": "string", "description": "Optional glob for TranslonScorer outputs"},
+    "gtf": {"type": "string", "description": "Genome annotation used by ORF callers and characterisation"},
+    "fasta": {"type": "string", "description": "Genome FASTA"},
+    "proteome_fasta": {"type": "string", "description": "Reference proteome for peptide axes"},
+    "tool": {"type": "string", "default": "all-wave1"},
+    "min_caller_agreement": {"type": "integer", "minimum": 1, "default": 2},
+    "run_characterisation": {"type": "boolean", "default": true}
+  },
+  "required": ["riboseq_outdir", "gtf", "fasta"]
+}
+
