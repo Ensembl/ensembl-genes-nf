@@ -25,7 +25,7 @@ process QC_GATE {
     script:
     def apply_for = params.apply_gate_for ?: 'translon,trackhub'
     def rule_set_name = params.qc_rule_set_name ?: 'default'
-    def prefix = meta.id
+    def prefix = "${meta.id}.${task.index}"
     """
     qc_gate.py \
       --run-id ${run_id} \
@@ -40,14 +40,14 @@ process QC_GATE {
 
     stub:
     """
-    touch ${meta.id}.offsets.pass.tsv
-    touch ${meta.id}.offsets.selected.tsv
-    touch ${meta.id}.offsets.good.tsv
-    touch ${meta.id}.offsets.great.tsv
-    touch ${meta.id}.pass_lengths.tsv
-    touch ${meta.id}.qc.json
-    touch ${meta.id}.qc_eval.tsv
-    touch ${meta.id}.qc_rule_set.tsv
-    touch ${meta.id}.gate_selection.tsv
+    touch ${meta.id}.${task.index}.offsets.pass.tsv
+    touch ${meta.id}.${task.index}.offsets.selected.tsv
+    touch ${meta.id}.${task.index}.offsets.good.tsv
+    touch ${meta.id}.${task.index}.offsets.great.tsv
+    touch ${meta.id}.${task.index}.pass_lengths.tsv
+    touch ${meta.id}.${task.index}.qc.json
+    touch ${meta.id}.${task.index}.qc_eval.tsv
+    touch ${meta.id}.${task.index}.qc_rule_set.tsv
+    touch ${meta.id}.${task.index}.gate_selection.tsv
     """
 }

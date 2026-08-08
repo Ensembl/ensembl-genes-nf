@@ -17,7 +17,7 @@ process COLLECT_QC_METRICS {
     task.ext.when == null || task.ext.when
 
     script:
-    def prefix = meta.id
+    def prefix = "${meta.id}.${task.index}"
     """
     collect_qc_metrics.py \\
       --run-id ${run_id} \\
