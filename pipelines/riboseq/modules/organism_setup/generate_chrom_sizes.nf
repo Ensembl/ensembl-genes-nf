@@ -9,7 +9,7 @@ process GENERATE_CHROM_SIZES {
 
     container "quay.io/biocontainers/samtools:0.1.19--2"
 
-    publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
+    publishDir "${params.outdir}/organism_setup", mode: 'copy'
 
     input:
     path(genome_fasta)

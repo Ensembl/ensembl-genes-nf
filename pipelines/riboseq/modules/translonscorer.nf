@@ -11,7 +11,7 @@ process TRANSLONSCORER {
     // Prefer pinned container; falls back to pip install if not present
     container "${ params.translonscorer_container ?: 'ghcr.io/jackcurragh/translonscorer:latest' }"
 
-    publishDir "${params.outdir}/translonscorer/${meta.id}", mode: 'copy', pattern: "*"
+    publishDir "${params.outdir}/translonscorer", mode: 'copy', pattern: "*"
 
     input:
     // Either a single BigWig or a list [forward.bw, reverse.bw]

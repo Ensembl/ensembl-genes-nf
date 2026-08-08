@@ -7,7 +7,8 @@ process SAMTOOLS_SORT {
         'https://depot.galaxyproject.org/singularity/samtools:1.20--h50ea8bc_0' :
         'biocontainers/samtools:1.20--h50ea8bc_0' }"
 
-    publishDir "${params.outdir}/samtools_sort", mode: 'copy', pattern: "*.sorted.bam"
+    // The sorted BAM is immediately indexed and consumed downstream. Keep it
+    // in the work graph rather than publishing a second intermediate copy.
 
     input:
     tuple val(meta), path(bam)

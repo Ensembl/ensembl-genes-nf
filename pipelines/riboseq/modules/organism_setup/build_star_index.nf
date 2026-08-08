@@ -9,7 +9,7 @@ process BUILD_STAR_INDEX {
 
     container "quay.io/biocontainers/star:2.7.6a--0"
 
-    publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
+    publishDir "${params.outdir}/organism_setup", mode: 'copy'
 
     input:
     path(genome_fasta)

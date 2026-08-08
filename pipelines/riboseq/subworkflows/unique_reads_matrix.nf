@@ -10,8 +10,6 @@
  * Designed for scale: 5k+ samples across 100-250 studies
  */
 
-import groovy.json.JsonSlurper
-
 include { COLLAPSED_TO_TSV; COLLAPSED_TO_TSV_PARTITIONED } from '../modules/collapsed_to_tsv.nf'
 include { QC_PARTITIONED_TSV; COLLECT_PARTITION_QC_MANIFEST } from '../modules/qc_partitioned_tsv.nf'
 include { BUILD_STUDY_MATRIX; BUILD_STUDY_MATRIX_PARTITIONED } from '../modules/build_study_matrix.nf'
@@ -21,7 +19,7 @@ include { STAR_ALIGN_UNIQUE_READS; STAR_ALIGN_UNIQUE_READS_PARTITIONED } from '.
 def prefixPartitions(prefix_length) {
     def partitions = ['']
     int n = prefix_length as int
-    for (int i = 0; i < n; i++) {
+    n.times {
         partitions = partitions.collectMany { prefix -> ['A', 'C', 'G', 'T'].collect { base -> "${prefix}${base}" } }
     }
     return partitions.sort() + [('N' * n)]
@@ -36,7 +34,7 @@ workflow UNIQUE_READS_MATRIX {
 
     if (params.matrix_use_partitioning) {
         partitions = prefixPartitions(params.matrix_partition_prefix_length ?: 4)
-        partition_ordinals = Channel.fromList(
+        partition_ordinals = channel.fromList(
             partitions.withIndex().collect { partition, ordinal ->
                 tuple(partition, ordinal, params.matrix_partition_stride ?: 1000000000L)
             }
@@ -49,7 +47,7 @@ workflow UNIQUE_READS_MATRIX {
         partitioned_tsvs = COLLAPSED_TO_TSV_PARTITIONED.out.tsvs
             .join(QC_PARTITIONED_TSV.out.qc_json)
             .filter { meta, tsvs, qc_json ->
-                new JsonSlurper().parse(qc_json.toFile()).passed
+                new groovy.json.JsonSlurper().parse(qc_json.toFile()).passed
             }
             .flatMap { meta, tsvs, qc_json ->
                 def files = tsvs instanceof List ? tsvs : [tsvs]
@@ -110,21 +108,21 @@ workflow UNIQUE_READS_MATRIX {
         global_reads_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.reads
         global_samples_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.samples_parquet
         global_studies_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.studies_parquet
-        global_retained_counts_ch = Channel.empty()
+        global_retained_counts_ch = channel.empty()
         global_fasta_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.fasta
         global_metadata_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.metadata
         global_config_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.config
         global_matrix_manifest_ch = MERGE_GLOBAL_MATRIX_PARTITIONED.out.manifest
         partition_qc_manifest_ch = COLLECT_PARTITION_QC_MANIFEST.out.manifest
-        unique_reads_bam_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.bam : Channel.empty()
-        unique_reads_bai_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.bai : Channel.empty()
-        unique_reads_log_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.log : Channel.empty()
+        unique_reads_bam_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.bam : channel.empty()
+        unique_reads_bai_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.bai : channel.empty()
+        unique_reads_log_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.log : channel.empty()
         versions_ch = COLLAPSED_TO_TSV_PARTITIONED.out.versions.first()
             .mix(QC_PARTITIONED_TSV.out.versions.first())
             .mix(COLLECT_PARTITION_QC_MANIFEST.out.versions.first())
             .mix(BUILD_STUDY_MATRIX_PARTITIONED.out.versions.first())
             .mix(MERGE_GLOBAL_MATRIX_PARTITIONED.out.versions)
-            .mix(params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.versions : Channel.empty())
+            .mix(params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS_PARTITIONED.out.versions : channel.empty())
     } else {
         COLLAPSED_TO_TSV(samples)
 
@@ -173,14 +171,14 @@ workflow UNIQUE_READS_MATRIX {
         global_metadata_ch = MERGE_GLOBAL_MATRIX.out.metadata
         global_config_ch = MERGE_GLOBAL_MATRIX.out.config
         global_matrix_manifest_ch = MERGE_GLOBAL_MATRIX.out.manifest
-        partition_qc_manifest_ch = Channel.empty()
-        unique_reads_bam_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.bam : Channel.empty()
-        unique_reads_bai_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.bai : Channel.empty()
-        unique_reads_log_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.log : Channel.empty()
+        partition_qc_manifest_ch = channel.empty()
+        unique_reads_bam_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.bam : channel.empty()
+        unique_reads_bai_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.bai : channel.empty()
+        unique_reads_log_ch = params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.log : channel.empty()
         versions_ch = COLLAPSED_TO_TSV.out.versions.first()
             .mix(BUILD_STUDY_MATRIX.out.versions.first())
             .mix(MERGE_GLOBAL_MATRIX.out.versions)
-            .mix(params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.versions : Channel.empty())
+            .mix(params.matrix_align_unique_reads ? STAR_ALIGN_UNIQUE_READS.out.versions : channel.empty())
     }
 
     emit:

@@ -90,7 +90,7 @@ process STAR_ALIGN_UNIQUE_READS_PARTITIONED {
     conda "bioconda::star=2.7.11a bioconda::samtools=1.19"
     container "oras://community.wave.seqera.io/library/samtools_star:1b5dd3ca5b761fb8"
 
-    publishDir "${params.outdir}/global_partitioned/${partition}", mode: 'copy'
+    publishDir "${params.outdir}/global_partitioned", mode: 'copy'
 
     input:
     tuple val(partition), path(fasta)

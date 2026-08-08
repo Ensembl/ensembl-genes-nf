@@ -9,7 +9,7 @@ process MAKE_TRANSCRIPTOME {
 
     container "quay.io/biocontainers/gffread:0.9.12--0"
 
-    publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
+    publishDir "${params.outdir}/organism_setup", mode: 'copy'
 
     input:
     path(gtf)

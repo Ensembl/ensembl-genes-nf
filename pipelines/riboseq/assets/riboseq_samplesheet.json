@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ribo-seq sample sheet",
+  "description": "Rows describing the runs processed by the Ribo-seq pipeline.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "Run": {
+        "type": "string",
+        "pattern": "^\\S+$",
+        "description": "SRA run accession or stable run identifier."
+      },
+      "study_accession": {
+        "type": "string",
+        "pattern": "^\\S+$",
+        "description": "Study accession used for grouping and reporting."
+      }
+    },
+    "required": ["Run", "study_accession"],
+    "additionalProperties": true
+  }
+}

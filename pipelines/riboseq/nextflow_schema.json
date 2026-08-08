@@ -6,7 +6,15 @@
   "properties": {
     "sample_sheet": {
       "type": "string",
-      "description": "Path to CSV sample sheet with Run and study_accession columns"
+      "format": "file-path",
+      "pattern": "^\\S+\\.(csv|tsv)$",
+      "schema": "assets/riboseq_samplesheet.json",
+      "description": "CSV or TSV sample sheet with Run and study_accession columns"
+    },
+    "sample_sheet_sep": {
+      "type": "string",
+      "enum": [",", "\\t"],
+      "description": "Optional sample-sheet delimiter override; otherwise inferred from .tsv or .csv"
     },
     "outdir": {
       "type": "string",
@@ -156,6 +164,31 @@
       "default": 5000,
       "description": "Maximum reads for getRPF architecture detection sampling"
     },
+    "getrpf_command": {
+      "type": "string",
+      "enum": ["extract", "extract-rpf", "decide-trim"],
+      "default": "extract",
+      "description": "getRPF command"
+    },
+    "getrpf_preserve_umi": {
+      "type": "boolean",
+      "default": false,
+      "description": "Preserve UMI information in getRPF output"
+    },
+    "adapter_detection_method": {
+      "type": "string",
+      "enum": ["auto", "fastqc_tophit", "explicit", "fasta"],
+      "default": "auto",
+      "description": "Adapter detection method for traditional extraction"
+    },
+    "fastp_adapter_sequence": {
+      "type": ["string", "null"],
+      "description": "Explicit adapter sequence for fastp"
+    },
+    "fastp_adapter_fasta": {
+      "type": ["string", "null"],
+      "description": "Adapter FASTA file for fastp"
+    },
     "min_read_length": {
       "type": "integer",
       "default": 20,
@@ -189,6 +222,16 @@
       "type": "integer",
       "default": 1,
       "description": "Bowtie -k parameter (report first k alignments)"
+    },
+    "ribodetector_chunk_size": {
+      "type": "integer",
+      "default": 256,
+      "description": "RiboDetector batch size"
+    },
+    "ribodetector_len": {
+      "type": "integer",
+      "default": 100,
+      "description": "RiboDetector read-length threshold"
     },
     "mismatches": {
       "type": "integer",
@@ -224,6 +267,19 @@
       "default": 0,
       "description": "Number of bases to trim from 3' end"
     },
+    "clip_5p_nbases": {
+      "type": ["integer", "null"],
+      "description": "STAR 5-prime clipping override"
+    },
+    "clip_3p_nbases": {
+      "type": ["integer", "null"],
+      "description": "STAR 3-prime clipping override"
+    },
+    "align_soft_clip_at_ref_ends": {
+      "type": ["string", "null"],
+      "enum": ["Yes", "No", null],
+      "description": "Whether STAR may soft-clip at reference ends"
+    },
     "filter_by_length": {
       "type": "boolean",
       "default": false,
@@ -252,6 +308,15 @@
         "p_site"
       ],
       "description": "Site represented by RiboMetric-calculated offsets"
+    },
+    "ribometric_offset_global": {
+      "type": ["integer", "null"],
+      "description": "Optional fixed global offset"
+    },
+    "ribometric_use_ribowaltz_offsets": {
+      "type": "boolean",
+      "default": false,
+      "description": "Use RiboWaltz offsets as RiboMetric input"
     },
     "ribometric_sample_size": {
       "type": "integer",
@@ -528,6 +593,24 @@
     "translonscorer_pip_spec": {
       "type": "string",
       "description": "Custom pip spec for installing TranslonScorer"
+    },
+    "translonscorer_container": {
+      "type": ["string", "null"],
+      "description": "Optional TranslonScorer container"
+    },
+    "eq_delta": {
+      "type": ["number", "null"],
+      "description": "Optional equivalence delta for BAM filtering"
+    },
+    "score_tag": {
+      "type": "string",
+      "default": "AS",
+      "description": "Alignment score tag used for filtering"
+    },
+    "tracedir": {
+      "type": "string",
+      "format": "directory-path",
+      "description": "Directory for Nextflow execution reports"
     }
   },
   "required": []

@@ -16,10 +16,66 @@
 
 nextflow.enable.dsl = 2
 
-include { validateParameters } from 'plugin/nf-schema'
+// Typed parameter declarations are required for correct CLI coercion under
+// Nextflow 26 strict syntax. Configuration defaults remain in nextflow.config.
+params {
+    run_organism_setup: Boolean = false
+    auto_build_indices: Boolean = false
+    generate_trackhub: Boolean = false
+    fetch: Boolean = true
+    force_fetch: Boolean = false
+    getrpf_max_reads: Integer = 5000
+    getrpf_preserve_umi: Boolean = false
+    min_read_length: Integer = 20
+    max_read_length: Integer = 0
+    run_rrna_filter: Boolean = false
+    bowtie_rrna_mismatches: Integer = 2
+    bowtie_rrna_k: Integer = 1
+    ribodetector_chunk_size: Integer = 256
+    ribodetector_len: Integer = 100
+    mismatches: Integer = 3
+    allow_introns: Boolean = true
+    max_multimappers: Integer = 10
+    min_mapq: Integer = 0
+    trim_front: Integer = 0
+    filter_by_length: Boolean = false
+    rpf_length_min: Integer = 26
+    rpf_length_max: Integer = 34
+    ribometric_sample_size: Integer = 10000000
+    ribometric_use_ribowaltz_offsets: Boolean = false
+    run_choros: Boolean = false
+    choros_num_genes: Integer = 250
+    choros_min_coverage: Integer = 5
+    choros_min_nonzero: Integer = 100
+    ribowaltz_exclude_start: Integer = 0
+    ribowaltz_exclude_stop: Integer = 0
+    ribowaltz_flanking: Integer = 6
+    ribowaltz_confidence_level: Integer = 99
+    ribowaltz_utr5_length: Integer = 25
+    ribowaltz_cds_length: Integer = 40
+    ribowaltz_utr3_length: Integer = 25
+    normalize_coverage: Boolean = false
+    enable_unique_reads_tracking: Boolean = false
+    run_matrix_mode: Boolean = false
+    matrix_align_unique_reads: Boolean = true
+    matrix_chunk_size: Integer = 10000
+    matrix_sparse_shard_rows: Integer = 5000000
+    matrix_sparse_read_bucket_size: Integer = 100000
+    matrix_tsv_chunk_size: Integer = 500000
+    matrix_metadata_shard_rows: Integer = 1000000
+    matrix_use_partitioning: Boolean = false
+    matrix_partition_prefix_length: Integer = 4
+    matrix_partition_stride: Integer = 1000000000
+    matrix_partition_sparse_read_bucket_size: Integer = 50000000
+    matrix_partition_qc_enabled: Boolean = true
+    matrix_partition_qc_min_total_records: Integer = 1
+    matrix_partition_qc_min_total_counts: Integer = 1
+    emit_both_offsets: Boolean = false
+    translonscorer_plot_range: Integer = 30
+    run_translonscorer: Boolean = false
+}
 
-// Validate parameters against schema
-validateParameters()
+include { validateParameters } from 'plugin/nf-schema'
 
 /*
 ========================================================================================
@@ -41,6 +97,7 @@ include { CHOROS } from './modules/choros.nf'
 include { COLLECT_QC_METRICS } from './modules/collect_qc_metrics.nf'
 include { QC_GATE } from './modules/qc_gate.nf'
 include { IMPORT_QC_DB } from './modules/import_qc_db.nf'
+include { SAMPLE_COMPLETENESS } from './modules/sample_completeness.nf'
 
 /*
 ========================================================================================
@@ -49,6 +106,9 @@ include { IMPORT_QC_DB } from './modules/import_qc_db.nf'
 */
 
 workflow {
+
+    // Validate parameters inside the entry workflow for strict DSL2 syntax.
+    validateParameters()
 
     //
     // MODE 1: Standalone organism setup only
@@ -78,25 +138,24 @@ workflow {
         )
 
         log.info "Organism setup complete. Config file generated at: ${params.outdir}/organism_setup/${params.organism}/${params.ensembl_version ?: 'custom'}/riboseq_params.config"
-        return  // Exit after organism setup
-    }
+    } else {
 
     //
     // MODE 2: Full pipeline (with optional organism setup)
     //
 
     // Validate sample_sheet is provided for processing mode
-    if (!params.sample_sheet) {
-        error "Sample sheet (--sample_sheet) is required for data processing. Use --run_organism_setup without --sample_sheet to only build references."
-    }
+        if (!params.sample_sheet) {
+            error "Sample sheet (--sample_sheet) is required for data processing. Use --run_organism_setup without --sample_sheet to only build references."
+        }
 
-    //
-    // Determine reference file sources
-    // Priority: 1) Run organism setup if requested, 2) Use provided params
-    //
-    def use_organism_setup = false
+        //
+        // Determine reference file sources
+        // Priority: 1) Run organism setup if requested, 2) Use provided params
+        //
+        def use_organism_setup = false
 
-    if (params.run_organism_setup || params.auto_build_indices) {
+        if (params.run_organism_setup || params.auto_build_indices) {
         // Check if we need to build indices
         def need_to_build = params.run_organism_setup ||
                            (params.auto_build_indices && (!params.star_index || !file(params.star_index).exists()))
@@ -123,10 +182,10 @@ workflow {
 
             log.info "Reference indices built. Proceeding with data processing..."
         }
-    }
+        }
 
     // Validate params if not using organism setup
-    if (!use_organism_setup) {
+        if (!use_organism_setup) {
         if (!params.star_index) {
             error "STAR index (--star_index) is required. Use --run_organism_setup to build indices first."
         }
@@ -139,38 +198,38 @@ workflow {
         if (!params.chrom_sizes_file) {
             error "Chromosome sizes file (--chrom_sizes_file) is required."
         }
-    }
+        }
 
     // Reference files setup - choose source based on use_organism_setup flag
-    star_index_ch = use_organism_setup ?
+        star_index_ch = use_organism_setup ?
         ORGANISM_SETUP.out.star_index :
-        Channel.fromPath(params.star_index, checkIfExists: true).first()
+        channel.fromPath(params.star_index, checkIfExists: true).first()
 
-    gtf_ch = use_organism_setup ?
+        gtf_ch = use_organism_setup ?
         ORGANISM_SETUP.out.gtf :
-        Channel.fromPath(params.gtf, checkIfExists: true).first()
+        channel.fromPath(params.gtf, checkIfExists: true).first()
 
-    fasta_ch = use_organism_setup ?
+        fasta_ch = use_organism_setup ?
         ORGANISM_SETUP.out.fasta :
         (params.fasta ?
-            Channel.fromPath(params.fasta, checkIfExists: true).first() :
-            Channel.value(file('NO_FILE')))
+            channel.fromPath(params.fasta, checkIfExists: true).first() :
+            channel.value(file('NO_FILE')))
 
-    chrom_sizes_ch = use_organism_setup ?
+        chrom_sizes_ch = use_organism_setup ?
         ORGANISM_SETUP.out.chrom_sizes :
-        Channel.fromPath(params.chrom_sizes_file, checkIfExists: true).first()
+        channel.fromPath(params.chrom_sizes_file, checkIfExists: true).first()
 
-    ribometric_anno_ch = use_organism_setup ?
+        ribometric_anno_ch = use_organism_setup ?
         ORGANISM_SETUP.out.ribometric_anno :
         (params.ribometric_annotation ?
-            Channel.fromPath(params.ribometric_annotation, checkIfExists: true).first() :
-            Channel.value(file('NO_FILE')))
+            channel.fromPath(params.ribometric_annotation, checkIfExists: true).first() :
+            channel.value(file('NO_FILE')))
 
-    transcriptome_fasta_ch = use_organism_setup ?
+        transcriptome_fasta_ch = use_organism_setup ?
         ORGANISM_SETUP.out.transcriptome :
         (params.transcriptome_fasta ?
-            Channel.fromPath(params.transcriptome_fasta, checkIfExists: true).first() :
-            Channel.value(file('NO_FILE')))
+            channel.fromPath(params.transcriptome_fasta, checkIfExists: true).first() :
+            channel.value(file('NO_FILE')))
 
     if (params.run_choros) {
         if (!use_organism_setup && !params.ribometric_annotation) {
@@ -298,6 +357,15 @@ workflow {
             file(rules_path)
         )
 
+        // Capture sample-level omissions caused by retries/ignored failures.
+        // Structural validation errors still fail the workflow before this point.
+        SAMPLE_COMPLETENESS(
+            DATA_ACQUISITION.out.expected.collect(),
+            DATA_ACQUISITION.out.samples.map { meta, collapsed -> meta.id }.collect(),
+            ALIGNMENT.out.transcriptome_bam.map { meta, bam, bai -> meta.id }.collect(),
+            QC_GATE.out.qc_json.map { meta, qc_json -> meta.id }.collect()
+        )
+
         // Optional codon-level sequence-bias correction. Run once per sample
         // after the sample has passed the good QC gate; great is a stricter
         // subset and must not create a duplicate ChOROS task.
@@ -377,7 +445,7 @@ workflow {
             // Key join on sample id
             def keyed_bw = bigwigs_per_sample.map { meta, files -> [ meta.id, [meta, files] ] }
             def keyed_sel = selected_ids.map { id -> [ id, true ] }
-            allowed = keyed_bw.join(keyed_sel).map { id, pair, _ -> pair }
+            allowed = keyed_bw.join(keyed_sel).map { id, pair, unused -> pair }
 
             TRANSLONSCORER(
                 allowed,
@@ -385,6 +453,7 @@ workflow {
                 fasta_ch
             )
         }
+    }
     }
 }
 

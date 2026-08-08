@@ -27,7 +27,7 @@ include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_FINAL } from '../modules/collapse_fas
 
 workflow DATA_ACQUISITION {
     take:
-    sample_sheet      // path: CSV file with Run,study_accession columns
+    sample_sheet      // path: CSV/TSV file with Run,study_accession columns
     adapter_list      // path: adapter list file for FASTQC
     star_index        // path: STAR index directory
 
@@ -38,10 +38,16 @@ workflow DATA_ACQUISITION {
     }
 
     // Parse sample sheet and create samples channel
-    // Sample sheet must have columns: Run, study_accession
-    samples_ch = Channel
+    // Sample sheet must have columns: Run, study_accession. Additional
+    // metadata columns are allowed and ignored by this generic entrypoint.
+    def sample_sheet_path = sample_sheet.toString()
+    def sample_sheet_sep = params.sample_sheet_sep ?: (
+        sample_sheet_path.toLowerCase().endsWith('.tsv') ? '\t' : ','
+    )
+
+    samples_ch = channel
         .fromPath(sample_sheet)
-        .splitCsv(header: true, sep: ',')
+        .splitCsv(header: true, sep: sample_sheet_sep)
         .map { row ->
             def meta = [
                 id: row.Run,
@@ -53,6 +59,10 @@ workflow DATA_ACQUISITION {
 
     // Locate existing collapsed reads or runs that need processing
     LOCATE(samples_ch)
+
+    // Preserve the complete expected run set so ignored sample-level failures
+    // can be reported instead of disappearing from downstream joins.
+    expected_samples = samples_ch.map { meta, id -> id }
 
     // Log runs that need processing
     LOCATE.out.needs_processing
@@ -69,7 +79,7 @@ workflow DATA_ACQUISITION {
                         [meta, meta.id, collapsed_file]
                     }
                 )
-            collapsed_reads = Channel.empty()
+            collapsed_reads = channel.empty()
         } else {
             // Process only samples that need processing
             needs_processing = LOCATE.out.needs_processing
@@ -112,7 +122,7 @@ workflow DATA_ACQUISITION {
 
             if (params.fastp_adapter_fasta) {
                 // User-provided adapter FASTA file
-                adapter_file = Channel.fromPath(params.fastp_adapter_fasta)
+                adapter_file = channel.fromPath(params.fastp_adapter_fasta)
                 fastq_with_adapter = FASTQ_DL.out.fastq
                     .combine(adapter_file)
             } else if (params.fastp_adapter_sequence) {
@@ -173,7 +183,7 @@ workflow DATA_ACQUISITION {
             log.info "fetch is set to false. No data will be fetched or processed."
         }
 
-        newly_collapsed_reads = Channel.empty()
+        newly_collapsed_reads = channel.empty()
         collapsed_reads = LOCATE.out.collapsed_reads
     }
 
@@ -185,4 +195,5 @@ workflow DATA_ACQUISITION {
 
     emit:
     samples = all_collapsed_reads
+    expected = expected_samples
 }

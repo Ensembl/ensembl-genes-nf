@@ -132,10 +132,10 @@ workflow POST_PROCESSING {
         unique_reads_summary_out = MERGE_UNIQUE_READS.out.summary
     } else {
         // Emit empty channels when tracking is disabled
-        unique_reads_fasta_out = Channel.empty()
-        count_matrix_out = Channel.empty()
-        read_mapping_out = Channel.empty()
-        unique_reads_summary_out = Channel.empty()
+        unique_reads_fasta_out = channel.empty()
+        count_matrix_out = channel.empty()
+        read_mapping_out = channel.empty()
+        unique_reads_summary_out = channel.empty()
     }
 
     emit:

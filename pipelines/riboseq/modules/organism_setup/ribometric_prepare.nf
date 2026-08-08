@@ -9,7 +9,7 @@ process RIBOMETRIC_PREPARE {
 
     container "ghcr.io/lapti-ucc/riboseqorg-nf-ribometric:latest"
 
-    publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
+    publishDir "${params.outdir}/organism_setup", mode: 'copy'
 
     input:
     path(gtf)

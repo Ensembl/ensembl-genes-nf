@@ -7,10 +7,11 @@ process STAR_ALIGN {
         'https://depot.galaxyproject.org/singularity/star:2.7.11b--h43eeafb_1' :
         'biocontainers/star:2.7.11b--h43eeafb_1' }"
 
+    // BAMs are intermediate files: the genome BAM is indexed directly and the
+    // transcriptome BAM is sorted/indexed downstream. Preserve STAR diagnostics
+    // for audit/QC while leaving alignment BAMs in the internal dataflow.
     publishDir path: "${params.outdir}/star_align", mode: 'copy', saveAs: {
-        filename -> if (filename.endsWith('toTranscriptome.out.bam')) return "transcriptome_bam/$filename"
-        else if  (filename.endsWith('.bam')) return "bam/$filename"
-        else if (filename.endsWith('.out')) return "logs/$filename" else null
+        filename -> (filename.contains('.Log.') || filename.endsWith('.SJ.out.tab')) ? "logs/$filename" : null
     }
 
     input:
@@ -22,6 +23,9 @@ process STAR_ALIGN {
     tuple val(meta), path("*.Aligned.sortedByCoord.out.bam"), emit: bam
     tuple val(meta), path("*.Aligned.toTranscriptome.out.bam"), emit: transcriptome_bam
     tuple val(meta), path("*.Log.final.out"), emit: log
+    tuple val(meta), path("*.Log.out"), emit: log_out
+    tuple val(meta), path("*.Log.progress.out"), emit: log_progress
+    tuple val(meta), path("*.SJ.out.tab"), emit: splice_junctions
     path "versions.yml", emit: versions
 
     when:
@@ -73,6 +77,9 @@ process STAR_ALIGN {
     touch ${prefix}.Aligned.sortedByCoord.out.bam
     touch ${prefix}.Aligned.toTranscriptome.out.bam
     touch ${prefix}.Log.final.out
+    touch ${prefix}.Log.out
+    touch ${prefix}.Log.progress.out
+    touch ${prefix}.SJ.out.tab
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

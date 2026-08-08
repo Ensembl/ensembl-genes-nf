@@ -14,15 +14,31 @@ process LOCATE {
 
     script:
     """
-    collapsed_file="${params.collapsed_read_path}/${run}_rpfs.collapsed.fa"
-    collapsed_file_1="${params.collapsed_read_path}/${run}_1_rpfs.collapsed.fa.gz"
+    # Accept both the historical *_rpfs name and the current getRPF gated
+    # *_rpf_20_40 name. The latter is the normal input for rerunning analysis
+    # on an existing extracted subset with --fetch false.
+    candidates=(
+        "${params.collapsed_read_path}/${run}_rpf_20_40.collapsed.fa"
+        "${params.collapsed_read_path}/${run}_rpf_20_40.collapsed.fa.gz"
+        "${params.collapsed_read_path}/${run}_rpfs.collapsed.fa"
+        "${params.collapsed_read_path}/${run}_rpfs.collapsed.fa.gz"
+        "${params.collapsed_read_path}/${run}_1_rpfs.collapsed.fa.gz"
+    )
 
-    if [ -f "\$collapsed_file" ]; then
-        gzip -c "\$collapsed_file" > "${run}.collapsed.fa.gz"
-        echo "Found collapsed file for $run"
-    elif [ -f "\$collapsed_file_1" ]; then
-        ln -s "\$collapsed_file_1" "${run}.collapsed.fa.gz"
-        echo "Found collapsed _1 file for $run"
+    found=""
+    for candidate in "\${candidates[@]}"; do
+        if [ -f "\$candidate" ]; then
+            found="\$candidate"
+            break
+        fi
+    done
+
+    if [ -n "\$found" ]; then
+        case "\$found" in
+            *.gz) ln -s "\$found" "${run}.collapsed.fa.gz" ;;
+            *) gzip -c "\$found" > "${run}.collapsed.fa.gz" ;;
+        esac
+        echo "Found collapsed file for $run: \$found"
     else
         echo "Collapsed file not found for $run. Needs processing."
         touch "${run}_needs_processing"

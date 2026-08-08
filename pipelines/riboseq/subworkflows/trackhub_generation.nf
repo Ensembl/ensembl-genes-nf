@@ -17,20 +17,19 @@ workflow TRACKHUB_GENERATION {
 
     main:
     // Initialize version tracking
-    ch_versions = Channel.empty()
+    ch_versions = channel.empty()
 
     // Collect all BigWig files into a single list
     // First, extract just the BigWig paths from the tuples
     all_bigwigs = bigwigs
         .map { meta, bw_files ->
-            // bw_files can be a single file or a list
-            bw_files instanceof List ? bw_files : [bw_files]
+            bw_files
         }
         .flatten()
         .mix(
             merged_bigwigs
                 .map { meta, bw_files ->
-                    bw_files instanceof List ? bw_files : [bw_files]
+                    bw_files
                 }
                 .flatten()
         )

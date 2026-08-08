@@ -39,4 +39,17 @@ process QC_GATE {
       --apply-for ${apply_for} \
       --out-prefix ${prefix}
     """
+
+    stub:
+    """
+    touch ${meta.id}.offsets.pass.tsv
+    touch ${meta.id}.offsets.selected.tsv
+    touch ${meta.id}.offsets.good.tsv
+    touch ${meta.id}.offsets.great.tsv
+    touch ${meta.id}.pass_lengths.tsv
+    touch ${meta.id}.qc.json
+    touch ${meta.id}.qc_eval.tsv
+    touch ${meta.id}.qc_rule_set.tsv
+    touch ${meta.id}.gate_selection.tsv
+    """
 }

@@ -63,14 +63,14 @@ workflow ANALYSIS {
                 file('NO_OFFSET_FILE')  // Placeholder for optional input
             )
 
-            psite_offsets_ch = Channel.empty()
-            best_offset_ch = Channel.empty()
-            psite_table_ch = Channel.empty()
-            cds_coverage_ch = Channel.empty()
-            codon_rpf_ch = Channel.empty()
-            codon_psite_ch = Channel.empty()
-            offset_plots_ch = Channel.empty()
-            qc_plots_ch = Channel.empty()
+            psite_offsets_ch = channel.empty()
+            best_offset_ch = channel.empty()
+            psite_table_ch = channel.empty()
+            cds_coverage_ch = channel.empty()
+            codon_rpf_ch = channel.empty()
+            codon_psite_ch = channel.empty()
+            offset_plots_ch = channel.empty()
+            qc_plots_ch = channel.empty()
         }
 
         ribometric_html_ch = RIBOMETRIC.out.html
@@ -90,10 +90,10 @@ workflow ANALYSIS {
             fasta_ch
         )
 
-        ribometric_html_ch = Channel.empty()
-        ribometric_json_ch = Channel.empty()
-        ribometric_csv_ch = Channel.empty()
-        ribometric_offsets_audit_ch = Channel.empty()
+        ribometric_html_ch = channel.empty()
+        ribometric_json_ch = channel.empty()
+        ribometric_csv_ch = channel.empty()
+        ribometric_offsets_audit_ch = channel.empty()
         offsets_ch = RIBOWALTZ.out.best_offset
 
         psite_offsets_ch = RIBOWALTZ.out.psite_offsets

@@ -11,7 +11,7 @@ process GGET_DOWNLOAD {
         'https://depot.galaxyproject.org/singularity/gget:0.29.0--pyhdfd78af_0' :
         'quay.io/biocontainers/gget:0.29.0--pyhdfd78af_0' }"
 
-    publishDir "${params.outdir}/organism_setup/${organism}/${ensembl_version}", mode: 'copy'
+    publishDir "${params.outdir}/organism_setup", mode: 'copy'
 
     input:
     val(organism)

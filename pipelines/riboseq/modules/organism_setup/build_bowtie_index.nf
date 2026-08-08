@@ -9,7 +9,7 @@ process BUILD_BOWTIE_INDEX {
 
     container "quay.io/biocontainers/bowtie:1.2.2--py36h2d50403_1"
 
-    publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
+    publishDir "${params.outdir}/organism_setup", mode: 'copy'
 
     input:
     path(fasta)

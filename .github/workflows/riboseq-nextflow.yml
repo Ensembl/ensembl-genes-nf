@@ -1,0 +1,36 @@
+name: Ribo-seq Nextflow compatibility
+
+on:
+  push:
+    paths:
+      - 'pipelines/riboseq/**'
+      - 'nextflow.config'
+      - '.github/workflows/riboseq-nextflow.yml'
+  pull_request:
+    paths:
+      - 'pipelines/riboseq/**'
+      - 'nextflow.config'
+      - '.github/workflows/riboseq-nextflow.yml'
+
+jobs:
+  strict-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install Nextflow 26.04.6
+        run: |
+          curl -s https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/nextflow
+          nextflow -version
+        env:
+          NXF_VER: 26.04.6
+
+      - name: Lint Ribo-seq pipeline
+        run: nextflow lint pipelines/riboseq/

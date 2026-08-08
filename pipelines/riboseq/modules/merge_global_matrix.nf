@@ -119,7 +119,7 @@ process MERGE_GLOBAL_MATRIX_PARTITIONED {
 
     conda "conda-forge::python=3.11 conda-forge::numpy=1.26 conda-forge::scipy=1.12 conda-forge::zarr=2.18 conda-forge::numcodecs=0.12 conda-forge::polars=0.20 conda-forge::xxhash-python=3.4"
     container "oras://community.wave.seqera.io/library/pip_numpy_polars_scipy_pruned:ca114eb799eb08b3"
-    publishDir "${params.outdir}/global_partitioned/${partition}", mode: 'copy'
+    publishDir "${params.outdir}/global_partitioned", mode: 'copy'
 
     input:
     tuple val(partition), val(partition_ordinal), val(partition_stride), path(study_files)

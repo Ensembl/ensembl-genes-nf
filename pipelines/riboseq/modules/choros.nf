@@ -4,7 +4,7 @@ process CHOROS {
 
     container "${params.choros_container}"
 
-    publishDir "${params.outdir}/choros/${meta.id}", mode: 'copy', pattern: "*.choros_*"
+    publishDir "${params.outdir}/choros", mode: 'copy', pattern: "*.choros_*"
 
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bai), path(best_offsets)

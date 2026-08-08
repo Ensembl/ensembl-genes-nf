@@ -9,7 +9,7 @@ process DOWNLOAD_SILVA {
 
     container 'oras://community.wave.seqera.io/library/curl:4bd76f737af7f9c0'
 
-    publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
+    publishDir "${params.outdir}/organism_setup", mode: 'copy'
 
     input:
     val(silva_url)

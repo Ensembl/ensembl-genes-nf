@@ -29,7 +29,7 @@ workflow ORGANISM_SETUP {
 
     main:
     // Initialize version tracking
-    ch_versions = Channel.empty()
+    ch_versions = channel.empty()
 
     // Normalize organism name: lowercase and replace spaces with underscores
     def organism_normalized = organism.toLowerCase().replace(' ', '_')

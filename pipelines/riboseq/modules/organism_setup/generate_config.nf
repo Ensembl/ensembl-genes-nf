@@ -9,7 +9,7 @@ process GENERATE_CONFIG {
 
     container "quay.io/biocontainers/python:3.11"
 
-    publishDir "${params.outdir}/organism_setup/${organism}/${version}", mode: 'copy'
+    publishDir "${params.outdir}/organism_setup", mode: 'copy'
 
     input:
     path(star_index)
