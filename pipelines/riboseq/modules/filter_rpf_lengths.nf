@@ -3,7 +3,7 @@ process FILTER_RPF_LENGTHS {
     label 'process_light'
 
     conda "conda-forge::python=3.10"
-    container "ghcr.io/jackcurragh/get-rpf:0.3.0"
+    container "ghcr.io/jackcurragh/get-rpf:0.3.1"
 
     input:
     tuple val(meta), path(trimmed_collapsed_fasta)
