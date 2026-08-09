@@ -39,6 +39,7 @@
     "product_cluster_min_seq_id": {"type": "number", "default": 0.9},
     "min_caller_agreement": {"type": "integer", "minimum": 1, "default": 2},
     "run_characterisation": {"type": "boolean", "default": true}
+    ,"ucsc_session_url": {"type": "string", "default": "hg38"}
   },
   "required": ["riboseq_outdir", "gtf", "fasta"]
 }

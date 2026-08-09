@@ -1,21 +1,24 @@
 # Unified translon analysis
 
 This is the downstream companion to `pipelines/riboseq`. It consumes the
-published Ribo-seq output tree and keeps processing separate from ORF discovery,
-cross-caller reconciliation and translon characterisation.
+published Ribo-seq output tree and runs each ORF caller through a deliberately
+small two-stage contract: `RUN_<TOOL>` followed by `STANDARDISE_<TOOL>`. The
+standardised BED12 files then feed the existing `pipelines/translon-consensus`
+analysis and reporting workflow.
 
 ## Layout
 
 ```mermaid
 flowchart TD
     A["pipelines/riboseq --outdir"] --> B["Input contract"]
-    B --> C["ORF caller fan-out"]
-    C --> D["Common TSV + BED12"]
-    D --> E["Cross-caller consensus"]
-    E --> F["Trusted translon instances"]
-    F --> G["Typed characterisation axes"]
-    G --> H["Adjudication"]
-    H --> I["Annotations, reports, audit outputs"]
+    B --> C["RUN_<TOOL>"]
+    C --> D["STANDARDISE_<TOOL>"]
+    D --> E["Existing translon-consensus"]
+    E --> F["Per-tool comparisons"]
+    E --> G["Agreement, overlap, GENCODE context"]
+    E --> H["DuckDB + HTML reports"]
+    F --> I["Characterisation hand-off"]
+    I --> J["Typed axes and adjudication"]
 ```
 
 ## Quick start with Ribo-seq outputs
@@ -38,6 +41,18 @@ collects QC-gated offset files and published TranslonScorer CSVs for the
 downstream evidence contract; use `--offsets_glob` or `--translonscorer_glob`
 to override their discovery patterns.
 
+The visible caller stages are:
+
+- `RUN_RIBOCODE` → `STANDARDISE_RIBOCODE`
+- `RUN_RIBOTRICER` → `STANDARDISE_RIBOTRICER`
+- `RUN_RIBOTAPER` → `STANDARDISE_RIBOTAPER`
+- `RUN_ORFQUANT` → `STANDARDISE_ORFQUANT`
+- `RUN_RPBP` → `STANDARDISE_RPBP`
+
+Preparation required by an individual caller is kept inside its run process.
+Each standardiser preserves native caller fields in a common TSV and emits a
+BED12 file for the existing consensus pipeline.
+
 ## Contract and outputs
 
 The pipeline writes:
@@ -50,13 +65,11 @@ The pipeline writes:
 - downstream typed-axis and adjudication outputs from
   `pipelines/translon-characterisation`.
 
-The consensus adapter is deliberately conservative. It does not turn a single
-caller into a trusted translon when `--min_caller_agreement` is greater than
-one. Transcript-space calls must be converted to genome coordinates before
-production characterisation; the adapter does not silently perform that
-conversion. For genome-space calls it translates the normalised interval from
-the supplied genome FASTA to populate the characterisation hand-off; spliced
-transcript-space calls still require an upstream coordinate conversion.
+The existing consensus analysis remains the primary comparison layer. It
+retains per-tool results, exact start/end matches, interval overlaps, GENCODE
+annotation, CDS context, UCSC links, DuckDB outputs, and HTML reporting.
+Transcript-space calls must be converted to genome coordinates by their
+tool-specific standardiser before they enter this layer.
 
 Use `--canonical_gtf` when ORF discovery should use a canonical/transcript-
 restricted annotation while the full `--gtf` remains the annotation for
