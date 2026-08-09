@@ -3,7 +3,7 @@ process DETECT_ARCHITECTURE {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
-    container "ghcr.io/jackcurragh/get-rpf:0.3.0"
+    container "ghcr.io/jackcurragh/get-rpf:0.3.1"
 
     input:
     tuple val(meta), path(input_file)
