@@ -29,10 +29,28 @@ nextflow run pipelines/translon-analysis \
   --gtf references/annotation.gtf \
   --fasta references/genome.fa \
   --proteome_fasta references/proteome.fa \
-  --tool all-wave1 \
+  --tools ribocode,ribotricer,ribotaper,orfquant,rpbp \
   --min_caller_agreement 2 \
   -stub -profile local
 ```
+
+For a cohort, first make an explicit samplesheet:
+
+```bash
+python pipelines/translon-analysis/bin/make_samplesheet.py \
+  --riboseq-outdir results/riboseq \
+  --output results/riboseq_samplesheet.tsv
+
+nextflow run pipelines/translon-analysis \
+  --samplesheet results/riboseq_samplesheet.tsv \
+  --gtf references/annotation.gtf \
+  --fasta references/genome.fa \
+  --tools ribocode,price,ribotie
+```
+
+`--riboseq_outdir` remains convenient for direct upstream coupling; `--samplesheet`
+is preferable for cohorts, custom filenames, or rerunning a defined sample set.
+The two modes produce the same sample-keyed channels.
 
 The input contract discovers the conventional transcriptome and genome STAR
 BAM names below `--riboseq_outdir`. Use `--transcriptome_bam_glob` or
@@ -48,6 +66,12 @@ The visible caller stages are:
 - `RUN_RIBOTAPER` → `STANDARDISE_RIBOTAPER`
 - `RUN_ORFQUANT` → `STANDARDISE_ORFQUANT`
 - `RUN_RPBP` → `STANDARDISE_RPBP`
+
+The currently wired additional published callers are `iribo`, `orfrater`,
+`price`, `riborf`, `ribotish`, and `ribotie`. They can be selected with
+`--tools` or grouped with `all-wave2`/`all`. Their execution wrappers are
+present, but they remain tool-validation work until each native command and
+native-output fixture has been validated in its container.
 
 Preparation required by an individual caller is kept inside its run process.
 Each standardiser preserves native caller fields in a common TSV and emits a
@@ -70,6 +94,12 @@ retains per-tool results, exact start/end matches, interval overlaps, GENCODE
 annotation, CDS context, UCSC links, DuckDB outputs, and HTML reporting.
 Transcript-space calls must be converted to genome coordinates by their
 tool-specific standardiser before they enter this layer.
+
+Samples are processed independently. BAMs are not concatenated into one large
+analysis task. Cross-sample comparison should use compact derived evidence
+(normalised calls, coverage summaries, periodicity/offset metrics and scores),
+not aggregated BAMs; this keeps memory and staging costs bounded while
+retaining sample-level provenance.
 
 Use `--canonical_gtf` when ORF discovery should use a canonical/transcript-
 restricted annotation while the full `--gtf` remains the annotation for

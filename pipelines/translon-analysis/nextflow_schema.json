@@ -6,6 +6,7 @@
     "outdir": {"type": "string", "default": "./results/translon-analysis"},
     "tracedir": {"type": "string"},
     "riboseq_outdir": {"type": "string", "description": "Published output directory from pipelines/riboseq"},
+    "samplesheet": {"type": "string", "description": "Optional tab-separated cohort sheet with sample_id and BAM paths"},
     "transcriptome_bam_glob": {"type": "string", "description": "Optional override glob for transcriptome BAMs"},
     "genome_bam_glob": {"type": "string", "description": "Optional override glob for genome BAMs"},
     "qc_pass_lengths_dir": {"type": "string", "description": "Optional directory of QC pass-length files"},
@@ -15,7 +16,7 @@
     "canonical_gtf": {"type": "string", "description": "Optional canonical/transcript-restricted GTF for ORF callers; full GTF remains used for characterisation"},
     "fasta": {"type": "string", "description": "Genome FASTA"},
     "proteome_fasta": {"type": "string", "description": "Reference proteome for peptide axes"},
-    "tool": {"type": "string", "default": "all-wave1"},
+    "tools": {"type": "string", "default": "all-wave1", "description": "Comma-separated caller names, or all-wave1/all-wave2/all"},
     "threads_ribocode": {"type": "integer", "default": 4},
     "threads_ribotricer": {"type": "integer", "default": 4},
     "threads_ribotaper": {"type": "integer", "default": 4},
@@ -41,5 +42,5 @@
     "run_characterisation": {"type": "boolean", "default": true}
     ,"ucsc_session_url": {"type": "string", "default": "hg38"}
   },
-  "required": ["riboseq_outdir", "gtf", "fasta"]
+  "required": ["gtf", "fasta"]
 }

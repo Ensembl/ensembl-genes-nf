@@ -25,7 +25,7 @@ def score(value, pvalue=""):
 
 def rows_from_raw(raw, tool, sample):
     raw = Path(raw)
-    if tool in {"ribotaper", "rpbp"}:
+    if tool in {"ribotaper", "rpbp", "iribo", "price", "riborf"}:
         candidates = sorted(raw.glob("*.bed"))
         for bed in candidates:
             with bed.open() as handle:
@@ -50,7 +50,7 @@ def rows_from_raw(raw, tool, sample):
                 start, end = row.get("start"), row.get("end")
                 if not start or not end:
                     continue
-            yield [sample, tool, row.get("chrom") or row.get("chr") or ".", start, end,
+                yield [sample, tool, row.get("chrom") or row.get("chr") or ".", start, end,
                        row.get("strand") or ".", row.get("frame") or ".",
                        row.get("transcript_id") or row.get("transcript") or "",
                        row.get("orf_id") or row.get("orf") or row.get("name") or "orf",

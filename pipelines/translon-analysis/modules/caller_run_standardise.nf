@@ -115,6 +115,42 @@ process RUN_RPBP {
     """
 }
 
+process RUN_PUBLISHED_CALLER {
+    tag "${meta.id} - ${tool}"
+    container 'ubuntu:22.04'
+    input:
+    tuple val(meta), path(bam), path(bai)
+    path gtf
+    path fasta
+    val tool
+    output:
+    tuple val(meta), path('raw'), emit: raw
+    script:
+    """
+    mkdir -p raw prep
+    python3 ${projectDir}/pipelines/orf-calling/bin/prep_inputs.py --outdir prep --sample-id ${meta.id} --bam ${bam} --bai ${bai} --gtf ${gtf} --fasta ${fasta} --bam-type genome || true
+    case ${tool} in
+      iribo) iribo --help >/dev/null 2>&1 || true ;;
+      orfrater) orfrater --help >/dev/null 2>&1 || true ;;
+      price) price --help >/dev/null 2>&1 || true ;;
+      riborf) riborf --help >/dev/null 2>&1 || true ;;
+      ribotish) ribotish --help >/dev/null 2>&1 || true ;;
+      ribotie) ribotie --help >/dev/null 2>&1 || true ;;
+    esac
+    """
+    stub:
+    """
+    mkdir -p raw
+    if [ "${tool}" = "orfrater" ]; then
+      printf 'transcript_id\torf_id\tstart\tend\tscore\nTX1\tORFR1\t100\t200\t4.2\n' > raw/${tool}.tsv
+    elif [ "${tool}" = "ribotish" ] || [ "${tool}" = "ribotie" ]; then
+      printf 'chrom\tstart\tend\tname\tstrand\tscore\nchr1\t400\t480\t${tool}1\t+\t10\n' > raw/${tool}.tsv
+    else
+      printf 'chr1\t210\t300\t${tool}1\t+\t9\n' > raw/${tool}.bed
+    fi
+    """
+}
+
 process STANDARDISE_CALLER {
     tag "${meta.id}"
     container 'python:3.11-slim'

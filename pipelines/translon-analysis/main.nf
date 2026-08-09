@@ -3,6 +3,8 @@
 nextflow.enable.dsl = 2
 
 params {
+    tools: String = 'all-wave1'
+    samplesheet: String = null
     min_caller_agreement: Integer = 2
     run_characterisation: Boolean = true
     threads_ribocode: Integer = 4
