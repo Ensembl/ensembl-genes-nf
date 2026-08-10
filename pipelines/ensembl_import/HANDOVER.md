@@ -127,7 +127,8 @@ GCF_000001405.40,Homo sapiens
   "db_host": "localhost",
   "db_port": 3306,
   "db_user": "ensro",
-  "db_password": ""
+  "db_password": "",
+  "db_read_user": "ensro"
 }
 ```
 

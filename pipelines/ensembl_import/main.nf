@@ -50,6 +50,8 @@ workflow {
         .set { sample_ch }
 
     def settings = new JsonSlurper().parse(file(params.server_settings))
+    if (!settings.db_read_user)
+        throw new IllegalArgumentException("server_settings must contain db_read_user for taxonomy loading")
 
     Channel
         .value(
@@ -57,7 +59,8 @@ workflow {
                 settings.db_host,
                 settings.db_port,
                 settings.db_user,
-                settings.db_password
+                settings.db_password,
+                settings.db_read_user
             )
         )
         .set { db_config_ch }
