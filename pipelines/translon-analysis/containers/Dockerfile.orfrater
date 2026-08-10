@@ -1,0 +1,9 @@
+FROM python:2.7.18-slim
+ARG ORFRATER_COMMIT=5ae4cd69fc845e811e9c978ddbe48b706a071061
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git gcc g++ make bedtools \
+    && rm -rf /var/lib/apt/lists/*
+RUN git clone https://github.com/alexfields/ORF-RATER.git /opt/orfrater \
+    && cd /opt/orfrater && git checkout ${ORFRATER_COMMIT} \
+    && pip install --no-cache-dir numpy scipy pysam biopython pandas tables scikit-learn pybedtools plastid
+ENV ORFRATER_HOME=/opt/orfrater

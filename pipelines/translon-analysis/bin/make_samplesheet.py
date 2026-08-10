@@ -22,6 +22,12 @@ def discover(root):
             bam = record.get(kind)
             row[kind] = str(bam.resolve()) if bam else ""
             row[kind.replace("bam", "bai")] = str(Path(f"{bam}.bai").resolve()) if bam and Path(f"{bam}.bai").exists() else ""
+        fastqs = sorted(root.rglob(f"{sample}*.fastq.gz")) + sorted(root.rglob(f"{sample}*.fastq"))
+        row["ribo_fastq"] = str(fastqs[0].resolve()) if fastqs else ""
+        offsets = []
+        for suffix in ("offsets.selected.tsv", "offsets.good.tsv", "offsets.pass.tsv"):
+            offsets.extend(root.rglob(f"{sample}*.{suffix}"))
+        row["offsets"] = str(sorted(offsets)[0].resolve()) if offsets else ""
         rows.append(row)
     return rows
 
@@ -35,7 +41,10 @@ def main():
     if not rows:
         raise SystemExit(f"No published STAR BAMs found below {args.riboseq_outdir}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    fields = ["sample_id", "transcriptome_bam", "transcriptome_bai", "genome_bam", "genome_bai"]
+    fields = ["sample_id", "transcriptome_bam", "transcriptome_bai", "genome_bam", "genome_bai", "ribo_fastq", "offsets"]
+    for row in rows:
+        row.setdefault("ribo_fastq", "")
+        row.setdefault("offsets", "")
     with args.output.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t")
         writer.writeheader()

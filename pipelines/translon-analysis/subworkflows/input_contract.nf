@@ -41,8 +41,8 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
             : channel.fromList(discovered_bams)
                 .filter { bam -> bam.name.endsWith('Aligned.toTranscriptome.out.bam') })
         .map { bam ->
-            def bai = file("${bam}.bai")
-            if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai")
+            def bai = file("${bam}.bai", checkIfExists: false)
+            if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai", checkIfExists: false)
             def id = bam.baseName.replaceAll(/\.Aligned\.toTranscriptome\.out$/, '')
             tuple([id: id, bam_type: 'transcriptome'], bam, bai)
         }
@@ -59,15 +59,23 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
             : channel.fromList(discovered_bams)
                 .filter { bam -> bam.name.endsWith('Aligned.sortedByCoord.out.bam') })
         .map { bam ->
-            def bai = file("${bam}.bai")
-            if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai")
+            def bai = file("${bam}.bai", checkIfExists: false)
+            if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai", checkIfExists: false)
             def id = bam.baseName.replaceAll(/\.Aligned\.sortedByCoord\.out$/, '')
             tuple([id: id, bam_type: 'genome'], bam, bai)
         }
 
+    ribo_fastq = sheet_rows
+        ? sheet_rows.filter { row -> row.ribo_fastq }
+            .map { row -> tuple([id: row.sample_id, bam_type: 'ribo_fastq'], file(row.ribo_fastq, checkIfExists: true)) }
+        : channel.empty()
+
     offsets = offsets_glob
         ? channel.fromPath(offsets_glob, checkIfExists: false)
-        : (root ? channel.fromPath("${root}/**/*.offsets.{pass,selected,good,great}.tsv", checkIfExists: false) : channel.empty())
+        : (sheet_rows
+            ? sheet_rows.filter { row -> row.offsets }
+                .map { row -> tuple([id: row.sample_id], file(row.offsets, checkIfExists: true)) }
+            : (root ? channel.fromPath("${root}/**/*.offsets.{pass,selected,good,great}.tsv", checkIfExists: false) : channel.empty()))
     translonscorer = translonscorer_glob
         ? channel.fromPath(translonscorer_glob, checkIfExists: false)
         : (root ? channel.fromPath("${root}/**/*_orfs_scored.csv", checkIfExists: false) : channel.empty())
@@ -75,6 +83,7 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
     emit:
     transcriptome = transcriptome
     genome = genome
+    ribo_fastq = ribo_fastq
     offsets = offsets
     translonscorer = translonscorer
 }

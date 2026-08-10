@@ -4,10 +4,13 @@ import argparse
 import csv
 import json
 import math
+import re
 from pathlib import Path
 
 FIELDS = ["sample_id", "tool", "chrom", "start", "end", "strand", "frame",
           "transcript_id", "orf_id", "score", "pval", "qval", "extra_json"]
+
+PRICE_LOCATION_RE = re.compile(r"^(?P<chrom>.+?)(?P<strand>[+-]):(?P<blocks>.+)$")
 
 
 def score(value, pvalue=""):
@@ -25,9 +28,80 @@ def score(value, pvalue=""):
 
 def rows_from_raw(raw, tool, sample):
     raw = Path(raw)
-    if tool in {"ribotaper", "rpbp", "iribo", "price", "riborf"}:
-        candidates = sorted(raw.glob("*.bed"))
-        for bed in candidates:
+    def candidates(*patterns):
+        if raw.is_file():
+            return [raw] if any(raw.match(pattern) for pattern in patterns) else []
+        return sorted({path for pattern in patterns for path in raw.glob(pattern)})
+
+    if tool == "orfquant":
+        orfquant_paths = candidates("*_Detected_ORFs.gtf")
+        for path in orfquant_paths:
+            grouped = {}
+            with path.open() as handle:
+                for line in handle:
+                    if not line.strip() or line.startswith("#"):
+                        continue
+                    fields = line.rstrip("\n").split("\t")
+                    if len(fields) < 9 or fields[2].lower() != "cds":
+                        continue
+                    attrs = {}
+                    for item in fields[8].split(";"):
+                        item = item.strip()
+                        if not item:
+                            continue
+                        bits = item.split(None, 1)
+                        if len(bits) == 2:
+                            attrs[bits[0]] = bits[1].strip().strip('"')
+                    orf_id = attrs.get("ORF_id") or attrs.get("orf_id") or attrs.get("ID")
+                    if not orf_id:
+                        continue
+                    record = grouped.setdefault(orf_id, {"fields": fields, "attrs": attrs, "blocks": []})
+                    record["blocks"].append((int(fields[3]) - 1, int(fields[4])))
+            for orf_id, record in grouped.items():
+                fields, attrs, blocks = record["fields"], record["attrs"], sorted(record["blocks"])
+                start, end = min(x[0] for x in blocks), max(x[1] for x in blocks)
+                extra = dict(attrs)
+                extra["_blocks"] = blocks
+                yield [sample, tool, fields[0], start, end, fields[6], fields[7],
+                       attrs.get("transcript_id", ""), orf_id,
+                       attrs.get("ORF_pct_P_sites") or attrs.get("ORFs_pM") or fields[5],
+                       attrs.get("pval", ""), attrs.get("qval", ""), json.dumps(extra)]
+        if orfquant_paths:
+            return
+    if tool in {"rpbp", "iribo", "price", "riborf"}:
+        if tool == "price":
+            for path in candidates("*.tsv"):
+                with path.open() as handle:
+                    reader = csv.DictReader(handle, delimiter="\t")
+                    for row in reader:
+                        orf_id = (row.get("Id") or "").strip()
+                        match = PRICE_LOCATION_RE.match((row.get("Location") or "").strip())
+                        if not orf_id or not match:
+                            continue
+                        blocks = []
+                        for token in match.group("blocks").split("|"):
+                            try:
+                                left, right = token.split("-", 1)
+                                blocks.append((int(left), int(right)))
+                            except (TypeError, ValueError):
+                                continue
+                        if not blocks:
+                            continue
+                        blocks.sort()
+                        orf_type = row.get("Type") or row.get("ORF_type") or ""
+                        pval = row.get("p value") or row.get("p_value") or ""
+                        transcript_id = orf_id
+                        if orf_type:
+                            match_id = re.match(rf"^(.+)_{re.escape(orf_type)}_\d+$", orf_id)
+                            if match_id:
+                                transcript_id = match_id.group(1)
+                        extra = dict(row)
+                        extra["_blocks"] = blocks
+                        yield [sample, tool, match.group("chrom"), blocks[0][0], blocks[-1][1],
+                               match.group("strand"), ".", transcript_id, orf_id,
+                               pval, pval, "", json.dumps(extra)]
+            return
+        for bed in candidates("*.bed"):
             with bed.open() as handle:
                 for line in handle:
                     if not line.strip() or line.startswith(("#", "track", "browser")):
@@ -42,8 +116,68 @@ def rows_from_raw(raw, tool, sample):
                            fields[5] if len(fields) > 5 else "", None, None, "{}"]
         return
 
-    candidates = sorted(raw.glob("*.tsv"))
-    for path in candidates:
+    if tool == "ribotricer":
+        # Ribotricer encodes transcript-relative ORF coordinates in ORF_ID
+        # and reports translating/non-translating candidates in a dedicated
+        # table rather than a generic start/end table.
+        candidates = sorted(raw.glob("*translating_ORFs.tsv"))
+        for path in candidates:
+            with path.open() as handle:
+                reader = csv.DictReader(handle, delimiter="\t")
+                for row in reader:
+                    if row.get("status") != "translating":
+                        continue
+                    parts = row.get("ORF_ID", "").rsplit("_", 3)
+                    if len(parts) != 4:
+                        continue
+                    transcript_id, start, end, _length = parts
+                    try:
+                        # Ribotricer ORF_ID coordinates are one-based and
+                        # inclusive; the consensus contract is BED-like.
+                        start, end = int(start) - 1, int(end)
+                    except ValueError:
+                        continue
+                    extra = dict(row)
+                    yield [sample, tool, row.get("chrom") or ".", start, end,
+                           row.get("strand") or ".", ".",
+                           row.get("transcript_id") or transcript_id,
+                           row.get("ORF_ID") or "orf",
+                           row.get("phase_score") or row.get("read_density") or "",
+                           "", "", json.dumps(extra)]
+        return
+
+    if tool == "ribotish":
+        candidates = sorted(raw.glob("*.txt"))
+        for path in candidates:
+            with path.open() as handle:
+                reader = csv.DictReader(handle, delimiter="\t")
+                for row in reader:
+                    if not (row.get("RiboPStatus") or "").startswith("T"):
+                        continue
+                    genome_pos = row.get("GenomePos", "")
+                    try:
+                        chrom, coords, strand = genome_pos.rsplit(":", 2)
+                        genomic_start, genomic_end = [int(x) for x in coords.split("-", 1)]
+                    except ValueError:
+                        continue
+                    blocks = []
+                    for block in (row.get("Blocks") or "").split(","):
+                        try:
+                            block_start, block_end = [int(x) for x in block.split("-", 1)]
+                        except ValueError:
+                            continue
+                        blocks.append([block_start - 1, block_end])
+                    if not blocks:
+                        blocks = [[genomic_start - 1, genomic_end]]
+                    extra = dict(row)
+                    extra["_blocks"] = blocks
+                    yield [sample, tool, chrom, genomic_start - 1, genomic_end,
+                           strand, ".", row.get("Tid") or "", row.get("Tid") or "orf",
+                           row.get("RiboPvalue") or "", row.get("TISPvalue") or "",
+                           row.get("FisherQvalue") or "", json.dumps(extra)]
+        return
+
+    for path in candidates("*.tsv", "*.txt"):
         with path.open() as handle:
             reader = csv.DictReader(handle, delimiter="\t")
             for row in reader:
@@ -111,6 +245,7 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--bed12", required=True, type=Path)
     parser.add_argument("--gtf", type=Path)
+    parser.add_argument("--adapter-version", default="1")
     args = parser.parse_args()
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -119,6 +254,12 @@ def main():
     blocks_by_row = {}
     for index, row in enumerate(rows):
         transcript_id = row[7] or ""
+        try:
+            native_blocks = json.loads(row[12]).get("_blocks")
+            if native_blocks:
+                blocks_by_row[index] = [tuple(block) for block in native_blocks]
+        except (TypeError, ValueError, json.JSONDecodeError):
+            pass
         transcript = transcripts.get(transcript_id.split(".")[0])
         if row[2] in {"", ".", "None"} and transcript:
             blocks = transcript_blocks(row, transcript)
