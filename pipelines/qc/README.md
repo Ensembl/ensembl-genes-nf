@@ -88,11 +88,18 @@ The QC parser image is private in the EBI Docker registry. Authenticate
 Apptainer once on the execution host using an EBI/GitLab account or token with
 permission to read the registry:
 
+Enter the token interactively and pipe it to the login command. The token is
+never placed on the command line or stored in the repository:
+
 ```bash
-singularity registry login \
+export EBI_REGISTRY_USER="${EBI_REGISTRY_USER:-$USER}"
+read -r -s EBI_REGISTRY_TOKEN
+printf '\n'
+printf '%s\n' "$EBI_REGISTRY_TOKEN" | singularity registry login \
   --username "$EBI_REGISTRY_USER" \
   --password-stdin \
   docker://dockerhub.ebi.ac.uk
+unset EBI_REGISTRY_TOKEN
 ```
 
 Verify the credentials and image access before starting Nextflow:

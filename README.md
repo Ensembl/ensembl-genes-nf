@@ -106,7 +106,9 @@ Authenticate Singularity or Apptainer outside Nextflow with an EBI/GitLab
 account or token that has registry-read permission:
 
 ```bash
-read -s EBI_REGISTRY_TOKEN
+export EBI_REGISTRY_USER="${EBI_REGISTRY_USER:-$USER}"
+read -r -s EBI_REGISTRY_TOKEN
+printf '\n'
 printf '%s\n' "$EBI_REGISTRY_TOKEN" | singularity registry login \
   --username "$EBI_REGISTRY_USER" \
   --password-stdin \
