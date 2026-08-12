@@ -8,11 +8,11 @@
 
 This repository provides templates and examples to help you build Nextflow pipelines:
 
-- **Pipeline templates** - Production-ready patterns and structure
+- **Pipeline templates** - Practical starting patterns and structure
 - **Example workflows** - Working examples from simple to complex
 - **Module templates** - Reusable process definitions
 - **Comprehensive documentation** - Guides, patterns, and best practices
-- **Advanced patterns** - Entry point system for complex workflows
+- **Additional patterns** - Optional approaches for more complex workflows
 
 ## Quick Start
 
@@ -23,14 +23,13 @@ Explore the templates by running the example workflows:
 cd pipelines/example
 
 # Run the simplest example (single process)
-nextflow run workflows/simple_workflow.nf -stub --outdir results
+nextflow run workflows/simple_workflow.nf -stub-run --outdir results
 
 # Run the main workflow (subworkflows chained together)
-nextflow run main.nf -stub --outdir results
+nextflow run main.nf -stub-run -profile test
 
-# Explore the advanced entry point system
-cd advanced_entrypoints
-nextflow run main.nf --help
+# Read the repository requirements
+cat ../../docs/NEXTFLOW_REQUIREMENTS.md
 ```
 
 ## Repository Structure
@@ -42,7 +41,7 @@ ensembl-genes-nf/  (template branch)
 │       ├── workflows/    # Example workflows (start here)
 │       ├── subworkflows/ # Subworkflow patterns (parallel, sequential)
 │       ├── modules/      # Process templates
-│       └── advanced_entrypoints/  # Dynamic entry point system
+│       └── assets/            # Deterministic test inputs
 ├── modules/              # Module templates for creating new processes
 ├── subworkflows/         # Subworkflow templates
 ├── config/               # Configuration templates
@@ -96,8 +95,12 @@ The example pipeline demonstrates patterns from simple to complex:
 
 ## Requirements
 
-- Nextflow ≥ 21.04.0 (DSL2)
-- Singularity 
+- Nextflow ≥ 26.04.0 (strict syntax)
+- Java 17 or newer
+- Singularity, Apptainer, Docker, or Conda depending on the pipeline profile
+
+See [docs/NEXTFLOW_REQUIREMENTS.md](docs/NEXTFLOW_REQUIREMENTS.md) for the
+repository contract and validation commands.
 
 ## Branch Structure
 
@@ -121,4 +124,3 @@ Contributions to improve templates and documentation are welcome! Consider:
 ## License
 
 [Add license information]
-

@@ -12,15 +12,20 @@ process EXAMPLE_MODULE {
 
     // TODO: Update publishDir path to reflect your module's output directory name
     publishDir "${params.outdir}/example_module",
-        saveAs: 'example_module/${meta.id}_${filename}'
+        mode: 'copy',
+        pattern: '*.txt'
 
     // TODO: Update input channels to match your tool's requirements
     input:
-    tuple val(meta), path(input_file)
+    tuple val(meta), path(input_files)
+    path reference
+    val mode
+    val prefix
+    val args
 
     // TODO: Update output files and emit names to match what your tool produces
     output:
-    tuple val(meta), path("${prefix}.txt"),             emit: results 
+    tuple val(meta), path('*.txt'),                      emit: results
     path "versions.yml",                                emit: versions 
     
     when:
@@ -37,7 +42,7 @@ process EXAMPLE_MODULE {
         --mode ${mode} \\
         --threads ${task.cpus} \\
         --output ${prefix}.txt \\
-        ${args}
+        ${args ?: ''}
 
     # Capture versions for reproducibility
     # TODO: Update version extraction command to match your tool's --version output format
@@ -51,8 +56,6 @@ process EXAMPLE_MODULE {
     stub:
     """
     touch ${prefix}.txt
-    touch ${prefix}.log
-
     # TODO: Update tool name and version number in stub
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

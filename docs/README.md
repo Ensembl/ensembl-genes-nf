@@ -6,7 +6,7 @@ Complete documentation for the example pipeline.
 
 New to this pipeline? Start here:
 
-- **[QUICK_START.md](QUICK_START.md)** - Step-by-step guide from basics to advanced
+- **[QUICK_START.md](QUICK_START.md)** - Step-by-step guide from lint to stub run
 - **[INDEX.md](INDEX.md)** - Complete documentation index
 
 ## Reference Guides
@@ -21,5 +21,5 @@ New to this pipeline? Start here:
 
 **Quick Links:**
 - Back to [main README](../README.md)
-- [Example workflows](../workflows/)
-- [Advanced entry points](../advanced_entrypoints/)
+- [Example pipeline](../pipelines/example/)
+- [Nextflow requirements](NEXTFLOW_REQUIREMENTS.md)

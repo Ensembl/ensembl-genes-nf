@@ -236,7 +236,7 @@ Root defaults
 
 **Key principle**: More specific settings override more general ones
 
-### Do's
+### Useful defaults
 
 - **Use resource labels** - Start with standard labels, override only when necessary
 
@@ -248,15 +248,15 @@ Root defaults
 
 - **Provide sensible defaults** - Pipelines should run with zero configuration
 
-### Don'ts
+### Things to consider
 
-- **Don't hardcode in modules** - Resources, paths, and arguments belong in config
+- **Avoid hardcoding in modules when settings may vary** - Resources, paths, and arguments are often easier to manage in config
 
-- **Don't edit root config for one pipeline** - Use pipeline-specific config instead
+- **Prefer pipeline-specific config for pipeline-specific settings** - Edit the root config when a setting is genuinely shared
 
-- **Don't duplicate settings** - If it's in a resource label, don't repeat in process
+- **Limit duplicated settings** - If a resource label already expresses a value, repeating it in a process can make changes harder to track
 
-- **Don't commit local paths** - Use parameters or relative paths
+- **Avoid committing local paths** - Parameters or relative paths are usually more portable
 
 ## Configuration Inheritance Example
 

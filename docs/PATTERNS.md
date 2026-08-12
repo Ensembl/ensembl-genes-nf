@@ -402,7 +402,7 @@ meta = [
 include { MY_SUBWORKFLOW } from './subworkflows/my_subworkflow'
 
 workflow {
-    test_input = Channel.of(
+    test_input = channel.of(
         [[id: 'test1'], file('test1.txt')],
         [[id: 'test2'], file('test2.txt')]
     )
