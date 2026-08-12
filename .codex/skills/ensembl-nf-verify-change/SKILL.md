@@ -21,8 +21,9 @@ Run checks from cheapest to most representative:
 
 ```bash
 git diff --check
+nextflow lint -o concise .
 nextflow config pipelines/<pipeline>/main.nf
-nextflow run pipelines/<pipeline>/main.nf -stub -profile local --outdir /tmp/<pipeline>-stub
+nextflow run pipelines/<pipeline>/main.nf -stub-run -profile local --outdir /tmp/<pipeline>-stub
 ```
 
 Use a targeted existing test where one exists, for example:

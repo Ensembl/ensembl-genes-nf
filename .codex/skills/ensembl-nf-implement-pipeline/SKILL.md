@@ -18,7 +18,7 @@ Inspect the target pipeline and its nearest working analogue before editing. Tre
 
 ## Work deliberately
 
-1. Read the affected `main.nf`, `nextflow.config`, direct modules/subworkflows, and the relevant sections of `docs/MODULES.md`, `docs/PATTERNS.md`, and `docs/CONFIGURATION.md`.
+1. Read the affected `main.nf`, `nextflow.config`, direct modules/subworkflows, and the relevant sections of `docs/NEXTFLOW_REQUIREMENTS.md`, `docs/MODULES.md`, `docs/PATTERNS.md`, and `docs/CONFIGURATION.md`.
 2. Trace every changed input and output channel end-to-end. Name emitted channels for their content, not their position.
 3. Reuse resource labels from `config/resources.config`, explicit tool versions, and an appropriate container/conda definition.
 4. Keep outputs under `${params.outdir}` and preserve standard execution reporting through the inherited root configuration.
@@ -29,8 +29,9 @@ Inspect the target pipeline and its nearest working analogue before editing. Tre
 Run the narrowest relevant commands first:
 
 ```bash
+nextflow lint -o concise .
 nextflow config pipelines/<pipeline>/main.nf
-nextflow run pipelines/<pipeline>/main.nf -stub -profile local --outdir /tmp/<pipeline>-stub
+nextflow run pipelines/<pipeline>/main.nf -stub-run -profile local --outdir /tmp/<pipeline>-stub
 ```
 
 Use the pipeline's established test command when it exists. If an external tool, image, reference, or test input prevents execution, report the exact command, blocker, and the unverified surface; never claim a real run passed from a parse-only check.
