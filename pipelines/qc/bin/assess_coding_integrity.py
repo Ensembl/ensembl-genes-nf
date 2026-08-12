@@ -184,12 +184,12 @@ def load_rbh_pairs(rbh_path: str):
     with open(rbh_path, 'r') as f:
         header = f.readline().strip().split('\t')
         try:
-            ens_col = next(c for c in ['ensembl_id', 'ensembl_gene_id'] if c in header)
-            cat_col = next(c for c in ['cat_id', 'cat_gene_id'] if c in header)
+            ens_col = next(c for c in ['source_a_id', 'source_a_gene_id', 'ensembl_id', 'ensembl_gene_id'] if c in header)
+            cat_col = next(c for c in ['source_b_id', 'source_b_gene_id', 'cat_id', 'cat_gene_id'] if c in header)
             ens_id_idx = header.index(ens_col)
             cat_id_idx = header.index(cat_col)
-            ens_bio_idx = header.index('ensembl_biotype') if 'ensembl_biotype' in header else None
-            cat_bio_idx = header.index('cat_biotype') if 'cat_biotype' in header else None
+            ens_bio_idx = next((header.index(c) for c in ['source_a_biotype', 'ensembl_biotype'] if c in header), None)
+            cat_bio_idx = next((header.index(c) for c in ['source_b_biotype', 'cat_biotype'] if c in header), None)
         except (StopIteration, ValueError) as e:
             print(f"Error: Required column not found: {e}", file=sys.stderr)
             sys.exit(1)

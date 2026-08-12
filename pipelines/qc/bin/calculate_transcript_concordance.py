@@ -127,8 +127,8 @@ def load_pairs(pairs_path: str) -> List[Tuple[str, str, str]]:
     with open(pairs_path, 'r') as f:
         header = f.readline().strip().split('\t')
 
-        ens_col = next((c for c in ['ensembl_gene_id', 'ensembl_id'] if c in header), None)
-        cat_col = next((c for c in ['cat_gene_id', 'cat_id'] if c in header), None)
+        ens_col = next((c for c in ['source_a_gene_id', 'source_a_id', 'ensembl_gene_id', 'ensembl_id'] if c in header), None)
+        cat_col = next((c for c in ['source_b_gene_id', 'source_b_id', 'cat_gene_id', 'cat_id'] if c in header), None)
 
         if ens_col is None or cat_col is None:
             print(f"Error: could not find gene ID columns in {pairs_path}", file=sys.stderr)
@@ -137,7 +137,7 @@ def load_pairs(pairs_path: str) -> List[Tuple[str, str, str]]:
 
         ens_idx = header.index(ens_col)
         cat_idx = header.index(cat_col)
-        bio_idx = header.index('ensembl_biotype') if 'ensembl_biotype' in header else None
+        bio_idx = next((header.index(c) for c in ['source_a_biotype', 'ensembl_biotype'] if c in header), None)
 
         for line in f:
             parts = line.strip().split('\t')
