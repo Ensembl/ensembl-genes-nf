@@ -1,0 +1,6 @@
+##gff-version 3
+##sequence-region 1 1 10000
+1	manual	gene	100	500	.	+	.	ID=MG1
+1	manual	mRNA	100	500	.	+	.	ID=MT1;Parent=MG1
+1	manual	exon	100	200	.	+	.	ID=MT1.ex1;Parent=MT1
+1	manual	exon	300	500	.	+	.	ID=MT1.ex2;Parent=MT1

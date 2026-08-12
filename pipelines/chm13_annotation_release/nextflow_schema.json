@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CHM13 annotation release parameters",
+  "type": "object",
+  "properties": {
+    "sources_csv": {
+      "type": "string",
+      "description": "CSV with sample_id,projected_gff,manual_gff,decision_tsv,assembly_fasta,assembly_fai; use - for an absent source"
+    },
+    "outdir": {"type": "string", "default": "./chm13_annotation_release_results"},
+    "assembly_name": {"type": "string", "default": "assembly"}
+  },
+  "required": ["sources_csv"]
+}

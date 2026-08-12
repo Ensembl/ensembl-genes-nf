@@ -1,0 +1,6 @@
+##gff-version 3
+##sequence-region 1 1 10000
+1	projection	gene	100	500	.	+	.	ID=GENE1
+1	projection	transcript	100	500	.	+	.	ID=TX1;Parent=GENE1
+1	projection	exon	100	200	.	+	.	ID=TX1.ex1;Parent=TX1
+1	projection	exon	300	500	.	+	.	ID=TX1.ex2;Parent=TX1

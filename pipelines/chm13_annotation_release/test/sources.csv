@@ -1,0 +1,2 @@
+sample_id,projected_gff,manual_gff,decision_tsv,assembly_fasta,assembly_fai
+example,projected.gff3,manual.gff3,-,assembly.fa,assembly.fa.fai
