@@ -2,9 +2,9 @@ process PAIRWISE_MULTI_MAPPING {
     tag { meta.id }
     label 'process_low'
 
-    container "python:3.11-slim"
+    container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/multi_mapping",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "*_multi_mapping.tsv"
 
@@ -29,6 +29,9 @@ process PAIRWISE_MULTI_MAPPING {
             --assembly-accession ${meta.id} \\
             --sample-name ${meta.id} \\
             --min-overlap ${minOverlap}
+
+        normalise_pairwise_tsv.py --input ${meta.id}_multi_mapping.tsv --output ${meta.id}_multi_mapping.normalised.tsv
+        mv ${meta.id}_multi_mapping.normalised.tsv ${meta.id}_multi_mapping.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

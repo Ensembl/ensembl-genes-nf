@@ -2,9 +2,9 @@ process PAIRWISE_COUNT_GFF_TRANSCRIPTS {
     tag { "${meta.id}_${source_label}" }
     label 'process_low'
 
-    container "python:3.11-slim"
+    container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/transcript_counts",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "*_gene_transcript_counts.tsv"
 
@@ -26,6 +26,9 @@ process PAIRWISE_COUNT_GFF_TRANSCRIPTS {
             --gff ${gff} \\
             --output ${meta.id}_${source_label}_gene_transcript_counts.tsv \\
             --assembly-accession ${meta.id}
+
+        normalise_pairwise_tsv.py --input ${meta.id}_${source_label}_gene_transcript_counts.tsv --output ${meta.id}_${source_label}_gene_transcript_counts.normalised.tsv
+        mv ${meta.id}_${source_label}_gene_transcript_counts.normalised.tsv ${meta.id}_${source_label}_gene_transcript_counts.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

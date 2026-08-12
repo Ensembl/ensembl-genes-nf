@@ -2,9 +2,9 @@ process PAIRWISE_GENE_PRESENCE {
     tag { meta.id }
     label 'process_low'
 
-    container "python:3.11-slim"
+    container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/gene_presence",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "*_gene_presence.tsv"
 
@@ -32,6 +32,9 @@ process PAIRWISE_GENE_PRESENCE {
             --sample-name ${meta.id} \\
             ${lookupArg}
 
+        normalise_pairwise_tsv.py --input ${meta.id}_gene_presence.tsv --output ${meta.id}_gene_presence.normalised.tsv
+        mv ${meta.id}_gene_presence.normalised.tsv ${meta.id}_gene_presence.tsv
+
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             python: \$(python --version | sed 's/Python //g')
@@ -40,7 +43,7 @@ process PAIRWISE_GENE_PRESENCE {
 
     stub:
         """
-        printf "assembly_accession\\tsample_name\\tgene_name\\tpresent_in_ensembl\\tpresent_in_cat\\tensembl_gene_id\\tcat_gene_id\\n" > ${meta.id}_gene_presence.tsv
+        printf "assembly_accession\\tsample_name\\tgene_name\\tpresent_in_source_a\\tpresent_in_source_b\\tsource_a_gene_id\\tsource_b_gene_id\\n" > ${meta.id}_gene_presence.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

@@ -1,0 +1,6 @@
+{
+  "run_agat_metrics": false,
+  "run_pairwise_annotation_comparison": true,
+  "pairwise_csv": "pipelines/qc/testdata/pairwise/pairs.csv",
+  "outdir": "/tmp/qc-pairwise-stub"
+}

@@ -4,7 +4,7 @@ process PAIRWISE_GFFCOMPARE {
 
     container "quay.io/biocontainers/gffcompare:0.12.6--h4ac6f70_2"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/gffcompare",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "*"
 
@@ -49,9 +49,9 @@ process PAIRWISE_PARSE_GFFCOMPARE {
     tag { "${meta.id}_${direction}" }
     label 'process_low'
 
-    container "python:3.11-slim"
+    container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/gffcompare",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "class_counts_*"
 
