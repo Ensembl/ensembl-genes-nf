@@ -48,9 +48,12 @@ def load_gene_pairs(pairs_path: str, min_overlap: float) -> List[Dict]:
             col_idx[col] = i
 
         # Required columns
-        ens_col = next((c for c in ['ensembl_id', 'ensembl_gene_id'] if c in col_idx), None)
-        cat_col = next((c for c in ['cat_id', 'cat_gene_id'] if c in col_idx), None)
-        required = ['frac_ensembl_covered', 'frac_cat_covered']
+        ens_col = next((c for c in ['source_a_id', 'source_a_gene_id', 'ensembl_id', 'ensembl_gene_id'] if c in col_idx), None)
+        cat_col = next((c for c in ['source_b_id', 'source_b_gene_id', 'cat_id', 'cat_gene_id'] if c in col_idx), None)
+        required = [
+            next((c for c in ['frac_source_a_covered', 'frac_ensembl_covered'] if c in col_idx), ''),
+            next((c for c in ['frac_source_b_covered', 'frac_cat_covered'] if c in col_idx), ''),
+        ]
         for col in required:
             if col not in col_idx:
                 print(f"Error: Required column '{col}' not found in input", file=sys.stderr)
@@ -61,13 +64,13 @@ def load_gene_pairs(pairs_path: str, min_overlap: float) -> List[Dict]:
             sys.exit(1)
 
         # Optional columns
-        optional = ['ensembl_biotype', 'cat_biotype', 'overlap_bp', 'classification', 'is_rbh']
+        optional = ['source_a_biotype', 'source_b_biotype', 'ensembl_biotype', 'cat_biotype', 'overlap_bp', 'classification', 'is_rbh']
 
         for line in f:
             parts = line.strip().split('\t')
 
-            e_frac = float(parts[col_idx['frac_ensembl_covered']])
-            c_frac = float(parts[col_idx['frac_cat_covered']])
+            e_frac = float(parts[col_idx[required[0]]])
+            c_frac = float(parts[col_idx[required[1]]])
 
             # Filter by minimum overlap
             if e_frac < min_overlap and c_frac < min_overlap:
