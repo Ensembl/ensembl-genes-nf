@@ -1,0 +1,2 @@
+sample,source_a,source_b,gff_a,gff_b,assembly_report
+mini_pair,reference_a,reference_b,pipelines/qc/testdata/pairwise/source_a.gff3,pipelines/qc/testdata/pairwise/source_b.gff3,

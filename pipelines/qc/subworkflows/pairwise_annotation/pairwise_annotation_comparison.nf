@@ -22,8 +22,9 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         staged = STAGE_ANNOTATION_PAIR.out.staged
 
         PAIR_GENES(staged)
+        versions_ch = STAGE_ANNOTATION_PAIR.out.versions.mix(PAIR_GENES.out.versions)
 
-        staged_gffs = staged.map { meta, source_a_gff, source_b_gff, assembly_report ->
+        staged_gffs = staged.map { meta, source_a_gff, source_b_gff, _assembly_report ->
             tuple(meta, source_a_gff, source_b_gff)
         }
 
@@ -33,33 +34,37 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         if (params.run_pairwise_transcript_concordance) {
             PAIRWISE_TRANSCRIPT_CONCORDANCE(rbh_inputs)
             transcript_concordance_ch = PAIRWISE_TRANSCRIPT_CONCORDANCE.out.metrics
+            versions_ch = versions_ch.mix(PAIRWISE_TRANSCRIPT_CONCORDANCE.out.versions)
         }
         else {
-            transcript_concordance_ch = Channel.empty()
+            transcript_concordance_ch = channel.empty()
         }
 
         if (params.run_pairwise_coding_integrity) {
             PAIRWISE_CODING_INTEGRITY(rbh_inputs)
             coding_integrity_ch = PAIRWISE_CODING_INTEGRITY.out.metrics
+            versions_ch = versions_ch.mix(PAIRWISE_CODING_INTEGRITY.out.versions)
         }
         else {
-            coding_integrity_ch = Channel.empty()
+            coding_integrity_ch = channel.empty()
         }
 
         if (params.run_pairwise_gene_presence) {
             PAIRWISE_GENE_PRESENCE(staged_gffs, ensg_lookup)
             gene_presence_ch = PAIRWISE_GENE_PRESENCE.out.metrics
+            versions_ch = versions_ch.mix(PAIRWISE_GENE_PRESENCE.out.versions)
         }
         else {
-            gene_presence_ch = Channel.empty()
+            gene_presence_ch = channel.empty()
         }
 
         if (params.run_pairwise_multi_mapping) {
             PAIRWISE_MULTI_MAPPING(all_pair_inputs)
             multi_mapping_ch = PAIRWISE_MULTI_MAPPING.out.metrics
+            versions_ch = versions_ch.mix(PAIRWISE_MULTI_MAPPING.out.versions)
         }
         else {
-            multi_mapping_ch = Channel.empty()
+            multi_mapping_ch = channel.empty()
         }
 
         if (params.run_pairwise_gff_feature_metrics) {
@@ -67,16 +72,17 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
             feature_counts_ch = PAIRWISE_GFF_FEATURE_METRICS.out.features
             gene_metrics_ch = PAIRWISE_GFF_FEATURE_METRICS.out.gene_metrics
             tx_metrics_ch = PAIRWISE_GFF_FEATURE_METRICS.out.tx_metrics
+            versions_ch = versions_ch.mix(PAIRWISE_GFF_FEATURE_METRICS.out.versions)
         }
         else {
-            feature_counts_ch = Channel.empty()
-            gene_metrics_ch = Channel.empty()
-            tx_metrics_ch = Channel.empty()
+            feature_counts_ch = channel.empty()
+            gene_metrics_ch = channel.empty()
+            tx_metrics_ch = channel.empty()
         }
 
         if (params.run_pairwise_transcript_counts) {
             transcript_count_inputs = staged
-                .flatMap { meta, source_a_gff, source_b_gff, assembly_report ->
+                .flatMap { meta, source_a_gff, source_b_gff, _assembly_report ->
                     [
                         tuple(meta, 'source_a', source_a_gff),
                         tuple(meta, 'source_b', source_b_gff)
@@ -85,26 +91,27 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
 
             PAIRWISE_COUNT_GFF_TRANSCRIPTS(transcript_count_inputs)
             transcript_counts_ch = PAIRWISE_COUNT_GFF_TRANSCRIPTS.out.counts
+            versions_ch = versions_ch.mix(PAIRWISE_COUNT_GFF_TRANSCRIPTS.out.versions)
         }
         else {
-            transcript_counts_ch = Channel.empty()
+            transcript_counts_ch = channel.empty()
         }
 
         if (params.run_pairwise_gffcompare) {
             SOURCE_A_GFF_TO_GTF(
-                staged.map { meta, source_a_gff, source_b_gff, assembly_report ->
+                staged.map { meta, source_a_gff, _source_b_gff, _assembly_report ->
                     tuple(meta, 'source_a', source_a_gff)
                 }
             )
             SOURCE_B_GFF_TO_GTF(
-                staged.map { meta, source_a_gff, source_b_gff, assembly_report ->
+                staged.map { meta, _source_a_gff, source_b_gff, _assembly_report ->
                     tuple(meta, 'source_b', source_b_gff)
                 }
             )
 
             SOURCE_A_GFF_TO_GTF.out.gtf
                 .join(SOURCE_B_GFF_TO_GTF.out.gtf)
-                .flatMap { meta, source_a_label, source_a_gtf, source_b_label, source_b_gtf ->
+            .flatMap { meta, _source_a_label, source_a_gtf, _source_b_label, source_b_gtf ->
                     [
                         tuple(meta, 'source_a_to_source_b', source_a_gtf, source_b_gtf),
                         tuple(meta, 'source_b_to_source_a', source_b_gtf, source_a_gtf)
@@ -114,15 +121,17 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
 
             PAIRWISE_GFFCOMPARE(gffcompare_inputs)
             PAIRWISE_PARSE_GFFCOMPARE(PAIRWISE_GFFCOMPARE.out.tmap)
+            versions_ch = versions_ch.mix(PAIRWISE_GFFCOMPARE.out.versions)
+                .mix(PAIRWISE_PARSE_GFFCOMPARE.out.versions)
 
             gffcompare_tmap_ch = PAIRWISE_GFFCOMPARE.out.tmap
             gffcompare_stats_ch = PAIRWISE_GFFCOMPARE.out.stats
             gffcompare_class_counts_ch = PAIRWISE_PARSE_GFFCOMPARE.out.counts
         }
         else {
-            gffcompare_tmap_ch = Channel.empty()
-            gffcompare_stats_ch = Channel.empty()
-            gffcompare_class_counts_ch = Channel.empty()
+            gffcompare_tmap_ch = channel.empty()
+            gffcompare_stats_ch = channel.empty()
+            gffcompare_class_counts_ch = channel.empty()
         }
 
     emit:
@@ -141,6 +150,5 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         gffcompare_tmap = gffcompare_tmap_ch
         gffcompare_stats = gffcompare_stats_ch
         gffcompare_class_counts = gffcompare_class_counts_ch
-        versions = STAGE_ANNOTATION_PAIR.out.versions
-            .mix(PAIR_GENES.out.versions)
+        versions = versions_ch
 }

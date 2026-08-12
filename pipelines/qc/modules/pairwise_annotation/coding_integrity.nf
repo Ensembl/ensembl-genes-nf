@@ -2,9 +2,9 @@ process PAIRWISE_CODING_INTEGRITY {
     tag { meta.id }
     label 'process_low'
 
-    container "python:3.11-slim"
+    container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/coding_integrity",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "*_coding_integrity.tsv"
 
@@ -30,6 +30,9 @@ process PAIRWISE_CODING_INTEGRITY {
             --assembly-accession ${meta.id} \\
             --sample-name ${meta.id}
 
+        normalise_pairwise_tsv.py --input ${meta.id}_coding_integrity.tsv --output ${meta.id}_coding_integrity.normalised.tsv
+        mv ${meta.id}_coding_integrity.normalised.tsv ${meta.id}_coding_integrity.tsv
+
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             python: \$(python --version | sed 's/Python //g')
@@ -38,7 +41,7 @@ process PAIRWISE_CODING_INTEGRITY {
 
     stub:
         """
-        printf "assembly_accession\\tsample_name\\tensembl_gene_id\\tcat_gene_id\\tclassification\\n" > ${meta.id}_coding_integrity.tsv
+        printf "assembly_accession\\tsample_name\\tsource_a_gene_id\\tsource_b_gene_id\\tclassification\\n" > ${meta.id}_coding_integrity.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

@@ -73,7 +73,7 @@ workflow {
         /*
          * Read CSV with columns: sample,gff3
          */
-        Channel
+        channel
             .fromPath(params.gff_csv, checkIfExists: true)
             .splitCsv(header: true)
             .map { row ->
@@ -115,7 +115,7 @@ workflow {
     }
 
     if (params.run_pairwise_annotation_comparison) {
-        Channel
+        channel
             .fromPath(params.pairwise_csv, checkIfExists: true)
             .splitCsv(header: true)
             .map { row ->
@@ -133,7 +133,7 @@ workflow {
                 if (is_missing(sourceBRef))
                     error "pairwise_csv row for ${sample} is missing gff_b/source_b_gff/annotation_b"
 
-                [sourceARef, sourceBRef, assemblyReport].findAll { !is_missing(it) && !is_url(it) }.each { ref ->
+                [sourceARef, sourceBRef, assemblyReport].findAll { value -> !is_missing(value) && !is_url(value) }.each { ref ->
                     if (!file(ref).exists())
                         error "pairwise_csv row for ${sample} references a missing local file: ${ref}"
                 }

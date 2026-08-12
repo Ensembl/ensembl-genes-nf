@@ -4,7 +4,7 @@ process STAGE_ANNOTATION_PAIR {
 
     container "https://depot.galaxyproject.org/singularity/curl:8.8.0--he654da7_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/inputs",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "*"
 

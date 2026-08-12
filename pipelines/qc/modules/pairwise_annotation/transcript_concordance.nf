@@ -2,9 +2,9 @@ process PAIRWISE_TRANSCRIPT_CONCORDANCE {
     tag { meta.id }
     label 'process_low'
 
-    container "python:3.11-slim"
+    container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/transcript_concordance",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "*_transcript_concordance.tsv"
 
@@ -30,6 +30,9 @@ process PAIRWISE_TRANSCRIPT_CONCORDANCE {
             --assembly-accession ${meta.id} \\
             --sample-name ${meta.id}
 
+        normalise_pairwise_tsv.py --input ${meta.id}_transcript_concordance.tsv --output ${meta.id}_transcript_concordance.normalised.tsv
+        mv ${meta.id}_transcript_concordance.normalised.tsv ${meta.id}_transcript_concordance.tsv
+
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             python: \$(python --version | sed 's/Python //g')
@@ -38,7 +41,7 @@ process PAIRWISE_TRANSCRIPT_CONCORDANCE {
 
     stub:
         """
-        printf "assembly_accession\\tsample_name\\tensembl_gene_id\\tcat_gene_id\\tensembl_biotype\\tn_ensembl_transcripts\\tn_cat_transcripts\\ttranscript_concordance_rate\\n" > ${meta.id}_transcript_concordance.tsv
+        printf "assembly_accession\\tsample_name\\tsource_a_gene_id\\tsource_b_gene_id\\tsource_a_biotype\\tn_source_a_transcripts\\tn_source_b_transcripts\\ttranscript_concordance_rate\\n" > ${meta.id}_transcript_concordance.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

@@ -7,7 +7,7 @@ The implemented QC steps are:
 - AGAT statistics generation followed by conversion of the AGAT text report into a `genebuild` CSV using the `parse_agat.py` parser from the `ensembl-genes` repository.
 - Pairwise annotation comparison for two GFF3 annotation sources on the same assembly.
 
-The pairwise branch is an initial port of the HPRC Ensembl/CAT comparison scripts. Internally, some output columns still use the legacy `ensembl`/`cat` names: source A maps to the legacy Ensembl side, and source B maps to the legacy CAT side.
+The pairwise branch is a general one-pair-per-row comparison workflow. Each row names a `source_a` and `source_b` annotation for the same assembly. Some metric implementations retain private legacy parsing code, but the workflow input and published table headers use the neutral `source_a`/`source_b` contract.
 
 ## What It Does
 
@@ -103,6 +103,17 @@ nextflow run pipelines/qc/main.nf \
   --outdir results
 ```
 
+For a deterministic structural check, use the bundled one-pair fixture:
+
+```bash
+nextflow run pipelines/qc/main.nf \
+  --run_agat_metrics false \
+  --run_pairwise_annotation_comparison true \
+  --pairwise_csv pipelines/qc/testdata/pairwise/pairs.csv \
+  -stub-run -profile local \
+  --outdir /tmp/qc-pairwise-stub
+```
+
 ## Outputs
 
 AGAT outputs are written to:
@@ -150,4 +161,4 @@ The workflow stops early if required inputs for the enabled branches are missing
 
 ## Current Scope
 
-This README reflects the current implementation in this branch. The pairwise comparison path is a mechanical port and still needs a schema cleanup pass to replace legacy Ensembl/CAT column names with generic source A/source B naming.
+This workflow compares exactly one annotation pair per samplesheet row. It does not assume that either source is Ensembl or CAT, and it can compare different source pairs independently in the same run. The pairwise source labels are retained in the sample metadata and the published metric headers are normalised to `source_a`/`source_b` names.

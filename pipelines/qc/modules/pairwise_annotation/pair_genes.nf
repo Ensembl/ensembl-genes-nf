@@ -4,10 +4,10 @@ process PAIR_GENES {
 
     container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/gene_pairs",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "*.tsv"
-    publishDir "${params.outdir}/qc/pairwise_annotation/${meta.id}/logs",
+    publishDir "${params.outdir}/qc/pairwise_annotation",
         mode: 'copy',
         pattern: "*.log"
 
@@ -51,6 +51,11 @@ process PAIR_GENES {
             ${args} \\
             2>&1 | tee ${meta.id}.log
 
+        for table in ${meta.id}.gene_pairs_all.tsv ${meta.id}.gene_pairs_rbh.tsv ${meta.id}.assembly_summary.tsv; do
+            normalise_pairwise_tsv.py --input "\$table" --output "\$table.normalised"
+            mv "\$table.normalised" "\$table"
+        done
+
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             python: \$(python --version | sed 's/Python //g')
@@ -59,9 +64,9 @@ process PAIR_GENES {
 
     stub:
         """
-        printf "assembly_accession\\tsample_name\\tensembl_gene_id\\tensembl_biotype\\tcat_gene_id\\tcat_biotype\\toverlap_bp\\tfrac_ensembl_covered\\tfrac_cat_covered\\tclassification\\tclassification_detailed\\tis_rbh\\n" > ${meta.id}.gene_pairs_all.tsv
-        printf "assembly_accession\\tsample_name\\tensembl_gene_id\\tensembl_biotype\\tcat_gene_id\\tcat_biotype\\toverlap_bp\\tfrac_ensembl_covered\\tfrac_cat_covered\\tclassification\\tclassification_detailed\\tis_rbh\\n" > ${meta.id}.gene_pairs_rbh.tsv
-        printf "assembly_accession\\tsample_name\\tn_ensembl_genes\\tn_cat_genes\\tn_rbh_pairs\\n" > ${meta.id}.assembly_summary.tsv
+        printf "assembly_accession\\tsample_name\\tsource_a_gene_id\\tsource_a_biotype\\tsource_b_gene_id\\tsource_b_biotype\\toverlap_bp\\tfrac_source_a_covered\\tfrac_source_b_covered\\tclassification\\tclassification_detailed\\tis_rbh\\n" > ${meta.id}.gene_pairs_all.tsv
+        printf "assembly_accession\\tsample_name\\tsource_a_gene_id\\tsource_a_biotype\\tsource_b_gene_id\\tsource_b_biotype\\toverlap_bp\\tfrac_source_a_covered\\tfrac_source_b_covered\\tclassification\\tclassification_detailed\\tis_rbh\\n" > ${meta.id}.gene_pairs_rbh.tsv
+        printf "assembly_accession\\tsample_name\\tn_source_a_genes\\tn_source_b_genes\\tn_rbh_pairs\\n" > ${meta.id}.assembly_summary.tsv
         touch ${meta.id}.log
 
         cat <<-END_VERSIONS > versions.yml
