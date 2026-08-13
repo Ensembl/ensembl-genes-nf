@@ -22,8 +22,8 @@ for the species on the FTP server and copies the files into that directory.
 The process also generates a versions.yml file containing the version 
 of the upload process used.
 */
-process UPLOAD_INTO_FTP {
-    tag "$meta.gca:upload_into_ftp"
+process UPLOAD_REPEAT_LIBRARY_INTO_FTP {
+    tag "$meta.gca:upload_repeat_library_into_ftp"
         label 'ensembl_ftp'
 
 input:
@@ -41,8 +41,8 @@ sudo -u genebuild cp ${stk_file} /nfs/ftp/public/databases/ensembl/repeats/unfil
 sudo -u genebuild cp ${log_file} /nfs/ftp/public/databases/ensembl/repeats/unfiltered_repeatmodeler/species/${meta.species_name}
 cat <<'EOF' > versions.yml
     "${task.process}":
-          upload_into_ftp: "1.0"
-              EOF
+    upload_repeat_library_into_ftp: "1.0"
+EOF
 """
 
 }
