@@ -29,6 +29,7 @@ limitations under the License.
     2. FETCH_REPEAT_MODEL     - Check for existing RepeatModeler libraries
     3a. GENERATE_REPEATMODELER_LIBRARY - Generate de novo libraries for genomes without existing ones
     3b. CHECK_AND_DOWNLOAD_RMLIBRARY   - Download pre-computed libraries when available
+    3c. UPLOAD_REPEAT_LIBRARY_INTO_FTP - Upload generated libraries to Ensembl FTP server
     4. RUN_REPEATMASKER       - Identify and mask repeats using combined libraries
     5. RUN_RED                 - Identify repetitive regions using RED
     6. RUN_DUST                - Identify repetitive regions using DUST
@@ -58,7 +59,7 @@ include { RUN_REPEATMASKER }                 from './modules/run_repeatmasker.nf
 include { RUN_RED }                          from './modules/run_red.nf'
 include { RUN_DUST }                         from './modules/run_dust.nf'
 include { RUN_TRF }                          from './modules/run_trf.nf'
-include { UPLOAD_INTO_FTP }                  from './modules/upload_into_ftp.nf'
+include { UPLOAD_REPEAT_LIBRARY_INTO_FTP }   from './modules/upload_repeat_library_into_ftp.nf'
 include { UPLOAD_REPEATS_INTO_FTP }          from './modules/upload_repeats_into_ftp.nf'
 include { COLLECT_SOFTWARE_VERSIONS }        from './modules/collect_software_versions.nf'
 
@@ -141,8 +142,8 @@ workflow REPEAT_ANNOTATION {
         ftpInput=GENERATE_REPEATMODELER_LIBRARY(generateLibraryInput).repeatmodeler_library_out
         ch_versions_file = ch_versions_file.mix(GENERATE_REPEATMODELER_LIBRARY.out.versions_file)
         
-        repeatModelerInput = UPLOAD_INTO_FTP(ftpInput).library_out
-        ch_versions_file = ch_versions_file.mix(UPLOAD_INTO_FTP.out.versions_file) 
+        repeatModelerInput = UPLOAD_REPEAT_LIBRARY_INTO_FTP(ftpInput).library_out
+        ch_versions_file = ch_versions_file.mix(UPLOAD_REPEAT_LIBRARY_INTO_FTP.out.versions_file) 
         // Stage 3b: Download pre-computed libraries for genomes that have them
         // Transform to [url, gca] format expected by CHECK_AND_DOWNLOAD_RMLIBRARY
         downloadInput = library_status.available
@@ -153,13 +154,13 @@ workflow REPEAT_ANNOTATION {
         // nextflow-lint-disable    
         rmlibrary = CHECK_AND_DOWNLOAD_RMLIBRARY(downloadInput).repeatmodeler_library_out // nextflow-lint-disable
         ch_versions_file = ch_versions_file.mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.versions_file)
-                
+        if(params.run_repeatmasker) {        
         // Merge both library sources (generated + downloaded)
         allLibraries = repeatModelerInput
             .mix(rmlibrary)
             .view { meta,  library -> "Library ready for ${meta.gca}: ${library}" }
         ch_repeat_output = channel.empty()
-        if(params.run_repeatmasker) {
+        
             // Stage 4: Run RepeatMasker to identify and mask repeats
             RUN_REPEATMASKER(allLibraries)
             ch_versions_file = ch_versions_file.mix(RUN_REPEATMASKER.out.versions_file)
@@ -186,8 +187,7 @@ workflow REPEAT_ANNOTATION {
             ch_repeat_output = ch_repeat_output.mix(RUN_TRF.out.repeat_output)
 
         }
-        UPLOAD_REPEATS_INTO_FTP(ch_repeat_output)
-        ch_versions_file = ch_versions_file.mix(UPLOAD_REPEATS_INTO_FTP).out.versions_file
+        
         if (params.upload_repeats) {
         UPLOAD_REPEATS_INTO_FTP(ch_repeat_output)
         ch_versions_file = ch_versions_file.mix(UPLOAD_REPEATS_INTO_FTP.out.versions_file)
