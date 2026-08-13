@@ -15,7 +15,5 @@ Documentation for the available Ensembl Nextflow pipelines.
 
 example/README
 repeat/README
-riboseq/README
 statistics/README
-translon-consensus/README
 ```
