@@ -3,7 +3,7 @@ process GET_METADATA {
 
     tag "${meta.id}"
 
-    publishDir "${params.outdir}/metadata/${meta.id}", mode: 'copy', overwrite: true
+    publishDir { "${params.outdir}/metadata/${meta.id}" }, mode: 'copy', overwrite: true
 
     input:
     val meta

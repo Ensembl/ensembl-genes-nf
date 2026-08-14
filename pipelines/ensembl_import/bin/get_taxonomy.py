@@ -83,12 +83,17 @@ def get_species_taxonomy_meta_from_ncbi(
         if rank == "genus":
             continue
 
+        # NCBI places this root node before Eukaryota in LineageEx, but it is
+        # not part of the Ensembl species classification values.
+        if name == "cellular organisms":
+            continue
+
         if name:
             meta_pairs.append(("species.classification", name))
             logger.info(f"species.classification: {name}")
 
-        if rank == "superkingdom":
-            logger.info("Superkingdom reached")
+        if name == "Eukaryota" or rank == "superkingdom":
+            logger.info("Eukaryota/superkingdom reached")
             break
 
     logger.info("Lineage walk complete")

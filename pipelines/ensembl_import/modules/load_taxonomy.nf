@@ -3,7 +3,7 @@ process LOAD_TAXONOMY {
 
     tag "${meta.id}"
 
-    publishDir "${params.outdir}/metadata/${meta.id}", mode: 'copy', overwrite: true
+    publishDir { "${params.outdir}/metadata/${meta.id}" }, mode: 'copy', overwrite: true
 
     input:
     tuple val(meta), path(loaded_marker)

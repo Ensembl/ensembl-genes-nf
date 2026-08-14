@@ -4,11 +4,11 @@
 
 The pipeline lives at `pipelines/ensembl_import`. It was previously under the misspelled directory `pipelines/ensebl_import`; use the corrected path from now on.
 
-The RefSeq import path is wired and stub-tested with Nextflow 25.04.6:
+The RefSeq import path is wired and stub-tested with Nextflow 26.04.0:
 
 ```bash
 env NXF_TEMP=/tmp \
-  /hps/software/spack/opt/spack/linux-cascadelake/nextflow-25.04.6-og6z2234zw6ecuuv44fyaaynvqwkxlcu/bin/nextflow \
+  nextflow \
   run main.nf \
   -stub \
   --input_csv /tmp/ensembl_import_stub/input.csv \
@@ -23,9 +23,9 @@ The registry update path is not implemented yet. The registry modules are placeh
 
 ## Required Nextflow Version
 
-Use Nextflow 25.x. The available module on this system is `nextflow/25.04.6`.
+Use Nextflow 26.04.0 or a compatible 26.x release.
 
-The root `nextflow.config` pins `manifest.nextflowVersion = '25.04.6'`, and `pipelines/ensembl_import/main.nf` has a runtime guard that rejects non-25.x versions.
+The root `nextflow.config` pins `manifest.nextflowVersion = '26.04.0'`.
 
 The default `nextflow` currently resolves to 26.04.0 on this host, so do not rely on PATH unless the 25.x module is loaded first.
 
@@ -37,7 +37,7 @@ Use the default Slurm execution for real imports:
 
 ```bash
 env NXF_TEMP=/tmp \
-  /hps/software/spack/opt/spack/linux-cascadelake/nextflow-25.04.6-og6z2234zw6ecuuv44fyaaynvqwkxlcu/bin/nextflow \
+  nextflow \
   run /hps/software/users/ensembl/genebuild/lazar/modenv/stats_pipe/ensembl-genes-nf/pipelines/ensembl_import/main.nf \
   --input_csv input.csv \
   --ensembl_genes_repo /hps/software/users/ensembl/genebuild/lazar/modenv/stats_pipe/ensembl-genes \
@@ -49,7 +49,7 @@ Use local execution only when requested explicitly:
 
 ```bash
 env NXF_TEMP=/tmp \
-  /hps/software/spack/opt/spack/linux-cascadelake/nextflow-25.04.6-og6z2234zw6ecuuv44fyaaynvqwkxlcu/bin/nextflow \
+  nextflow \
   run main.nf \
   -profile local \
   -stub \
@@ -63,8 +63,8 @@ env NXF_TEMP=/tmp \
 
 `main.nf` should stay thin:
 
-1. Validate parameters with `nf-schema` plus local file existence checks.
-2. Read `--input_csv` with columns `gcf` and `species`.
+1. Validate parameters and the `gcf,species` sample sheet with `nf-schema`.
+2. Read the validated `--input_csv` sample sheet with columns `gcf` and `species`.
 3. Build one metadata map per assembly: `[id: row.gcf, species: row.species]`.
 4. Read `--server_settings` JSON once and pass database settings as a value channel.
 5. Call `IMPORT_REFSEQ`.

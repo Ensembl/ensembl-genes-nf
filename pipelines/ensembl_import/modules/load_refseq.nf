@@ -2,7 +2,7 @@ process LOAD_REFSEQ {
     label 'process_high_memory'
 
     tag "${meta.id}"
-    publishDir "${params.outdir}/refseq/${meta.id}", mode: 'copy', overwrite: true
+    publishDir { "${params.outdir}/refseq/${meta.id}" }, mode: 'copy', overwrite: true
 
     input:
     tuple val(meta),

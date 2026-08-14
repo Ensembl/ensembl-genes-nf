@@ -6,14 +6,18 @@
   "properties": {
     "input_csv": {
       "type": "string",
+      "format": "file-path",
+      "schema": "assets/schema_input.json",
       "description": "Path to the input CSV file"
     },
     "server_settings": {
       "type": "string",
+      "format": "file-path",
       "description": "Path to the server settings file"
     },
     "ensembl_genes_repo": {
       "type": "string",
+      "format": "directory-path",
       "description": "Path to a local ensembl-genes checkout"
     },
     "outdir": {

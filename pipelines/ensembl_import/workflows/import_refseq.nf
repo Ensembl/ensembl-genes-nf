@@ -1,0 +1,36 @@
+#!/usr/bin/env nextflow
+
+include { IMPORT_REFSEQ_TO_CORE } from '../subworkflows/import_refseq_to_core.nf'
+include { GET_METADATA_CORE } from '../subworkflows/get_metadata_core.nf'
+
+
+workflow IMPORT_REFSEQ {
+
+    take:
+        // channel: val(meta)
+        //   meta: [id: RefSeq assembly accession, species: binomial species name]
+        samples_ch
+
+        // value channel: tuple val(db_host), val(db_port), val(db_user),
+        // val(db_password), val(db_read_user)
+        db_config_ch
+
+    main:
+
+        IMPORT_REFSEQ_TO_CORE(samples_ch, db_config_ch)
+
+        GET_METADATA_CORE(
+            IMPORT_REFSEQ_TO_CORE.out.metadata_input,
+            db_config_ch
+        )
+
+        versions_ch = IMPORT_REFSEQ_TO_CORE.out.versions
+            .mix(GET_METADATA_CORE.out.versions)
+
+    emit:
+        loaded_refseq = IMPORT_REFSEQ_TO_CORE.out.loaded_refseq
+        metadata_sql = GET_METADATA_CORE.out.metadata_sql
+        loaded_metadata = GET_METADATA_CORE.out.loaded_metadata
+        taxonomy_loaded = GET_METADATA_CORE.out.taxonomy_loaded
+        versions = versions_ch
+    }

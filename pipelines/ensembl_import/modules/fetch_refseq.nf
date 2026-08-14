@@ -3,7 +3,7 @@ process FETCH_REFSEQ {
 
     tag "${meta.id}"
 
-    publishDir "${params.outdir}/refseq/${meta.id}", mode: 'copy', overwrite: true
+    publishDir { "${params.outdir}/refseq/${meta.id}" }, mode: 'copy', overwrite: true
 
     input:
     val meta
