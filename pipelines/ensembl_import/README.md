@@ -8,8 +8,7 @@ taxonomy information from NCBI.
 ## Requirements
 
 - Nextflow `26.04.0` or a compatible 26.x release
-- Singularity or Apptainer for normal execution
-- Slurm for production execution, unless another executor is configured
+- Singularity for normal execution
 - A local checkout of `ensembl-genes` containing:
   - `src/python/ensembl/genes/ensembl_loading/gff_cli.py`
   - `src/python/ensembl/genes/metadata/core_metadata.py`
@@ -44,9 +43,9 @@ Pass a JSON file with `--server_settings`:
 {
   "db_host": "mysql.example.org",
   "db_port": 3306,
-  "db_user": "ensrw",
+  "db_user": "writeuser",
   "db_password": "secret",
-  "db_read_user": "ensro"
+  "db_read_user": "readuser"
 }
 ```
 
