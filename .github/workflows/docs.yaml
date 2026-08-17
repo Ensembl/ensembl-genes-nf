@@ -6,7 +6,7 @@ name: Deploy Statistics Pipeline Documentation
 on:
   push:
     branches:
-      - feature/collection_tmp  # Deploy from this branch during development
+      - dev  # Deploy from this branch during development
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
