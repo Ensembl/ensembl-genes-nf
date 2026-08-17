@@ -1,42 +1,56 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "QC Pipeline Parameters",
-  "description": "Parameter schema for the QC pipeline",
-  "type": "object",
-  "properties": {
-    "gff_csv": {
-      "type": "string",
-      "description": "Path to a CSV file with at least sample and gff3 columns"
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "QC Pipeline Parameters",
+    "description": "Parameter schema for the QC pipeline",
+    "type": "object",
+    "properties": {
+        "input_csv": {
+            "type": "string",
+            "description": "Path to a CSV file with at least sample, gff3, and protein columns"
+        },
+        "ensembl_genes_repo": {
+            "type": "string",
+            "description": "Path to a local ensembl-genes checkout"
+        },
+        "feature_levels": {
+            "type": ["string", "null"],
+            "description": "Optional explicit path to feature_levels.yaml"
+        },
+        "agat_parser": {
+            "type": ["string", "null"],
+            "description": "Optional explicit path to parse_agat.py"
+        },
+        "run_agat_metrics": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable the AGAT metrics branch"
+        },
+        "run_interproscan": {
+            "type": "boolean",
+            "default": false,
+            "description": "Enable the InterProScan branch"
+        },
+        "data_file_path": {
+            "type": ["string", "null"],
+            "description": "Optional explicit path to InterProScan data library"
+        },
+        "database": {
+            "type": "string",
+            "description": "Optional database to run InterProScan on (default: Pfam)"
+        },
+        "interpro_parser": {
+            "type": ["string", "null"],
+            "description": "Optional explicit path to interpro_parser.py"
+        },
+        "outdir": {
+            "type": "string",
+            "default": "./results",
+            "description": "Output directory"
+        },
+        "tracedir": {
+            "type": ["string", "null"],
+            "description": "Directory for Nextflow execution reports and trace files"
+        }
     },
-    "ensembl_genes_repo": {
-      "type": "string",
-      "description": "Path to a local ensembl-genes checkout"
-    },
-    "feature_levels": {
-      "type": "string",
-      "description": "Optional explicit path to feature_levels.yaml"
-    },
-    "agat_parser": {
-      "type": "string",
-      "description": "Optional explicit path to parse_agat.py"
-    },
-    "run_agat_metrics": {
-      "type": "boolean",
-      "default": true,
-      "description": "Enable the AGAT metrics branch"
-    },
-    "outdir": {
-      "type": "string",
-      "default": "./results",
-      "description": "Output directory"
-    },
-    "tracedir": {
-      "type": "string",
-      "description": "Directory for Nextflow execution reports and trace files"
-    }
-  },
-  "required": [
-    "gff_csv",
-    "ensembl_genes_repo"
-  ]
+    "required": ["input_csv", "ensembl_genes_repo"]
 }
