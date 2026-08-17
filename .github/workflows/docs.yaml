@@ -1,6 +1,5 @@
-name: Deploy Statistics Pipeline Documentation
+name: Deploy Pipeline Documentation
 
-# This workflow deploys documentation specifically for the pipelines/statistics pipeline
 # It can be extended to support multiple pipelines in the future
 
 on:
@@ -65,12 +64,12 @@ jobs:
 
             - name: Verify MkDocs configuration
               run: |
-                  echo "Verifying MkDocs configuration for statistics pipeline..."
+                  echo "Verifying MkDocs configuration for pipeline..."
                   zensical build --config-file mkdocs.yml --strict
 
             - name: Build MkDocs site
               run: |
-                  echo "Building statistics pipeline documentation..."
+                  echo "Building pipeline documentation..."
                   zensical build --config-file mkdocs.yml
 
             # Deploy ONLY on push or manual trigger
@@ -79,7 +78,7 @@ jobs:
               uses: peaceiris/actions-gh-pages@v3
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
-                  publish_dir: site_statistics
+                  publish_dir: site_ensembl_genes_nf
                   publish_branch: gh-pages
                   force_orphan: true
             # PR Preview Comment
@@ -94,7 +93,7 @@ jobs:
                         repo: context.repo.repo,
                         body: `## 📚 Documentation Preview Built
 
-                        ✅ Statistics pipeline documentation built successfully!
+                        Documentation built successfully!
 
                         > This is a preview build. Documentation will be deployed when merged or pushed to the deployment branch.`
                                     })
