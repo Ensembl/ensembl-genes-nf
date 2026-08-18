@@ -21,7 +21,9 @@ import sys
 import urllib.request
 import zipfile
 import shutil
-from urllib.error import HTTPError
+import time
+from http.client import IncompleteRead
+from urllib.error import HTTPError, URLError
 
 
 def download_and_extract(url: str, output_dir: str) -> bool:
@@ -35,30 +37,40 @@ def download_and_extract(url: str, output_dir: str) -> bool:
     """
     zip_path = os.path.join(output_dir, "genome.zip")
 
-    req = urllib.request.Request(url, headers={"Accept": "application/zip"})
-    with urllib.request.urlopen(req) as r, open(zip_path, "wb") as out:
-        out.write(r.read())
-    extracted_roots: set[str] = set()
-    with zipfile.ZipFile(zip_path) as z:
-        fna_files = [f for f in z.namelist() if f.endswith(".fna")]
-        if not fna_files:
-            return False
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(url, headers={"Accept": "application/zip"})
+            with urllib.request.urlopen(req) as r, open(zip_path, "wb") as out:
+                # Stream the archive so a large download does not occupy an
+                # unnecessary second copy of the ZIP in Python memory.
+                shutil.copyfileobj(r, out)
 
-        for f in fna_files:
-            z.extract(f, output_dir)
-            shutil.move(os.path.join(output_dir, f), os.path.join(output_dir, os.path.basename(f)))
-            # Track top-level extracted directory (e.g. ncbi_dataset)
-            # extracted_roots.add(f.split(os.sep)[0])
-            extracted_roots.add(f.split("/")[0])
+            extracted_roots: set[str] = set()
+            with zipfile.ZipFile(zip_path) as z:
+                fna_files = [f for f in z.namelist() if f.endswith(".fna")]
+                if not fna_files:
+                    return False
 
-        # Cleanup extracted directory trees
-    for root in extracted_roots:
-        path = os.path.join(output_dir, root)
-        if os.path.isdir(path):
-            shutil.rmtree(path)
+                for f in fna_files:
+                    z.extract(f, output_dir)
+                    shutil.move(os.path.join(output_dir, f), os.path.join(output_dir, os.path.basename(f)))
+                    extracted_roots.add(f.split("/")[0])
 
-    os.remove(zip_path)
-    return True
+            for root in extracted_roots:
+                path = os.path.join(output_dir, root)
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+
+            os.remove(zip_path)
+            return True
+        except (HTTPError, URLError, IncompleteRead, OSError, zipfile.BadZipFile) as exc:
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+            if attempt == 2:
+                print(f"NCBI download failed after retries: {exc}", file=sys.stderr)
+            else:
+                time.sleep(15 * (attempt + 1))
+    return False
 
 
 def ena_assembly_path(ena_base: str, gca: str) -> str:
@@ -103,7 +115,17 @@ def download_from_ena(ena_base: str, gca: str, output_dir: str) -> bool:
 
         print(f"Downloading genome from ENA: {fasta_url}")
 
-        urllib.request.urlretrieve(fasta_url, gz_path)
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(fasta_url) as response, open(gz_path, "wb") as output:
+                    shutil.copyfileobj(response, output)
+                break
+            except (HTTPError, URLError, IncompleteRead, OSError):
+                if os.path.exists(gz_path):
+                    os.remove(gz_path)
+                if attempt == 2:
+                    return False
+                time.sleep(15 * (attempt + 1))
 
         # Unzip
         fasta_path = gz_path[:-3]
@@ -113,7 +135,7 @@ def download_from_ena(ena_base: str, gca: str, output_dir: str) -> bool:
         os.remove(gz_path)
         return True
 
-    except HTTPError:
+    except (HTTPError, URLError, OSError):
         return False
 
 
