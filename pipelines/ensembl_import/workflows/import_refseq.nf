@@ -1,8 +1,5 @@
-#!/usr/bin/env nextflow
-
 include { IMPORT_REFSEQ_TO_CORE } from '../subworkflows/import_refseq_to_core.nf'
 include { GET_METADATA_CORE } from '../subworkflows/get_metadata_core.nf'
-
 
 workflow IMPORT_REFSEQ {
 

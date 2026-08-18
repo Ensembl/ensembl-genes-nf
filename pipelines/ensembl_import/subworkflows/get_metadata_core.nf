@@ -4,7 +4,6 @@ include { GET_METADATA } from '../modules/get_metadata.nf'
 include { LOAD_METADATA } from '../modules/load_metadata.nf'
 include { LOAD_TAXONOMY } from '../modules/load_taxonomy.nf'
 
-
 workflow GET_METADATA_CORE {
 
     take:

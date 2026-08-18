@@ -1,9 +1,5 @@
-#!/usr/bin/env nextflow
-
 include { FETCH_REFSEQ } from '../modules/fetch_refseq.nf'
 include { LOAD_REFSEQ } from '../modules/load_refseq.nf'
-
-
 
 workflow IMPORT_REFSEQ_TO_CORE {
 
