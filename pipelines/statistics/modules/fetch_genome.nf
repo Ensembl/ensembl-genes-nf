@@ -38,6 +38,7 @@ process FETCH_GENOME {
     path "versions.yml", emit: versions_file
 
     script:
+    def suppressed_accession_arg = params.allow_suppressed_accessions ? '--allow-suppressed-accessions' : ''
     """
     if [[ -f "${meta.genome_file}" ]]; then
         echo "Using provided genome file: ${meta.genome_file}"
@@ -46,7 +47,7 @@ process FETCH_GENOME {
         fetch_genome.py \
             --output_dir . \
             --gca ${meta.gca} \
-            --ncbi_base ${params.ncbiBaseUrl}
+            --ncbi_base ${params.ncbiBaseUrl} ${suppressed_accession_arg}
 
         downloaded_genome=\$(find . -maxdepth 1 -type f -name "*.fna" | head -n 1)
 

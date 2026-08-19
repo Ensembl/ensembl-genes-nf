@@ -17,6 +17,7 @@
 import argparse
 import os
 import gzip
+import json
 import sys
 import urllib.request
 import zipfile
@@ -26,14 +27,38 @@ from http.client import IncompleteRead
 from urllib.error import HTTPError, URLError
 
 
-def download_and_extract(url: str, output_dir: str) -> bool:
+def suppressed_current_accession(zip_file: zipfile.ZipFile, requested_accession: str) -> str | None:
+    """Return NCBI's replacement accession for a non-current assembly package."""
+    report_name = "ncbi_dataset/data/assembly_data_report.jsonl"
+    try:
+        report = json.loads(zip_file.read(report_name).decode().splitlines()[0])
+    except (KeyError, IndexError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+
+    assembly_info = report.get("assemblyInfo", {})
+    current_accession = report.get("currentAccession") or assembly_info.get("currentAccession")
+    if (
+        assembly_info.get("assemblyStatus") in {"suppressed", "previous"}
+        and current_accession
+        and current_accession != requested_accession
+    ):
+        return current_accession
+    return None
+
+
+def download_and_extract(
+    url: str, output_dir: str, requested_accession: str, allow_suppressed: bool = False
+) -> bool | str:
     """Download genome zip from NCBI and extract .fna files to output_dir.
-    Returns True if successful, False otherwise.
+
+    Returns True if successful, False otherwise, or a replacement accession
+    when an explicitly enabled non-current accession has a currentAccession.
     Inputs:
         url: URL to download the genome zip.
         output_dir: Directory to extract .fna files to.
     Returns:
-        True if download and extraction were successful, False otherwise.
+        True if download and extraction succeeded, False otherwise, or the
+        current replacement accession for an allowed non-current assembly.
     """
     zip_path = os.path.join(output_dir, "genome.zip")
 
@@ -49,6 +74,11 @@ def download_and_extract(url: str, output_dir: str) -> bool:
             with zipfile.ZipFile(zip_path) as z:
                 fna_files = [f for f in z.namelist() if f.endswith(".fna")]
                 if not fna_files:
+                    if allow_suppressed:
+                        replacement = suppressed_current_accession(z, requested_accession)
+                        if replacement:
+                            os.remove(zip_path)
+                            return replacement
                     return False
 
                 for f in fna_files:
@@ -146,6 +176,11 @@ def main():
     parser.add_argument("--gca", required=True)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument(
+        "--allow-suppressed-accessions",
+        action="store_true",
+        help="Use NCBI's currentAccession for suppressed or previous assemblies",
+    )
+    parser.add_argument(
         "--ncbi_base", default="https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession"
     )
     parser.add_argument("--ena_base", default="https://ftp.ebi.ac.uk/pub/databases/ena/assembly")
@@ -160,9 +195,29 @@ def main():
 
     print(f"Downloading genome for {args.gca} from NCBI")
 
-    if download_and_extract(ncbi_url, args.output_dir):
+    download_result = download_and_extract(
+        ncbi_url, args.output_dir, args.gca, args.allow_suppressed_accessions
+    )
+    if download_result is True:
         print("Genome downloaded from NCBI")
         sys.exit(0)
+
+    if isinstance(download_result, str):
+        replacement_url = (
+            f"{args.ncbi_base}/{download_result}/download"
+            "?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"
+        )
+        print(
+            f"Requested assembly {args.gca} is non-current; "
+            f"using current accession {download_result} for genome BUSCO",
+            file=sys.stderr,
+        )
+        if download_and_extract(replacement_url, args.output_dir, download_result) is True:
+            print(
+                f"Genome downloaded from NCBI using {download_result} "
+                f"(requested {args.gca})"
+            )
+            sys.exit(0)
     print("NCBI genome not found, trying ENA")
 
     if download_from_ena(args.ena_base, args.gca, args.output_dir):
