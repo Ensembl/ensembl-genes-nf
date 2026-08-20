@@ -26,8 +26,9 @@ workflow IMPORT_REFSEQ {
 
     emit:
         loaded_refseq = IMPORT_REFSEQ_TO_CORE.out.loaded_refseq
-        metadata_sql = GET_METADATA_CORE.out.metadata_sql
-        loaded_metadata = GET_METADATA_CORE.out.loaded_metadata
+        stats_input = IMPORT_REFSEQ_TO_CORE.out.stats_input
+        //metadata_sql = GET_METADATA_CORE.out.metadata_sql
+        //loaded_metadata = GET_METADATA_CORE.out.loaded_metadata
         taxonomy_loaded = GET_METADATA_CORE.out.taxonomy_loaded
         versions = versions_ch
     }

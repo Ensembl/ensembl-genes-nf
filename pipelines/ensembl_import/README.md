@@ -2,8 +2,8 @@
 
 This pipeline imports RefSeq assemblies into Ensembl core databases. For each
 assembly it fetches the RefSeq annotation, creates a core database, adds sample
-gene metadata, generates core metadata SQL, loads the metadata, and loads
-taxonomy information from NCBI.
+gene metadata, loads taxonomy information from NCBI, and publishes an input
+CSV for the statistics pipeline.
 
 ## Requirements
 
@@ -92,9 +92,8 @@ main.nf
     subworkflows/get_metadata_core.nf
       GET_SAMPLE_GENE
       ADD_STATIC_METAKEYS
-      GET_METADATA
-      LOAD_METADATA
       LOAD_TAXONOMY
+    PREPARE_STATS_INPUT
 ```
 
 Each assembly is processed independently.
@@ -104,10 +103,9 @@ Each assembly is processed independently.
 2. `LOAD_REFSEQ` creates the Ensembl core database with `gff_cli.py`.
 3. `GET_SAMPLE_GENE` selects and inserts sample gene metadata.
 4. `ADD_STATIC_METAKEYS` inserts configured static metadata keys.
-5. `GET_METADATA` generates core metadata SQL.
-6. `LOAD_METADATA` loads the generated SQL into the core database.
-7. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
-   core database.
+5. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
+  core database.
+6. `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
 
 ## Outputs
 
@@ -121,9 +119,16 @@ Published files are written below `--outdir`:
 The workflow emits:
 
 - RefSeq input files and process completion markers
-- Generated metadata SQL files
 - Metadata and taxonomy completion markers
+- `statistics_input.csv`, containing the core name, species ID, and the
+  published genome FASTA path
 - `versions.yml` files from each process
+
+The generated CSV uses `UNKNOWN` for `taxon_id` and `gca`, allowing the
+statistics pipeline to query those values from the loaded core. The
+`genome_file` column points to the published RefSeq FASTA, so the statistics
+pipeline does not download the genome again. No protein file is supplied;
+protein sequences can be dumped from the core by the statistics pipeline.
 
 ## Configuration
 
