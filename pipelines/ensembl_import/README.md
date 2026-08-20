@@ -124,11 +124,11 @@ The workflow emits:
   published genome FASTA path
 - `versions.yml` files from each process
 
-The generated CSV uses `UNKNOWN` for `taxon_id` and `gca`, allowing the
-statistics pipeline to query those values from the loaded core. The
-`genome_file` column points to the published RefSeq FASTA, so the statistics
-pipeline does not download the genome again. No protein file is supplied;
-protein sequences can be dumped from the core by the statistics pipeline.
+The generated CSV contains only `dbname`, `species_id`, and `genome_file`.
+The `genome_file` column points to the published RefSeq FASTA, so the
+statistics pipeline does not download the genome again. No protein file is
+supplied; protein sequences can be dumped from the core by the statistics
+pipeline.
 
 ## Configuration
 
