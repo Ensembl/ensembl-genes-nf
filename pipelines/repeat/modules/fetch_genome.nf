@@ -24,7 +24,7 @@ process FETCH_GENOME {
     """
     if [[ -f "${meta.genome_file}" ]]; then
         echo "Using provided genome file: ${meta.genome_file}"
-        cp -L "${meta.genome_file}" genome.fna
+        cp -L "${meta.genome_file}" genome.fa
     else
         fetch_genome.py \
             --reheader_file \
