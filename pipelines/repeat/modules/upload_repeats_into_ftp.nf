@@ -19,7 +19,6 @@ path "versions.yml", emit: versions_file
 
 script:
 """
-sudo -u genebuild rsync -ahvW #output_path#/ftp_release/ /nfs/ftp/public/databases/ensembl/pre-release
 sudo -u genebuild mkdir -p /nfs/ftp/public/databases/ensembl/pre-release/repeats/species/${meta.species_name}
 sudo -u genebuild cp ${fasta_file} /nfs/ftp/public/databases/ensembl/pre-release/repeats/species/${meta.species_name}
 sudo -u genebuild cp ${stk_file} /nfs/ftp/public/databases/ensembl/pre-release/repeats/species/${meta.species_name}
