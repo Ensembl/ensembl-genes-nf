@@ -12,7 +12,16 @@ process PREP_AA_FASTA {
 
     script:
         """
-        gffread ${gff3} -g ${genome_fasta} -x ${meta.id}.cds.fa -y ${meta.id}.faa
+        gffread ${gff3} -g ${genome_fasta} -x ${meta.id}.cds.fa -y ${meta.id}.raw.faa
+
+        awk '
+            /^>/ { print; next }
+            {
+                sequence = toupper(\$0)
+                gsub(/[^ACDEFGHIKLMNPQRSTVWY]/, "X", sequence)
+                print sequence
+            }
+        ' ${meta.id}.raw.faa > ${meta.id}.faa
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
