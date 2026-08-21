@@ -154,18 +154,31 @@ workflow REPEAT_ANNOTATION {
         // nextflow-lint-disable    
         rmlibrary = CHECK_AND_DOWNLOAD_RMLIBRARY(downloadInput).repeatmodeler_library_out // nextflow-lint-disable
         ch_versions_file = ch_versions_file.mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.versions_file)
-        if(params.run_repeatmasker) {        
+        
         // Merge both library sources (generated + downloaded)
         allLibraries = repeatModelerInput
             .mix(rmlibrary)
             .view { meta,  library -> "Library ready for ${meta.gca}: ${library}" }
+        } else {
+            allLibraries = genomeData
+            .map { meta ->
+            def library = file(meta.repeatmasker_library)
+
+            if (!library.exists()) {
+                error "RepeatMasker library not found: ${meta.repeatmasker_library}"
+            }
+
+            tuple(meta, library)
+            }
+        }
+
         ch_repeat_output = channel.empty()
-        
+        if(params.run_repeatmasker) {  
             // Stage 4: Run RepeatMasker to identify and mask repeats
             RUN_REPEATMASKER(allLibraries)
             ch_versions_file = ch_versions_file.mix(RUN_REPEATMASKER.out.versions_file)
             ch_repeat_output = ch_repeat_output.mix(RUN_REPEATMASKER.out.repeatmasker_out)
-            }
+            
         }
         if (params.run_red) {
             // Run RED for repeat annotation
