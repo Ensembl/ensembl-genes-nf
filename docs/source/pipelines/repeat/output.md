@@ -122,20 +122,6 @@ Runs RepeatMasker using the configured repeat library and produces masked genome
 
 Detects repetitive regions using RED without relying on a predefined repeat library.
 
----
-
-## Repeat Statistics
-
-**Published to:** `${params.outdir}/${meta.gca}/repeat_statistics/`
-
-### Typical Outputs
-
-* Repeat counts
-* Repeat coverage
-* Repeat class summaries
-* Summary reports
-
-These statistics summarise the repeat content identified across the genome assembly.
 
 ---
 
@@ -277,7 +263,6 @@ After pipeline completion verify that:
 | CHECK_AND_DOWNLOAD_DFAM      | Dfam library           | `${params.outdir}/${meta.gca}/dfam/`              |
 | RUN_REPEATMASKER             | Repeat annotations     | `${params.outdir}/${meta.gca}/repeatmasker/`      |
 | RUN_RED                      | RED repeat annotations | `${params.outdir}/${meta.gca}/red/`               |
-| Repeat Statistics            | Summary reports        | `${params.outdir}/${meta.gca}/repeat_statistics/` |
 | All modules                  | `versions.yml`         | `${params.outdir}/${meta.gca}/`                   |
 
 ---

@@ -29,7 +29,7 @@ The repeat pipeline requires the following information for each genome.
 | Column                  | Type    | Required    | Description                           | Example                                        |
 | ----------------------- | ------- | ----------- | ------------------------------------- | ---------------------------------------------- |
 | `gca`                   | string  | ✅           | NCBI assembly accession               | `GCA_000001405.29`                             |
-| `taxon_id`              | integer | ✅           | NCBI taxonomy identifier              | `9606`                                         |
+| `species_name`              | string | ✅           | Species name               | `homo_sapiens`                                         |
 | `repeatmodeler_library` | string  | ⚠️ Optional | path to a RepeatModeler repeat library | `repeatmodeler.fa` |
 
 If no RepeatModeler library is supplied, the pipeline can fall back to the configured repeat annotation strategy (for example Dfam or de novo repeat discovery, depending on the selected parameters).
@@ -39,10 +39,10 @@ If no RepeatModeler library is supplied, the pipeline can fall back to the confi
 ## Example CSV
 
 ```csv
-gca,taxon_id,repeatmodeler_library
-GCA_000001405.29,9606,https://ftp.ensembl.org/pub/repeats/homo_sapiens.repeatmodeler.fa
-GCA_000001635.9,10090,https://ftp.ensembl.org/pub/repeats/mus_musculus.repeatmodeler.fa
-GCA_000002035.4,7955,
+gca,species_name,repeatmodeler_library
+GCA_000001405.29,homo_sapiens,https://ftp.ensembl.org/pub/repeats/homo_sapiens.repeatmodeler.fa
+GCA_000001635.9,mus_musculus,https://ftp.ensembl.org/pub/repeats/mus_musculus.repeatmodeler.fa
+GCA_000002035.4,betta_splendens,
 ```
 
 ---
@@ -52,6 +52,7 @@ GCA_000002035.4,7955,
 ```bash
 nextflow run main.nf \
   --csvFile genomes.csv \
+  --generate_libs 
   --run_repeatmasker \
   --run_red
 ```
@@ -80,20 +81,20 @@ Assemblies are downloaded automatically from NCBI when required.
 
 ---
 
-## `taxon_id`
+## `species_name`
 
-NCBI Taxonomy identifier.
+Species name, lowercase with underscore cos it will be the name of the FTP folder.
 
 Examples:
 
-| Species                   | Taxonomy ID |
+| Species                   | species_name|
 | ------------------------- | ----------: |
-| *Homo sapiens*            |        9606 |
-| *Mus musculus*            |       10090 |
-| *Danio rerio*             |        7955 |
-| *Drosophila melanogaster* |        7227 |
+| *Homo sapiens*            |  homo_sapiens |
+| *Mus musculus*            |  mus_musculus |
+| *Danio rerio*             |  danio_rerio |
+| *Drosophila melanogaster* |  drosophila_melanogaster |
 
-Taxonomy identifiers are used to select appropriate repeat resources when available.
+
 
 ---
 
@@ -111,24 +112,6 @@ If omitted, the pipeline uses the configured fallback strategy.
 
 ---
 
-# Complete Example
-
-```csv
-gca,taxon_id,repeatmodeler_library
-GCA_000001405.29,9606,path/homo_sapiens.repeatmodeler.fa
-GCA_000001635.9,10090,path/mus_musculus.repeatmodeler.fa
-GCA_000002035.4,7955,
-```
-
-Command:
-
-```bash
-nextflow run main.nf \
-    --csvFile genomes.csv \
-    --run_repeatmasker \
-    --run_red \
-    --outdir results
-```
 
 ---
 
@@ -144,10 +127,10 @@ Typical validation errors include:
 Error: GCA must follow the format GCA_000000000.0
 ```
 
-### ❌ Missing taxonomy identifier
+### ❌ Missing species_name identifier
 
 ```text
-Error: taxon_id is required
+Error: species_name is required
 ```
 
 ### ❌ Invalid RepeatModeler path
