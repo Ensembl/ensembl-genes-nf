@@ -1,0 +1,1438 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BUSCO_PROTEIN_LINEAGE Module &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../repeat/README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">BUSCO_PROTEIN_LINEAGE Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/pipelines/statistics/modules/busco-protein-lineage.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="busco-protein-lineage-module">
+<h1>BUSCO_PROTEIN_LINEAGE Module<a class="headerlink" href="#busco-protein-lineage-module" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">BUSCO_PROTEIN_LINEAGE</span></code> module assesses annotation completeness by running BUSCO (Benchmarking Universal Single-Copy Orthologs) analysis in <strong>proteins mode</strong>. It evaluates the quality of genome annotations by directly searching protein sequences for expected single-copy orthologs, providing metrics on complete, fragmented, duplicated, and missing BUSCOs.</p>
+<p><strong>Module Location</strong>: <code class="docutils literal notranslate"><span class="pre">pipelines/statistics/modules/busco_protein_lineage.nf</span></code></p>
+</section>
+<section id="functionality">
+<h2>Functionality<a class="headerlink" href="#functionality" title="Link to this heading"></a></h2>
+<p>This module performs comprehensive annotation quality assessment:</p>
+<ol class="arabic simple">
+<li><p><strong>Annotation Completeness Analysis</strong>: Searches translated protein sequences for universal single-copy orthologs</p></li>
+<li><p><strong>Direct Protein Comparison</strong>: Uses HMMER profile searches (no gene prediction required)</p></li>
+<li><p><strong>Ortholog Detection</strong>: Compares proteins against lineage-specific BUSCO datasets</p></li>
+<li><p><strong>Quality Metrics</strong>: Generates statistics on complete (C), complete single-copy (S), complete duplicated (D), fragmented (F), and missing (M) BUSCOs</p></li>
+<li><p><strong>Offline Mode</strong>: Uses pre-downloaded BUSCO datasets from <code class="docutils literal notranslate"><span class="pre">params.download_path</span></code></p></li>
+</ol>
+<p>The module provides standardized, quantitative quality metrics used to assess genome annotation completeness and gene prediction accuracy.</p>
+</section>
+<section id="key-differences-from-busco-genome-lineage">
+<h2>Key Differences from BUSCO_GENOME_LINEAGE<a class="headerlink" href="#key-differences-from-busco-genome-lineage" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Aspect</p></th>
+<th class="head"><p>BUSCO_GENOME_LINEAGE</p></th>
+<th class="head"><p>BUSCO_PROTEIN_LINEAGE</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Input</strong></p></td>
+<td><p>Genomic DNA sequences</p></td>
+<td><p>Protein sequences (translations)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Mode</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">genome</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">proteins</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Gene Prediction</strong></p></td>
+<td><p>Required (Metaeuk/Augustus)</p></td>
+<td><p>Not required (uses existing translations)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Speed</strong></p></td>
+<td><p>Slower (includes gene prediction)</p></td>
+<td><p>Faster (direct protein search)</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Purpose</strong></p></td>
+<td><p>Assembly quality assessment</p></td>
+<td><p>Annotation quality assessment</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Use Case</strong></p></td>
+<td><p>Evaluate genome completeness</p></td>
+<td><p>Evaluate annotation completeness</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>When to use</strong>:</p>
+<ul class="simple">
+<li><p><strong>BUSCO_GENOME_LINEAGE</strong>: Assessing raw genome assemblies before annotation</p></li>
+<li><p><strong>BUSCO_PROTEIN_LINEAGE</strong>: Assessing quality of annotated protein-coding genes</p></li>
+</ul>
+</section>
+<section id="inputs">
+<h2>Inputs<a class="headerlink" href="#inputs" title="Link to this heading"></a></h2>
+<section id="channel-input">
+<h3>Channel Input<a class="headerlink" href="#channel-input" title="Link to this heading"></a></h3>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">tuple</span><span class="w"> </span><span class="nf">val</span><span class="o">(</span><span class="n">meta</span><span class="o">),</span><span class="w"> </span><span class="n">path</span><span class="o">(</span><span class="n">protein_file</span><span class="o">)</span>
+</pre></div>
+</div>
+<p><strong>Metadata Map</strong>:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>
+<span class="w">    </span><span class="nl">gca:</span><span class="w"> </span><span class="n">String</span><span class="o">,</span><span class="w">                     </span><span class="c1">// Genome assembly accession</span>
+<span class="w">    </span><span class="nl">busco_dataset:</span><span class="w"> </span><span class="n">String</span><span class="o">,</span><span class="w">           </span><span class="c1">// REQUIRED: BUSCO lineage (e.g., "primates_odb10")</span>
+<span class="w">    </span><span class="nl">dbname:</span><span class="w"> </span><span class="n">String</span><span class="o">,</span><span class="w">                  </span><span class="c1">// Database name</span>
+<span class="w">    </span><span class="nl">species_id:</span><span class="w"> </span><span class="n">Integer</span><span class="o">,</span><span class="w">             </span><span class="c1">// Species ID</span>
+<span class="w">    </span><span class="nl">production_species:</span><span class="w"> </span><span class="n">String</span><span class="w">       </span><span class="c1">// Production name</span>
+<span class="o">]</span>
+</pre></div>
+</div>
+<p><strong>Protein File</strong>:</p>
+<ul class="simple">
+<li><p><strong>Format</strong>: FASTA (<code class="docutils literal notranslate"><span class="pre">.fa</span></code>, <code class="docutils literal notranslate"><span class="pre">.fasta</span></code>, <code class="docutils literal notranslate"><span class="pre">.faa</span></code>)</p></li>
+<li><p><strong>Content</strong>: Translated protein sequences (amino acids)</p></li>
+<li><p><strong>Source</strong>: Typically from <code class="docutils literal notranslate"><span class="pre">FETCH_PROTEINS</span></code> module</p></li>
+<li><p><strong>Compression</strong>: Can be gzipped (<code class="docutils literal notranslate"><span class="pre">.gz</span></code>)</p></li>
+<li><p><strong>Size</strong>: Typically 5-50 MB</p></li>
+<li><p><strong>Headers</strong>: Must include unique protein IDs</p></li>
+</ul>
+</section>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">params.download_path</span></code></p></td>
+<td><p>String</p></td>
+<td><p>Required</p></td>
+<td><p>Path to pre-downloaded BUSCO lineage datasets</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">params.outdir</span></code></p></td>
+<td><p>String</p></td>
+<td><p>Required</p></td>
+<td><p>Output directory for results</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">params.files_latency</span></code></p></td>
+<td><p>Integer</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">5</span></code></p></td>
+<td><p>File system latency wait time (seconds)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="outputs">
+<h2>Outputs<a class="headerlink" href="#outputs" title="Link to this heading"></a></h2>
+<section id="published-outputs">
+<h3>Published Outputs<a class="headerlink" href="#published-outputs" title="Link to this heading"></a></h3>
+<p><strong>Directory</strong>: <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/</span></code></p>
+<section id="summary-files">
+<h4>1. Summary Files<a class="headerlink" href="#summary-files" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Format</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">short_summary.specific.*.txt</span></code></p></td>
+<td><p>Main BUSCO summary with key metrics</p></td>
+<td><p>Plain text</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">busco_protein_batch_summary.txt</span></code></p></td>
+<td><p>Full batch summary (verbose)</p></td>
+<td><p>Plain text</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="versions-file">
+<h4>2. Versions File<a class="headerlink" href="#versions-file" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">versions_busco_protein.yml</span></code></p></td>
+<td><p>Software versions used in analysis</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="channel-outputs">
+<h3>Channel Outputs<a class="headerlink" href="#channel-outputs" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Channel</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">busco_protein_short_summary_output</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tuple</span> <span class="pre">val(meta),</span> <span class="pre">path(&quot;short_summary.*.txt&quot;)</span></code></p></td>
+<td><p>Key summary file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">busco_protein_batch_summary_output</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tuple</span> <span class="pre">val(meta),</span> <span class="pre">path(&quot;busco_protein_batch_summary.txt&quot;)</span></code></p></td>
+<td><p>Verbose batch summary</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">versions_file</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">path(&quot;versions_busco_protein.yml&quot;)</span></code></p></td>
+<td><p>Versions tracking file</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="output-file-contents">
+<h3>Output File Contents<a class="headerlink" href="#output-file-contents" title="Link to this heading"></a></h3>
+<section id="short-summary-specific-lineage-assembly-txt">
+<h4>short_summary.specific.{lineage}.{assembly}.txt<a class="headerlink" href="#short-summary-specific-lineage-assembly-txt" title="Link to this heading"></a></h4>
+<p><strong>Example</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># BUSCO version is: 5.4.3 </span>
+<span class="c1"># The lineage dataset is: primates_odb10 (Creation date: 2024-01-16, number of genomes: 40, number of BUSCOs: 13780)</span>
+<span class="c1"># Summarized benchmarking in BUSCO notation for file translations.fa</span>
+<span class="c1"># BUSCO was run in mode: proteins</span>
+
+	<span class="o">*****</span> <span class="n">Results</span><span class="p">:</span> <span class="o">*****</span>
+
+	<span class="n">C</span><span class="p">:</span><span class="mf">97.2</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">95.8</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">1.4</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">1.3</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">1.5</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">13780</span>	   
+
+	<span class="mi">13394</span>	<span class="n">Complete</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">C</span><span class="p">)</span>			   
+	<span class="mi">13201</span>	<span class="n">Complete</span> <span class="ow">and</span> <span class="n">single</span><span class="o">-</span><span class="n">copy</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">S</span><span class="p">)</span>	   
+	<span class="mi">193</span>	<span class="n">Complete</span> <span class="ow">and</span> <span class="n">duplicated</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">D</span><span class="p">)</span>	   
+	<span class="mi">179</span>	<span class="n">Fragmented</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">F</span><span class="p">)</span>			   
+	<span class="mi">207</span>	<span class="n">Missing</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">M</span><span class="p">)</span>			   
+	<span class="mi">13780</span>	<span class="n">Total</span> <span class="n">BUSCO</span> <span class="n">groups</span> <span class="n">searched</span>		   
+
+<span class="c1"># Dependencies and versions:</span>
+<span class="c1"># 	hmmer: 3.3.2</span>
+</pre></div>
+</div>
+<p><strong>Key Metrics Explained</strong>:</p>
+<ul class="simple">
+<li><p><strong>C (Complete)</strong>: BUSCOs found with expected length (&gt; 95% of expected length)</p></li>
+<li><p><strong>S (Single-copy)</strong>: Complete BUSCOs found exactly once</p></li>
+<li><p><strong>D (Duplicated)</strong>: Complete BUSCOs found more than once</p></li>
+<li><p><strong>F (Fragmented)</strong>: BUSCOs found but shorter than expected</p></li>
+<li><p><strong>M (Missing)</strong>: BUSCOs not found at all</p></li>
+</ul>
+<p><strong>Interpretation vs. Genome Mode</strong>:</p>
+<ul class="simple">
+<li><p><strong>Higher M (Missing)</strong>: Indicates genes not annotated (missed in gene prediction)</p></li>
+<li><p><strong>Lower D (Duplicated)</strong>: Genes typically single-copy; high duplication suggests annotation errors</p></li>
+<li><p><strong>Higher F (Fragmented)</strong>: Indicates incomplete gene models or split genes</p></li>
+</ul>
+</section>
+<section id="busco-protein-batch-summary-txt">
+<h4>busco_protein_batch_summary.txt<a class="headerlink" href="#busco-protein-batch-summary-txt" title="Link to this heading"></a></h4>
+<p><strong>Example</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Summarized BUSCO benchmarking for translations.fa</span>
+<span class="n">Input_file</span>	<span class="n">Dataset</span>	<span class="n">Complete</span>	<span class="n">Single</span>	<span class="n">Duplicated</span>	<span class="n">Fragmented</span>	<span class="n">Missing</span>	<span class="n">n_markers</span>	<span class="n">Scores</span><span class="o">-</span><span class="n">cutoff</span>
+<span class="n">translations</span><span class="o">.</span><span class="n">fa</span>	<span class="n">primates_odb10</span>	<span class="mf">97.2</span>	<span class="mf">95.8</span>	<span class="mf">1.4</span>	<span class="mf">1.3</span>	<span class="mf">1.5</span>	<span class="mi">13780</span>	<span class="n">default</span>
+</pre></div>
+</div>
+<p><strong>Columns</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Input_file</strong>: Protein file analyzed</p></li>
+<li><p><strong>Dataset</strong>: BUSCO lineage used</p></li>
+<li><p><strong>Complete</strong>: % complete BUSCOs (C)</p></li>
+<li><p><strong>Single</strong>: % single-copy BUSCOs (S)</p></li>
+<li><p><strong>Duplicated</strong>: % duplicated BUSCOs (D)</p></li>
+<li><p><strong>Fragmented</strong>: % fragmented BUSCOs (F)</p></li>
+<li><p><strong>Missing</strong>: % missing BUSCOs (M)</p></li>
+<li><p><strong>n_markers</strong>: Total BUSCO groups in dataset</p></li>
+<li><p><strong>Scores-cutoff</strong>: Detection threshold used</p></li>
+</ol>
+</section>
+<section id="versions-busco-protein-yml">
+<h4>versions_busco_protein.yml<a class="headerlink" href="#versions-busco-protein-yml" title="Link to this heading"></a></h4>
+<p><strong>Format</strong>: YAML</p>
+<p><strong>Content Example</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="s">"BUSCO_PROTEIN_LINEAGE"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">busco</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.4.3</span>
+<span class="w">  </span><span class="nt">python</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.11.0</span>
+<span class="w">  </span><span class="nt">hmmer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.3.2</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="process-configuration">
+<h2>Process Configuration<a class="headerlink" href="#process-configuration" title="Link to this heading"></a></h2>
+<section id="directives">
+<h3>Directives<a class="headerlink" href="#directives" title="Link to this heading"></a></h3>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">label</span><span class="w"> </span><span class="s1">'busco'</span><span class="w">                                   </span><span class="c1">// Use BUSCO resource allocation</span>
+<span class="n">tag</span><span class="w"> </span><span class="s2">"${meta.gca}"</span><span class="w">                               </span><span class="c1">// Tag with GCA accession</span>
+<span class="n">publishDir</span><span class="w"> </span><span class="s2">"${params.outdir}/${meta.gca}"</span><span class="w">       </span><span class="c1">// Publish to species-specific directory</span>
+<span class="n">afterScript</span><span class="w"> </span><span class="s2">"sleep ${params.files_latency}"</span><span class="w">     </span><span class="c1">// Wait for file system sync</span>
+<span class="n">maxForks</span><span class="w"> </span><span class="mi">10</span><span class="w">                                     </span><span class="c1">// Limit concurrent executions</span>
+</pre></div>
+</div>
+</section>
+<section id="resource-allocation">
+<h3>Resource Allocation<a class="headerlink" href="#resource-allocation" title="Link to this heading"></a></h3>
+<p>From <code class="docutils literal notranslate"><span class="pre">nextflow.config</span></code> (<code class="docutils literal notranslate"><span class="pre">busco</span></code> label):</p>
+<ul class="simple">
+<li><p><strong>CPUs</strong>: 8 cores</p></li>
+<li><p><strong>Memory</strong>: 32 GB</p></li>
+<li><p><strong>Time</strong>: 24 hours</p></li>
+<li><p><strong>Queue</strong>: Standard</p></li>
+</ul>
+</section>
+<section id="container">
+<h3>Container<a class="headerlink" href="#container" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ezlabgva</span><span class="o">/</span><span class="n">busco</span><span class="p">:</span><span class="n">v5</span><span class="mf">.4.3</span><span class="n">_cv1</span>
+</pre></div>
+</div>
+<p><strong>Installed Tools</strong>:</p>
+<ul class="simple">
+<li><p>BUSCO 5.4.3</p></li>
+<li><p>HMMER 3.3.2</p></li>
+<li><p>Python 3.11</p></li>
+</ul>
+<p><strong>Note</strong>: Proteins mode does <strong>NOT</strong> require:</p>
+<ul class="simple">
+<li><p>Metaeuk (no gene prediction)</p></li>
+<li><p>Augustus (no gene prediction)</p></li>
+<li><p>Prodigal (no gene prediction)</p></li>
+<li><p>SEPP (no placement)</p></li>
+</ul>
+</section>
+</section>
+<section id="implementation-details">
+<h2>Implementation Details<a class="headerlink" href="#implementation-details" title="Link to this heading"></a></h2>
+<section id="busco-command">
+<h3>BUSCO Command<a class="headerlink" href="#busco-command" title="Link to this heading"></a></h3>
+<p>The core BUSCO execution:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>busco<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-f<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--offline<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--in<span class="w"> </span><span class="si">${</span><span class="nv">protein_file</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--out<span class="w"> </span><span class="si">${</span><span class="nv">meta</span><span class="p">.gca</span><span class="si">}</span>_busco_protein<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mode<span class="w"> </span>proteins<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--lineage_dataset<span class="w"> </span><span class="si">${</span><span class="nv">meta</span><span class="p">.busco_dataset</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--download_path<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.download_path</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cpu<span class="w"> </span><span class="si">${</span><span class="nv">task</span><span class="p">.cpus</span><span class="si">}</span>
+</pre></div>
+</div>
+<p><strong>Parameter Breakdown</strong>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Flag</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-f</span></code></p></td>
+<td><p>Force overwrite of existing results</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--offline</span></code></p></td>
+<td><p>Use local datasets (no downloads)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--in</span></code></p></td>
+<td><p>Input protein file</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--out</span></code></p></td>
+<td><p>Output directory name</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">proteins</span></code></p></td>
+<td><p><strong>Proteins analysis mode</strong> (vs. genome/transcriptome)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--lineage_dataset</span></code></p></td>
+<td><p>BUSCO lineage to use (e.g., <code class="docutils literal notranslate"><span class="pre">primates_odb10</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--download_path</span></code></p></td>
+<td><p>Path to pre-downloaded lineages</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--cpu</span></code></p></td>
+<td><p>Number of CPU cores to use</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="offline-mode">
+<h3>Offline Mode<a class="headerlink" href="#offline-mode" title="Link to this heading"></a></h3>
+<p>The module uses <code class="docutils literal notranslate"><span class="pre">--offline</span></code> to avoid downloading datasets during execution:</p>
+<p><strong>Requirements</strong>:</p>
+<ol class="arabic">
+<li><p>Datasets must be pre-downloaded to <code class="docutils literal notranslate"><span class="pre">params.download_path</span></code></p></li>
+<li><p>Directory structure must match BUSCO expectations:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${params.download_path}/
+├── lineages/
+│   ├── primates_odb10/
+│   │   ├── ancestral
+│   │   ├── dataset.cfg
+│   │   ├── hmms/           ← Required for protein searches
+│   │   ├── prfl/
+│   │   └── scores_cutoff
+│   ├── vertebrata_odb10/
+│   └── bacteria_odb10/
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Pre-downloading Datasets</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download specific lineage</span>
+busco<span class="w"> </span>--download<span class="w"> </span>lineage<span class="w"> </span>primates_odb10<span class="w"> </span>--download_path<span class="w"> </span>/path/to/busco_data
+
+<span class="c1"># Download all datasets</span>
+busco<span class="w"> </span>--list-datasets
+busco<span class="w"> </span>--download<span class="w"> </span>all<span class="w"> </span>--download_path<span class="w"> </span>/path/to/busco_data
+</pre></div>
+</div>
+</section>
+<section id="protein-search-method">
+<h3>Protein Search Method<a class="headerlink" href="#protein-search-method" title="Link to this heading"></a></h3>
+<p>BUSCO proteins mode uses <strong>HMMER</strong> for ortholog detection:</p>
+<ol class="arabic simple">
+<li><p><strong>Profile HMM Search</strong>:</p>
+<ul class="simple">
+<li><p>Uses pre-built HMM profiles from lineage datasets</p></li>
+<li><p>Searches protein sequences against HMM profiles</p></li>
+<li><p>No gene prediction required</p></li>
+</ul>
+</li>
+<li><p><strong>Scoring</strong>:</p>
+<ul class="simple">
+<li><p>E-value threshold from <code class="docutils literal notranslate"><span class="pre">scores_cutoff</span></code> file</p></li>
+<li><p>Length coverage requirement (&gt; 95% for complete)</p></li>
+<li><p>Domain architecture validation</p></li>
+</ul>
+</li>
+<li><p><strong>Classification</strong>:</p>
+<ul class="simple">
+<li><p><strong>Complete</strong>: Length ≥ 95% of expected + passes score threshold</p></li>
+<li><p><strong>Fragmented</strong>: Passes score threshold but length &lt; 95%</p></li>
+<li><p><strong>Duplicated</strong>: Multiple hits passing thresholds</p></li>
+<li><p><strong>Missing</strong>: No hits passing thresholds</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="output-organization">
+<h3>Output Organization<a class="headerlink" href="#output-organization" title="Link to this heading"></a></h3>
+<p>BUSCO creates a nested output structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${meta.gca}_busco_protein/
+├── short_summary.specific.primates_odb10.${meta.gca}_busco_protein.txt  ← Published
+├── full_table.tsv  ← Detailed per-BUSCO results (not published)
+├── missing_busco_list.tsv  ← List of missing BUSCOs (not published)
+├── hmmer_output/  ← HMMER search results (not published)
+│   └── initial_run_results/
+└── run_primates_odb10/  ← Internal BUSCO files (not published)
+</pre></div>
+</div>
+<p><strong>Published</strong>: Only summary files are published to save space</p>
+</section>
+<section id="post-processing">
+<h3>Post-processing<a class="headerlink" href="#post-processing" title="Link to this heading"></a></h3>
+<p>The module collects and renames summary files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Move short summary</span>
+find<span class="w"> </span>./<span class="si">${</span><span class="nv">meta</span><span class="p">.gca</span><span class="si">}</span>_busco_protein/<span class="w"> </span>-name<span class="w"> </span><span class="s2">"short_summary.*.txt"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-exec<span class="w"> </span>mv<span class="w"> </span><span class="o">{}</span><span class="w"> </span>.<span class="w"> </span><span class="se">\;</span>
+
+<span class="c1"># Copy batch summary</span>
+cp<span class="w"> </span>./<span class="si">${</span><span class="nv">meta</span><span class="p">.gca</span><span class="si">}</span>_busco_protein/batch_summary.txt<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>busco_protein_batch_summary.txt
+</pre></div>
+</div>
+</section>
+</section>
+<section id="usage-example">
+<h2>Usage Example<a class="headerlink" href="#usage-example" title="Link to this heading"></a></h2>
+<section id="in-a-workflow">
+<h3>In a Workflow<a class="headerlink" href="#in-a-workflow" title="Link to this heading"></a></h3>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">include</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">BUSCO_DATASET</span><span class="w"> </span><span class="o">}</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="s1">'../modules/busco_dataset.nf'</span>
+<span class="n">include</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">FETCH_PROTEINS</span><span class="w"> </span><span class="o">}</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="s1">'../modules/fetch_proteins.nf'</span>
+<span class="n">include</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="w"> </span><span class="o">}</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="s1">'../modules/busco_protein_lineage.nf'</span>
+
+<span class="n">workflow</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="c1">// Get metadata and select dataset</span>
+<span class="w">    </span><span class="kt">def</span><span class="w"> </span><span class="n">meta_ch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">channel</span><span class="o">.</span><span class="na">of</span><span class="o">([</span>
+<span class="w">        </span><span class="nl">gca:</span><span class="w"> </span><span class="s1">'GCA_000001405.29'</span><span class="o">,</span>
+<span class="w">        </span><span class="nl">dbname:</span><span class="w"> </span><span class="s1">'homo_sapiens_core_110_38'</span><span class="o">,</span>
+<span class="w">        </span><span class="nl">species_id:</span><span class="w"> </span><span class="mi">1</span><span class="o">,</span>
+<span class="w">        </span><span class="nl">production_species:</span><span class="w"> </span><span class="s1">'homo_sapiens'</span><span class="o">,</span>
+<span class="w">        </span><span class="nl">taxon_id:</span><span class="w"> </span><span class="s1">'9606'</span>
+<span class="w">    </span><span class="o">])</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Select appropriate BUSCO dataset</span>
+<span class="w">    </span><span class="kt">def</span><span class="w"> </span><span class="n">dataset_ch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BUSCO_DATASET</span><span class="o">(</span><span class="n">meta_ch</span><span class="o">).</span><span class="na">busco_dataset_output</span>
+<span class="w">        </span><span class="o">.</span><span class="na">map</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">meta</span><span class="o">,</span><span class="w"> </span><span class="n">stdout</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="n">meta</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">[</span><span class="nl">busco_dataset:</span><span class="w"> </span><span class="n">stdout</span><span class="o">.</span><span class="na">text</span><span class="o">.</span><span class="na">trim</span><span class="o">()]</span>
+<span class="w">        </span><span class="o">}</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Fetch protein translations</span>
+<span class="w">    </span><span class="kt">def</span><span class="w"> </span><span class="n">protein_ch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FETCH_PROTEINS</span><span class="o">(</span><span class="n">dataset_ch</span><span class="o">).</span><span class="na">protein_file_output</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Run BUSCO analysis</span>
+<span class="w">    </span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="o">(</span><span class="n">protein_ch</span><span class="o">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// View results</span>
+<span class="w">    </span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">busco_protein_short_summary_output</span>
+<span class="w">        </span><span class="o">.</span><span class="na">view</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">meta</span><span class="o">,</span><span class="w"> </span><span class="n">summary</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="s2">"BUSCO protein analysis for ${meta.gca}: ${summary}"</span>
+<span class="w">        </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h3>
+<p><strong>nextflow.config</strong>:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="c1">// BUSCO configuration</span>
+<span class="w">    </span><span class="n">download_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/data/busco_datasets'</span>
+<span class="w">    </span><span class="n">outdir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/output/busco_results'</span>
+<span class="w">    </span><span class="n">files_latency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Resource allocation</span>
+<span class="w">    </span><span class="n">max_cpus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+<span class="w">    </span><span class="n">max_memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'32.GB'</span>
+<span class="w">    </span><span class="n">max_time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'24.h'</span>
+<span class="o">}</span>
+
+<span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withLabel:</span><span class="w"> </span><span class="n">busco</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">cpus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+<span class="w">        </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">32</span><span class="o">.</span><span class="na">GB</span>
+<span class="w">        </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">24</span><span class="o">.</span><span class="na">h</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="expected-output-files">
+<h3>Expected Output Files<a class="headerlink" href="#expected-output-files" title="Link to this heading"></a></h3>
+<p><strong>Published to</strong>: <code class="docutils literal notranslate"><span class="pre">${params.outdir}/GCA_000001405.29/</span></code></p>
+<ol class="arabic simple">
+<li><p><strong>short_summary.specific.primates_odb10.GCA_000001405.29_busco_protein.txt</strong></p></li>
+<li><p><strong>busco_protein_batch_summary.txt</strong></p></li>
+<li><p><strong>versions_busco_protein.yml</strong></p></li>
+</ol>
+</section>
+</section>
+<section id="quality-interpretation">
+<h2>Quality Interpretation<a class="headerlink" href="#quality-interpretation" title="Link to this heading"></a></h2>
+<section id="high-quality-annotation">
+<h3>High-Quality Annotation<a class="headerlink" href="#high-quality-annotation" title="Link to this heading"></a></h3>
+<p><strong>Metrics</strong>:</p>
+<ul class="simple">
+<li><p><strong>Complete (C)</strong>: ≥ 95%</p></li>
+<li><p><strong>Single-copy (S)</strong>: ≥ 93%</p></li>
+<li><p><strong>Duplicated (D)</strong>: &lt; 2%</p></li>
+<li><p><strong>Fragmented (F)</strong>: &lt; 3%</p></li>
+<li><p><strong>Missing (M)</strong>: &lt; 2%</p></li>
+</ul>
+<p><strong>Example</strong> (Well-annotated human proteome):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span><span class="p">:</span><span class="mf">97.2</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">95.8</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">1.4</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">1.3</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">1.5</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">13780</span>
+</pre></div>
+</div>
+<p><strong>Interpretation</strong>:</p>
+<ul class="simple">
+<li><p>✅ Excellent annotation completeness (97.2%)</p></li>
+<li><p>✅ High single-copy rate (95.8%)</p></li>
+<li><p>✅ Low duplication (1.4% - normal for proteins)</p></li>
+<li><p>✅ Minimal fragmentation (1.3%)</p></li>
+<li><p>✅ Very few missing annotations (1.5%)</p></li>
+</ul>
+<p><strong>Assessment</strong>: <strong>High-quality annotation with comprehensive gene models</strong></p>
+</section>
+<section id="good-quality-annotation">
+<h3>Good-Quality Annotation<a class="headerlink" href="#good-quality-annotation" title="Link to this heading"></a></h3>
+<p><strong>Metrics</strong>:</p>
+<ul class="simple">
+<li><p><strong>Complete (C)</strong>: 85-95%</p></li>
+<li><p><strong>Single-copy (S)</strong>: 82-93%</p></li>
+<li><p><strong>Duplicated (D)</strong>: 2-5%</p></li>
+<li><p><strong>Fragmented (F)</strong>: 3-8%</p></li>
+<li><p><strong>Missing (M)</strong>: 2-10%</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span><span class="p">:</span><span class="mf">89.3</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">85.7</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">3.6</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">5.1</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">5.6</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">10000</span>
+</pre></div>
+</div>
+<p><strong>Interpretation</strong>:</p>
+<ul class="simple">
+<li><p>✅ Good annotation completeness (89.3%)</p></li>
+<li><p>⚠️ Moderate single-copy rate (85.7%)</p></li>
+<li><p>⚠️ Some duplication (3.6% - possible annotation artifacts)</p></li>
+<li><p>⚠️ Moderate fragmentation (5.1% - incomplete gene models)</p></li>
+<li><p>⚠️ Some missing annotations (5.6%)</p></li>
+</ul>
+<p><strong>Assessment</strong>: <strong>Usable annotation, may benefit from refinement</strong></p>
+</section>
+<section id="poor-quality-annotation">
+<h3>Poor-Quality Annotation<a class="headerlink" href="#poor-quality-annotation" title="Link to this heading"></a></h3>
+<p><strong>Metrics</strong>:</p>
+<ul class="simple">
+<li><p><strong>Complete (C)</strong>: &lt; 85%</p></li>
+<li><p><strong>Single-copy (S)</strong>: &lt; 82%</p></li>
+<li><p><strong>Fragmented (F)</strong>: &gt; 8%</p></li>
+<li><p><strong>Missing (M)</strong>: &gt; 10%</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span><span class="p">:</span><span class="mf">71.5</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">67.2</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">4.3</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">11.8</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">16.7</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">10000</span>
+</pre></div>
+</div>
+<p><strong>Interpretation</strong>:</p>
+<ul class="simple">
+<li><p>❌ Low annotation completeness (71.5%)</p></li>
+<li><p>❌ Poor single-copy rate (67.2%)</p></li>
+<li><p>❌ High fragmentation (11.8% - many incomplete gene models)</p></li>
+<li><p>❌ Many missing annotations (16.7%)</p></li>
+</ul>
+<p><strong>Assessment</strong>: <strong>Poor annotation quality - significant gene prediction issues</strong></p>
+<p><strong>Recommendations</strong>:</p>
+<ol class="arabic simple">
+<li><p>Re-run gene prediction with better evidence</p></li>
+<li><p>Incorporate RNA-seq data for training</p></li>
+<li><p>Use homology-based gene prediction</p></li>
+<li><p>Manual curation of critical genes</p></li>
+<li><p>Check for UTR prediction issues</p></li>
+</ol>
+</section>
+<section id="comparing-genome-vs-protein-busco-results">
+<h3>Comparing Genome vs. Protein BUSCO Results<a class="headerlink" href="#comparing-genome-vs-protein-busco-results" title="Link to this heading"></a></h3>
+<section id="scenario-1-good-assembly-poor-annotation">
+<h4>Scenario 1: Good Assembly, Poor Annotation<a class="headerlink" href="#scenario-1-good-assembly-poor-annotation" title="Link to this heading"></a></h4>
+<p><strong>Genome BUSCO</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span><span class="p">:</span><span class="mf">98.5</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">96.8</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">1.7</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">0.8</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">0.7</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">13780</span>
+</pre></div>
+</div>
+<p><strong>Protein BUSCO</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span><span class="p">:</span><span class="mf">82.3</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">78.5</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">3.8</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">9.2</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">8.5</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">13780</span>
+</pre></div>
+</div>
+<p><strong>Analysis</strong>:</p>
+<ul class="simple">
+<li><p>✅ Genome is excellent (98.5% complete)</p></li>
+<li><p>❌ Annotations are poor (only 82.3% complete)</p></li>
+<li><p><strong>Problem</strong>: Gene prediction failed to annotate many genes</p></li>
+<li><p><strong>Solution</strong>: Improve gene prediction pipeline, add evidence (RNA-seq, homology)</p></li>
+</ul>
+</section>
+<section id="scenario-2-poor-assembly-misleading-protein-results">
+<h4>Scenario 2: Poor Assembly, Misleading Protein Results<a class="headerlink" href="#scenario-2-poor-assembly-misleading-protein-results" title="Link to this heading"></a></h4>
+<p><strong>Genome BUSCO</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span><span class="p">:</span><span class="mf">75.2</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">71.3</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">3.9</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">12.1</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">12.7</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">13780</span>
+</pre></div>
+</div>
+<p><strong>Protein BUSCO</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span><span class="p">:</span><span class="mf">88.5</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">85.2</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">3.3</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">6.3</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">5.2</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">13780</span>
+</pre></div>
+</div>
+<p><strong>Analysis</strong>:</p>
+<ul class="simple">
+<li><p>❌ Genome is poor (only 75.2% complete)</p></li>
+<li><p>⚠️ Proteins look better (88.5% complete)</p></li>
+<li><p><strong>Problem</strong>: Gene prediction annotated genes in fragmented/missing regions</p></li>
+<li><p><strong>Caveat</strong>: Protein results may be misleading due to poor assembly</p></li>
+<li><p><strong>Solution</strong>: Improve genome assembly first before trusting annotations</p></li>
+</ul>
+<p><strong>Key Insight</strong>: Always run <strong>both</strong> genome and protein BUSCO for complete quality assessment</p>
+</section>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<section id="common-errors">
+<h3>Common Errors<a class="headerlink" href="#common-errors" title="Link to this heading"></a></h3>
+<section id="missing-lineage-dataset">
+<h4>1. Missing Lineage Dataset<a class="headerlink" href="#missing-lineage-dataset" title="Link to this heading"></a></h4>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Unable</span> <span class="n">to</span> <span class="n">find</span> <span class="n">lineage</span> <span class="s1">'primates_odb10'</span> <span class="ow">in</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">busco_data</span>
+</pre></div>
+</div>
+<p><strong>Cause</strong>: Lineage not downloaded or incorrect path</p>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download missing lineage</span>
+busco<span class="w"> </span>--download<span class="w"> </span>lineage<span class="w"> </span>primates_odb10<span class="w"> </span>--download_path<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.download_path</span><span class="si">}</span>
+
+<span class="c1"># Or verify path</span>
+ls<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.download_path</span><span class="si">}</span>/lineages/primates_odb10/
+</pre></div>
+</div>
+</section>
+<section id="invalid-protein-sequences">
+<h4>2. Invalid Protein Sequences<a class="headerlink" href="#invalid-protein-sequences" title="Link to this heading"></a></h4>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Invalid</span> <span class="n">amino</span> <span class="n">acid</span> <span class="n">characters</span> <span class="n">found</span> <span class="ow">in</span> <span class="n">sequence</span>
+</pre></div>
+</div>
+<p><strong>Cause</strong>: Non-protein characters in FASTA file</p>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check for invalid characters</span>
+grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">"^&gt;"</span><span class="w"> </span>translations.fa<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-o<span class="w"> </span>.<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-u
+
+<span class="c1"># Valid amino acids: ACDEFGHIKLMNPQRSTVWY*X</span>
+<span class="c1"># Invalid: B, J, O, U, Z (except in special cases)</span>
+
+<span class="c1"># Clean sequences</span>
+sed<span class="w"> </span><span class="s1">'/^&gt;/!s/[^ACDEFGHIKLMNPQRSTVWY*X]//g'</span><span class="w"> </span>translations.fa<span class="w"> </span>&gt;<span class="w"> </span>translations_clean.fa
+</pre></div>
+</div>
+</section>
+<section id="empty-protein-file">
+<h4>3. Empty Protein File<a class="headerlink" href="#empty-protein-file" title="Link to this heading"></a></h4>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">No</span> <span class="n">sequences</span> <span class="n">found</span> <span class="ow">in</span> <span class="nb">input</span> <span class="n">file</span>
+</pre></div>
+</div>
+<p><strong>Solution</strong>:</p>
+<ul>
+<li><p>Verify file has content:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wc<span class="w"> </span>-l<span class="w"> </span>translations.fa
+grep<span class="w"> </span>-c<span class="w"> </span><span class="s2">"^&gt;"</span><span class="w"> </span>translations.fa
+</pre></div>
+</div>
+</li>
+<li><p>Check FETCH_PROTEINS output:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>log<span class="w"> </span>-f<span class="w"> </span><span class="s2">"name,status,exit"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>FETCH_PROTEINS
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="duplicate-protein-ids">
+<h4>4. Duplicate Protein IDs<a class="headerlink" href="#duplicate-protein-ids" title="Link to this heading"></a></h4>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WARNING</span><span class="p">:</span> <span class="n">Duplicate</span> <span class="n">sequence</span> <span class="n">IDs</span> <span class="n">found</span> <span class="o">-</span> <span class="n">results</span> <span class="n">may</span> <span class="n">be</span> <span class="n">inaccurate</span>
+</pre></div>
+</div>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find duplicates</span>
+grep<span class="w"> </span><span class="s2">"^&gt;"</span><span class="w"> </span>translations.fa<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-d
+
+<span class="c1"># Make IDs unique</span>
+awk<span class="w"> </span><span class="s1">'/^&gt;/ {print $0"_"++count; next} {print}'</span><span class="w"> </span>translations.fa<span class="w"> </span>&gt;<span class="w"> </span>translations_unique.fa
+</pre></div>
+</div>
+</section>
+<section id="insufficient-memory">
+<h4>5. Insufficient Memory<a class="headerlink" href="#insufficient-memory" title="Link to this heading"></a></h4>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span> <span class="o">~</span> <span class="n">Process</span> <span class="s1">'BUSCO_PROTEIN_LINEAGE'</span> <span class="n">terminated</span> <span class="k">with</span> <span class="n">an</span> <span class="n">error</span> <span class="n">exit</span> <span class="n">status</span> <span class="p">(</span><span class="mi">137</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Cause</strong>: Out of memory (exit code 137)</p>
+<p><strong>Solution</strong> (in <code class="docutils literal notranslate"><span class="pre">nextflow.config</span></code>):</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withLabel:</span><span class="w"> </span><span class="n">busco</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">64</span><span class="o">.</span><span class="na">GB</span><span class="w">  </span><span class="c1">// Increase from 32.GB</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Note</strong>: Proteins mode uses less memory than genome mode, but large proteomes (&gt;100k proteins) may still require significant RAM</p>
+</section>
+<section id="missing-hmmer-profiles">
+<h4>6. Missing HMMER Profiles<a class="headerlink" href="#missing-hmmer-profiles" title="Link to this heading"></a></h4>
+<p><strong>Error Message</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">HMMER</span> <span class="n">profile</span> <span class="n">files</span> <span class="ow">not</span> <span class="n">found</span> <span class="k">for</span> <span class="n">lineage</span> <span class="n">primates_odb10</span>
+</pre></div>
+</div>
+<p><strong>Cause</strong>: Incomplete dataset download</p>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Re-download lineage</span>
+rm<span class="w"> </span>-rf<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.download_path</span><span class="si">}</span>/lineages/primates_odb10
+busco<span class="w"> </span>--download<span class="w"> </span>lineage<span class="w"> </span>primates_odb10<span class="w"> </span>--download_path<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.download_path</span><span class="si">}</span>
+
+<span class="c1"># Verify HMMs exist</span>
+ls<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.download_path</span><span class="si">}</span>/lineages/primates_odb10/hmms/
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="version-tracking">
+<h2>Version Tracking<a class="headerlink" href="#version-tracking" title="Link to this heading"></a></h2>
+<p>The module captures version information:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="s">"BUSCO_PROTEIN_LINEAGE"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">busco</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.4.3</span>
+<span class="w">  </span><span class="nt">python</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.11.0</span>
+<span class="w">  </span><span class="nt">hmmer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.3.2</span>
+</pre></div>
+</div>
+<p><strong>Version Extraction</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># BUSCO version</span>
+busco<span class="w"> </span>--version<span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">'s/BUSCO //'</span>
+
+<span class="c1"># Python version</span>
+python<span class="w"> </span>--version<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">'{print $2}'</span>
+
+<span class="c1"># HMMER version</span>
+hmmsearch<span class="w"> </span>-h<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">"# HMMER"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">'s/# HMMER //'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">'{print $1}'</span>
+</pre></div>
+</div>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<section id="upstream-modules">
+<h3>Upstream Modules<a class="headerlink" href="#upstream-modules" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>BUSCO_DATASET</strong>: Provides <code class="docutils literal notranslate"><span class="pre">busco_dataset</span></code> for lineage selection</p></li>
+<li><p><strong>FETCH_PROTEINS</strong>: Provides protein translations for analysis</p></li>
+<li><p><strong>DB_METADATA</strong>: Provides species metadata</p></li>
+</ol>
+</section>
+<section id="downstream-modules">
+<h3>Downstream Modules<a class="headerlink" href="#downstream-modules" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>BUSCO_CORE_METAKEYS</strong>: Stores BUSCO metrics in database</p></li>
+<li><p><strong>GENERATE_STATS</strong>: Aggregates quality metrics</p></li>
+</ol>
+</section>
+<section id="data-flow-diagram">
+<h3>Data Flow Diagram<a class="headerlink" href="#data-flow-diagram" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph LR
+    A[DB_METADATA] --&gt; B[BUSCO_DATASET]
+    B --&gt; C[FETCH_PROTEINS]
+    C --&gt; D[BUSCO_PROTEIN_LINEAGE]
+    D --&gt; E[BUSCO_CORE_METAKEYS]
+    D --&gt; F[GENERATE_STATS]
+    
+    style D fill:#FFD700
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="execution-time">
+<h3>Execution Time<a class="headerlink" href="#execution-time" title="Link to this heading"></a></h3>
+<p>Typical execution times:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Proteome Size</p></th>
+<th class="head"><p>CPU Cores</p></th>
+<th class="head"><p>Time</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>5,000 proteins (bacterial)</p></td>
+<td><p>8</p></td>
+<td><p>5-15 min</p></td>
+</tr>
+<tr class="row-odd"><td><p>20,000 proteins (yeast)</p></td>
+<td><p>8</p></td>
+<td><p>15-30 min</p></td>
+</tr>
+<tr class="row-even"><td><p>25,000 proteins (fly)</p></td>
+<td><p>8</p></td>
+<td><p>20-40 min</p></td>
+</tr>
+<tr class="row-odd"><td><p>40,000 proteins (human)</p></td>
+<td><p>8</p></td>
+<td><p>30 min - 2 hours</p></td>
+</tr>
+<tr class="row-even"><td><p>60,000 proteins (plant)</p></td>
+<td><p>8</p></td>
+<td><p>1-3 hours</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Factors affecting performance</strong>:</p>
+<ul class="simple">
+<li><p>Number of proteins in input file</p></li>
+<li><p>Number of BUSCOs in lineage dataset</p></li>
+<li><p>CPU cores allocated</p></li>
+<li><p>Disk I/O speed</p></li>
+</ul>
+<p><strong>Note</strong>: Proteins mode is <strong>much faster</strong> than genome mode (no gene prediction overhead)</p>
+</section>
+<section id="resource-optimization">
+<h3>Resource Optimization<a class="headerlink" href="#resource-optimization" title="Link to this heading"></a></h3>
+<section id="for-small-proteomes-10k-proteins">
+<h4>For Small Proteomes (&lt; 10k proteins)<a class="headerlink" href="#for-small-proteomes-10k-proteins" title="Link to this heading"></a></h4>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withName:</span><span class="w"> </span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">cpus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span>
+<span class="w">        </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="o">.</span><span class="na">GB</span>
+<span class="w">        </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="o">.</span><span class="na">h</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="for-large-proteomes-50k-proteins">
+<h4>For Large Proteomes (&gt; 50k proteins)<a class="headerlink" href="#for-large-proteomes-50k-proteins" title="Link to this heading"></a></h4>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withName:</span><span class="w"> </span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">cpus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">16</span>
+<span class="w">        </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">64</span><span class="o">.</span><span class="na">GB</span>
+<span class="w">        </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span><span class="o">.</span><span class="na">h</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="parallelization-strategy">
+<h3>Parallelization Strategy<a class="headerlink" href="#parallelization-strategy" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">maxForks</span> <span class="pre">10</span></code> directive limits concurrent BUSCO analyses to prevent resource exhaustion:</p>
+<p><strong>Example</strong>: Analyzing 100 species</p>
+<ul class="simple">
+<li><p><strong>Without maxForks</strong>: All 100 start simultaneously → cluster overload</p></li>
+<li><p><strong>With maxForks 10</strong>: Only 10 run concurrently → optimal resource usage</p></li>
+</ul>
+<p><strong>Tuning maxForks</strong>:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="c1">// Conservative (resource-limited clusters)</span>
+<span class="n">maxForks</span><span class="w"> </span><span class="mi">5</span>
+
+<span class="c1">// Moderate (balanced)</span>
+<span class="n">maxForks</span><span class="w"> </span><span class="mi">10</span>
+
+<span class="c1">// Aggressive (large clusters with high throughput)</span>
+<span class="n">maxForks</span><span class="w"> </span><span class="mi">20</span>
+</pre></div>
+</div>
+<p><strong>Proteins mode advantage</strong>: Can support higher <code class="docutils literal notranslate"><span class="pre">maxForks</span></code> than genome mode due to lower resource requirements</p>
+</section>
+<section id="disk-space-requirements">
+<h3>Disk Space Requirements<a class="headerlink" href="#disk-space-requirements" title="Link to this heading"></a></h3>
+<p><strong>Per-proteome space usage</strong>:</p>
+<ul class="simple">
+<li><p><strong>Input proteins</strong>: 5-50 MB</p></li>
+<li><p><strong>BUSCO output</strong>: 100-500 MB (depending on proteome size)</p></li>
+<li><p><strong>Published summaries</strong>: &lt; 100 KB</p></li>
+</ul>
+<p><strong>Recommendation</strong>: Ensure <code class="docutils literal notranslate"><span class="pre">workDir</span></code> has 2-5 GB per concurrent BUSCO process</p>
+</section>
+</section>
+<section id="advanced-features">
+<h2>Advanced Features<a class="headerlink" href="#advanced-features" title="Link to this heading"></a></h2>
+<section id="custom-busco-parameters">
+<h3>Custom BUSCO Parameters<a class="headerlink" href="#custom-busco-parameters" title="Link to this heading"></a></h3>
+<p>Add custom BUSCO flags:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">script:</span>
+<span class="w">    </span><span class="s2">"""</span>
+<span class="s2">    busco \</span>
+<span class="s2">        -f \</span>
+<span class="s2">        --offline \</span>
+<span class="s2">        --in ${protein_file} \</span>
+<span class="s2">        --out ${meta.gca}_busco_protein \</span>
+<span class="s2">        --mode proteins \</span>
+<span class="s2">        --lineage_dataset ${meta.busco_dataset} \</span>
+<span class="s2">        --download_path ${params.download_path} \</span>
+<span class="s2">        --cpu ${task.cpus} \</span>
+<span class="s2">        --limit 3 \</span>
+<span class="s2">        --tar</span>
+<span class="s2">    """</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p><strong>Additional Flags</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--limit</span></code>: Max number of regions per BUSCO to analyze</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--tar</span></code>: Create tarball of output directory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--evalue</span></code>: E-value threshold for HMMER searches (default: 1e-3)</p></li>
+</ul>
+</section>
+<section id="multiple-lineage-analysis">
+<h3>Multiple Lineage Analysis<a class="headerlink" href="#multiple-lineage-analysis" title="Link to this heading"></a></h3>
+<p>Run BUSCO with multiple lineages:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">workflow</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="kt">def</span><span class="w"> </span><span class="n">meta_ch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">channel</span><span class="o">.</span><span class="na">of</span><span class="o">([</span>
+<span class="w">        </span><span class="nl">gca:</span><span class="w"> </span><span class="s1">'GCA_000001405.29'</span><span class="o">,</span>
+<span class="w">        </span><span class="nl">busco_datasets:</span><span class="w"> </span><span class="o">[</span><span class="s1">'primates_odb10'</span><span class="o">,</span><span class="w"> </span><span class="s1">'mammalia_odb10'</span><span class="o">,</span><span class="w"> </span><span class="s1">'vertebrata_odb10'</span><span class="o">]</span>
+<span class="w">    </span><span class="o">])</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="kt">def</span><span class="w"> </span><span class="n">protein_ch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FETCH_PROTEINS</span><span class="o">(</span><span class="n">meta_ch</span><span class="o">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Explode to multiple lineages</span>
+<span class="w">    </span><span class="n">protein_ch</span><span class="o">.</span><span class="na">flatMap</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">meta</span><span class="o">,</span><span class="w"> </span><span class="n">proteins</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">        </span><span class="n">meta</span><span class="o">.</span><span class="na">busco_datasets</span><span class="o">.</span><span class="na">collect</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">dataset</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="o">[</span><span class="n">meta</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="o">[</span><span class="nl">busco_dataset:</span><span class="w"> </span><span class="n">dataset</span><span class="o">],</span><span class="w"> </span><span class="n">proteins</span><span class="o">]</span>
+<span class="w">        </span><span class="o">}</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="n">BUSCO_PROTEIN_LINEAGE</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="comparative-analysis">
+<h3>Comparative Analysis<a class="headerlink" href="#comparative-analysis" title="Link to this heading"></a></h3>
+<p>Compare genome vs. protein BUSCO results:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">workflow</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="c1">// Run both modes</span>
+<span class="w">    </span><span class="n">BUSCO_GENOME_LINEAGE</span><span class="o">(</span><span class="n">genome_ch</span><span class="o">)</span>
+<span class="w">    </span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="o">(</span><span class="n">protein_ch</span><span class="o">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Combine results</span>
+<span class="w">    </span><span class="kt">def</span><span class="w"> </span><span class="n">combined_ch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BUSCO_GENOME_LINEAGE</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">busco_genome_batch_summary_output</span>
+<span class="w">        </span><span class="o">.</span><span class="na">join</span><span class="o">(</span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">busco_protein_batch_summary_output</span><span class="o">)</span>
+<span class="w">        </span><span class="o">.</span><span class="na">map</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">meta</span><span class="o">,</span><span class="w"> </span><span class="n">genome_summary</span><span class="o">,</span><span class="w"> </span><span class="n">protein_summary</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="o">[</span><span class="n">meta</span><span class="o">,</span><span class="w"> </span><span class="n">genome_summary</span><span class="o">,</span><span class="w"> </span><span class="n">protein_summary</span><span class="o">]</span>
+<span class="w">        </span><span class="o">}</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Generate comparison report</span>
+<span class="w">    </span><span class="n">COMPARE_BUSCO_RESULTS</span><span class="o">(</span><span class="n">combined_ch</span><span class="o">)</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="filter-incomplete-annotations">
+<h3>Filter Incomplete Annotations<a class="headerlink" href="#filter-incomplete-annotations" title="Link to this heading"></a></h3>
+<p>Identify genes with issues:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="n">EXTRACT_INCOMPLETE_GENES</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">input:</span>
+<span class="w">    </span><span class="n">tuple</span><span class="w"> </span><span class="n">val</span><span class="o">(</span><span class="n">meta</span><span class="o">),</span><span class="w"> </span><span class="n">path</span><span class="o">(</span><span class="n">full_table</span><span class="o">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="nl">script:</span>
+<span class="w">    </span><span class="s2">"""</span>
+<span class="s2">    # Extract fragmented BUSCOs</span>
+<span class="s2">    awk '\$2=="Fragmented" {print \$3}' ${full_table} &gt; fragmented_genes.txt</span>
+<span class="s2">    </span>
+<span class="s2">    # Extract missing BUSCOs</span>
+<span class="s2">    awk '\$2=="Missing" {print \$1}' ${full_table} &gt; missing_buscos.txt</span>
+<span class="s2">    """</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<section id="unit-test">
+<h3>Unit Test<a class="headerlink" href="#unit-test" title="Link to this heading"></a></h3>
+<p>Test BUSCO protein analysis on small proteome:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test with E. coli proteome</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>pipelines/statistics/main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--csvFile<span class="w"> </span>test_data/test_busco_protein.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--download_path<span class="w"> </span>/data/busco_datasets<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--outdir<span class="w"> </span>test_results<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mysqlUrl<span class="w"> </span><span class="s2">"mysql://ensembldb.ensembl.org:3306/"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mysqluser<span class="w"> </span><span class="s2">"anonymous"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-entry<span class="w"> </span>BUSCO<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max_cpus<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-process.executor<span class="w"> </span><span class="s1">'local'</span>
+</pre></div>
+</div>
+<p><strong>test_busco_protein.csv</strong>:</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id,busco_dataset,genome_file,protein_file
+escherichia_coli_core_110_1,1,bacteria_odb10,,test_data/ecoli_proteins.fa
+</pre></div>
+</div>
+</section>
+<section id="expected-test-output">
+<h3>Expected Test Output<a class="headerlink" href="#expected-test-output" title="Link to this heading"></a></h3>
+<p><strong>Console Log</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="p">]</span> <span class="n">Running</span> <span class="n">BUSCO</span> <span class="k">for</span> <span class="n">GCA_000005845</span><span class="mf">.2</span>
+<span class="p">[</span><span class="n">BUSCO</span><span class="p">]</span> <span class="mi">2024</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">06</span> <span class="mi">12</span><span class="p">:</span><span class="mi">00</span><span class="p">:</span><span class="mi">00</span> <span class="n">INFO</span><span class="p">:</span> <span class="n">Starting</span> <span class="n">BUSCO</span> <span class="ow">in</span> <span class="n">proteins</span> <span class="n">mode</span>
+<span class="p">[</span><span class="n">BUSCO</span><span class="p">]</span> <span class="mi">2024</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">06</span> <span class="mi">12</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">15</span> <span class="n">INFO</span><span class="p">:</span> <span class="n">Results</span> <span class="n">written</span> <span class="n">to</span> <span class="n">GCA_000005845</span><span class="mf">.2</span><span class="n">_busco_protein</span>
+<span class="p">[</span><span class="n">BUSCO</span><span class="p">]</span> <span class="mi">2024</span><span class="o">-</span><span class="mi">02</span><span class="o">-</span><span class="mi">06</span> <span class="mi">12</span><span class="p">:</span><span class="mi">05</span><span class="p">:</span><span class="mi">16</span> <span class="n">INFO</span><span class="p">:</span> <span class="n">BUSCO</span> <span class="n">analysis</span> <span class="n">complete</span>
+</pre></div>
+</div>
+<p><strong>Output Files</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>test_results/GCA_000005845.2/
+├── short_summary.specific.bacteria_odb10.GCA_000005845.2_busco_protein.txt
+├── busco_protein_batch_summary.txt
+└── versions_busco_protein.yml
+</pre></div>
+</div>
+<p><strong>Expected Metrics</strong> (E. coli):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">C</span><span class="p">:</span><span class="mf">98.8</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">98.6</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">0.2</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">0.8</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">0.4</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">124</span>
+</pre></div>
+</div>
+</section>
+<section id="validation">
+<h3>Validation<a class="headerlink" href="#validation" title="Link to this heading"></a></h3>
+<p>Compare results with expected ranges:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Extract completeness percentage</span>
+<span class="nv">COMPLETE</span><span class="o">=</span><span class="k">$(</span>grep<span class="w"> </span><span class="s2">"C:"</span><span class="w"> </span>short_summary.*.txt<span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">'s/.*C:\([0-9.]*\)%.*/\1/'</span><span class="k">)</span>
+
+<span class="c1"># Validate</span>
+<span class="k">if</span><span class="w"> </span><span class="o">((</span><span class="w"> </span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$COMPLETE</span><span class="s2"> &gt;= 95"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>bc<span class="w"> </span>-l<span class="k">)</span><span class="w"> </span><span class="o">))</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"✅ PASS: Completeness </span><span class="si">${</span><span class="nv">COMPLETE</span><span class="si">}</span><span class="s2">% (expected &gt;= 95%)"</span>
+<span class="k">else</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"❌ FAIL: Completeness </span><span class="si">${</span><span class="nv">COMPLETE</span><span class="si">}</span><span class="s2">% (expected &gt;= 95%)"</span>
+<span class="k">fi</span>
+</pre></div>
+</div>
+</section>
+<section id="regression-testing">
+<h3>Regression Testing<a class="headerlink" href="#regression-testing" title="Link to this heading"></a></h3>
+<p>Compare current vs. previous annotation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compare two annotations</span>
+diff<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>&lt;<span class="o">(</span>grep<span class="w"> </span>-A<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="s2">"Results:"</span><span class="w"> </span>previous_annotation/short_summary.*.txt<span class="o">)</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>&lt;<span class="o">(</span>grep<span class="w"> </span>-A<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="s2">"Results:"</span><span class="w"> </span>current_annotation/short_summary.*.txt<span class="o">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="use-high-quality-protein-sequences">
+<h3>1. Use High-Quality Protein Sequences<a class="headerlink" href="#use-high-quality-protein-sequences" title="Link to this heading"></a></h3>
+<p><strong>Best Practice</strong>: Ensure protein sequences are from validated gene models</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="c1">// GOOD - Use canonical translations</span>
+<span class="n">params</span><span class="o">.</span><span class="na">dump_params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"--canonical"</span>
+
+<span class="c1">// AVOID - Including pseudogenes/fragments</span>
+<span class="n">params</span><span class="o">.</span><span class="na">dump_params</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"--include_pseudogenes"</span>
+</pre></div>
+</div>
+</section>
+<section id="always-compare-with-genome-busco">
+<h3>2. Always Compare with Genome BUSCO<a class="headerlink" href="#always-compare-with-genome-busco" title="Link to this heading"></a></h3>
+<p><strong>Workflow</strong>:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">workflow</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="c1">// Run both modes</span>
+<span class="w">    </span><span class="n">BUSCO_GENOME_LINEAGE</span><span class="o">(</span><span class="n">genome_ch</span><span class="o">)</span>
+<span class="w">    </span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="o">(</span><span class="n">protein_ch</span><span class="o">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Log comparison</span>
+<span class="w">    </span><span class="n">BUSCO_GENOME_LINEAGE</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">busco_genome_short_summary_output</span>
+<span class="w">        </span><span class="o">.</span><span class="na">join</span><span class="o">(</span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">busco_protein_short_summary_output</span><span class="o">)</span>
+<span class="w">        </span><span class="o">.</span><span class="na">subscribe</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">meta</span><span class="o">,</span><span class="w"> </span><span class="n">genome_summary</span><span class="o">,</span><span class="w"> </span><span class="n">protein_summary</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">            </span><span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="w"> </span><span class="s2">"""</span>
+<span class="s2">            ${meta.gca}:</span>
+<span class="s2">              Genome BUSCO: ${genome_summary.text =~ /C:(\S+)%/[0][1]}%</span>
+<span class="s2">              Protein BUSCO: ${protein_summary.text =~ /C:(\S+)%/[0][1]}%</span>
+<span class="s2">            """</span>
+<span class="w">        </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="handle-missing-proteins">
+<h3>3. Handle Missing Proteins<a class="headerlink" href="#handle-missing-proteins" title="Link to this heading"></a></h3>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="n">FETCH_PROTEINS</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="n">errorStrategy</span><span class="w"> </span><span class="s1">'retry'</span>
+<span class="w">    </span><span class="n">maxRetries</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="nl">script:</span>
+<span class="w">    </span><span class="s2">"""</span>
+<span class="s2">    # Dump proteins with error checking</span>
+<span class="s2">    perl dump_translations.pl ... || echo "ERROR: No proteins found" &gt;&amp;2</span>
+<span class="s2">    </span>
+<span class="s2">    # Check file size</span>
+<span class="s2">    if [ ! -s translations.fa ]; then</span>
+<span class="s2">        echo "ERROR: Empty protein file" &gt;&amp;2</span>
+<span class="s2">        exit 1</span>
+<span class="s2">    fi</span>
+<span class="s2">    """</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="monitor-annotation-quality-trends">
+<h3>4. Monitor Annotation Quality Trends<a class="headerlink" href="#monitor-annotation-quality-trends" title="Link to this heading"></a></h3>
+<p>Track BUSCO scores over time:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">BUSCO_PROTEIN_LINEAGE</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">busco_protein_batch_summary_output</span>
+<span class="w">    </span><span class="o">.</span><span class="na">collectFile</span><span class="o">(</span>
+<span class="w">        </span><span class="nl">name:</span><span class="w"> </span><span class="s1">'annotation_quality_trends.csv'</span><span class="o">,</span>
+<span class="w">        </span><span class="nl">seed:</span><span class="w"> </span><span class="s1">'Species,Release,Complete,Single,Duplicated,Fragmented,Missing\n'</span><span class="o">,</span>
+<span class="w">        </span><span class="nl">storeDir:</span><span class="w"> </span><span class="s2">"${params.outdir}/trends/"</span>
+<span class="w">    </span><span class="o">)</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">meta</span><span class="o">,</span><span class="w"> </span><span class="n">summary</span><span class="w"> </span><span class="o">-&gt;</span>
+<span class="w">        </span><span class="c1">// Extract metrics and format as CSV</span>
+<span class="w">        </span><span class="kt">def</span><span class="w"> </span><span class="n">metrics</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">summary</span><span class="o">.</span><span class="na">text</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s1">'\n'</span><span class="o">)[-</span><span class="mi">1</span><span class="o">].</span><span class="na">split</span><span class="o">(</span><span class="s1">'\t'</span><span class="o">)</span>
+<span class="w">        </span><span class="s2">"${meta.production_species},${params.release},${metrics[2]},${metrics[3]},${metrics[4]},${metrics[5]},${metrics[6]}\n"</span>
+<span class="w">    </span><span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="validate-critical-genes">
+<h3>5. Validate Critical Genes<a class="headerlink" href="#validate-critical-genes" title="Link to this heading"></a></h3>
+<p>Check if specific genes are annotated:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="n">CHECK_CRITICAL_GENES</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">input:</span>
+<span class="w">    </span><span class="n">tuple</span><span class="w"> </span><span class="n">val</span><span class="o">(</span><span class="n">meta</span><span class="o">),</span><span class="w"> </span><span class="n">path</span><span class="o">(</span><span class="n">full_table</span><span class="o">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="nl">script:</span>
+<span class="w">    </span><span class="s2">"""</span>
+<span class="s2">    # Check for specific BUSCOs (e.g., housekeeping genes)</span>
+<span class="s2">    CRITICAL_BUSCOS="12345at33208 67890at33208"</span>
+<span class="s2">    </span>
+<span class="s2">    for busco in \$CRITICAL_BUSCOS; do</span>
+<span class="s2">        STATUS=\$(awk -v b="\$busco" '\$1==b {print \$2}' ${full_table})</span>
+<span class="s2">        if [ "\$STATUS" != "Complete" ]; then</span>
+<span class="s2">            echo "WARNING: Critical BUSCO \$busco is \$STATUS" &gt;&amp;2</span>
+<span class="s2">        fi</span>
+<span class="s2">    done</span>
+<span class="s2">    """</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="debug-mode">
+<h3>Debug Mode<a class="headerlink" href="#debug-mode" title="Link to this heading"></a></h3>
+<p>Enable verbose BUSCO logging:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">BUSCO_CONFIG_FILE</span><span class="o">=</span>/path/to/config.ini
+
+<span class="c1"># config.ini</span>
+<span class="o">[</span>busco<span class="o">]</span>
+<span class="nv">log_level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>DEBUG
+</pre></div>
+</div>
+</section>
+<section id="check-busco-logs">
+<h3>Check BUSCO Logs<a class="headerlink" href="#check-busco-logs" title="Link to this heading"></a></h3>
+<p>Inspect detailed logs:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># View main log</span>
+cat<span class="w"> </span><span class="si">${</span><span class="nv">meta</span><span class="p">.gca</span><span class="si">}</span>_busco_protein/logs/busco.log
+
+<span class="c1"># Check HMMER logs</span>
+cat<span class="w"> </span><span class="si">${</span><span class="nv">meta</span><span class="p">.gca</span><span class="si">}</span>_busco_protein/logs/hmmsearch_*.log
+</pre></div>
+</div>
+</section>
+<section id="manual-execution">
+<h3>Manual Execution<a class="headerlink" href="#manual-execution" title="Link to this heading"></a></h3>
+<p>Test BUSCO manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run BUSCO directly</span>
+busco<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-i<span class="w"> </span>translations.fa<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-o<span class="w"> </span>test_busco_protein<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-m<span class="w"> </span>proteins<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-l<span class="w"> </span>primates_odb10<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--offline<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--download_path<span class="w"> </span>/data/busco_datasets<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--cpu<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-f
+
+<span class="c1"># Check results</span>
+cat<span class="w"> </span>test_busco_protein/short_summary.*.txt
+</pre></div>
+</div>
+</section>
+<section id="verify-protein-sequences">
+<h3>Verify Protein Sequences<a class="headerlink" href="#verify-protein-sequences" title="Link to this heading"></a></h3>
+<p>Check protein file quality:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Count sequences</span>
+grep<span class="w"> </span>-c<span class="w"> </span><span class="s2">"^&gt;"</span><span class="w"> </span>translations.fa
+
+<span class="c1"># Check sequence lengths</span>
+awk<span class="w"> </span><span class="s1">'/^&gt;/ {if (seq) print length(seq); seq=""; next} {seq=seq$0} END {print length(seq)}'</span><span class="w"> </span>translations.fa<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-n<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
+
+<span class="c1"># Verify amino acid composition</span>
+grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">"^&gt;"</span><span class="w"> </span>translations.fa<span class="w"> </span><span class="p">|</span><span class="w"> </span>fold<span class="w"> </span>-w1<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
+</pre></div>
+</div>
+</section>
+<section id="compare-with-nf-core-proteinfold">
+<h3>Compare with nf-core/proteinfold<a class="headerlink" href="#compare-with-nf-core-proteinfold" title="Link to this heading"></a></h3>
+<p>Validate protein sequences:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if proteins can be folded (quality check)</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>nf-core/proteinfold<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--input<span class="w"> </span>translations.fa<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mode<span class="w"> </span>alphafold2<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--outdir<span class="w"> </span>protein_validation<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--max_cpus<span class="w"> </span><span class="m">4</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="busco-dataset.html"><span class="std std-doc">BUSCO_DATASET Module</span></a> - Dataset selection</p></li>
+<li><p><a class="reference internal" href="busco-genome-lineage.html"><span class="std std-doc">BUSCO_GENOME_LINEAGE Module</span></a> - Genome-based analysis</p></li>
+<li><p><a class="reference internal" href="fetch-proteins.html"><span class="std std-doc">FETCH_PROTEINS Module</span></a> - Protein extraction</p></li>
+<li><p><a class="reference internal" href="../workflows/busco.html"><span class="std std-doc">BUSCO Workflow</span></a> - Complete workflow</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference external" href="https://busco.ezlab.org/">BUSCO Official Documentation</a></p></li>
+<li><p><a class="reference external" href="https://busco.ezlab.org/busco_userguide.html">BUSCO User Guide</a></p></li>
+<li><p><a class="reference external" href="https://academic.oup.com/mbe/article/38/10/4647/6329644">BUSCO Publication</a> - Manni et al. 2021</p></li>
+<li><p><a class="reference external" href="http://eddylab.org/software/hmmer/Userguide.pdf">HMMER User Guide</a></p></li>
+<li><p><a class="reference external" href="https://github.com/nf-core/busco">nf-core/busco Pipeline</a></p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>Last Updated</strong>: 2026-02-07 00:01:47<br />
+<strong>Module Version</strong>: 1.0.0<br />
+<strong>Maintained By</strong>: Ensembl Genes Team</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,37 @@
+# COLLECT_SOFTWARE_VERSIONS
+
+Collect software versions from all processes and merge them into a single file
+Inputs:
+- versions_*.yml: versions files from all processes
+Outputs:- software_versions.yml: merged versions file containing software versions used in the pipeline
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `COLLECT_SOFTWARE_VERSIONS` |
+| Publish directory | `"${params.outdir}/pipeline_info", mode: 'copy'` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+path 'versions_*.yml'
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+path "software_versions.yml"
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/repeat/modules/collect_software_versions.nf`

@@ -1,0 +1,44 @@
+# OMARK
+
+OMARK process to run OMark on input files
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+- omamer_file: path to the input file for OMark
+Outputs:
+- omark_output: tuple of meta and OMark output files
+- versions.yml: versions file containing software versions used
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `OMARK` |
+| Label | `'omamer'` |
+| Tag | `${meta.gca}` |
+| Publish directory | `"${params.outdir}/${meta.gca}", mode: 'copy'` |
+| maxForks | `15` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path(omamer_file)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("omark_output/*.txt"), path("omark_output/*"), emit: omark_output
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/omark.nf`

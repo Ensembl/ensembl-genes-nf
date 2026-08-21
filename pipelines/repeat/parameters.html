@@ -1,0 +1,387 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Repeat Parameters &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../statistics/README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Repeat Parameters</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/pipelines/repeat/parameters.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="repeat-parameters">
+<h1>Repeat Parameters<a class="headerlink" href="#repeat-parameters" title="Link to this heading"></a></h1>
+<p>Automatically generated from the pipeline <code class="docutils literal notranslate"><span class="pre">nextflow_schema.json</span></code>.</p>
+<section id="input-output-options">
+<h2>Input/output options<a class="headerlink" href="#input-output-options" title="Link to this heading"></a></h2>
+<p>Define where the pipeline should find input data, write results, and cache downloaded files.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">csvFile</span></code></p></td>
+<td><p>string</p></td>
+<td><p></p></td>
+<td><p>yes</p></td>
+<td><p>Path to the input CSV metadata file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">outdir</span></code></p></td>
+<td><p>string</p></td>
+<td><p>./results</p></td>
+<td><p>yes</p></td>
+<td><p>Output directory.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tracedir</span></code></p></td>
+<td><p>string</p></td>
+<td><p>./results/pipeline_info</p></td>
+<td><p>no</p></td>
+<td><p>Directory for execution reports and trace files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cacheDir</span></code></p></td>
+<td><p>string</p></td>
+<td><p>./results/cache</p></td>
+<td><p>no</p></td>
+<td><p>Directory used by cached fetch steps.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">files_latency</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>60</p></td>
+<td><p>no</p></td>
+<td><p>Sleep time in seconds after file-publishing steps.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cleanup</span></code></p></td>
+<td><p>boolean</p></td>
+<td><p>True</p></td>
+<td><p>no</p></td>
+<td><p>Remove temporary files when supported.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cleanCache</span></code></p></td>
+<td><p>boolean</p></td>
+<td><p>False</p></td>
+<td><p>no</p></td>
+<td><p>Remove cached downloaded files after the run.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="repeat-analysis-options">
+<h2>Repeat analysis options<a class="headerlink" href="#repeat-analysis-options" title="Link to this heading"></a></h2>
+<p>Enable repeat annotation steps and configure repeat tools.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">generate_lib</span></code></p></td>
+<td><p>boolean</p></td>
+<td><p>False</p></td>
+<td><p>no</p></td>
+<td><p>Check for an existing RepeatModeler library and generate one when it is missing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">run_repeatmasker</span></code></p></td>
+<td><p>boolean</p></td>
+<td><p>False</p></td>
+<td><p>no</p></td>
+<td><p>Run RepeatMasker using the RepeatModeler library channel.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">run_red</span></code></p></td>
+<td><p>boolean</p></td>
+<td><p>False</p></td>
+<td><p>no</p></td>
+<td><p>Run RED on the fetched genome assembly.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">run_dust</span></code></p></td>
+<td><p>boolean</p></td>
+<td><p>False</p></td>
+<td><p>no</p></td>
+<td><p>Run DustMasker on the fetched genome assembly.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">run_trf</span></code></p></td>
+<td><p>boolean</p></td>
+<td><p>False</p></td>
+<td><p>no</p></td>
+<td><p>Run TRF on the fetched genome assembly.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ncbiBaseUrl</span></code></p></td>
+<td><p>string</p></td>
+<td><p>https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/</p></td>
+<td><p>no</p></td>
+<td><p>NCBI datasets API base URL used for genome downloads.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">repeats_ftp_base</span></code></p></td>
+<td><p>string</p></td>
+<td><p>http://ftp.ebi.ac.uk/pub/databases/ensembl/repeats/unfiltered_repeatmodeler/species/</p></td>
+<td><p>no</p></td>
+<td><p>Base URL for pre-computed RepeatModeler libraries.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">repeatmasker_path</span></code></p></td>
+<td><p>string</p></td>
+<td><p></p></td>
+<td><p>no</p></td>
+<td><p>Path to the RepeatMasker executable.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">builddatabase_path</span></code></p></td>
+<td><p>string</p></td>
+<td><p></p></td>
+<td><p>no</p></td>
+<td><p>Path to the BuildDatabase executable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">engine_repeatmasker</span></code></p></td>
+<td><p>string</p></td>
+<td><p>rmblast</p></td>
+<td><p>no</p></td>
+<td><p>RepeatMasker search engine.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">engine_repeatmodeler</span></code></p></td>
+<td><p>string</p></td>
+<td><p>ncbi</p></td>
+<td><p>no</p></td>
+<td><p>RepeatModeler search engine.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">red_path</span></code></p></td>
+<td><p>string</p></td>
+<td><p></p></td>
+<td><p>no</p></td>
+<td><p>Path to the RED executable.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dust_path</span></code></p></td>
+<td><p>string</p></td>
+<td><p></p></td>
+<td><p>no</p></td>
+<td><p>Path to the DustMasker executable.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">trf_path</span></code></p></td>
+<td><p>string</p></td>
+<td><p></p></td>
+<td><p>no</p></td>
+<td><p>Path to the TRF executable.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">trf_match_score</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>2</p></td>
+<td><p>no</p></td>
+<td><p>TRF match score.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">trf_mismatch_score</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>5</p></td>
+<td><p>no</p></td>
+<td><p>TRF mismatch penalty.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">trf_delta</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>7</p></td>
+<td><p>no</p></td>
+<td><p>TRF indel penalty.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">trf_pm</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>80</p></td>
+<td><p>no</p></td>
+<td><p>TRF match probability.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">trf_pi</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>10</p></td>
+<td><p>no</p></td>
+<td><p>TRF indel probability.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">trf_minscore</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>40</p></td>
+<td><p>no</p></td>
+<td><p>TRF minimum alignment score to report.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">trf_maxperiod</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>500</p></td>
+<td><p>no</p></td>
+<td><p>TRF maximum period size.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

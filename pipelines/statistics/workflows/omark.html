@@ -1,0 +1,788 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OMArk Workflow &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../repeat/README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">OMArk Workflow</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/pipelines/statistics/workflows/omark.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="omark-workflow">
+<h1>OMArk Workflow<a class="headerlink" href="#omark-workflow" title="Link to this heading"></a></h1>
+<p><strong>OMArk</strong> (Orthology MARKer) is a proteome quality assessment tool that evaluates completeness based on the presence of conserved genes from the target lineage.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>OMArk provides an orthology-based assessment of proteome quality by comparing your protein set against a database of conserved orthologous groups. It identifies complete, fragmented, missing, and potentially contaminant sequences.</p>
+</section>
+<section id="how-omark-works">
+<h2>How OMArk Works<a class="headerlink" href="#how-omark-works" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>OMAmer Mapping</strong>: Maps protein sequences to hierarchical orthologous groups (HOGs)</p></li>
+<li><p><strong>Lineage Assignment</strong>: Determines the taxonomic placement of each protein</p></li>
+<li><p><strong>Completeness Assessment</strong>: Evaluates expected gene presence based on lineage</p></li>
+<li><p><strong>Consistency Check</strong>: Identifies potential contamination or misassignments</p></li>
+</ol>
+</section>
+<section id="key-features">
+<h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Lineage-Specific</strong>: Uses taxonomically appropriate conserved gene sets</p></li>
+<li><p><strong>Contamination Detection</strong>: Identifies sequences inconsistent with target lineage</p></li>
+<li><p><strong>Fragmentation Analysis</strong>: Distinguishes complete vs. partial genes</p></li>
+<li><p><strong>Placement Verification</strong>: Validates taxonomic assignments</p></li>
+</ul>
+</section>
+<section id="running-omark">
+<h2>Running OMArk<a class="headerlink" href="#running-omark" title="Link to this heading"></a></h2>
+<section id="basic-usage">
+<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>proteomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">3306</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--outdir<span class="w"> </span>results
+</pre></div>
+</div>
+</section>
+<section id="required-inputs">
+<h3>Required Inputs<a class="headerlink" href="#required-inputs" title="Link to this heading"></a></h3>
+<p>Create a CSV file with these columns:</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id,taxon_id
+danio_rerio_core_110_11,1,7955
+xenopus_tropicalis_core_110_10,1,8364
+gallus_gallus_core_110_7,1,9031
+</pre></div>
+</div>
+</section>
+<section id="configuration-parameters">
+<h3>Configuration Parameters<a class="headerlink" href="#configuration-parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--omamer_database</span></code></p></td>
+<td><p>System path</p></td>
+<td><p>Path to OMAmer HOG database (.h5 file)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--omark_singularity_path</span></code></p></td>
+<td><p>System path</p></td>
+<td><p>Path to OMArk Singularity container</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="custom-database">
+<h3>Custom Database<a class="headerlink" href="#custom-database" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>proteomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--omamer_database<span class="w"> </span>/data/omamer/LUCA.h5<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+</section>
+</section>
+<section id="understanding-results">
+<h2>Understanding Results<a class="headerlink" href="#understanding-results" title="Link to this heading"></a></h2>
+<section id="output-file">
+<h3>Output File<a class="headerlink" href="#output-file" title="Link to this heading"></a></h3>
+<p>OMArk generates a detailed summary file: <code class="docutils literal notranslate"><span class="pre">{sample}_omark_proteins_detailed_summary.txt</span></code></p>
+</section>
+<section id="example-output">
+<h3>Example Output<a class="headerlink" href="#example-output" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># OMArk Analysis Summary</span>
+<span class="c1"># Database: danio_rerio_core_110_11</span>
+<span class="c1"># Taxon ID: 7955 (Danio rerio)</span>
+<span class="c1"># Date: 2024-01-15</span>
+
+<span class="n">Completeness</span> <span class="n">Assessment</span><span class="p">:</span>
+<span class="o">========================</span>
+<span class="n">Expected</span> <span class="n">HOGs</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span><span class="mi">640</span>
+<span class="n">Complete</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span><span class="mi">521</span> <span class="p">(</span><span class="mf">96.7</span><span class="o">%</span><span class="p">)</span>
+<span class="n">Fragmented</span><span class="p">:</span> <span class="mi">87</span> <span class="p">(</span><span class="mf">2.4</span><span class="o">%</span><span class="p">)</span>
+<span class="n">Missing</span><span class="p">:</span> <span class="mi">32</span> <span class="p">(</span><span class="mf">0.9</span><span class="o">%</span><span class="p">)</span>
+
+<span class="n">Consistency</span> <span class="n">Analysis</span><span class="p">:</span>
+<span class="o">====================</span>
+<span class="n">Consistent</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span><span class="mi">598</span> <span class="p">(</span><span class="mf">98.8</span><span class="o">%</span><span class="p">)</span>
+<span class="n">Inconsistent</span><span class="p">:</span> <span class="mi">10</span> <span class="p">(</span><span class="mf">0.3</span><span class="o">%</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="result-categories">
+<h3>Result Categories<a class="headerlink" href="#result-categories" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Category</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Interpretation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Complete</strong></p></td>
+<td><p>Full-length conserved genes present</p></td>
+<td><p>✅ Expected genes found</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Fragmented</strong></p></td>
+<td><p>Partial or truncated gene matches</p></td>
+<td><p>⚠️ Incomplete genes or pseudogenes</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Missing</strong></p></td>
+<td><p>Expected genes not detected</p></td>
+<td><p>❌ Annotation gaps or genuine loss</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Consistent</strong></p></td>
+<td><p>Proteins match expected lineage</p></td>
+<td><p>✅ Correct taxonomic placement</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Inconsistent</strong></p></td>
+<td><p>Proteins from unexpected lineage</p></td>
+<td><p>⚠️ Contamination or HGT</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="completeness-scores">
+<h3>Completeness Scores<a class="headerlink" href="#completeness-scores" title="Link to this heading"></a></h3>
+<p><strong>Overall Completeness = Complete / Expected × 100</strong></p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Score Range</p></th>
+<th class="head"><p>Quality</p></th>
+<th class="head"><p>Interpretation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>95-100%</strong></p></td>
+<td><p>Excellent</p></td>
+<td><p>High-quality, complete proteome</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>90-95%</strong></p></td>
+<td><p>Good</p></td>
+<td><p>Minor gaps, generally good</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>85-90%</strong></p></td>
+<td><p>Fair</p></td>
+<td><p>Some missing genes; investigate</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>&lt;85%</strong></p></td>
+<td><p>Poor</p></td>
+<td><p>Significant issues; troubleshoot</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="consistency-scores">
+<h3>Consistency Scores<a class="headerlink" href="#consistency-scores" title="Link to this heading"></a></h3>
+<p><strong>Consistency = Consistent / Total × 100</strong></p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Score Range</p></th>
+<th class="head"><p>Quality</p></th>
+<th class="head"><p>Interpretation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>98-100%</strong></p></td>
+<td><p>Excellent</p></td>
+<td><p>Clean, no contamination</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>95-98%</strong></p></td>
+<td><p>Good</p></td>
+<td><p>Minimal contamination</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>90-95%</strong></p></td>
+<td><p>Fair</p></td>
+<td><p>Some inconsistent sequences</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>&lt;90%</strong></p></td>
+<td><p>Poor</p></td>
+<td><p>Significant contamination or misassignment</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="omark-vs-busco">
+<h2>OMArk vs. BUSCO<a class="headerlink" href="#omark-vs-busco" title="Link to this heading"></a></h2>
+<p>Both tools assess proteome completeness but use different approaches:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Feature</p></th>
+<th class="head"><p>OMArk</p></th>
+<th class="head"><p>BUSCO</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Database</strong></p></td>
+<td><p>OMAmer HOGs</p></td>
+<td><p>OrthoDB single-copy orthologs</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Approach</strong></p></td>
+<td><p>Hierarchical orthology</p></td>
+<td><p>Single-copy gene presence</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Contamination Detection</strong></p></td>
+<td><p>✅ Built-in</p></td>
+<td><p>❌ Limited</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Lineage Specificity</strong></p></td>
+<td><p>High</p></td>
+<td><p>High</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Speed</strong></p></td>
+<td><p>Fast</p></td>
+<td><p>Slower</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Gene Count</strong></p></td>
+<td><p>Variable by lineage</p></td>
+<td><p>Fixed per lineage</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Best For</strong></p></td>
+<td><p>Contamination screening</p></td>
+<td><p>Assembly/annotation QC</p></td>
+</tr>
+</tbody>
+</table>
+<p>!!! tip “Use Both”
+OMArk and BUSCO complement each other. Use both for comprehensive quality assessment.</p>
+</section>
+<section id="interpreting-results">
+<h2>Interpreting Results<a class="headerlink" href="#interpreting-results" title="Link to this heading"></a></h2>
+<section id="high-completeness-high-consistency">
+<h3>High Completeness, High Consistency<a class="headerlink" href="#high-completeness-high-consistency" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Complete</span><span class="p">:</span> <span class="mf">97.5</span><span class="o">%</span>
+<span class="n">Consistent</span><span class="p">:</span> <span class="mf">99.2</span><span class="o">%</span>
+</pre></div>
+</div>
+<p><strong>✅ Excellent Quality</strong></p>
+<ul class="simple">
+<li><p>Proteome is complete and clean</p></li>
+<li><p>No significant contamination</p></li>
+<li><p>Ready for downstream analyses</p></li>
+</ul>
+</section>
+<section id="high-completeness-low-consistency">
+<h3>High Completeness, Low Consistency<a class="headerlink" href="#high-completeness-low-consistency" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Complete</span><span class="p">:</span> <span class="mf">96.8</span><span class="o">%</span>
+<span class="n">Consistent</span><span class="p">:</span> <span class="mf">89.5</span><span class="o">%</span>
+</pre></div>
+</div>
+<p><strong>⚠️ Contamination Issues</strong></p>
+<ul class="simple">
+<li><p>Many genes present but from wrong lineage</p></li>
+<li><p>Possible contamination or mixed sample</p></li>
+<li><p>Check for foreign sequences</p></li>
+</ul>
+<p><strong>Action:</strong></p>
+<ul class="simple">
+<li><p>Review inconsistent proteins</p></li>
+<li><p>Screen for contamination</p></li>
+<li><p>Verify sample purity</p></li>
+</ul>
+</section>
+<section id="low-completeness-high-consistency">
+<h3>Low Completeness, High Consistency<a class="headerlink" href="#low-completeness-high-consistency" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Complete</span><span class="p">:</span> <span class="mf">82.3</span><span class="o">%</span>
+<span class="n">Consistent</span><span class="p">:</span> <span class="mf">98.9</span><span class="o">%</span>
+</pre></div>
+</div>
+<p><strong>⚠️ Annotation Gaps</strong></p>
+<ul class="simple">
+<li><p>Correct lineage but missing genes</p></li>
+<li><p>Annotation incomplete or gene loss</p></li>
+<li><p>Assembly may have gaps</p></li>
+</ul>
+<p><strong>Action:</strong></p>
+<ul class="simple">
+<li><p>Review annotation pipeline</p></li>
+<li><p>Check assembly completeness</p></li>
+<li><p>Consider re-annotation</p></li>
+</ul>
+</section>
+<section id="low-completeness-low-consistency">
+<h3>Low Completeness, Low Consistency<a class="headerlink" href="#low-completeness-low-consistency" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Complete</span><span class="p">:</span> <span class="mf">78.5</span><span class="o">%</span>
+<span class="n">Consistent</span><span class="p">:</span> <span class="mf">87.2</span><span class="o">%</span>
+</pre></div>
+</div>
+<p><strong>❌ Multiple Issues</strong></p>
+<ul class="simple">
+<li><p>Both completeness and contamination problems</p></li>
+<li><p>Severe quality issues</p></li>
+<li><p>Requires thorough investigation</p></li>
+</ul>
+<p><strong>Action:</strong></p>
+<ul class="simple">
+<li><p>Comprehensive QC review</p></li>
+<li><p>Check sample identity</p></li>
+<li><p>Validate assembly and annotation</p></li>
+</ul>
+</section>
+</section>
+<section id="use-cases">
+<h2>Use Cases<a class="headerlink" href="#use-cases" title="Link to this heading"></a></h2>
+<section id="contamination-screening">
+<h3>1. Contamination Screening<a class="headerlink" href="#contamination-screening" title="Link to this heading"></a></h3>
+<p>OMArk excels at detecting contamination:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Screen multiple assemblies</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>new_assemblies.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+<p><strong>Look for:</strong></p>
+<ul class="simple">
+<li><p>Low consistency scores (&lt;95%)</p></li>
+<li><p>Inconsistent proteins from distantly related lineages</p></li>
+<li><p>Patterns suggesting systematic contamination</p></li>
+</ul>
+</section>
+<section id="pre-publication-qc">
+<h3>2. Pre-Publication QC<a class="headerlink" href="#pre-publication-qc" title="Link to this heading"></a></h3>
+<p>Validate proteome quality before public release:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run both OMArk and BUSCO</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>release_genomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--busco_mode<span class="w"> </span>protein<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+</section>
+<section id="comparative-proteomics">
+<h3>3. Comparative Proteomics<a class="headerlink" href="#comparative-proteomics" title="Link to this heading"></a></h3>
+<p>Assess relative quality across multiple species:</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id,taxon_id
+species_a_core_110_1,1,12345
+species_b_core_110_1,1,12346
+species_c_core_110_1,1,12347
+</pre></div>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>comparative_set.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+</section>
+<section id="annotation-pipeline-validation">
+<h3>4. Annotation Pipeline Validation<a class="headerlink" href="#annotation-pipeline-validation" title="Link to this heading"></a></h3>
+<p>Test annotation pipeline improvements:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compare v1 vs. v2 annotations</span>
+cat<span class="w"> </span>&gt;<span class="w"> </span>comparison.csv<span class="w"> </span><span class="s">&lt;&lt; EOF</span>
+<span class="s">dbname,species_id,taxon_id</span>
+<span class="s">species_v1_core,1,9606</span>
+<span class="s">species_v2_core,1,9606</span>
+<span class="s">EOF</span>
+
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>comparison.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="directory-structure">
+<h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>results/
+└── omark/
+    ├── sample1_omark_proteins_detailed_summary.txt
+    ├── sample2_omark_proteins_detailed_summary.txt
+    └── sample3_omark_proteins_detailed_summary.txt
+</pre></div>
+</div>
+</section>
+<section id="file-contents">
+<h3>File Contents<a class="headerlink" href="#file-contents" title="Link to this heading"></a></h3>
+<p>The detailed summary includes:</p>
+<ol class="arabic simple">
+<li><p><strong>Header</strong>: Metadata (database, taxon, date)</p></li>
+<li><p><strong>Completeness Metrics</strong>: HOG presence/absence</p></li>
+<li><p><strong>Consistency Metrics</strong>: Lineage validation</p></li>
+<li><p><strong>Fragmentation Details</strong>: Partial gene information</p></li>
+<li><p><strong>Inconsistent Proteins</strong>: List of potentially contaminating sequences</p></li>
+</ol>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="low-completeness-with-busco-ok">
+<h3>Low Completeness with BUSCO OK<a class="headerlink" href="#low-completeness-with-busco-ok" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> OMArk shows low completeness but BUSCO is good</p>
+<p><strong>Possible causes:</strong></p>
+<ul class="simple">
+<li><p>Different gene sets used (OMArk uses broader HOGs)</p></li>
+<li><p>Lineage-specific gene expansions/losses</p></li>
+<li><p>Different sensitivity thresholds</p></li>
+</ul>
+<p><strong>Solution:</strong> Review both results; some divergence is normal.</p>
+</section>
+<section id="high-inconsistency-rate">
+<h3>High Inconsistency Rate<a class="headerlink" href="#high-inconsistency-rate" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> &gt;10% inconsistent proteins</p>
+<p><strong>Possible causes:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Contamination</strong>: Foreign DNA in sample</p></li>
+<li><p><strong>Wrong taxon ID</strong>: Incorrect species assignment</p></li>
+<li><p><strong>Horizontal gene transfer</strong>: Natural (e.g., in bacteria)</p></li>
+<li><p><strong>Symbionts</strong>: Co-sequenced organisms</p></li>
+</ol>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Check sample purity</p></li>
+<li><p>Verify taxon ID is correct</p></li>
+<li><p>Screen for contamination with tools like BlobTools</p></li>
+<li><p>Review inconsistent sequences manually</p></li>
+</ul>
+</section>
+<section id="missing-omamer-database">
+<h3>Missing OMAmer Database<a class="headerlink" href="#missing-omamer-database" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> Pipeline cannot find OMAmer database</p>
+<p><strong>Solution:</strong> Download and specify:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download from OMArk project</span>
+wget<span class="w"> </span>https://omabrowser.org/All/LUCA.h5
+
+<span class="c1"># Use in pipeline</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>proteomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--omamer_database<span class="w"> </span>/data/LUCA.h5
+</pre></div>
+</div>
+</section>
+<section id="very-long-runtime">
+<h3>Very Long Runtime<a class="headerlink" href="#very-long-runtime" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> OMArk taking too long</p>
+<p><strong>Possible causes:</strong></p>
+<ul class="simple">
+<li><p>Very large proteome (&gt;50,000 proteins)</p></li>
+<li><p>Slow I/O on database file</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Use local SSD for OMAmer database</p></li>
+<li><p>Split large proteomes if possible</p></li>
+<li><p>Increase computational resources</p></li>
+</ul>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<p>!!! tip “Check Consistency First”
+Always review consistency scores before interpreting completeness. Contamination can inflate completeness scores.</p>
+<p>!!! tip “Combine with BUSCO”
+Use OMArk and BUSCO together for comprehensive QC. They catch different types of issues.</p>
+<p>!!! tip “Track Across Releases”
+Monitor OMArk scores across annotation updates to catch regressions or improvements.</p>
+<p>!!! tip “Investigate Inconsistencies”
+Don’t ignore inconsistent proteins—they often reveal real contamination or sample issues.</p>
+<p>!!! tip “Use Appropriate Taxon IDs”
+Ensure taxon_id matches your species. Wrong IDs lead to incorrect consistency assessments.</p>
+</section>
+<section id="advanced-topics">
+<h2>Advanced Topics<a class="headerlink" href="#advanced-topics" title="Link to this heading"></a></h2>
+<section id="custom-omamer-databases">
+<h3>Custom OMAmer Databases<a class="headerlink" href="#custom-omamer-databases" title="Link to this heading"></a></h3>
+<p>For specialized analyses, you can create custom HOG databases:</p>
+<ol class="arabic simple">
+<li><p>Extract relevant clade from OMA</p></li>
+<li><p>Build OMAmer index</p></li>
+<li><p>Point pipeline to custom database</p></li>
+</ol>
+</section>
+<section id="integration-with-contamination-tools">
+<h3>Integration with Contamination Tools<a class="headerlink" href="#integration-with-contamination-tools" title="Link to this heading"></a></h3>
+<p>Combine OMArk with other contamination detection:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Run OMArk</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span>--csvFile<span class="w"> </span>genomes.csv<span class="w"> </span>--run_omark
+
+<span class="c1"># 2. Extract inconsistent proteins</span>
+grep<span class="w"> </span><span class="s2">"Inconsistent"</span><span class="w"> </span>results/omark/*_detailed_summary.txt
+
+<span class="c1"># 3. Further screen with BlobTools or similar</span>
+</pre></div>
+</div>
+</section>
+<section id="batch-analysis">
+<h3>Batch Analysis<a class="headerlink" href="#batch-analysis" title="Link to this heading"></a></h3>
+<p>Process hundreds of proteomes:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate CSV for all databases</span>
+mysql<span class="w"> </span>-h<span class="w"> </span>mysql-server.example.com<span class="w"> </span>-u<span class="w"> </span>ensro<span class="w"> </span>-e<span class="w"> </span><span class="s2">"</span>
+<span class="s2">  SELECT CONCAT(db_name, ',1,', meta_value) </span>
+<span class="s2">  FROM information_schema.schemata </span>
+<span class="s2">  JOIN meta ON db_name = database()</span>
+<span class="s2">  WHERE db_name LIKE '%_core_%' </span>
+<span class="s2">  AND meta_key = 'species.taxonomy_id'</span>
+<span class="s2">"</span><span class="w"> </span>&gt;<span class="w"> </span>all_cores.csv
+
+<span class="c1"># Run OMArk on all</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>all_cores.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="resource-requirements">
+<h3>Resource Requirements<a class="headerlink" href="#resource-requirements" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Proteome Size</p></th>
+<th class="head"><p>Memory</p></th>
+<th class="head"><p>CPU</p></th>
+<th class="head"><p>Runtime</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Small (&lt;20k)</p></td>
+<td><p>8 GB</p></td>
+<td><p>4</p></td>
+<td><p>10-20 min</p></td>
+</tr>
+<tr class="row-odd"><td><p>Medium (20-40k)</p></td>
+<td><p>16 GB</p></td>
+<td><p>8</p></td>
+<td><p>20-40 min</p></td>
+</tr>
+<tr class="row-even"><td><p>Large (&gt;40k)</p></td>
+<td><p>32 GB</p></td>
+<td><p>16</p></td>
+<td><p>40-90 min</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="optimization">
+<h3>Optimization<a class="headerlink" href="#optimization" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Increase parallelization</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>proteomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max_cpus<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max_memory<span class="w"> </span><span class="m">64</span>.GB
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<section id="primary-citation">
+<h3>Primary Citation<a class="headerlink" href="#primary-citation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Nevers et al. (2022).</strong> OMArk: proteome quality assessment using the OMA database. <em>bioRxiv</em>. <a class="reference external" href="https://doi.org/10.1101/2022.11.25.517970">DOI: 10.1101/2022.11.25.517970</a></p></li>
+</ul>
+</section>
+<section id="additional-resources">
+<h3>Additional Resources<a class="headerlink" href="#additional-resources" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/DessimozLab/OMArk">OMArk GitHub</a></p></li>
+<li><p><a class="reference external" href="https://omamer.readthedocs.io/">OMAmer Documentation</a></p></li>
+<li><p><a class="reference external" href="https://omabrowser.org/">OMA Browser</a></p></li>
+</ul>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="busco.html"><span class="std std-doc">BUSCO Workflow</span></a> - Complementary completeness assessment</p></li>
+<li><p><a class="reference internal" href="ensembl-stats.html"><span class="std std-doc">Ensembl Stats</span></a> - Generate database statistics</p></li>
+<li><p><a class="reference internal" href="../output.html"><span class="std std-doc">Output Documentation</span></a> - Detailed output specifications</p></li>
+<li><p><a class="reference internal" href="../troubleshooting.html"><span class="std std-doc">Troubleshooting</span></a> - Common issues and solutions</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

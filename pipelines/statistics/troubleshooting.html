@@ -1,0 +1,1293 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Statistics Pipeline Troubleshooting Guide &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../repeat/README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Statistics Pipeline Troubleshooting Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/pipelines/statistics/troubleshooting.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="statistics-pipeline-troubleshooting-guide">
+<h1>Statistics Pipeline Troubleshooting Guide<a class="headerlink" href="#statistics-pipeline-troubleshooting-guide" title="Link to this heading"></a></h1>
+<p>This guide covers common issues, error messages, and solutions for the Ensembl genes statistics pipeline.</p>
+<section id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="#database-connection-issues">Database Connection Issues</a></p></li>
+<li><p><a class="reference internal" href="#module-specific-errors">Module-Specific Errors</a></p></li>
+<li><p><a class="reference internal" href="#resource-and-performance-issues">Resource and Performance Issues</a></p></li>
+<li><p><a class="reference internal" href="#file-system-and-i-o-problems">File System and I/O Problems</a></p></li>
+<li><p><a class="reference internal" href="#version-and-dependency-issues">Version and Dependency Issues</a></p></li>
+<li><p><a class="reference internal" href="#data-quality-and-validation">Data Quality and Validation</a></p></li>
+<li><p><a class="reference internal" href="#debugging-strategies">Debugging Strategies</a></p></li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="database-connection-issues">
+<h2>Database Connection Issues<a class="headerlink" href="#database-connection-issues" title="Link to this heading"></a></h2>
+<section id="error-access-denied-for-user">
+<h3>Error: “Access denied for user”<a class="headerlink" href="#error-access-denied-for-user" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Access</span> <span class="n">denied</span> <span class="k">for</span> <span class="n">user</span> <span class="s1">'username'</span><span class="o">@</span><span class="s1">'host'</span> <span class="p">(</span><span class="n">using</span> <span class="n">password</span><span class="p">:</span> <span class="n">YES</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Incorrect database credentials</p></li>
+<li><p>Missing database privileges</p></li>
+<li><p>Network access restrictions</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Verify credentials in your configuration:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="o">.</span><span class="na">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'correct_username'</span>
+<span class="n">params</span><span class="o">.</span><span class="na">password</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'correct_password'</span>
+<span class="n">params</span><span class="o">.</span><span class="na">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'correct_host'</span>
+<span class="n">params</span><span class="o">.</span><span class="na">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3306</span>
+</pre></div>
+</div>
+</li>
+<li><p>Test connection manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mysql<span class="w"> </span>-h<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.host</span><span class="si">}</span><span class="w"> </span>-P<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.port</span><span class="si">}</span><span class="w"> </span>-u<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.user</span><span class="si">}</span><span class="w"> </span>-p
+</pre></div>
+</div>
+</li>
+<li><p>Check database grants:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SHOW</span><span class="w"> </span><span class="n">GRANTS</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="s1">'username'</span><span class="o">@</span><span class="s1">'host'</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Affected Modules:</strong> All database-dependent modules (FETCH_GENOME, FETCH_PROTEINS, RUN_STATISTICS, RUN_ENSEMBL_META, POPULATE_DB, BUSCO_CORE_METAKEYS)</p>
+</section>
+<hr class="docutils" />
+<section id="error-can-t-connect-to-mysql-server">
+<h3>Error: “Can’t connect to MySQL server”<a class="headerlink" href="#error-can-t-connect-to-mysql-server" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Can</span><span class="s1">'t connect to MySQL server on '</span><span class="n">host</span><span class="s1">' (110)</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Database server is down</p></li>
+<li><p>Network connectivity issues</p></li>
+<li><p>Firewall blocking connection</p></li>
+<li><p>Wrong host/port</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Verify server is running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ping<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.host</span><span class="si">}</span>
+telnet<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.host</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.port</span><span class="si">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check firewall rules allow outbound connections to database port</p></li>
+<li><p>Verify host and port are correct in parameters</p></li>
+<li><p>For compute environments, ensure security groups allow database access</p></li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="error-unknown-database">
+<h3>Error: “Unknown database”<a class="headerlink" href="#error-unknown-database" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Unknown</span> <span class="n">database</span> <span class="s1">'dbname'</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Database name doesn’t exist</p></li>
+<li><p>Typo in database name</p></li>
+<li><p>Metadata contains incorrect dbname</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>List available databases:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SHOW</span><span class="w"> </span><span class="n">DATABASES</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'%pattern%'</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Verify metadata <code class="docutils literal notranslate"><span class="pre">dbname</span></code> field matches actual database name</p></li>
+<li><p>Check for case sensitivity (database names are case-sensitive on some systems)</p></li>
+<li><p>Ensure database was created before running pipeline</p></li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="module-specific-errors">
+<h2>Module-Specific Errors<a class="headerlink" href="#module-specific-errors" title="Link to this heading"></a></h2>
+<section id="busco-modules">
+<h3>BUSCO Modules<a class="headerlink" href="#busco-modules" title="Link to this heading"></a></h3>
+<section id="error-busco-dataset-not-found">
+<h4>Error: “BUSCO dataset not found”<a class="headerlink" href="#error-busco-dataset-not-found" title="Link to this heading"></a></h4>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Could</span> <span class="ow">not</span> <span class="n">download</span> <span class="n">dataset</span> <span class="s1">'lineage_odb10'</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Network connectivity to BUSCO database</p></li>
+<li><p>Invalid lineage name</p></li>
+<li><p>Corrupted cache directory</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Verify lineage name is valid:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>busco<span class="w"> </span>--list-datasets
+</pre></div>
+</div>
+</li>
+<li><p>Clear cache and retry:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rm<span class="w"> </span>-rf<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.cacheDir</span><span class="si">}</span>/busco_downloads/
+</pre></div>
+</div>
+</li>
+<li><p>Check internet connectivity:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-I<span class="w"> </span>https://busco-data.ezlab.org/
+</pre></div>
+</div>
+</li>
+<li><p>Manually download dataset if needed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>busco<span class="w"> </span>--download<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.busco_lineage</span><span class="si">}</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Affected Modules:</strong> BUSCO_DATASET, BUSCO_GENOME_LINEAGE, BUSCO_PROTEIN_LINEAGE</p>
+</section>
+<hr class="docutils" />
+<section id="error-busco-failed-to-run">
+<h4>Error: “BUSCO failed to run”<a class="headerlink" href="#error-busco-failed-to-run" title="Link to this heading"></a></h4>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">BUSCO</span> <span class="n">analysis</span> <span class="n">failed</span> <span class="k">for</span> <span class="n">sample</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Input file format issues</p></li>
+<li><p>Insufficient memory</p></li>
+<li><p>Corrupted input data</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Validate input file format:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For genome</span>
+head<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span><span class="w"> </span>genome.fa
+
+<span class="c1"># For proteins</span>
+head<span class="w"> </span>-n<span class="w"> </span><span class="m">20</span><span class="w"> </span>proteins.fa
+</pre></div>
+</div>
+</li>
+<li><p>Check file is not empty:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wc<span class="w"> </span>-l<span class="w"> </span>input.fa
+</pre></div>
+</div>
+</li>
+<li><p>Increase memory allocation in config:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withLabel:</span><span class="w"> </span><span class="n">busco</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'16 GB'</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check BUSCO logs in work directory for detailed error</p></li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="omamer-omark-modules">
+<h3>OMAmer/OMark Modules<a class="headerlink" href="#omamer-omark-modules" title="Link to this heading"></a></h3>
+<section id="error-omamer-database-not-found">
+<h4>Error: “OMAmer database not found”<a class="headerlink" href="#error-omamer-database-not-found" title="Link to this heading"></a></h4>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="p">[</span><span class="n">Errno</span> <span class="mi">2</span><span class="p">]</span> <span class="n">No</span> <span class="n">such</span> <span class="n">file</span> <span class="ow">or</span> <span class="n">directory</span><span class="p">:</span> <span class="s1">'omamer_database'</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">params.omamer_database</span></code> not set correctly</p></li>
+<li><p>Database file doesn’t exist</p></li>
+<li><p>Insufficient permissions</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Verify database path exists:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>-lh<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.omamer_database</span><span class="si">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Set correct path in parameters:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="o">.</span><span class="na">omamer_database</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/path/to/LUCA.h5'</span>
+</pre></div>
+</div>
+</li>
+<li><p>Download database if missing:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># See OMAmer documentation for download instructions</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Affected Modules:</strong> OMAMER_HOG, OMARK</p>
+</section>
+<hr class="docutils" />
+<section id="error-omamer-search-failed">
+<h4>Error: “OMAmer search failed”<a class="headerlink" href="#error-omamer-search-failed" title="Link to this heading"></a></h4>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Search</span> <span class="n">failed</span> <span class="k">with</span> <span class="n">exit</span> <span class="n">code</span> <span class="mi">1</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Empty or invalid protein file</p></li>
+<li><p>Corrupted database</p></li>
+<li><p>Memory issues</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Validate protein FASTA:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>grep<span class="w"> </span>-c<span class="w"> </span><span class="s2">"^&gt;"</span><span class="w"> </span>proteins.fa<span class="w">  </span><span class="c1"># Count sequences</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check database integrity:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>omamer<span class="w"> </span>validate-db<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.omamer_database</span><span class="si">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Increase maxForks if memory constrained:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withName:</span><span class="w"> </span><span class="n">OMAMER_HOG</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">maxForks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="w">  </span><span class="c1">// Reduce from 15</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="fetch-modules">
+<h3>Fetch Modules<a class="headerlink" href="#fetch-modules" title="Link to this heading"></a></h3>
+<section id="error-no-translations-found">
+<h4>Error: “No translations found”<a class="headerlink" href="#error-no-translations-found" title="Link to this heading"></a></h4>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WARNING</span><span class="p">:</span> <span class="n">dump_translations</span><span class="o">.</span><span class="n">pl</span> <span class="n">produced</span> <span class="n">empty</span> <span class="n">file</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Database has no protein_coding genes</p></li>
+<li><p>Wrong database selected</p></li>
+<li><p>Database missing translation data</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Check gene count:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">gene</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">biotype</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'protein_coding'</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check translation table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">translation</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Verify correct database in metadata:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">meta</span><span class="o">.</span><span class="na">dbname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'correct_core_db_name'</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Affected Modules:</strong> FETCH_PROTEINS</p>
+</section>
+<hr class="docutils" />
+<section id="error-genome-fetch-failed">
+<h4>Error: “Genome fetch failed”<a class="headerlink" href="#error-genome-fetch-failed" title="Link to this heading"></a></h4>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Failed</span> <span class="n">to</span> <span class="n">fetch</span> <span class="n">genome</span> <span class="kn">from</span><span class="w"> </span><span class="nn">database</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Missing DNA sequences in database</p></li>
+<li><p>Insufficient memory for large genomes</p></li>
+<li><p>Database connection timeout</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Verify DNA data exists:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">dna</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Increase timeout for large genomes:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withName:</span><span class="w"> </span><span class="n">FETCH_GENOME</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'6h'</span>
+<span class="w">        </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'16 GB'</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Affected Modules:</strong> FETCH_GENOME</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="statistics-modules">
+<h3>Statistics Modules<a class="headerlink" href="#statistics-modules" title="Link to this heading"></a></h3>
+<section id="error-statistics-generation-failed">
+<h4>Error: “Statistics generation failed”<a class="headerlink" href="#error-statistics-generation-failed" title="Link to this heading"></a></h4>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">generate_species_homepage_stats</span><span class="o">.</span><span class="n">pl</span> <span class="n">failed</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Database schema issues</p></li>
+<li><p>Missing required tables</p></li>
+<li><p>Perl API version mismatch</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Verify database schema version:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">meta_value</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'schema_version'</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check required tables exist:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SHOW</span><span class="w"> </span><span class="n">TABLES</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'%gene%'</span><span class="p">;</span>
+<span class="k">SHOW</span><span class="w"> </span><span class="n">TABLES</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'%transcript%'</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Ensure Ensembl API matches schema:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>perl<span class="w"> </span>-MBio::EnsEMBL::Registry<span class="w"> </span>-e<span class="w"> </span><span class="s1">'print $Bio::EnsEMBL::Registry::VERSION'</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Affected Modules:</strong> RUN_STATISTICS, RUN_ENSEMBL_META</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="database-population">
+<h3>Database Population<a class="headerlink" href="#database-population" title="Link to this heading"></a></h3>
+<section id="error-sql-execution-failed">
+<h4>Error: “SQL execution failed”<a class="headerlink" href="#error-sql-execution-failed" title="Link to this heading"></a></h4>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">mysql</span> <span class="n">returned</span> <span class="n">non</span><span class="o">-</span><span class="n">zero</span> <span class="n">exit</span> <span class="n">code</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>SQL syntax errors</p></li>
+<li><p>Missing table/column</p></li>
+<li><p>Insufficient privileges</p></li>
+<li><p>Duplicate key violations</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Test SQL file manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mysql<span class="w"> </span>-h<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.host</span><span class="si">}</span><span class="w"> </span>-u<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.user</span><span class="si">}</span><span class="w"> </span>-p<span class="w"> </span><span class="si">${</span><span class="nv">meta</span><span class="p">.dbname</span><span class="si">}</span><span class="w"> </span>&lt;<span class="w"> </span>file.sql
+</pre></div>
+</div>
+</li>
+<li><p>Check for errors in SQL:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>grep<span class="w"> </span>-i<span class="w"> </span>error<span class="w"> </span>file.sql
+</pre></div>
+</div>
+</li>
+<li><p>Verify INSERT/UPDATE privileges:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SHOW</span><span class="w"> </span><span class="n">GRANTS</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">CURRENT_USER</span><span class="p">();</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check for duplicate entries:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">HAVING</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Affected Modules:</strong> POPULATE_DB, BUSCO_CORE_METAKEYS</p>
+</section>
+</section>
+</section>
+<hr class="docutils" />
+<section id="resource-and-performance-issues">
+<h2>Resource and Performance Issues<a class="headerlink" href="#resource-and-performance-issues" title="Link to this heading"></a></h2>
+<section id="error-outofmemoryerror-or-process-killed">
+<h3>Error: “OutOfMemoryError” or process killed<a class="headerlink" href="#error-outofmemoryerror-or-process-killed" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Process</span> <span class="n">killed</span> <span class="p">(</span><span class="n">exit</span> <span class="n">code</span> <span class="mi">137</span><span class="p">)</span>
+<span class="n">OutOfMemoryError</span><span class="p">:</span> <span class="n">Java</span> <span class="n">heap</span> <span class="n">space</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Insufficient memory allocation</p></li>
+<li><p>Memory leak</p></li>
+<li><p>Processing very large files</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Increase memory in configuration:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withLabel:</span><span class="w"> </span><span class="n">busco</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="mi">8</span><span class="o">.</span><span class="na">GB</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">task</span><span class="o">.</span><span class="na">attempt</span><span class="w"> </span><span class="o">}</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">    </span><span class="nl">withLabel:</span><span class="w"> </span><span class="n">omamer</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="mi">16</span><span class="o">.</span><span class="na">GB</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">task</span><span class="o">.</span><span class="na">attempt</span><span class="w"> </span><span class="o">}</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Enable automatic retry with more memory:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="n">errorStrategy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="n">task</span><span class="o">.</span><span class="na">exitStatus</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">137</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">'retry'</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s1">'terminate'</span><span class="w"> </span><span class="o">}</span>
+<span class="w">    </span><span class="n">maxRetries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Monitor memory usage:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check work directory for .command.log</span>
+tail<span class="w"> </span>-f<span class="w"> </span>work/xx/yyyy/.command.log
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="issue-pipeline-very-slow-processes-waiting">
+<h3>Issue: Pipeline very slow / processes waiting<a class="headerlink" href="#issue-pipeline-very-slow-processes-waiting" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<ul class="simple">
+<li><p>Many processes in “PENDING” state</p></li>
+<li><p>Low CPU usage</p></li>
+<li><p>Processes waiting hours to start</p></li>
+</ul>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Too many parallel forks</p></li>
+<li><p>Database connection bottleneck</p></li>
+<li><p>I/O bottleneck</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Reduce maxForks for database-heavy processes:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withLabel:</span><span class="w"> </span><span class="n">fetch_file</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">maxForks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="w">  </span><span class="c1">// Reduce from 20</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="w">    </span><span class="nl">withName:</span><span class="w"> </span><span class="n">OMAMER_HOG</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">maxForks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="w">   </span><span class="c1">// Reduce from 15</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Stagger job submission:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">executor</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="n">submitRateLimit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'10 sec'</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check database connection pool limits</p></li>
+<li><p>Monitor I/O with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>iostat<span class="w"> </span>-x<span class="w"> </span><span class="m">5</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="issue-too-many-open-files">
+<h3>Issue: “Too many open files”<a class="headerlink" href="#issue-too-many-open-files" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Too</span> <span class="n">many</span> <span class="nb">open</span> <span class="n">files</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>System file descriptor limit reached</p></li>
+<li><p>Too many parallel processes</p></li>
+<li><p>File handles not being released</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Increase file descriptor limit:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">ulimit</span><span class="w"> </span>-n<span class="w"> </span><span class="m">4096</span>
+</pre></div>
+</div>
+</li>
+<li><p>Set in your shell profile:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span><span class="s2">"ulimit -n 4096"</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.bashrc
+</pre></div>
+</div>
+</li>
+<li><p>Reduce maxForks globally:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">executor</span><span class="o">.</span><span class="na">queueSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="file-system-and-i-o-problems">
+<h2>File System and I/O Problems<a class="headerlink" href="#file-system-and-i-o-problems" title="Link to this heading"></a></h2>
+<section id="error-no-space-left-on-device">
+<h3>Error: “No space left on device”<a class="headerlink" href="#error-no-space-left-on-device" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">No</span> <span class="n">space</span> <span class="n">left</span> <span class="n">on</span> <span class="n">device</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Work directory full</p></li>
+<li><p>Cache directory full</p></li>
+<li><p>Output directory full</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Check disk usage:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>df<span class="w"> </span>-h
+du<span class="w"> </span>-sh<span class="w"> </span>work/<span class="w"> </span>outdir/<span class="w"> </span>cacheDir/
+</pre></div>
+</div>
+</li>
+<li><p>Enable cleaning:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="o">.</span><span class="na">clean</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="n">params</span><span class="o">.</span><span class="na">clean_work_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use different storage for cache:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="o">.</span><span class="na">cacheDir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/large/storage/path/'</span>
+</pre></div>
+</div>
+</li>
+<li><p>Clean up old work directories:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>clean<span class="w"> </span>-f
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="issue-file-system-latency-causing-failures">
+<h3>Issue: File system latency causing failures<a class="headerlink" href="#issue-file-system-latency-causing-failures" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<ul class="simple">
+<li><p>Files not found immediately after creation</p></li>
+<li><p>Intermittent “No such file or directory” errors</p></li>
+<li><p>Process succeeds on retry</p></li>
+</ul>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Distributed/NFS file system sync delay</p></li>
+<li><p>High I/O load</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Increase latency delay:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="o">.</span><span class="na">files_latency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="w">  </span><span class="c1">// Increase from default 1</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use faster storage for work directory:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">workDir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'/fast/local/storage/work'</span>
+</pre></div>
+</div>
+</li>
+<li><p>Enable error retry:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="n">errorStrategy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'retry'</span>
+<span class="w">    </span><span class="n">maxRetries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="error-permission-denied">
+<h3>Error: “Permission denied”<a class="headerlink" href="#error-permission-denied" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Permission</span> <span class="n">denied</span><span class="p">:</span> <span class="s1">'/path/to/file'</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Insufficient file permissions</p></li>
+<li><p>Wrong user/group ownership</p></li>
+<li><p>Read-only file system</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Check permissions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>-la<span class="w"> </span>/path/to/file
+</pre></div>
+</div>
+</li>
+<li><p>Fix ownership:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>chown<span class="w"> </span>-R<span class="w"> </span>user:group<span class="w"> </span>/path/to/directory
+</pre></div>
+</div>
+</li>
+<li><p>Set correct permissions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>chmod<span class="w"> </span>-R<span class="w"> </span><span class="m">755</span><span class="w"> </span>/path/to/directory
+</pre></div>
+</div>
+</li>
+<li><p>Verify write access to output/cache directories</p></li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="version-and-dependency-issues">
+<h2>Version and Dependency Issues<a class="headerlink" href="#version-and-dependency-issues" title="Link to this heading"></a></h2>
+<section id="error-command-not-found">
+<h3>Error: “Command not found”<a class="headerlink" href="#error-command-not-found" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">busco</span><span class="p">:</span> <span class="n">command</span> <span class="ow">not</span> <span class="n">found</span>
+<span class="n">ERROR</span><span class="p">:</span> <span class="n">omamer</span><span class="p">:</span> <span class="n">command</span> <span class="ow">not</span> <span class="n">found</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Tool not installed in container</p></li>
+<li><p>Wrong container image</p></li>
+<li><p>PATH not set correctly</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Verify container has the tool:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>&lt;container&gt;<span class="w"> </span>which<span class="w"> </span>busco
+</pre></div>
+</div>
+</li>
+<li><p>Check container definition in config:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="nl">withLabel:</span><span class="w"> </span><span class="n">busco</span><span class="w"> </span><span class="o">{</span>
+<span class="w">        </span><span class="n">container</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'ezlabgva/busco:v5.4.7_cv1'</span>
+<span class="w">    </span><span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</li>
+<li><p>For conda environments:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>list<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>busco
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="error-version-incompatibility">
+<h3>Error: Version incompatibility<a class="headerlink" href="#error-version-incompatibility" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">This</span> <span class="n">script</span> <span class="n">requires</span> <span class="n">BUSCO</span> <span class="n">v5</span><span class="o">.</span><span class="n">x</span>
+<span class="n">ERROR</span><span class="p">:</span> <span class="n">Ensembl</span> <span class="n">API</span> <span class="n">version</span> <span class="n">mismatch</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Outdated tool version</p></li>
+<li><p>Wrong Ensembl release</p></li>
+<li><p>Script-API version mismatch</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Check tool versions in versions.yml outputs</p></li>
+<li><p>Update container to correct version:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">container</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'ezlabgva/busco:v5.4.7_cv1'</span><span class="w">  </span><span class="c1">// Specific version</span>
+</pre></div>
+</div>
+</li>
+<li><p>Match Ensembl API to database schema:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Database schema version</span>
+mysql&gt;<span class="w"> </span>SELECT<span class="w"> </span>meta_value<span class="w"> </span>FROM<span class="w"> </span>meta<span class="w"> </span>WHERE<span class="w"> </span><span class="nv">meta_key</span><span class="o">=</span><span class="s1">'schema_version'</span><span class="p">;</span>
+
+<span class="c1"># Use matching API version</span>
+git<span class="w"> </span>checkout<span class="w"> </span>release/110<span class="w">  </span><span class="c1"># Match schema version</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="issue-python-perl-module-not-found">
+<h3>Issue: Python/Perl module not found<a class="headerlink" href="#issue-python-perl-module-not-found" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ERROR</span><span class="p">:</span> <span class="n">Can</span><span class="s1">'t locate Bio/EnsEMBL/Registry.pm</span>
+<span class="n">ERROR</span><span class="p">:</span> <span class="ne">ModuleNotFoundError</span><span class="p">:</span> <span class="n">No</span> <span class="n">module</span> <span class="n">named</span> <span class="s1">'omamer'</span>
+</pre></div>
+</div>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Missing dependencies in environment</p></li>
+<li><p>Wrong Python/Perl environment active</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>For Perl modules:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>perl<span class="w"> </span>-MCPAN<span class="w"> </span>-e<span class="w"> </span><span class="s1">'install Bio::EnsEMBL::Registry'</span>
+</pre></div>
+</div>
+</li>
+<li><p>For Python modules:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>omamer<span class="w"> </span>omark
+</pre></div>
+</div>
+</li>
+<li><p>Ensure correct environment in container:</p>
+<div class="highlight-dockerfile notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">omamer</span><span class="o">==</span><span class="m">0</span>.3.3<span class="w"> </span><span class="nv">omark</span><span class="o">==</span><span class="m">0</span>.3.0
+</pre></div>
+</div>
+</li>
+<li><p>Check PERL5LIB and PYTHONPATH:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span><span class="w"> </span><span class="nv">$PERL5LIB</span>
+<span class="nb">echo</span><span class="w"> </span><span class="nv">$PYTHONPATH</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="data-quality-and-validation">
+<h2>Data Quality and Validation<a class="headerlink" href="#data-quality-and-validation" title="Link to this heading"></a></h2>
+<section id="issue-empty-busco-results">
+<h3>Issue: Empty BUSCO results<a class="headerlink" href="#issue-empty-busco-results" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<ul class="simple">
+<li><p>BUSCO completes but reports 0% completeness</p></li>
+<li><p>No genes found</p></li>
+</ul>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Wrong lineage selected</p></li>
+<li><p>Input data format issues</p></li>
+<li><p>Corrupted input file</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Verify lineage is appropriate:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>busco<span class="w"> </span>--list-datasets
+<span class="c1"># Choose lineage matching your species</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check input file format:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Should be valid FASTA</span>
+grep<span class="w"> </span><span class="s2">"^&gt;"</span><span class="w"> </span>input.fa<span class="w"> </span><span class="p">|</span><span class="w"> </span>head
+</pre></div>
+</div>
+</li>
+<li><p>Try broader lineage:</p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">params</span><span class="o">.</span><span class="na">busco_lineage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'eukaryota_odb10'</span><span class="w">  </span><span class="c1">// Start broad</span>
+</pre></div>
+</div>
+</li>
+<li><p>Validate file integrity:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>md5sum<span class="w"> </span>input.fa
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="issue-omark-reports-high-contamination">
+<h3>Issue: OMark reports high contamination<a class="headerlink" href="#issue-omark-reports-high-contamination" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<ul class="simple">
+<li><p>OMark warns of possible contamination</p></li>
+<li><p>Many “unexpected” proteins</p></li>
+</ul>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Actual contamination in assembly</p></li>
+<li><p>Wrong taxonomic placement</p></li>
+<li><p>Horizontal gene transfer</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Review OMark detailed output in <code class="docutils literal notranslate"><span class="pre">omark_output/</span></code> directory</p></li>
+<li><p>Check for known contaminants:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">"bacteria\|virus"</span><span class="w"> </span>omark_output/*.txt
+</pre></div>
+</div>
+</li>
+<li><p>Run contamination screening on assembly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use tools like blobtools, NCBI FCS-GX</span>
+</pre></div>
+</div>
+</li>
+<li><p>If legitimate, document in metadata</p></li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="issue-statistics-don-t-match-expectations">
+<h3>Issue: Statistics don’t match expectations<a class="headerlink" href="#issue-statistics-don-t-match-expectations" title="Link to this heading"></a></h3>
+<p><strong>Symptoms:</strong></p>
+<ul class="simple">
+<li><p>Gene counts seem wrong</p></li>
+<li><p>Missing expected data in statistics</p></li>
+</ul>
+<p><strong>Causes:</strong></p>
+<ul class="simple">
+<li><p>Database not fully populated</p></li>
+<li><p>Wrong database selected</p></li>
+<li><p>Filtering parameters</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic">
+<li><p>Manually check database:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">biotype</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">gene</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">biotype</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">biotype</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">transcript</span><span class="w"> </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">biotype</span><span class="p">;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Verify using correct database:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check meta.dbname matches intended database</span>
+</pre></div>
+</div>
+</li>
+<li><p>Review statistics SQL files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span>core_statistics/*.sql
+</pre></div>
+</div>
+</li>
+<li><p>Compare with previous runs if available</p></li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="debugging-strategies">
+<h2>Debugging Strategies<a class="headerlink" href="#debugging-strategies" title="Link to this heading"></a></h2>
+<section id="strategy-1-enable-trace-and-debugging">
+<h3>Strategy 1: Enable trace and debugging<a class="headerlink" href="#strategy-1-enable-trace-and-debugging" title="Link to this heading"></a></h3>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="c1">// nextflow.config</span>
+<span class="n">trace</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'trace.txt'</span>
+<span class="o">}</span>
+
+<span class="n">dag</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'dag.html'</span>
+<span class="o">}</span>
+
+<span class="n">report</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="n">enabled</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="n">file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'report.html'</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="strategy-2-examine-work-directories">
+<h3>Strategy 2: Examine work directories<a class="headerlink" href="#strategy-2-examine-work-directories" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find failed process work directory</span>
+find<span class="w"> </span>work/<span class="w"> </span>-name<span class="w"> </span>.exitcode<span class="w"> </span>-exec<span class="w"> </span>grep<span class="w"> </span>-l<span class="w"> </span><span class="s1">'1'</span><span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1<span class="w"> </span><span class="p">|</span><span class="w"> </span>xargs<span class="w"> </span>dirname
+
+<span class="c1"># View logs</span>
+<span class="nb">cd</span><span class="w"> </span>&lt;work_dir&gt;
+cat<span class="w"> </span>.command.sh<span class="w">    </span><span class="c1"># Command that was run</span>
+cat<span class="w"> </span>.command.log<span class="w">   </span><span class="c1"># stdout</span>
+cat<span class="w"> </span>.command.err<span class="w">   </span><span class="c1"># stderr</span>
+cat<span class="w"> </span>.command.trace<span class="w"> </span><span class="c1"># Resource usage</span>
+</pre></div>
+</div>
+</section>
+<section id="strategy-3-run-process-manually">
+<h3>Strategy 3: Run process manually<a class="headerlink" href="#strategy-3-run-process-manually" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Navigate to work directory</span>
+<span class="nb">cd</span><span class="w"> </span>&lt;work_dir&gt;
+
+<span class="c1"># Run command directly</span>
+bash<span class="w"> </span>.command.sh
+
+<span class="c1"># Or step through script line by line</span>
+</pre></div>
+</div>
+</section>
+<section id="strategy-4-reduce-scope-for-testing">
+<h3>Strategy 4: Reduce scope for testing<a class="headerlink" href="#strategy-4-reduce-scope-for-testing" title="Link to this heading"></a></h3>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="c1">// Test with single sample</span>
+<span class="n">meta_ch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">channel</span><span class="o">.</span><span class="na">of</span><span class="o">([</span>
+<span class="w">    </span><span class="o">[</span><span class="nl">gca:</span><span class="w"> </span><span class="s1">'GCA_000001405.15'</span><span class="o">,</span><span class="w"> </span><span class="nl">dbname:</span><span class="w"> </span><span class="s1">'test_db'</span><span class="o">,</span><span class="w"> </span><span class="nl">production_name:</span><span class="w"> </span><span class="s1">'test'</span><span class="o">]</span>
+<span class="o">])</span>
+</pre></div>
+</div>
+</section>
+<section id="strategy-5-check-versions-compatibility">
+<h3>Strategy 5: Check versions compatibility<a class="headerlink" href="#strategy-5-check-versions-compatibility" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Collect all versions</span>
+cat<span class="w"> </span>work/**/versions.yml<span class="w"> </span>&gt;<span class="w"> </span>all_versions.yml
+
+<span class="c1"># Compare against known working versions</span>
+</pre></div>
+</div>
+</section>
+<section id="strategy-6-increase-verbosity">
+<h3>Strategy 6: Increase verbosity<a class="headerlink" href="#strategy-6-increase-verbosity" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run with debug logging</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span>-profile<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--debug
+
+<span class="c1"># Nextflow trace</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span>-with-trace<span class="w"> </span>-with-report<span class="w"> </span>-with-timeline
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="common-error-patterns">
+<h2>Common Error Patterns<a class="headerlink" href="#common-error-patterns" title="Link to this heading"></a></h2>
+<section id="pattern-intermittent-failures">
+<h3>Pattern: Intermittent failures<a class="headerlink" href="#pattern-intermittent-failures" title="Link to this heading"></a></h3>
+<p><strong>Indicators:</strong></p>
+<ul class="simple">
+<li><p>Process succeeds on retry</p></li>
+<li><p>Random timing of failures</p></li>
+<li><p>Different processes failing</p></li>
+</ul>
+<p><strong>Likely Causes:</strong></p>
+<ul class="simple">
+<li><p>File system latency</p></li>
+<li><p>Network issues</p></li>
+<li><p>Resource contention</p></li>
+</ul>
+<p><strong>Solution:</strong></p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="n">errorStrategy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'retry'</span>
+<span class="w">    </span><span class="n">maxRetries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<span class="o">}</span>
+<span class="n">params</span><span class="o">.</span><span class="na">files_latency</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span>
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="pattern-all-processes-fail-at-same-stage">
+<h3>Pattern: All processes fail at same stage<a class="headerlink" href="#pattern-all-processes-fail-at-same-stage" title="Link to this heading"></a></h3>
+<p><strong>Indicators:</strong></p>
+<ul class="simple">
+<li><p>All samples fail at same module</p></li>
+<li><p>Consistent error message</p></li>
+<li><p>Happens immediately on start</p></li>
+</ul>
+<p><strong>Likely Causes:</strong></p>
+<ul class="simple">
+<li><p>Configuration error</p></li>
+<li><p>Missing parameter</p></li>
+<li><p>Wrong path/credential</p></li>
+</ul>
+<p><strong>Solution:</strong></p>
+<ul class="simple">
+<li><p>Review parameters for that specific module</p></li>
+<li><p>Check parameter documentation</p></li>
+<li><p>Validate paths and credentials</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="pattern-failures-after-long-runtime">
+<h3>Pattern: Failures after long runtime<a class="headerlink" href="#pattern-failures-after-long-runtime" title="Link to this heading"></a></h3>
+<p><strong>Indicators:</strong></p>
+<ul class="simple">
+<li><p>Process runs for hours then fails</p></li>
+<li><p>Memory-related errors</p></li>
+<li><p>Disk space errors</p></li>
+</ul>
+<p><strong>Likely Causes:</strong></p>
+<ul class="simple">
+<li><p>Insufficient resources</p></li>
+<li><p>Memory leak</p></li>
+<li><p>Large file handling</p></li>
+</ul>
+<p><strong>Solution:</strong></p>
+<div class="highlight-groovy notranslate"><div class="highlight"><pre><span></span><span class="n">process</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="n">memory</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="mi">8</span><span class="o">.</span><span class="na">GB</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">task</span><span class="o">.</span><span class="na">attempt</span><span class="w"> </span><span class="o">}</span>
+<span class="w">    </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">{</span><span class="w"> </span><span class="mi">4</span><span class="o">.</span><span class="na">h</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">task</span><span class="o">.</span><span class="na">attempt</span><span class="w"> </span><span class="o">}</span>
+<span class="w">    </span><span class="n">errorStrategy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'retry'</span>
+<span class="w">    </span><span class="n">maxRetries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="getting-help">
+<h2>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading"></a></h2>
+<section id="before-asking-for-help">
+<h3>Before asking for help:<a class="headerlink" href="#before-asking-for-help" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>✅ Check this troubleshooting guide</p></li>
+<li><p>✅ Review module documentation</p></li>
+<li><p>✅ Examine work directory logs</p></li>
+<li><p>✅ Check parameter configuration</p></li>
+<li><p>✅ Try with single sample/minimal data</p></li>
+</ol>
+</section>
+<section id="when-reporting-issues-include">
+<h3>When reporting issues, include:<a class="headerlink" href="#when-reporting-issues-include" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Error message</strong> (full text from .command.err)</p></li>
+<li><p><strong>Command executed</strong> (.command.sh contents)</p></li>
+<li><p><strong>Configuration</strong> (relevant params)</p></li>
+<li><p><strong>Environment</strong> (Nextflow version, executor)</p></li>
+<li><p><strong>Steps to reproduce</strong></p></li>
+<li><p><strong>Versions file</strong> (if generated)</p></li>
+</ol>
+</section>
+<section id="useful-diagnostic-commands">
+<h3>Useful diagnostic commands:<a class="headerlink" href="#useful-diagnostic-commands" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Nextflow version</span>
+nextflow<span class="w"> </span>-version
+
+<span class="c1"># Process logs</span>
+find<span class="w"> </span>work/<span class="w"> </span>-name<span class="w"> </span>.command.err<span class="w"> </span>-exec<span class="w"> </span>grep<span class="w"> </span>-l<span class="w"> </span>ERROR<span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span>
+
+<span class="c1"># Resource usage</span>
+cat<span class="w"> </span>work/**/.command.trace
+
+<span class="c1"># Configuration used</span>
+nextflow<span class="w"> </span>config<span class="w"> </span>-profile<span class="w"> </span>&lt;your_profile&gt;
+
+<span class="c1"># List failed processes</span>
+nextflow<span class="w"> </span>log<span class="w"> </span>&lt;run_name&gt;<span class="w"> </span>-f<span class="w"> </span>status,name,exit<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>FAILED
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="quick-reference">
+<h2>Quick Reference<a class="headerlink" href="#quick-reference" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Issue</p></th>
+<th class="head"><p>First Check</p></th>
+<th class="head"><p>Module</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Can’t connect to database</p></td>
+<td><p>Credentials, network</p></td>
+<td><p>All DB modules</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUSCO fails</p></td>
+<td><p>Lineage, input format</p></td>
+<td><p>BUSCO_*</p></td>
+</tr>
+<tr class="row-even"><td><p>OMAmer database not found</p></td>
+<td><p>Path, file exists</p></td>
+<td><p>OMAMER_HOG, OMARK</p></td>
+</tr>
+<tr class="row-odd"><td><p>Empty output</p></td>
+<td><p>Input data, database content</p></td>
+<td><p>FETCH_<em>, BUSCO_</em></p></td>
+</tr>
+<tr class="row-even"><td><p>SQL errors</p></td>
+<td><p>Privileges, syntax</p></td>
+<td><p>POPULATE_DB</p></td>
+</tr>
+<tr class="row-odd"><td><p>Out of memory</p></td>
+<td><p>Process memory config</p></td>
+<td><p>BUSCO_<em>, OMAMER_</em></p></td>
+</tr>
+<tr class="row-even"><td><p>File not found</p></td>
+<td><p>File system latency</p></td>
+<td><p>All</p></td>
+</tr>
+<tr class="row-odd"><td><p>Slow pipeline</p></td>
+<td><p>maxForks, database load</p></td>
+<td><p>All</p></td>
+</tr>
+</tbody>
+</table>
+<hr class="docutils" />
+<p><strong>Last Updated</strong>: 2026-02-07<br />
+<strong>For</strong>: Ensembl Genes Statistics Pipeline v1.0</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

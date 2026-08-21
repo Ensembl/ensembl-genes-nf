@@ -1,0 +1,21 @@
+# Modules
+
+Documentation for the modules used by this pipeline.
+
+```{toctree}
+:maxdepth: 1
+
+busco-core-metakeys
+busco-dataset
+busco-lineage
+cleaning
+collect-software-versions
+db-metadata
+fetch-genome
+fetch-proteins
+omamer-hog
+omark
+populate-db
+run-ensembl-meta
+run-statistics
+```

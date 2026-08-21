@@ -1,0 +1,1257 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Statistics Pipeline Output Guide &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../repeat/README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Statistics Pipeline Output Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/pipelines/statistics/output.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="statistics-pipeline-output-guide">
+<h1>Statistics Pipeline Output Guide<a class="headerlink" href="#statistics-pipeline-output-guide" title="Link to this heading"></a></h1>
+<p>This guide describes all outputs generated by the Ensembl genes statistics pipeline, including file formats, locations, and interpretation.</p>
+<section id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="#output-directory-structure">Output Directory Structure</a></p></li>
+<li><p><a class="reference internal" href="#module-outputs">Module Outputs</a></p></li>
+<li><p><a class="reference internal" href="#file-formats">File Formats</a></p></li>
+<li><p><a class="reference internal" href="#cached-outputs">Cached Outputs</a></p></li>
+<li><p><a class="reference internal" href="#database-modifications">Database Modifications</a></p></li>
+<li><p><a class="reference internal" href="#version-tracking">Version Tracking</a></p></li>
+<li><p><a class="reference internal" href="#interpreting-results">Interpreting Results</a></p></li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="output-directory-structure">
+<h2>Output Directory Structure<a class="headerlink" href="#output-directory-structure" title="Link to this heading"></a></h2>
+<section id="standard-layout">
+<h3>Standard Layout<a class="headerlink" href="#standard-layout" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${params.outdir}/
+├── ${meta.gca}/                    # Per-genome assembly directory
+│   ├── busco_genome_lineage/        # BUSCO genome results
+│   ├── busco_protein_lineage/       # BUSCO protein results
+│   ├── omark_output/                # OMark quality assessment
+│   ├── core_statistics/             # Statistics SQL files
+│   │   ├── *.sql                    # Generated SQL statements
+│   │   └── README.txt               # Statistics summary
+│   └── versions.yml                 # Tool versions used
+│
+└── pipeline_info/                   # Pipeline execution metadata
+    ├── execution_report.html        # Nextflow execution report
+    ├── execution_timeline.html      # Timeline visualization
+    └── execution_trace.txt          # Process resource usage
+</pre></div>
+</div>
+</section>
+<section id="cache-directory-structure">
+<h3>Cache Directory Structure<a class="headerlink" href="#cache-directory-structure" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${params.cacheDir}/
+├── ${meta.gca}/
+│   ├── ncbi_dataset/                # Cached genome sequences
+│   │   └── *.fna
+│   ├── fasta/                       # Cached protein translations
+│   │   └── translations.fa
+│   └── omamer/                      # Cached OMAmer results
+│       └── proteins.omamer
+│
+└── busco_downloads/                 # BUSCO lineage datasets
+    ├── ${lineage}_odb10/
+    │   ├── dataset.cfg
+    │   ├── hmms/
+    │   ├── prfl/
+    │   └── scores_cutoff
+    └── lineages/
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="module-outputs">
+<h2>Module Outputs<a class="headerlink" href="#module-outputs" title="Link to this heading"></a></h2>
+<section id="fetch-genome">
+<h3>FETCH_GENOME<a class="headerlink" href="#fetch-genome" title="Link to this heading"></a></h3>
+<p><strong>Task output:</strong> <code class="docutils literal notranslate"><span class="pre">*.fna</span></code> (used by downstream BUSCO steps)
+<strong>Cached in:</strong> <code class="docutils literal notranslate"><span class="pre">${params.cacheDir}/${meta.gca}/ncbi_dataset/</span></code></p>
+<section id="files">
+<h4>Files:<a class="headerlink" href="#files" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">*.fna</span></code> - FASTA format genome sequence</p></li>
+</ul>
+</section>
+<section id="format">
+<h4>Format:<a class="headerlink" href="#format" title="Link to this heading"></a></h4>
+<div class="highlight-fasta notranslate"><div class="highlight"><pre><span></span>&gt;1 dna:chromosome chromosome:Assembly:1:1:248956422:1 REF
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN...
+&gt;2 dna:chromosome chromosome:Assembly:2:1:242193529:1 REF
+NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN...
+</pre></div>
+</div>
+</section>
+<section id="metadata">
+<h4>Metadata:<a class="headerlink" href="#metadata" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Sequence headers include chromosome/scaffold IDs</p></li>
+<li><p>Assembly version in header</p></li>
+<li><p>N’s represent gaps in assembly</p></li>
+<li><p>REF indicates reference sequence</p></li>
+</ul>
+</section>
+<section id="typical-size">
+<h4>Typical Size:<a class="headerlink" href="#typical-size" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Small genome (bacteria): 2-10 MB</p></li>
+<li><p>Insect genome: 100-500 MB</p></li>
+<li><p>Mammalian genome: 2-3 GB</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="fetch-proteins">
+<h3>FETCH_PROTEINS<a class="headerlink" href="#fetch-proteins" title="Link to this heading"></a></h3>
+<p><strong>Task output:</strong> <code class="docutils literal notranslate"><span class="pre">translations.fa</span></code> (used by downstream BUSCO/OMArk steps)
+<strong>Cached in:</strong> <code class="docutils literal notranslate"><span class="pre">${params.cacheDir}/${meta.gca}/fasta/</span></code></p>
+<section id="id1">
+<h4>Files:<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">translations.fa</span></code> - FASTA format protein sequences</p></li>
+</ul>
+</section>
+<section id="id2">
+<h4>Format:<a class="headerlink" href="#id2" title="Link to this heading"></a></h4>
+<div class="highlight-fasta notranslate"><div class="highlight"><pre><span></span>&gt;ENSP00000401091 pep:protein_coding transcript:ENST00000442987 gene:ENSG00000227232
+MTEYKLVVVGAGGVGKSALTIQLIQNHFVDEYDPTIEDSYRKQVVIDGETCLLDILDTA
+GQEEYSAMRDQYMRTGEGFLCVFAINNTKSFEDIHQYREQIKRVKDSDDVPMVLVGNKC
+</pre></div>
+</div>
+</section>
+<section id="metadata-in-headers">
+<h4>Metadata in Headers:<a class="headerlink" href="#metadata-in-headers" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Protein stable ID (ENSP*)</p></li>
+<li><p>Transcript stable ID (ENST*)</p></li>
+<li><p>Gene stable ID (ENSG*)</p></li>
+<li><p>Biotype (protein_coding)</p></li>
+</ul>
+</section>
+<section id="id3">
+<h4>Typical Size:<a class="headerlink" href="#id3" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Depends on proteome size</p></li>
+<li><p>Human: ~50 MB (20,000 proteins)</p></li>
+<li><p>Model organisms: 10-100 MB</p></li>
+</ul>
+</section>
+<section id="notes">
+<h4>Notes:<a class="headerlink" href="#notes" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Only includes protein-coding translations</p></li>
+<li><p>One sequence per protein isoform</p></li>
+<li><p>Sequences are in single-line or multi-line format</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="busco-dataset">
+<h3>BUSCO_DATASET<a class="headerlink" href="#busco-dataset" title="Link to this heading"></a></h3>
+<p><strong>Cached in:</strong> <code class="docutils literal notranslate"><span class="pre">${params.cacheDir}/busco_downloads/</span></code></p>
+<section id="id4">
+<h4>Files:<a class="headerlink" href="#id4" title="Link to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${lineage}_odb10/
+├── dataset.cfg          # Dataset configuration
+├── hmms/                # HMM profiles for each BUSCO gene
+├── prfl/                # Profile files
+├── info/                # Dataset information
+│   └── species.info     # Species included in lineage
+└── scores_cutoff        # Score thresholds
+</pre></div>
+</div>
+</section>
+<section id="purpose">
+<h4>Purpose:<a class="headerlink" href="#purpose" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Reference database for BUSCO assessment</p></li>
+<li><p>Automatically downloaded once per lineage</p></li>
+<li><p>Reused across all samples with same lineage</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="busco-genome-lineage">
+<h3>BUSCO_GENOME_LINEAGE<a class="headerlink" href="#busco-genome-lineage" title="Link to this heading"></a></h3>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/busco_genome_lineage/</span></code></p>
+<section id="id5">
+<h4>Files:<a class="headerlink" href="#id5" title="Link to this heading"></a></h4>
+<section id="short-summary-specific-lineage-run-name-txt">
+<h5>1. <code class="docutils literal notranslate"><span class="pre">short_summary.specific.${lineage}.${run_name}.txt</span></code><a class="headerlink" href="#short-summary-specific-lineage-run-name-txt" title="Link to this heading"></a></h5>
+<p>Primary results file with completeness metrics.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># BUSCO version is: 5.4.7</span>
+<span class="c1"># The lineage dataset is: vertebrata_odb10 (Creation date: 2021-02-19, number of genomes: 65, number of BUSCOs: 3354)</span>
+<span class="c1"># Summarized benchmarking in BUSCO notation for file *.fna</span>
+<span class="c1"># BUSCO was run in mode: genome</span>
+
+	<span class="o">*****</span> <span class="n">Results</span><span class="p">:</span> <span class="o">*****</span>
+
+	<span class="n">C</span><span class="p">:</span><span class="mf">95.2</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">94.1</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">1.1</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">2.3</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">2.5</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">3354</span>	   
+	<span class="mi">3194</span>	<span class="n">Complete</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">C</span><span class="p">)</span>			   
+	<span class="mi">3156</span>	<span class="n">Complete</span> <span class="ow">and</span> <span class="n">single</span><span class="o">-</span><span class="n">copy</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">S</span><span class="p">)</span>	   
+	<span class="mi">38</span>	<span class="n">Complete</span> <span class="ow">and</span> <span class="n">duplicated</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">D</span><span class="p">)</span>	   
+	<span class="mi">77</span>	<span class="n">Fragmented</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">F</span><span class="p">)</span>			   
+	<span class="mi">83</span>	<span class="n">Missing</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">M</span><span class="p">)</span>			   
+	<span class="mi">3354</span>	<span class="n">Total</span> <span class="n">BUSCO</span> <span class="n">groups</span> <span class="n">searched</span>		   
+</pre></div>
+</div>
+<p><strong>Key Metrics:</strong></p>
+<ul class="simple">
+<li><p><strong>C (Complete)</strong>: Total % of BUSCOs found</p>
+<ul>
+<li><p><strong>S (Single-copy)</strong>: Expected single copy</p></li>
+<li><p><strong>D (Duplicated)</strong>: Found multiple times</p></li>
+</ul>
+</li>
+<li><p><strong>F (Fragmented)</strong>: Partial matches</p></li>
+<li><p><strong>M (Missing)</strong>: Not found</p></li>
+<li><p><strong>n</strong>: Total BUSCOs in lineage</p></li>
+</ul>
+</section>
+<section id="full-table-tsv">
+<h5>2. <code class="docutils literal notranslate"><span class="pre">full_table.tsv</span></code><a class="headerlink" href="#full-table-tsv" title="Link to this heading"></a></h5>
+<p>Detailed results for each BUSCO gene.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-tsv notranslate"><div class="highlight"><pre><span></span># Busco id	Status	Sequence	Gene Start	Gene End	Strand	Score	Length	OrthoDB url	Description
+1276at7742	Complete	1	12345	15678	+	1234.5	1112	https://...	Description
+1277at7742	Duplicated	2	23456	26789	-	2345.6	1045	https://...	Description
+1278at7742	Fragmented	3	34567	36890	+	456.7	223	https://...	Description
+</pre></div>
+</div>
+<p><strong>Columns:</strong></p>
+<ul class="simple">
+<li><p><strong>Busco id</strong>: BUSCO gene identifier</p></li>
+<li><p><strong>Status</strong>: Complete, Duplicated, Fragmented, or Missing</p></li>
+<li><p><strong>Sequence</strong>: Chromosome/scaffold where found</p></li>
+<li><p><strong>Gene Start/End</strong>: Genomic coordinates</p></li>
+<li><p><strong>Strand</strong>: + or -</p></li>
+<li><p><strong>Score</strong>: BUSCO score</p></li>
+<li><p><strong>Length</strong>: Length of matched region</p></li>
+</ul>
+</section>
+<section id="missing-busco-list-tsv">
+<h5>3. <code class="docutils literal notranslate"><span class="pre">missing_busco_list.tsv</span></code><a class="headerlink" href="#missing-busco-list-tsv" title="Link to this heading"></a></h5>
+<p>List of missing BUSCO genes.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Busco id</span>
+<span class="mi">1279</span><span class="n">at7742</span>
+<span class="mi">1280</span><span class="n">at7742</span>
+</pre></div>
+</div>
+</section>
+<section id="additional-files">
+<h5>4. Additional Files:<a class="headerlink" href="#additional-files" title="Link to this heading"></a></h5>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">busco_sequences/</span></code> - FASTA files of identified BUSCOs</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">single_copy_busco_sequences/</span></code> - Single-copy genes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">multi_copy_busco_sequences/</span></code> - Duplicated genes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fragmented_busco_sequences/</span></code> - Fragmented genes</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logs/</span></code> - Execution logs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hmmer_output/</span></code> - Raw HMMER results</p></li>
+</ul>
+</section>
+</section>
+<section id="id6">
+<h4>Typical Size:<a class="headerlink" href="#id6" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Summary files: &lt; 1 MB</p></li>
+<li><p>Full table: 1-5 MB</p></li>
+<li><p>Sequences directory: 10-50 MB</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="busco-protein-lineage">
+<h3>BUSCO_PROTEIN_LINEAGE<a class="headerlink" href="#busco-protein-lineage" title="Link to this heading"></a></h3>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/busco_protein_lineage/</span></code></p>
+<section id="id7">
+<h4>Files:<a class="headerlink" href="#id7" title="Link to this heading"></a></h4>
+<p>Same structure as BUSCO_GENOME_LINEAGE, but:</p>
+<ul class="simple">
+<li><p>Assesses protein sequences instead of genome</p></li>
+<li><p>Reports protein-level completeness</p></li>
+<li><p>Headers reference protein IDs instead of genomic coordinates</p></li>
+</ul>
+</section>
+<section id="key-differences">
+<h4>Key Differences:<a class="headerlink" href="#key-differences" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Usually higher completeness than genome (proteins already annotated)</p></li>
+<li><p>No genomic coordinates in output</p></li>
+<li><p>Faster execution (smaller input)</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="busco-core-metakeys">
+<h3>BUSCO_CORE_METAKEYS<a class="headerlink" href="#busco-core-metakeys" title="Link to this heading"></a></h3>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/</span></code>
+<strong>Cached:</strong> No. Nextflow task caching is disabled because this step writes to the database.</p>
+<section id="id8">
+<h4>Files:<a class="headerlink" href="#id8" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{database}_busco_{mode}_metakey.json</span></code> - BUSCO metadata generated from the summary file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">versions_busco_{mode}_metakeys.yml</span></code> - Python version used by the metakey patch step</p></li>
+</ul>
+</section>
+<section id="database-changes">
+<h4>Database Changes:<a class="headerlink" href="#database-changes" title="Link to this heading"></a></h4>
+<p>Inserts/updates rows in the <code class="docutils literal notranslate"><span class="pre">meta</span></code> table:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Example entries added</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">species_id</span><span class="p">,</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'busco.genome.version'</span><span class="p">,</span><span class="w"> </span><span class="s1">'5.4.7'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'busco.genome.lineage'</span><span class="p">,</span><span class="w"> </span><span class="s1">'vertebrata_odb10'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'busco.genome.complete'</span><span class="p">,</span><span class="w"> </span><span class="s1">'95.2'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'busco.genome.complete_single'</span><span class="p">,</span><span class="w"> </span><span class="s1">'94.1'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'busco.genome.complete_duplicated'</span><span class="p">,</span><span class="w"> </span><span class="s1">'1.1'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'busco.genome.fragmented'</span><span class="p">,</span><span class="w"> </span><span class="s1">'2.3'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'busco.genome.missing'</span><span class="p">,</span><span class="w"> </span><span class="s1">'2.5'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'busco.protein.complete'</span><span class="p">,</span><span class="w"> </span><span class="s1">'98.5'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">...</span>
+</pre></div>
+</div>
+</section>
+<section id="verification">
+<h4>Verification:<a class="headerlink" href="#verification" title="Link to this heading"></a></h4>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">SELECT</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="w"> </span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'busco%'</span><span class="w"> </span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">meta_key</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="omamer-hog">
+<h3>OMAMER_HOG<a class="headerlink" href="#omamer-hog" title="Link to this heading"></a></h3>
+<p><strong>Cached in:</strong> <code class="docutils literal notranslate"><span class="pre">${params.cacheDir}/${meta.gca}/omamer/</span></code></p>
+<section id="id9">
+<h4>Files:<a class="headerlink" href="#id9" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">proteins.omamer</span></code> - OMAmer orthology assignments</p></li>
+</ul>
+</section>
+<section id="id10">
+<h4>Format:<a class="headerlink" href="#id10" title="Link to this heading"></a></h4>
+<p>Binary format containing:</p>
+<ul class="simple">
+<li><p>Protein ID to HOG (Hierarchical Orthologous Group) mappings</p></li>
+<li><p>Taxonomic placement information</p></li>
+<li><p>Orthology scores</p></li>
+</ul>
+</section>
+<section id="size">
+<h4>Size:<a class="headerlink" href="#size" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Typically 1-10 MB depending on proteome size</p></li>
+</ul>
+</section>
+<section id="id11">
+<h4>Notes:<a class="headerlink" href="#id11" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Not human-readable (binary format)</p></li>
+<li><p>Used as input for OMark</p></li>
+<li><p>Cached to avoid recomputation</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="omark">
+<h3>OMARK<a class="headerlink" href="#omark" title="Link to this heading"></a></h3>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/omark_output/</span></code></p>
+<section id="id12">
+<h4>Files:<a class="headerlink" href="#id12" title="Link to this heading"></a></h4>
+<section id="omark-output-txt">
+<h5>1. <code class="docutils literal notranslate"><span class="pre">omark_output.txt</span></code><a class="headerlink" href="#omark-output-txt" title="Link to this heading"></a></h5>
+<p>Main quality assessment results.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># OMark Quality Assessment</span>
+<span class="n">Taxon</span><span class="p">:</span> <span class="n">Homo</span> <span class="n">sapiens</span> <span class="p">(</span><span class="mi">9606</span><span class="p">)</span>
+<span class="n">Database</span><span class="p">:</span> <span class="n">LUCA</span><span class="o">.</span><span class="n">h5</span>
+<span class="n">Number</span> <span class="n">of</span> <span class="n">proteins</span><span class="p">:</span> <span class="mi">20391</span>
+
+<span class="c1"># Quality Metrics</span>
+<span class="n">Completeness</span><span class="p">:</span> <span class="mf">95.8</span><span class="o">%</span>
+<span class="n">Consistency</span><span class="p">:</span> <span class="mf">97.2</span><span class="o">%</span>
+<span class="n">Contamination</span><span class="p">:</span> <span class="mf">0.5</span><span class="o">%</span>
+
+<span class="c1"># Detailed Results</span>
+<span class="n">Category</span>                    <span class="n">Count</span>    <span class="n">Percentage</span>
+<span class="n">Complete</span>                    <span class="mi">19542</span>    <span class="mf">95.8</span><span class="o">%</span>
+<span class="n">Consistent</span>                  <span class="mi">19832</span>    <span class="mf">97.2</span><span class="o">%</span>
+<span class="n">Inconsistent</span>                <span class="mi">559</span>      <span class="mf">2.7</span><span class="o">%</span>
+<span class="n">Contaminants</span>                <span class="mi">102</span>      <span class="mf">0.5</span><span class="o">%</span>
+</pre></div>
+</div>
+<p><strong>Key Metrics:</strong></p>
+<ul class="simple">
+<li><p><strong>Completeness</strong>: % of expected orthologs present</p></li>
+<li><p><strong>Consistency</strong>: Agreement between annotation and orthology</p></li>
+<li><p><strong>Contamination</strong>: Potential non-target sequences</p></li>
+</ul>
+</section>
+<section id="inconsistent-txt">
+<h5>2. <code class="docutils literal notranslate"><span class="pre">inconsistent.txt</span></code><a class="headerlink" href="#inconsistent-txt" title="Link to this heading"></a></h5>
+<p>List of proteins with inconsistent orthology.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Protein_ID</span>	<span class="n">Expected_Taxon</span>	<span class="n">Observed_Taxon</span>	<span class="n">Score</span>
+<span class="n">ENSP00000401091</span>	<span class="n">Vertebrata</span>	<span class="n">Bacteria</span>	<span class="o">-</span><span class="mf">2.5</span>
+</pre></div>
+</div>
+</section>
+<section id="contaminants-txt">
+<h5>3. <code class="docutils literal notranslate"><span class="pre">contaminants.txt</span></code><a class="headerlink" href="#contaminants-txt" title="Link to this heading"></a></h5>
+<p>Potential contamination candidates.</p>
+</section>
+<section id="id13">
+<h5>4. Additional Files:<a class="headerlink" href="#id13" title="Link to this heading"></a></h5>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">detailed_summary.txt</span></code> - Extended statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">*.pdf</span></code> - Visualization plots (if generated)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hog_mapping.txt</span></code> - HOG assignments</p></li>
+</ul>
+</section>
+</section>
+<section id="id14">
+<h4>Typical Size:<a class="headerlink" href="#id14" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Text files: 1-10 MB</p></li>
+<li><p>PDF plots: 1-5 MB each</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="run-statistics">
+<h3>RUN_STATISTICS<a class="headerlink" href="#run-statistics" title="Link to this heading"></a></h3>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/core_statistics/</span></code>
+<strong>Cached in:</strong> <code class="docutils literal notranslate"><span class="pre">${params.cacheDir}/${meta.gca}/core_statistics/statistics/</span></code></p>
+<section id="id15">
+<h4>Files:<a class="headerlink" href="#id15" title="Link to this heading"></a></h4>
+<p>Multiple SQL files containing INSERT statements:</p>
+<section id="gene-stats-sql">
+<h5>1. <code class="docutils literal notranslate"><span class="pre">gene_stats.sql</span></code><a class="headerlink" href="#gene-stats-sql" title="Link to this heading"></a></h5>
+<p>Gene count statistics by biotype.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">species_id</span><span class="p">,</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'gene.total'</span><span class="p">,</span><span class="w"> </span><span class="s1">'20391'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'gene.protein_coding'</span><span class="p">,</span><span class="w"> </span><span class="s1">'19950'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'gene.pseudogene'</span><span class="p">,</span><span class="w"> </span><span class="s1">'15'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'gene.lncRNA'</span><span class="p">,</span><span class="w"> </span><span class="s1">'345'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'gene.miRNA'</span><span class="p">,</span><span class="w"> </span><span class="s1">'48'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'gene.snRNA'</span><span class="p">,</span><span class="w"> </span><span class="s1">'23'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'gene.snoRNA'</span><span class="p">,</span><span class="w"> </span><span class="s1">'10'</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="transcript-stats-sql">
+<h5>2. <code class="docutils literal notranslate"><span class="pre">transcript_stats.sql</span></code><a class="headerlink" href="#transcript-stats-sql" title="Link to this heading"></a></h5>
+<p>Transcript statistics.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">species_id</span><span class="p">,</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'transcript.total'</span><span class="p">,</span><span class="w"> </span><span class="s1">'81256'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'transcript.protein_coding'</span><span class="p">,</span><span class="w"> </span><span class="s1">'79850'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'transcript.avg_per_gene'</span><span class="p">,</span><span class="w"> </span><span class="s1">'3.98'</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="coding-stats-sql">
+<h5>3. <code class="docutils literal notranslate"><span class="pre">coding_stats.sql</span></code><a class="headerlink" href="#coding-stats-sql" title="Link to this heading"></a></h5>
+<p>Coding sequence statistics.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">species_id</span><span class="p">,</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'coding.avg_length'</span><span class="p">,</span><span class="w"> </span><span class="s1">'1821'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'coding.total_bases'</span><span class="p">,</span><span class="w"> </span><span class="s1">'36234567'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'coding.avg_exons_per_transcript'</span><span class="p">,</span><span class="w"> </span><span class="s1">'8.5'</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="additional-stats">
+<h5>4. Additional Stats:<a class="headerlink" href="#additional-stats" title="Link to this heading"></a></h5>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">exon_stats.sql</span></code> - Exon counts and lengths</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">intron_stats.sql</span></code> - Intron statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">assembly_stats.sql</span></code> - Genome assembly metrics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">homology_stats.sql</span></code> - Orthology/paralogy counts</p></li>
+</ul>
+</section>
+</section>
+<section id="sql-structure">
+<h4>SQL Structure:<a class="headerlink" href="#sql-structure" title="Link to this heading"></a></h4>
+<p>All stats follow the pattern:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">species_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'stat.name'</span><span class="p">;</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">species_id</span><span class="p">,</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="s1">'stat.name'</span><span class="p">,</span><span class="w"> </span><span class="s1">'value'</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="run-ensembl-meta">
+<h3>RUN_ENSEMBL_META<a class="headerlink" href="#run-ensembl-meta" title="Link to this heading"></a></h3>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/core_statistics/</span></code>
+<strong>Cached in:</strong> <code class="docutils literal notranslate"><span class="pre">${params.cacheDir}/${meta.gca}/core_statistics/metakeys/</span></code></p>
+<section id="id16">
+<h4>Files:<a class="headerlink" href="#id16" title="Link to this heading"></a></h4>
+<section id="core-meta-sql">
+<h5>1. <code class="docutils literal notranslate"><span class="pre">core_meta.sql</span></code><a class="headerlink" href="#core-meta-sql" title="Link to this heading"></a></h5>
+<p>Core database metadata.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Schema information</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">  </span><span class="p">(</span><span class="s1">'schema_type'</span><span class="p">,</span><span class="w"> </span><span class="s1">'core'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="s1">'schema_version'</span><span class="p">,</span><span class="w"> </span><span class="s1">'110'</span><span class="p">);</span>
+
+<span class="c1">-- Species information</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">species_id</span><span class="p">,</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'species.production_name'</span><span class="p">,</span><span class="w"> </span><span class="s1">'homo_sapiens'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'species.scientific_name'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Homo sapiens'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'species.common_name'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Human'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'species.taxonomy_id'</span><span class="p">,</span><span class="w"> </span><span class="s1">'9606'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'species.division'</span><span class="p">,</span><span class="w"> </span><span class="s1">'EnsemblVertebrates'</span><span class="p">);</span>
+
+<span class="c1">-- Assembly information</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">species_id</span><span class="p">,</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'assembly.default'</span><span class="p">,</span><span class="w"> </span><span class="s1">'GRCh38'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'assembly.name'</span><span class="p">,</span><span class="w"> </span><span class="s1">'GRCh38.p14'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'assembly.accession'</span><span class="p">,</span><span class="w"> </span><span class="s1">'GCA_000001405.29'</span><span class="p">);</span>
+
+<span class="c1">-- Production information</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">species_id</span><span class="p">,</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'genebuild.method'</span><span class="p">,</span><span class="w"> </span><span class="s1">'import'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'genebuild.start_date'</span><span class="p">,</span><span class="w"> </span><span class="s1">'2023-10'</span><span class="p">),</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'genebuild.version'</span><span class="p">,</span><span class="w"> </span><span class="s1">'2023_10'</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="external-db-meta-sql">
+<h5>2. <code class="docutils literal notranslate"><span class="pre">external_db_meta.sql</span></code><a class="headerlink" href="#external-db-meta-sql" title="Link to this heading"></a></h5>
+<p>External database references.</p>
+<p><strong>Format:</strong></p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">species_id</span><span class="p">,</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
+<span class="w">  </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s1">'xref.timestamp'</span><span class="p">,</span><span class="w"> </span><span class="s1">'2023-10-01'</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<hr class="docutils" />
+<section id="populate-db">
+<h3>POPULATE_DB<a class="headerlink" href="#populate-db" title="Link to this heading"></a></h3>
+<p><strong>Output:</strong> None (executes SQL against database)
+<strong>Cached:</strong> No. Nextflow task caching is disabled because this step writes to the database.</p>
+<section id="id17">
+<h4>Database Changes:<a class="headerlink" href="#id17" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Executes all SQL files from RUN_STATISTICS and RUN_ENSEMBL_META</p></li>
+<li><p>Populates <code class="docutils literal notranslate"><span class="pre">meta</span></code> table with statistics and metadata</p></li>
+<li><p>May update other tables depending on SQL content</p></li>
+</ul>
+</section>
+<section id="id18">
+<h4>Verification:<a class="headerlink" href="#id18" title="Link to this heading"></a></h4>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Check statistics were inserted</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="w"> </span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'gene%'</span><span class="w"> </span>
+<span class="w">   </span><span class="k">OR</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'transcript%'</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">meta_key</span><span class="p">;</span>
+
+<span class="c1">-- Check metadata</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="w"> </span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'species%'</span>
+<span class="w">   </span><span class="k">OR</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'assembly%'</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">meta_key</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="db-metadata">
+<h3>DB_METADATA<a class="headerlink" href="#db-metadata" title="Link to this heading"></a></h3>
+<p><strong>Output:</strong> Database modifications</p>
+<section id="id19">
+<h4>Database Changes:<a class="headerlink" href="#id19" title="Link to this heading"></a></h4>
+<p>Updates database metadata tracking tables.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="cleaning">
+<h3>CLEANING<a class="headerlink" href="#cleaning" title="Link to this heading"></a></h3>
+<p><strong>Output:</strong> File deletions</p>
+<section id="actions">
+<h4>Actions:<a class="headerlink" href="#actions" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Removes files from <code class="docutils literal notranslate"><span class="pre">${params.outdir}</span></code> if <code class="docutils literal notranslate"><span class="pre">params.clean</span></code> is true</p></li>
+<li><p>Removes work directories if <code class="docutils literal notranslate"><span class="pre">params.clean_work_dir</span></code> is true</p></li>
+<li><p>Preserves essential outputs and summaries</p></li>
+</ul>
+</section>
+</section>
+</section>
+<hr class="docutils" />
+<section id="file-formats">
+<h2>File Formats<a class="headerlink" href="#file-formats" title="Link to this heading"></a></h2>
+<section id="fasta-format-fa-fasta">
+<h3>FASTA Format (.fa, .fasta)<a class="headerlink" href="#fasta-format-fa-fasta" title="Link to this heading"></a></h3>
+<p><strong>Used by:</strong> FETCH_GENOME, FETCH_PROTEINS, BUSCO outputs</p>
+<p><strong>Structure:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&gt;</span><span class="n">header_line</span>
+<span class="n">SEQUENCE_DATA</span>
+<span class="o">&gt;</span><span class="n">another_header</span>
+<span class="n">MORE_SEQUENCE_DATA</span>
+</pre></div>
+</div>
+<p><strong>Notes:</strong></p>
+<ul class="simple">
+<li><p>Header starts with <code class="docutils literal notranslate"><span class="pre">&gt;</span></code></p></li>
+<li><p>Sequence can be single-line or multi-line</p></li>
+<li><p>Standard nucleotide codes (A, T, G, C, N) or amino acid codes</p></li>
+</ul>
+</section>
+<section id="tab-separated-values-tsv">
+<h3>Tab-Separated Values (.tsv)<a class="headerlink" href="#tab-separated-values-tsv" title="Link to this heading"></a></h3>
+<p><strong>Used by:</strong> BUSCO full tables, OMark results</p>
+<p><strong>Structure:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Comment lines start with #</span>
+<span class="n">Column1</span>	<span class="n">Column2</span>	<span class="n">Column3</span>
+<span class="n">Value1</span>	<span class="n">Value2</span>	<span class="n">Value3</span>
+</pre></div>
+</div>
+<p><strong>Notes:</strong></p>
+<ul class="simple">
+<li><p>Tab character (<code class="docutils literal notranslate"><span class="pre">\t</span></code>) separates columns</p></li>
+<li><p>May include header row</p></li>
+<li><p>Comments prefixed with <code class="docutils literal notranslate"><span class="pre">#</span></code></p></li>
+</ul>
+</section>
+<section id="sql-format-sql">
+<h3>SQL Format (.sql)<a class="headerlink" href="#sql-format-sql" title="Link to this heading"></a></h3>
+<p><strong>Used by:</strong> Statistics and metadata files</p>
+<p><strong>Structure:</strong></p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Comments start with --</span>
+<span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">condition</span><span class="p">;</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="p">(</span><span class="n">col1</span><span class="p">,</span><span class="w"> </span><span class="n">col2</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">val1</span><span class="p">,</span><span class="w"> </span><span class="n">val2</span><span class="p">);</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="k">table</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">col1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">condition</span><span class="p">;</span>
+</pre></div>
+</div>
+<p><strong>Notes:</strong></p>
+<ul class="simple">
+<li><p>Standard SQL statements</p></li>
+<li><p>Safe to execute multiple times (includes DELETE before INSERT)</p></li>
+<li><p>Species-specific (uses species_id)</p></li>
+</ul>
+</section>
+<section id="yaml-format-yml">
+<h3>YAML Format (.yml)<a class="headerlink" href="#yaml-format-yml" title="Link to this heading"></a></h3>
+<p><strong>Used by:</strong> Version tracking</p>
+<p><strong>Structure:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="s">"PROCESS_NAME"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">tool_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">version_string</span>
+<span class="w">  </span><span class="nt">python</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.9.7</span>
+</pre></div>
+</div>
+<p><strong>Notes:</strong></p>
+<ul class="simple">
+<li><p>Human-readable key-value pairs</p></li>
+<li><p>Hierarchical structure</p></li>
+<li><p>Easily parsed programmatically</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="cached-outputs">
+<h2>Cached Outputs<a class="headerlink" href="#cached-outputs" title="Link to this heading"></a></h2>
+<section id="purpose-of-caching">
+<h3>Purpose of Caching<a class="headerlink" href="#purpose-of-caching" title="Link to this heading"></a></h3>
+<p>The pipeline uses <code class="docutils literal notranslate"><span class="pre">storeDir</span></code> for expensive operations:</p>
+<ul class="simple">
+<li><p><strong>FETCH_GENOME</strong>: Avoid repeated NCBI/ENA downloads</p></li>
+<li><p><strong>FETCH_PROTEINS</strong>: Avoid repeated protein extraction</p></li>
+<li><p><strong>RUN_STATISTICS</strong>: Avoid repeated statistics SQL generation</p></li>
+<li><p><strong>RUN_ENSEMBL_META</strong>: Avoid repeated metadata SQL generation</p></li>
+<li><p><strong>OMAMER_HOG</strong>: Avoid expensive orthology searches</p></li>
+</ul>
+</section>
+<section id="cache-behavior">
+<h3>Cache Behavior<a class="headerlink" href="#cache-behavior" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>First run</strong>: Computes result and stores in cache</p></li>
+<li><p><strong>Subsequent runs</strong>: Uses cached result (instant)</p></li>
+<li><p><strong>Cache invalidation</strong>: Manual deletion required if source data changes</p></li>
+</ol>
+</section>
+<section id="cache-management">
+<h3>Cache Management<a class="headerlink" href="#cache-management" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check cache size</span>
+du<span class="w"> </span>-sh<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.cacheDir</span><span class="si">}</span>
+
+<span class="c1"># Clear specific genome cache</span>
+rm<span class="w"> </span>-rf<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.cacheDir</span><span class="si">}</span>/GCA_000001405.15/
+
+<span class="c1"># Clear BUSCO datasets</span>
+rm<span class="w"> </span>-rf<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.cacheDir</span><span class="si">}</span>/busco_downloads/
+
+<span class="c1"># Clear all OMAmer results</span>
+find<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.cacheDir</span><span class="si">}</span><span class="w"> </span>-name<span class="w"> </span><span class="s2">"*.omamer"</span><span class="w"> </span>-delete
+</pre></div>
+</div>
+</section>
+<section id="when-to-clear-cache">
+<h3>When to Clear Cache<a class="headerlink" href="#when-to-clear-cache" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Source database updated</p></li>
+<li><p>BUSCO datasets updated</p></li>
+<li><p>Assembly version changed</p></li>
+<li><p>Proteins re-annotated</p></li>
+<li><p>OMAmer database updated</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="database-modifications">
+<h2>Database Modifications<a class="headerlink" href="#database-modifications" title="Link to this heading"></a></h2>
+<section id="tables-modified">
+<h3>Tables Modified<a class="headerlink" href="#tables-modified" title="Link to this heading"></a></h3>
+<section id="meta-table">
+<h4>1. <code class="docutils literal notranslate"><span class="pre">meta</span></code> Table<a class="headerlink" href="#meta-table" title="Link to this heading"></a></h4>
+<p>Primary target for statistics and metadata.</p>
+<p><strong>Structure:</strong></p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="n">meta_id</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTO_INCREMENT</span><span class="p">,</span>
+<span class="w">  </span><span class="n">species_id</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="n">meta_key</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">  </span><span class="n">meta_value</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="p">);</span>
+</pre></div>
+</div>
+<p><strong>Keys Added:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">busco.*</span></code> - BUSCO metrics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gene.*</span></code> - Gene statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transcript.*</span></code> - Transcript statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">species.*</span></code> - Species information</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">assembly.*</span></code> - Assembly information</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">schema_*</span></code> - Schema metadata</p></li>
+</ul>
+</section>
+<section id="other-tables-depending-on-sql">
+<h4>2. Other Tables (depending on SQL)<a class="headerlink" href="#other-tables-depending-on-sql" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>May update <code class="docutils literal notranslate"><span class="pre">attrib_type</span></code></p></li>
+<li><p>May insert into <code class="docutils literal notranslate"><span class="pre">seq_region_attrib</span></code></p></li>
+<li><p>May modify production metadata</p></li>
+</ul>
+</section>
+</section>
+<section id="backup-recommendation">
+<h3>Backup Recommendation<a class="headerlink" href="#backup-recommendation" title="Link to this heading"></a></h3>
+<p>Before running POPULATE_DB:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Backup meta table</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">meta_backup</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">meta</span><span class="p">;</span>
+
+<span class="c1">-- Or full database backup</span>
+<span class="n">mysqldump</span><span class="w"> </span><span class="o">-</span><span class="n">h</span><span class="w"> </span><span class="k">host</span><span class="w"> </span><span class="o">-</span><span class="n">u</span><span class="w"> </span><span class="k">user</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="n">dbname</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">backup</span><span class="p">.</span><span class="k">sql</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="version-tracking">
+<h2>Version Tracking<a class="headerlink" href="#version-tracking" title="Link to this heading"></a></h2>
+<section id="versions-yml-structure">
+<h3>versions.yml Structure<a class="headerlink" href="#versions-yml-structure" title="Link to this heading"></a></h3>
+<p>Each module generates a versions file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="s">"BUSCO_GENOME_LINEAGE"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">busco</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.4.7</span>
+<span class="s">"FETCH_GENOME"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">perl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.32.0</span>
+<span class="s">"OMAMER_HOG"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">omamer</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3.3</span>
+<span class="s">"OMARK"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">omark</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3.0</span>
+<span class="s">"RUN_STATISTICS"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">perl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5.32.0</span>
+<span class="s">"RUN_ENSEMBL_META"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">python</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3.9.7</span>
+<span class="s">"POPULATE_DB"</span><span class="p p-Indicator">:</span>
+<span class="w">  </span><span class="nt">mysql</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8.0.31</span>
+</pre></div>
+</div>
+</section>
+<section id="collecting-all-versions">
+<h3>Collecting All Versions<a class="headerlink" href="#collecting-all-versions" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Combine all version files</span>
+find<span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.outdir</span><span class="si">}</span><span class="w"> </span>-name<span class="w"> </span><span class="s2">"versions.yml"</span><span class="w"> </span>-exec<span class="w"> </span>cat<span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span><span class="w"> </span>&gt;<span class="w"> </span>all_versions.yml
+
+<span class="c1"># Or using Nextflow output</span>
+cat<span class="w"> </span>work/**/versions.yml<span class="w"> </span>&gt;<span class="w"> </span>complete_versions.yml
+</pre></div>
+</div>
+</section>
+<section id="version-verification">
+<h3>Version Verification<a class="headerlink" href="#version-verification" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check for version consistency across samples</span>
+grep<span class="w"> </span><span class="s2">"busco:"</span><span class="w"> </span><span class="si">${</span><span class="nv">params</span><span class="p">.outdir</span><span class="si">}</span>/*/versions.yml<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq
+
+<span class="c1"># Verify against requirements</span>
+diff<span class="w"> </span>requirements.txt<span class="w"> </span>all_versions.yml
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="interpreting-results">
+<h2>Interpreting Results<a class="headerlink" href="#interpreting-results" title="Link to this heading"></a></h2>
+<section id="busco-completeness-guidelines">
+<h3>BUSCO Completeness Guidelines<a class="headerlink" href="#busco-completeness-guidelines" title="Link to this heading"></a></h3>
+<p><strong>Genome Assessment:</strong></p>
+<ul class="simple">
+<li><p><strong>&gt; 95% Complete</strong>: Excellent quality</p></li>
+<li><p><strong>90-95% Complete</strong>: Good quality</p></li>
+<li><p><strong>80-90% Complete</strong>: Acceptable quality</p></li>
+<li><p><strong>&lt; 80% Complete</strong>: Poor quality or wrong lineage</p></li>
+</ul>
+<p><strong>Expected Duplicated:</strong></p>
+<ul class="simple">
+<li><p><strong>&lt; 5%</strong>: Normal diploid genome</p></li>
+<li><p><strong>5-15%</strong>: Recent duplication or polyploidy</p></li>
+<li><p><strong>&gt; 15%</strong>: High heterozygosity or contamination</p></li>
+</ul>
+<p><strong>Fragmented:</strong></p>
+<ul class="simple">
+<li><p><strong>&lt; 5%</strong>: Good assembly contiguity</p></li>
+<li><p><strong>&gt; 10%</strong>: Fragmented assembly, consider improvement</p></li>
+</ul>
+</section>
+<section id="omark-quality-guidelines">
+<h3>OMark Quality Guidelines<a class="headerlink" href="#omark-quality-guidelines" title="Link to this heading"></a></h3>
+<p><strong>Completeness:</strong></p>
+<ul class="simple">
+<li><p><strong>&gt; 95%</strong>: Excellent annotation</p></li>
+<li><p><strong>90-95%</strong>: Good annotation</p></li>
+<li><p><strong>&lt; 90%</strong>: Review annotation quality</p></li>
+</ul>
+<p><strong>Consistency:</strong></p>
+<ul class="simple">
+<li><p><strong>&gt; 95%</strong>: High consistency</p></li>
+<li><p><strong>90-95%</strong>: Acceptable</p></li>
+<li><p><strong>&lt; 90%</strong>: Review inconsistent proteins</p></li>
+</ul>
+<p><strong>Contamination:</strong></p>
+<ul class="simple">
+<li><p><strong>&lt; 1%</strong>: Clean</p></li>
+<li><p><strong>1-5%</strong>: Minor contamination</p></li>
+<li><p><strong>&gt; 5%</strong>: Significant contamination, investigate</p></li>
+</ul>
+</section>
+<section id="gene-statistics-interpretation">
+<h3>Gene Statistics Interpretation<a class="headerlink" href="#gene-statistics-interpretation" title="Link to this heading"></a></h3>
+<p><strong>Protein-coding gene counts:</strong></p>
+<ul class="simple">
+<li><p>Human: ~20,000</p></li>
+<li><p>Mouse: ~22,000</p></li>
+<li><p>Drosophila: ~13,000</p></li>
+<li><p>C. elegans: ~20,000</p></li>
+</ul>
+<p><strong>Transcripts per gene:</strong></p>
+<ul class="simple">
+<li><p><strong>&lt; 2</strong>: Limited alternative splicing</p></li>
+<li><p><strong>2-4</strong>: Normal alternative splicing</p></li>
+<li><p><strong>&gt; 5</strong>: High alternative splicing (vertebrates)</p></li>
+</ul>
+<p><strong>Coding length:</strong></p>
+<ul class="simple">
+<li><p>Average protein: 300-500 amino acids</p></li>
+<li><p>Average CDS: 900-1500 bases</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="output-checklist">
+<h2>Output Checklist<a class="headerlink" href="#output-checklist" title="Link to this heading"></a></h2>
+<p>After pipeline completion, verify:</p>
+<ul class="simple">
+<li><p>[ ] All expected sample directories exist in <code class="docutils literal notranslate"><span class="pre">${params.outdir}</span></code></p></li>
+<li><p>[ ] BUSCO results show reasonable completeness</p></li>
+<li><p>[ ] OMark results don’t show excessive contamination</p></li>
+<li><p>[ ] Statistics SQL files exist and contain data</p></li>
+<li><p>[ ] versions.yml files present for all modules</p></li>
+<li><p>[ ] No empty output files (check file sizes)</p></li>
+<li><p>[ ] Database meta table populated (if POPULATE_DB ran)</p></li>
+<li><p>[ ] Execution reports generated in pipeline_info/</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="accessing-results-programmatically">
+<h2>Accessing Results Programmatically<a class="headerlink" href="#accessing-results-programmatically" title="Link to this heading"></a></h2>
+<section id="python-example">
+<h3>Python Example<a class="headerlink" href="#python-example" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">glob</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">Bio</span><span class="w"> </span><span class="kn">import</span> <span class="n">SeqIO</span>
+
+<span class="c1"># Read BUSCO results</span>
+<span class="n">busco_dir</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">gca</span><span class="si">}</span><span class="s2">/busco_genome_lineage"</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">busco_dir</span><span class="si">}</span><span class="s2">/short_summary.*.txt"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"</span><span class="se">\t</span><span class="s2">C:"</span><span class="p">):</span>
+            <span class="n">metrics</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"BUSCO metrics: </span><span class="si">{</span><span class="n">metrics</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># Read protein sequences</span>
+<span class="n">proteins</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">gca</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">production_name</span><span class="si">}</span><span class="s2">.fa"</span>
+<span class="n">seqs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">SeqIO</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">proteins</span><span class="p">,</span> <span class="s2">"fasta"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Protein count: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="c1"># Read versions</span>
+<span class="n">version_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">outdir</span><span class="si">}</span><span class="s2">/**/versions.yml"</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">versions</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">vf</span> <span class="ow">in</span> <span class="n">version_files</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">vf</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">versions</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="sql-example">
+<h3>SQL Example<a class="headerlink" href="#sql-example" title="Link to this heading"></a></h3>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="c1">-- Query all statistics</span>
+<span class="k">SELECT</span><span class="w"> </span>
+<span class="w">    </span><span class="n">meta_key</span><span class="p">,</span>
+<span class="w">    </span><span class="n">meta_value</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">meta</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">species_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'gene.%'</span>
+<span class="w">   </span><span class="k">OR</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'transcript.%'</span>
+<span class="w">   </span><span class="k">OR</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'busco.%'</span><span class="p">)</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">meta_key</span><span class="p">;</span>
+
+<span class="c1">-- Compare BUSCO genome vs protein</span>
+<span class="k">SELECT</span><span class="w"> </span>
+<span class="w">    </span><span class="n">SUBSTRING_INDEX</span><span class="p">(</span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="s1">'.'</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">metric_type</span><span class="p">,</span>
+<span class="w">    </span><span class="k">MAX</span><span class="p">(</span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'%.genome.%'</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">meta_value</span><span class="w"> </span><span class="k">END</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">genome_value</span><span class="p">,</span>
+<span class="w">    </span><span class="k">MAX</span><span class="p">(</span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'%.protein.%'</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">meta_value</span><span class="w"> </span><span class="k">END</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">protein_value</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">meta</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">meta_key</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'busco.%complete'</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">metric_type</span><span class="p">;</span>
+</pre></div>
+</div>
+</section>
+<section id="bash-example">
+<h3>Bash Example<a class="headerlink" href="#bash-example" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+
+<span class="c1"># Summary report</span>
+<span class="nv">outdir</span><span class="o">=</span><span class="nv">$1</span>
+<span class="nv">gca</span><span class="o">=</span><span class="nv">$2</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"=== Statistics Summary for </span><span class="si">${</span><span class="nv">gca</span><span class="si">}</span><span class="s2"> ==="</span>
+
+<span class="c1"># BUSCO genome</span>
+<span class="nv">busco_genome</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">outdir</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">gca</span><span class="si">}</span><span class="s2">/busco_genome_lineage/short_summary.*.txt"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"BUSCO Genome Completeness:"</span>
+grep<span class="w"> </span><span class="s2">"C:"</span><span class="w"> </span><span class="nv">$busco_genome</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1
+
+<span class="c1"># BUSCO protein</span>
+<span class="nv">busco_protein</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">outdir</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">gca</span><span class="si">}</span><span class="s2">/busco_protein_lineage/short_summary.*.txt"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"BUSCO Protein Completeness:"</span>
+grep<span class="w"> </span><span class="s2">"C:"</span><span class="w"> </span><span class="nv">$busco_protein</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1
+
+<span class="c1"># OMark</span>
+<span class="nv">omark</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">outdir</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">gca</span><span class="si">}</span><span class="s2">/omark_output/omark_output.txt"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"OMark Quality:"</span>
+grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">"Completeness|Consistency|Contamination"</span><span class="w"> </span><span class="nv">$omark</span>
+
+<span class="c1"># Gene count from SQL</span>
+<span class="nv">sql_file</span><span class="o">=</span><span class="s2">"</span><span class="si">${</span><span class="nv">outdir</span><span class="si">}</span><span class="s2">/</span><span class="si">${</span><span class="nv">gca</span><span class="si">}</span><span class="s2">/core_statistics/gene_stats.sql"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Gene Count:"</span>
+grep<span class="w"> </span><span class="s2">"'gene.total'"</span><span class="w"> </span><span class="nv">$sql_file</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-oP<span class="w"> </span><span class="s2">"VALUES \(.*?, '.*?', '\K[^']*"</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="archiving-and-delivery">
+<h2>Archiving and Delivery<a class="headerlink" href="#archiving-and-delivery" title="Link to this heading"></a></h2>
+<section id="essential-files-for-archive">
+<h3>Essential Files for Archive<a class="headerlink" href="#essential-files-for-archive" title="Link to this heading"></a></h3>
+<p>Minimum files to preserve:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${gca}/
+├── busco_genome_lineage/short_summary.*.txt
+├── busco_protein_lineage/short_summary.*.txt
+├── omark_output/omark_output.txt
+├── core_statistics/*.sql
+└── versions.yml
+</pre></div>
+</div>
+</section>
+<section id="full-archive">
+<h3>Full Archive<a class="headerlink" href="#full-archive" title="Link to this heading"></a></h3>
+<p>Complete output for reproducibility:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create tarball</span>
+tar<span class="w"> </span>-czf<span class="w"> </span><span class="si">${</span><span class="nv">gca</span><span class="si">}</span>_statistics.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="si">${</span><span class="nv">params</span><span class="p">.outdir</span><span class="si">}</span>/<span class="si">${</span><span class="nv">gca</span><span class="si">}</span>/<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>pipeline_info/
+
+<span class="c1"># Verify integrity</span>
+tar<span class="w"> </span>-tzf<span class="w"> </span><span class="si">${</span><span class="nv">gca</span><span class="si">}</span>_statistics.tar.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+</pre></div>
+</div>
+</section>
+<section id="delivery-to-database-team">
+<h3>Delivery to Database Team<a class="headerlink" href="#delivery-to-database-team" title="Link to this heading"></a></h3>
+<p>Provide:</p>
+<ol class="arabic simple">
+<li><p>SQL files in <code class="docutils literal notranslate"><span class="pre">core_statistics/</span></code></p></li>
+<li><p>BUSCO summaries (PDF or screenshots)</p></li>
+<li><p>OMark assessment</p></li>
+<li><p>versions.yml</p></li>
+<li><p>Execution report</p></li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="quick-reference">
+<h2>Quick Reference<a class="headerlink" href="#quick-reference" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Primary Output</p></th>
+<th class="head"><p>Location</p></th>
+<th class="head"><p>Format</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>FETCH_GENOME</p></td>
+<td><p>*.fna</p></td>
+<td><p>cache/${gca}/ncbi_dataset/</p></td>
+<td><p>FASTA</p></td>
+</tr>
+<tr class="row-odd"><td><p>FETCH_PROTEINS</p></td>
+<td><p>translations.fa</p></td>
+<td><p>cache/${gca}/fasta/</p></td>
+<td><p>FASTA</p></td>
+</tr>
+<tr class="row-even"><td><p>BUSCO_GENOME</p></td>
+<td><p>short_summary.txt</p></td>
+<td><p>outdir/${gca}/busco_genome_lineage/</p></td>
+<td><p>TXT</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUSCO_PROTEIN</p></td>
+<td><p>short_summary.txt</p></td>
+<td><p>outdir/${gca}/busco_protein_lineage/</p></td>
+<td><p>TXT</p></td>
+</tr>
+<tr class="row-even"><td><p>OMAMER_HOG</p></td>
+<td><p>proteins.omamer</p></td>
+<td><p>cache/${gca}/omamer/</p></td>
+<td><p>Binary</p></td>
+</tr>
+<tr class="row-odd"><td><p>OMARK</p></td>
+<td><p>omark_output.txt</p></td>
+<td><p>outdir/${gca}/omark_output/</p></td>
+<td><p>TXT</p></td>
+</tr>
+<tr class="row-even"><td><p>RUN_STATISTICS</p></td>
+<td><p>*.sql</p></td>
+<td><p>outdir/${gca}/core_statistics/</p></td>
+<td><p>SQL</p></td>
+</tr>
+<tr class="row-odd"><td><p>RUN_ENSEMBL_META</p></td>
+<td><p>*.sql</p></td>
+<td><p>outdir/${gca}/core_statistics/</p></td>
+<td><p>SQL</p></td>
+</tr>
+<tr class="row-even"><td><p>All modules</p></td>
+<td><p>versions.yml</p></td>
+<td><p>outdir/${gca}/</p></td>
+<td><p>YAML</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+# DB_METADATA
+
+DB_METADATA process to fetch core database metadata
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+Outputs:
+- metadata: tuple of meta and metadata.txt file
+- versions.yml: versions file containing software versions used
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `DB_METADATA` |
+| Label | `'python'` |
+| Tag | `${meta.dbname}` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val meta
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("metadata.txt"), emit: metadata
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/db_metadata.nf`

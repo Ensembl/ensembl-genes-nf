@@ -1,0 +1,620 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Input Format &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../repeat/README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Input Format</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/pipelines/statistics/input.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="input-format">
+<h1>Input Format<a class="headerlink" href="#input-format" title="Link to this heading"></a></h1>
+<p>The pipeline uses a CSV file to specify samples and their metadata. This guide explains the required format and provides examples for different use cases.</p>
+<section id="csv-file-structure">
+<h2>CSV File Structure<a class="headerlink" href="#csv-file-structure" title="Link to this heading"></a></h2>
+<section id="basic-format">
+<h3>Basic Format<a class="headerlink" href="#basic-format" title="Link to this heading"></a></h3>
+<p>The CSV file must contain a header row with column names, followed by one row per genome to analyze.</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>column1,column2,column3
+value1,value2,value3
+value1,value2,value3
+</pre></div>
+</div>
+<p>!!! important “CSV Requirements”
+- <strong>Header row required</strong>: First row must contain column names
+- <strong>Comma-separated</strong>: Use commas as delimiters
+- <strong>No trailing spaces</strong>: Column values should not have leading/trailing whitespace
+- <strong>One genome per row</strong>: Each row represents a single sample</p>
+</section>
+</section>
+<section id="column-specifications-by-workflow">
+<h2>Column Specifications by Workflow<a class="headerlink" href="#column-specifications-by-workflow" title="Link to this heading"></a></h2>
+<p>Different workflows require different columns. Choose the columns based on which workflows you’re running.</p>
+<section id="for-busco-core-database-mode">
+<h3>For BUSCO (Core Database Mode)<a class="headerlink" href="#for-busco-core-database-mode" title="Link to this heading"></a></h3>
+<p>Required when using <code class="docutils literal notranslate"><span class="pre">--run_busco_core</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dbname</span></code></p></td>
+<td><p>string</p></td>
+<td><p>✅</p></td>
+<td><p>Ensembl core database name</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">homo_sapiens_core_110_38</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">species_id</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>✅</p></td>
+<td><p>Species ID in the core database</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">busco_dataset</span></code></p></td>
+<td><p>string</p></td>
+<td><p>⚠️ *</p></td>
+<td><p>Specific BUSCO lineage dataset (if not will select the closest one in terms of taxonomy )</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">primates_odb12</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">protein_file</span></code></p></td>
+<td><p>string</p></td>
+<td><p>⚠️</p></td>
+<td><p>Path to protein FASTA file (if not using DB)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/data/proteins.fa</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">genome_file</span></code></p></td>
+<td><p>string</p></td>
+<td><p>⚠️</p></td>
+<td><p>Path to genome FASTA file (if not using DB)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/data/genome.fa</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>* Can be specified globally with <code class="docutils literal notranslate"><span class="pre">--busco_dataset</span></code> parameter instead</p>
+<p><strong>Example CSV:</strong></p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id,busco_dataset
+homo_sapiens_core_110_38,1,primates_odb12
+mus_musculus_core_110_39,1,glires_odb12
+danio_rerio_core_110_11,1,actinopterygii_odb12
+</pre></div>
+</div>
+</section>
+<section id="for-busco-ncbi-mode">
+<h3>For BUSCO (NCBI Mode)<a class="headerlink" href="#for-busco-ncbi-mode" title="Link to this heading"></a></h3>
+<p>Required when using <code class="docutils literal notranslate"><span class="pre">--run_busco_ncbi</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">gca</span></code></p></td>
+<td><p>string</p></td>
+<td><p>✅</p></td>
+<td><p>NCBI assembly accession</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">GCA_000001405.29</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">taxon_id</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>✅</p></td>
+<td><p>NCBI taxonomy ID</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">9606</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">busco_dataset</span></code></p></td>
+<td><p>string</p></td>
+<td><p>⚠️ *</p></td>
+<td><p>Specific BUSCO lineage dataset (if not will select the closest one in terms of taxonomy )</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">primates_odb12</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>* Can be specified globally with <code class="docutils literal notranslate"><span class="pre">--busco_dataset</span></code> parameter instead</p>
+<p><strong>Example CSV:</strong></p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>gca,taxon_id,busco_dataset
+GCA_000001405.29,9606,primates_odb12
+GCA_000001635.9,10090,glires_odb12
+GCA_000002035.4,7955,actinopterygii_odb12
+</pre></div>
+</div>
+<p>!!! info “NCBI Mode”
+NCBI mode only runs BUSCO in genome mode (not protein mode). The genome assembly is automatically downloaded from NCBI.</p>
+</section>
+<section id="for-omark">
+<h3>For OMArk<a class="headerlink" href="#for-omark" title="Link to this heading"></a></h3>
+<p>Required when using <code class="docutils literal notranslate"><span class="pre">--run_omark</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dbname</span></code></p></td>
+<td><p>string</p></td>
+<td><p>✅</p></td>
+<td><p>Ensembl core database name</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">xenopus_tropicalis_core_110_10</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">species_id</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>✅</p></td>
+<td><p>Species ID in the core database</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">protein_file</span></code></p></td>
+<td><p>string</p></td>
+<td><p>⚠️</p></td>
+<td><p>Path to protein FASTA file (if not using DB)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/data/proteins.fa</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example CSV:</strong></p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id
+xenopus_tropicalis_core_110_10,1
+danio_rerio_core_110_11,1
+</pre></div>
+</div>
+</section>
+<section id="for-ensembl-statistics">
+<h3>For Ensembl Statistics<a class="headerlink" href="#for-ensembl-statistics" title="Link to this heading"></a></h3>
+<p>Required when using <code class="docutils literal notranslate"><span class="pre">--run_ensembl_stats</span></code> or <code class="docutils literal notranslate"><span class="pre">--run_ensembl_beta_metakeys</span></code>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Required</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dbname</span></code></p></td>
+<td><p>string</p></td>
+<td><p>✅</p></td>
+<td><p>Ensembl core database name</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">arabidopsis_thaliana_core_110_11</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">species_id</span></code></p></td>
+<td><p>integer</p></td>
+<td><p>✅</p></td>
+<td><p>Species ID in the core database</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example CSV:</strong></p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id
+arabidopsis_thaliana_core_110_11,1
+caenorhabditis_elegans_core_110_280,1
+drosophila_melanogaster_core_110_9,1
+</pre></div>
+</div>
+</section>
+</section>
+<section id="complete-examples">
+<h2>Complete Examples<a class="headerlink" href="#complete-examples" title="Link to this heading"></a></h2>
+<section id="example-1-busco-quality-control-core-db">
+<h3>Example 1: BUSCO Quality Control (Core DB)<a class="headerlink" href="#example-1-busco-quality-control-core-db" title="Link to this heading"></a></h3>
+<p>Full quality assessment with both protein and genome BUSCO modes:</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id,busco_dataset
+homo_sapiens_core_110_38,1,primates_odb12
+pan_troglodytes_core_110_40,1,primates_odb12
+gorilla_gorilla_core_110_6,1,primates_odb12
+pongo_abelii_core_110_5,1,primates_odb12
+</pre></div>
+</div>
+<p>Command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>primates.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--busco_mode<span class="w"> </span>both<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+</section>
+<section id="example-2-busco-from-ncbi-assemblies">
+<h3>Example 2: BUSCO from NCBI Assemblies<a class="headerlink" href="#example-2-busco-from-ncbi-assemblies" title="Link to this heading"></a></h3>
+<p>Quick assessment of public genome assemblies:</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>gca,taxon_id,busco_dataset
+GCA_000001405.29,9606,primates_odb12
+GCA_011100555.1,9598,primates_odb12
+GCA_008122165.1,9593,primates_odb12
+</pre></div>
+</div>
+<p>Command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>ncbi_primates.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_ncbi
+</pre></div>
+</div>
+</section>
+<section id="example-3-complete-multi-workflow-analysis">
+<h3>Example 3: Complete Multi-Workflow Analysis<a class="headerlink" href="#example-3-complete-multi-workflow-analysis" title="Link to this heading"></a></h3>
+<p>Run all quality metrics together:</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id,busco_dataset
+drosophila_melanogaster_core_110_9,1,diptera_odb12
+anopheles_gambiae_core_110_56,1,diptera_odb12
+aedes_aegypti_core_110_6,1,diptera_odb12
+</pre></div>
+</div>
+<p>Command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>insects.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--busco_mode<span class="w"> </span>both<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/software/ensembl/ENSCODE
+</pre></div>
+</div>
+</section>
+<section id="example-4-mixed-lineages">
+<h3>Example 4: Mixed Lineages<a class="headerlink" href="#example-4-mixed-lineages" title="Link to this heading"></a></h3>
+<p>Different BUSCO lineages for different species:</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id,busco_dataset
+homo_sapiens_core_110_38,1,primates_odb12
+danio_rerio_core_110_11,1,actinopterygii_odb12
+drosophila_melanogaster_core_110_9,1,diptera_odb12
+arabidopsis_thaliana_core_110_11,1,embryophyta_odb12
+saccharomyces_cerevisiae_core_110_4,1,saccharomycetes_odb12
+</pre></div>
+</div>
+<p>Command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>diverse_species.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+</section>
+<section id="example-5-using-external-fasta-files">
+<h3>Example 5: Using External FASTA Files<a class="headerlink" href="#example-5-using-external-fasta-files" title="Link to this heading"></a></h3>
+<p>When sequences are not in a database:</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id,busco_dataset,protein_file,genome_file
+custom_genome_v1,1,vertebrata_odb12,/data/project1/proteins.fa,/data/project1/genome.fa
+custom_genome_v2,1,vertebrata_odb12,/data/project2/proteins.fa,/data/project2/genome.fa
+</pre></div>
+</div>
+<p>Command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>custom_genomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--busco_mode<span class="w"> </span>both
+</pre></div>
+</div>
+</section>
+</section>
+<section id="column-details">
+<h2>Column Details<a class="headerlink" href="#column-details" title="Link to this heading"></a></h2>
+<section id="dbname">
+<h3><code class="docutils literal notranslate"><span class="pre">dbname</span></code><a class="headerlink" href="#dbname" title="Link to this heading"></a></h3>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">{species}_{type}_{release}_{assembly_version}</span></code></p>
+<ul class="simple">
+<li><p><strong>species</strong>: Species name (lowercase, underscores)</p></li>
+<li><p><strong>type</strong>: Usually <code class="docutils literal notranslate"><span class="pre">core</span></code></p></li>
+<li><p><strong>release</strong>: Ensembl release number</p></li>
+<li><p><strong>assembly_version</strong>: Assembly version number</p></li>
+</ul>
+<p>Examples:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">homo_sapiens_core_110_38</span></code> (Human, release 110, GRCh38)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mus_musculus_core_110_39</span></code> (Mouse, release 110, GRCm39)</p></li>
+</ul>
+</section>
+<section id="species-id">
+<h3><code class="docutils literal notranslate"><span class="pre">species_id</span></code><a class="headerlink" href="#species-id" title="Link to this heading"></a></h3>
+<p>The species ID within the core database. In most cases, this is <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
+<p>!!! info “Multi-species databases”
+For bacteria collections or multi-species databases, this might be different. Check the <code class="docutils literal notranslate"><span class="pre">meta</span></code> table in your core database.</p>
+</section>
+<section id="busco-dataset">
+<h3><code class="docutils literal notranslate"><span class="pre">busco_dataset</span></code><a class="headerlink" href="#busco-dataset" title="Link to this heading"></a></h3>
+<p>The BUSCO lineage dataset name. Must match available datasets in OrthoDB v12.</p>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">{lineage}_odb12</span></code></p>
+<p>Common lineages:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">primates_odb12</span></code>, <code class="docutils literal notranslate"><span class="pre">mammalia_odb12</span></code>, <code class="docutils literal notranslate"><span class="pre">vertebrata_odb12</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">actinopterygii_odb12</span></code>, <code class="docutils literal notranslate"><span class="pre">aves_odb12</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">diptera_odb12</span></code>, <code class="docutils literal notranslate"><span class="pre">insecta_odb12</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">embryophyta_odb12</span></code>, <code class="docutils literal notranslate"><span class="pre">viridiplantae_odb12</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fungi_odb12</span></code>, <code class="docutils literal notranslate"><span class="pre">saccharomycetes_odb12</span></code></p></li>
+</ul>
+<p>See <a class="reference internal" href="workflows/busco.html"><span class="std std-doc">BUSCO documentation</span></a> for complete list.</p>
+</section>
+<section id="taxon-id">
+<h3><code class="docutils literal notranslate"><span class="pre">taxon_id</span></code><a class="headerlink" href="#taxon-id" title="Link to this heading"></a></h3>
+<p>The NCBI Taxonomy ID for the species.</p>
+<p>Find taxonomy IDs at: <a class="reference external" href="https://www.ncbi.nlm.nih.gov/taxonomy">https://www.ncbi.nlm.nih.gov/taxonomy</a></p>
+<p>Examples:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">9606</span></code> = <em>Homo sapiens</em> (Human)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">10090</span></code> = <em>Mus musculus</em> (Mouse)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">7955</span></code> = <em>Danio rerio</em> (Zebrafish)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">7227</span></code> = <em>Drosophila melanogaster</em> (Fruit fly)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">3702</span></code> = <em>Arabidopsis thaliana</em> (Thale cress)</p></li>
+</ul>
+</section>
+<section id="gca">
+<h3><code class="docutils literal notranslate"><span class="pre">gca</span></code><a class="headerlink" href="#gca" title="Link to this heading"></a></h3>
+<p>NCBI GenBank assembly accession.</p>
+<p>Format: <code class="docutils literal notranslate"><span class="pre">GCA_{9digits}.{version}</span></code></p>
+<p>Examples:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">GCA_000001405.29</span></code> (Human GRCh38.p13)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GCA_000001635.9</span></code> (Mouse GRCm39)</p></li>
+</ul>
+<p>Find assemblies at: <a class="reference external" href="https://www.ncbi.nlm.nih.gov/assembly">https://www.ncbi.nlm.nih.gov/assembly</a></p>
+</section>
+<section id="protein-file-and-genome-file">
+<h3><code class="docutils literal notranslate"><span class="pre">protein_file</span></code> and <code class="docutils literal notranslate"><span class="pre">genome_file</span></code><a class="headerlink" href="#protein-file-and-genome-file" title="Link to this heading"></a></h3>
+<p>Full paths to FASTA files:</p>
+<ul class="simple">
+<li><p><strong>protein_file</strong>: Protein sequences (canonical transcripts preferred)</p></li>
+<li><p><strong>genome_file</strong>: Genome assembly (unmasked or soft-masked)</p></li>
+</ul>
+<p>Requirements:</p>
+<ul class="simple">
+<li><p>Files must exist and be readable</p></li>
+<li><p>FASTA format (.fa, .fasta, .fna, .faa)</p></li>
+<li><p>Can be gzip-compressed (.gz)</p></li>
+</ul>
+</section>
+</section>
+<section id="validation">
+<h2>Validation<a class="headerlink" href="#validation" title="Link to this heading"></a></h2>
+<p>The pipeline validates your CSV file against a JSON schema. Common errors:</p>
+<section id="invalid-gca-format">
+<h3>❌ Invalid GCA format<a class="headerlink" href="#invalid-gca-format" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Error</span><span class="p">:</span> <span class="n">GCA</span> <span class="n">must</span> <span class="n">be</span> <span class="ow">in</span> <span class="n">the</span> <span class="nb">format</span> <span class="n">GCA_000000000</span><span class="mf">.0</span>
+</pre></div>
+</div>
+<p><strong>Fix</strong>: Ensure GCA follows the pattern <code class="docutils literal notranslate"><span class="pre">GCA_{9digits}.{version}</span></code></p>
+</section>
+<section id="missing-required-column">
+<h3>❌ Missing required column<a class="headerlink" href="#missing-required-column" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Error</span><span class="p">:</span> <span class="n">Column</span> <span class="s1">'dbname'</span> <span class="ow">is</span> <span class="n">required</span> <span class="n">but</span> <span class="ow">not</span> <span class="n">found</span>
+</pre></div>
+</div>
+<p><strong>Fix</strong>: Add the missing column to your CSV header</p>
+</section>
+<section id="invalid-taxon-id">
+<h3>❌ Invalid taxon_id<a class="headerlink" href="#invalid-taxon-id" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Error</span><span class="p">:</span> <span class="n">Taxon</span> <span class="n">ID</span> <span class="n">must</span> <span class="n">be</span> <span class="n">a</span> <span class="n">number</span>
+</pre></div>
+</div>
+<p><strong>Fix</strong>: Use numeric NCBI taxonomy IDs only</p>
+</section>
+<section id="trailing-spaces">
+<h3>❌ Trailing spaces<a class="headerlink" href="#trailing-spaces" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Error</span><span class="p">:</span> <span class="n">Database</span> <span class="n">names</span> <span class="n">cannot</span> <span class="n">contain</span> <span class="ow">or</span> <span class="n">have</span> <span class="n">trailing</span> <span class="n">spaces</span>
+</pre></div>
+</div>
+<p><strong>Fix</strong>: Remove spaces: <code class="docutils literal notranslate"><span class="pre">homo_sapiens_core_110_38</span></code> not <code class="docutils literal notranslate"><span class="pre">homo_sapiens_core_110_38</span> </code></p>
+</section>
+</section>
+<section id="tips-and-best-practices">
+<h2>Tips and Best Practices<a class="headerlink" href="#tips-and-best-practices" title="Link to this heading"></a></h2>
+<p>!!! tip “Start small”
+Test with 1-2 samples first, then scale up to your full dataset.</p>
+<p>!!! tip “Use absolute paths”
+For file paths (protein_file, genome_file), use absolute paths to avoid issues with working directories.</p>
+<p>!!! tip “Check database connectivity first”
+Before running the pipeline, verify you can connect to the database:
+<code class="docutils literal notranslate"><span class="pre">bash</span>&#160;&#160;&#160;&#160; <span class="pre">mysql</span> <span class="pre">-h</span> <span class="pre">mysql-server.example.com</span> <span class="pre">-P</span> <span class="pre">3306</span> <span class="pre">-u</span> <span class="pre">ensro</span> <span class="pre">-e</span> <span class="pre">&quot;SHOW</span> <span class="pre">DATABASES</span> <span class="pre">LIKE</span> <span class="pre">'homo_sapiens_core_%';&quot;</span>&#160;&#160;&#160;&#160; </code></p>
+<p>!!! tip “Validate GCA accessions”
+Verify NCBI accessions exist before running:
+<code class="docutils literal notranslate"><span class="pre">bash</span>&#160;&#160;&#160;&#160; <span class="pre">curl</span> <span class="pre">&quot;https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/GCA_000001405.29&quot;</span>&#160;&#160;&#160;&#160; </code></p>
+<p>!!! tip “Group by lineage”
+For better resource efficiency, group species with the same BUSCO lineage together.</p>
+</section>
+<section id="schema-validation">
+<h2>Schema Validation<a class="headerlink" href="#schema-validation" title="Link to this heading"></a></h2>
+<p>The input CSV is validated against a JSON schema. You can view the schema:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span>pipelines/statistics/assets/schema_input.json
+</pre></div>
+</div>
+<p>Or validate manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using nf-schema plugin</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span>--csvFile<span class="w"> </span>genomes.csv<span class="w"> </span>--help
+</pre></div>
+</div>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="parameters.html"><span class="std std-doc">Parameters Reference</span></a> - Configure pipeline behavior</p></li>
+<li><p><a class="reference internal" href="output.html"><span class="std std-doc">Output Documentation</span></a> - Understand results</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

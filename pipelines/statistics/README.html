@@ -1,0 +1,425 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Statistics Pipeline Modules Documentation &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="Repeat Pipeline" href="../repeat/README.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">Pipelines</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../repeat/README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Pipelines</a></li>
+      <li class="breadcrumb-item active">Statistics Pipeline Modules Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/pipelines/statistics/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="statistics-pipeline-modules-documentation">
+<h1>Statistics Pipeline Modules Documentation<a class="headerlink" href="#statistics-pipeline-modules-documentation" title="Link to this heading"></a></h1>
+<p>This directory contains comprehensive documentation for all modules in the Ensembl genes statistics pipeline.</p>
+<section id="module-overview">
+<h2>Module Overview<a class="headerlink" href="#module-overview" title="Link to this heading"></a></h2>
+<p>The statistics pipeline consists of 13 modules organized into functional categories:</p>
+<section id="data-retrieval-modules">
+<h3>Data Retrieval Modules<a class="headerlink" href="#data-retrieval-modules" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong><a class="reference internal" href="modules/fetch-genome.html"><span class="std std-doc">fetch-genome</span></a></strong> - Retrieves genome sequences from Ensembl core databases</p></li>
+<li><p><strong><a class="reference internal" href="modules/fetch-proteins.html"><span class="std std-doc">fetch-proteins</span></a></strong> - Extracts protein translations from Ensembl databases</p></li>
+</ol>
+</section>
+<section id="busco-quality-assessment-modules">
+<h3>BUSCO Quality Assessment Modules<a class="headerlink" href="#busco-quality-assessment-modules" title="Link to this heading"></a></h3>
+<ol class="arabic simple" start="3">
+<li><p><strong><a class="reference internal" href="modules/busco-dataset.html"><span class="std std-doc">busco-dataset</span></a></strong> - Downloads appropriate BUSCO lineage datasets</p></li>
+<li><p><strong><a class="reference internal" href="modules/busco-lineage.html"><span class="std std-doc">busco-lineage</span></a></strong> - Runs BUSCO assessment on genome sequences or on protein translations</p></li>
+<li><p><strong><a class="reference internal" href="modules/busco-core-metakeys.html"><span class="std std-doc">busco-core-metakeys</span></a></strong> - Patches BUSCO metadata into core databases</p></li>
+</ol>
+</section>
+<section id="orthology-analysis-modules">
+<h3>Orthology Analysis Modules<a class="headerlink" href="#orthology-analysis-modules" title="Link to this heading"></a></h3>
+<ol class="arabic simple" start="6">
+<li><p><strong><a class="reference internal" href="modules/omamer-hog.html"><span class="std std-doc">omamer-hog</span></a></strong> - Performs orthology inference using OMAmer</p></li>
+<li><p><strong><a class="reference internal" href="modules/omark.html"><span class="std std-doc">omark</span></a></strong> - Quality assessment of protein annotations using OMark</p></li>
+</ol>
+</section>
+<section id="statistics-generation-modules">
+<h3>Statistics Generation Modules<a class="headerlink" href="#statistics-generation-modules" title="Link to this heading"></a></h3>
+<ol class="arabic simple" start="8">
+<li><p><strong><a class="reference internal" href="modules/run-statistics.html"><span class="std std-doc">run-statistics</span></a></strong> - Generates comprehensive annotation statistics</p></li>
+<li><p><strong><a class="reference internal" href="modules/run-ensembl-meta.html"><span class="std std-doc">run-ensembl-meta</span></a></strong> - Generates core database metadata SQL files</p></li>
+</ol>
+</section>
+<section id="database-operations-modules">
+<h3>Database Operations Modules<a class="headerlink" href="#database-operations-modules" title="Link to this heading"></a></h3>
+<ol class="arabic simple" start="10">
+<li><p><strong><a class="reference internal" href="modules/populate-db.html"><span class="std std-doc">populate-db</span></a></strong> - Executes SQL files to populate databases</p></li>
+<li><p><strong><a class="reference internal" href="modules/db-metadata.html"><span class="std std-doc">db-metadata</span></a></strong> - Manages database metadata and versioning</p></li>
+</ol>
+</section>
+</section>
+<section id="pipeline-flow">
+<h2>Pipeline Flow<a class="headerlink" href="#pipeline-flow" title="Link to this heading"></a></h2>
+<p>The typical execution flow of the statistics pipeline:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>1. Data Retrieval
+   └─&gt; FETCH_GENOME
+   └─&gt; FETCH_PROTEINS
+
+2. Quality Assessment (Parallel)
+   ├─&gt; BUSCO_DATASET
+   │   ├─&gt; BUSCO_LINEAGE
+            └─&gt; BUSCO_CORE_METAKEYS
+   │   └─&gt; BUSCO_LINEAGE
+            └─&gt; BUSCO_CORE_METAKEYS
+   │
+   └─&gt; OMAMER_HOG
+       └─&gt; OMARK
+
+3. Statistics Generation
+   ├─&gt; RUN_STATISTICS
+   └─&gt; RUN_ENSEMBL_META
+
+4. Database Population
+   └─&gt; POPULATE_DB
+
+5. Metadata Management
+   └─&gt; DB_METADATA
+
+</pre></div>
+</div>
+</section>
+<section id="module-categories-by-function">
+<h2>Module Categories by Function<a class="headerlink" href="#module-categories-by-function" title="Link to this heading"></a></h2>
+<section id="quality-control">
+<h3>Quality Control<a class="headerlink" href="#quality-control" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>BUSCO Genome Lineage</strong>: Assesses genome completeness</p></li>
+<li><p><strong>BUSCO Protein Lineage</strong>: Assesses proteome completeness</p></li>
+<li><p><strong>OMark</strong>: Validates annotation consistency using orthology</p></li>
+</ul>
+</section>
+<section id="statistics-metrics">
+<h3>Statistics &amp; Metrics<a class="headerlink" href="#statistics-metrics" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Run Statistics</strong>: Computes gene/transcript/protein counts by biotype</p></li>
+<li><p><strong>Run Ensembl Meta</strong>: Generates schema and species metadata</p></li>
+</ul>
+</section>
+<section id="database-management">
+<h3>Database Management<a class="headerlink" href="#database-management" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>BUSCO Core Metakeys</strong>: Inserts BUSCO metrics into database</p></li>
+<li><p><strong>Populate DB</strong>: Executes SQL files for statistics insertion</p></li>
+<li><p><strong>DB Metadata</strong>: Manages database versioning and tracking</p></li>
+</ul>
+</section>
+<section id="resource-management">
+<h3>Resource Management<a class="headerlink" href="#resource-management" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Cleaning</strong>: Removes cached intermediate files</p></li>
+</ul>
+</section>
+</section>
+<section id="key-dependencies">
+<h2>Key Dependencies<a class="headerlink" href="#key-dependencies" title="Link to this heading"></a></h2>
+<section id="external-tools">
+<h3>External Tools<a class="headerlink" href="#external-tools" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>BUSCO</strong> (v5+): Genome/proteome completeness assessment</p></li>
+<li><p><strong>OMAmer</strong>: Orthology inference</p></li>
+<li><p><strong>OMark</strong>: Annotation quality assessment</p></li>
+</ul>
+</section>
+<section id="ensembl-dependencies">
+<h3>Ensembl Dependencies<a class="headerlink" href="#ensembl-dependencies" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Ensembl Perl API</strong>: Database access and manipulation</p></li>
+<li><p><strong>Ensembl Python libraries</strong>: Metadata generation</p></li>
+<li><p><strong>Ensembl scripts</strong>: Statistics computation and data extraction</p></li>
+</ul>
+</section>
+<section id="databases">
+<h3>Databases<a class="headerlink" href="#databases" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Ensembl Core Database</strong>: Primary target for statistics</p></li>
+<li><p><strong>BUSCO Lineage Datasets</strong>: Reference for completeness assessment</p></li>
+<li><p><strong>OMAmer HOG Database</strong>: Reference for orthology inference</p></li>
+</ul>
+</section>
+</section>
+<section id="common-parameters">
+<h2>Common Parameters<a class="headerlink" href="#common-parameters" title="Link to this heading"></a></h2>
+<p>Most modules use these common parameters:</p>
+<section id="database-connection">
+<h3>Database Connection<a class="headerlink" href="#database-connection" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">params.host</span></code>: Database host</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params.port</span></code>: Database port</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params.user</span></code>: Database username (when required)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params.password</span></code>: Database password (when required)</p></li>
+</ul>
+</section>
+<section id="paths">
+<h3>Paths<a class="headerlink" href="#paths" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">params.outdir</span></code>: Output directory for published results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params.cacheDir</span></code>: Cache directory for intermediate files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params.enscode</span></code>: Path to Ensembl code repository</p></li>
+</ul>
+</section>
+<section id="execution-control">
+<h3>Execution Control<a class="headerlink" href="#execution-control" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">params.files_latency</span></code>: Delay after file operations (file system sync)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">maxForks</span></code>: Limit parallel process execution</p></li>
+</ul>
+</section>
+</section>
+<section id="caching-strategy">
+<h2>Caching Strategy<a class="headerlink" href="#caching-strategy" title="Link to this heading"></a></h2>
+<p>Several modules use <code class="docutils literal notranslate"><span class="pre">storeDir</span></code> for persistent caching:</p>
+<ul class="simple">
+<li><p><strong>fetch-genome</strong>: Caches genome sequences by GCA</p></li>
+<li><p><strong>fetch-proteins</strong>: Caches protein translations by GCA</p></li>
+<li><p><strong>busco-dataset</strong>: Caches BUSCO datasets by lineage</p></li>
+<li><p><strong>omamer-hog</strong>: Caches orthology assignments by GCA</p></li>
+</ul>
+<p>This strategy reduces redundant computations and database queries when processing the same genomes multiple times.</p>
+</section>
+<section id="conditional-execution">
+<h2>Conditional Execution<a class="headerlink" href="#conditional-execution" title="Link to this heading"></a></h2>
+<p>Some modules execute conditionally based on parameters:</p>
+<ul class="simple">
+<li><p><strong>BUSCO_CORE_METAKEYS</strong>: <code class="docutils literal notranslate"><span class="pre">params.apply_busco_metakeys</span></code></p></li>
+<li><p><strong>POPULATE_DB</strong>: <code class="docutils literal notranslate"><span class="pre">params.apply_ensembl_stats</span></code> OR <code class="docutils literal notranslate"><span class="pre">params.apply_ensembl_beta_metakeys</span></code></p></li>
+<li><p><strong>CLEANING</strong>: <code class="docutils literal notranslate"><span class="pre">params.clean</span></code> AND <code class="docutils literal notranslate"><span class="pre">params.clean_work_dir</span></code></p></li>
+</ul>
+</section>
+<section id="output-structure">
+<h2>Output Structure<a class="headerlink" href="#output-structure" title="Link to this heading"></a></h2>
+<p>Results are typically organized by genome assembly accession:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>${params.outdir}/
+└── ${meta.gca}/
+    ├── busco_genome_lineage/
+    ├── busco_protein_lineage/
+    ├── omark_output/
+    ├── core_statistics/
+    │   └── *.sql
+    └── versions.yml
+</pre></div>
+</div>
+</section>
+<section id="metadata-requirements">
+<h2>Metadata Requirements<a class="headerlink" href="#metadata-requirements" title="Link to this heading"></a></h2>
+<p>All modules expect metadata maps with these common fields:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gca</span></code>: Genome assembly accession (GCA_XXXXXXXXX.X)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dbname</span></code>: Ensembl core database name</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">production_name</span></code>: Species production name</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">species_id</span></code>: Species identifier (for database operations)</p></li>
+</ul>
+</section>
+<section id="documentation-format">
+<h2>Documentation Format<a class="headerlink" href="#documentation-format" title="Link to this heading"></a></h2>
+<p>Each module documentation includes:</p>
+<ul class="simple">
+<li><p><strong>Overview</strong>: Purpose and functionality</p></li>
+<li><p><strong>Process Details</strong>: Labels, tags, directives</p></li>
+<li><p><strong>Inputs</strong>: Expected input channels and metadata</p></li>
+<li><p><strong>Outputs</strong>: Generated output channels</p></li>
+<li><p><strong>Parameters</strong>: Required and optional configuration</p></li>
+<li><p><strong>Script Details</strong>: What the process does</p></li>
+<li><p><strong>Dependencies</strong>: External tools and libraries</p></li>
+<li><p><strong>Notes</strong>: Important considerations and best practices</p></li>
+</ul>
+</section>
+<section id="version-tracking">
+<h2>Version Tracking<a class="headerlink" href="#version-tracking" title="Link to this heading"></a></h2>
+<p>All modules generate <code class="docutils literal notranslate"><span class="pre">versions.yml</span></code> files that track:</p>
+<ul class="simple">
+<li><p>Tool versions (BUSCO, OMAmer, OMark, etc.)</p></li>
+<li><p>Language versions (Python, Perl)</p></li>
+<li><p>Database client versions (MySQL)</p></li>
+</ul>
+<p>These version files support reproducibility and troubleshooting.</p>
+</section>
+<section id="for-more-information">
+<h2>For More Information<a class="headerlink" href="#for-more-information" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>See individual module documentation files for detailed information</p></li>
+<li><p>Refer to the main pipeline documentation for workflow orchestration</p></li>
+<li><p>Check Ensembl documentation for database schema details</p></li>
+<li><p>Consult tool-specific documentation (BUSCO, OMAmer, OMark) for advanced usage</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../repeat/README.html" class="btn btn-neutral float-left" title="Repeat Pipeline" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

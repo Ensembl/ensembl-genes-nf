@@ -1,0 +1,43 @@
+# FETCH_GENOME
+
+FETCH_GENOME process to fetch genome FASTA file from NCBI using GCA accession
+Inputs:
+- meta: metadata map containing gca
+Outputs:
+- fasta_file_output: tuple of meta and genome FASTA file
+- versions.yml: versions file containing software versions used
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `FETCH_GENOME` |
+| Label | `'python'` |
+| Tag | `${meta.gca}:genome` |
+| storeDir | `"${params.cacheDir}/${meta.gca}/ncbi_dataset"` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val meta
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("*.fna"), emit: fasta_file_output
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Copy output files
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/fetch_genome.nf`

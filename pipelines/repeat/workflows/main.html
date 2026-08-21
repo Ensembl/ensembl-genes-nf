@@ -1,0 +1,292 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Main &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../statistics/README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../statistics/README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../statistics/README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Main</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/pipelines/repeat/workflows/main.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <!--
+AUTO-GENERATED FILE.
+
+Generated by docs/generate_docs.py
+
+Do not edit manually.
+-->
+<section id="main">
+<h1>Main<a class="headerlink" href="#main" title="Link to this heading"></a></h1>
+<p>See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
+Licensed under the Apache License, Version 2.0 (the “License”);
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an “AS IS” BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+REPEAT ANNOTATION PIPELINE
+This workflow performs comprehensive repeat annotation on genome assemblies using
+RepeatModeler for library generation and RepeatMasker/DustMasker/TRF for repeat identification.
+Pipeline Stages:</p>
+<ol class="arabic simple">
+<li><p>FETCH_GENOME           - Download genome assemblies from NCBI</p></li>
+<li><p>FETCH_REPEAT_MODEL     - Check for existing RepeatModeler libraries
+3a. GENERATE_REPEATMODELER_LIBRARY - Generate de novo libraries for genomes without existing ones
+3b. CHECK_AND_DOWNLOAD_RMLIBRARY   - Download pre-computed libraries when available
+3c. UPLOAD_REPEAT_LIBRARY_INTO_FTP - Upload generated libraries to Ensembl FTP server</p></li>
+<li><p>RUN_REPEATMASKER       - Identify and mask repeats using combined libraries</p></li>
+<li><p>RUN_RED                 - Identify repetitive regions using RED</p></li>
+<li><p>RUN_DUST                - Identify repetitive regions using DUST</p></li>
+<li><p>RUN_TRF                 - Identify repetitive regions using TRF</p></li>
+<li><p>UPLOAD_REPEATS_INTO_FTP - Upload RepeatModeler libraries and RepeatMasker results to Ensembl FTP server</p></li>
+<li><p>COLLECT_SOFTWARE_VERSIONS - Collect software versions from all processes and merge them into a single file
+Input:
+CSV file with columns: species_name, GCA_accession
+Output:</p></li>
+</ol>
+<ul class="simple">
+<li><p>Downloaded genome assemblies</p></li>
+<li><p>RepeatModeler libraries (generated or downloaded)</p></li>
+<li><p>RepeatMasker annotation results (masked sequences, GTF files, statistics)
+MAIN WORKFLOW
+ENTRY WORKFLOW</p></li>
+</ul>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This workflow invokes <strong>7</strong> modules.</p>
+</section>
+<section id="modules">
+<h2>Modules<a class="headerlink" href="#modules" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head text-right"><p>Order</p></th>
+<th class="head"><p>Module</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-right"><p>1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RUN_REPEATMASKER</span></code></p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RUN_RED</span></code></p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>3</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RUN_DUST</span></code></p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>4</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RUN_TRF</span></code></p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>5</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">UPLOAD_REPEATS_INTO_FTP</span></code></p></td>
+</tr>
+<tr class="row-odd"><td class="text-right"><p>6</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">COLLECT_SOFTWARE_VERSIONS</span></code></p></td>
+</tr>
+<tr class="row-even"><td class="text-right"><p>7</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">REPEAT_ANNOTATION</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="workflow-diagram">
+<h2>Workflow Diagram<a class="headerlink" href="#workflow-diagram" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
+
+    RUN_REPEATMASKER[RUN_REPEATMASKER]
+    RUN_RED[RUN_RED]
+    RUN_REPEATMASKER --&gt; RUN_RED
+    RUN_DUST[RUN_DUST]
+    RUN_RED --&gt; RUN_DUST
+    RUN_TRF[RUN_TRF]
+    RUN_DUST --&gt; RUN_TRF
+    UPLOAD_REPEATS_INTO_FTP[UPLOAD_REPEATS_INTO_FTP]
+    RUN_TRF --&gt; UPLOAD_REPEATS_INTO_FTP
+    COLLECT_SOFTWARE_VERSIONS[COLLECT_SOFTWARE_VERSIONS]
+    UPLOAD_REPEATS_INTO_FTP --&gt; COLLECT_SOFTWARE_VERSIONS
+    REPEAT_ANNOTATION[REPEAT_ANNOTATION]
+    COLLECT_SOFTWARE_VERSIONS --&gt; REPEAT_ANNOTATION
+</pre></div>
+</div>
+</section>
+<section id="source">
+<h2>Source<a class="headerlink" href="#source" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/repeat/main.nf</span></code></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

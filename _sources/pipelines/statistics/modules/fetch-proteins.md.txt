@@ -1,0 +1,45 @@
+# FETCH_PROTEINS
+
+FETCH_PROTEINS process to fetch protein FASTA file from core database
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+Outputs:
+- fasta_file_output: tuple of meta and protein FASTA file
+- versions.yml: versions file containing software versions used
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `FETCH_PROTEINS` |
+| Label | `'fetch_file'` |
+| Tag | `${meta.dbname}:protein` |
+| storeDir | `"${params.cacheDir}/${meta.gca}/fasta"` |
+| maxForks | `20` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val meta
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("translations.fa"), emit: fasta_file_output
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Copy output files
+- Execute Perl script
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/fetch_proteins.nf`

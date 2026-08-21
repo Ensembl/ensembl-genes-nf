@@ -1,0 +1,41 @@
+# BUSCO_LINEAGE
+
+BUSCO_LINEAGE process to run BUSCO in genome or protein mode
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca, busco_mode
+- fasta_file: path to the genome or protein FASTA file
+Outputs:
+- busco_lineage_output: tuple of meta and BUSCO summary files
+- versions_busco_<mode>.yml: versions file containing software versions used
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `BUSCO_LINEAGE` |
+| Label | `'busco'` |
+| Tag | `${meta.gca}:busco_${meta.busco_mode}` |
+| Publish directory | `"${params.outdir}/${meta.gca}", mode: 'copy', pattern: "versions_busco_${meta.busco_mode}.yml"` |
+| maxForks | `10` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path(fasta_file)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("busco_${meta.busco_mode}/*.txt"), emit: busco_lineage_output
+path "versions_busco_${meta.busco_mode}.yml", emit: versions_file
+path "busco_${meta.busco_mode}", emit: busco_full_output
+```
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/busco_lineage.nf`

@@ -1,0 +1,45 @@
+# RUN_ENSEMBL_META
+
+RUN_ENSEMBL_META process to fetch Ensembl core database metadata SQL files
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+Outputs:
+- ensembl_meta_output: tuple of meta and generated SQL files
+- versions.yml: versions file containing software versions used
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `RUN_ENSEMBL_META` |
+| Label | `'python'` |
+| Tag | `${meta.gca}` |
+| Publish directory | `"${params.outdir}/${meta.gca}", mode: 'copy'` |
+| storeDir | `"${params.cacheDir}/${meta.gca}/core_statistics/metakeys"` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val meta
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("*.sql"), emit: ensembl_meta_output
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Execute Python script
+- Copy output files
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/run_ensembl_meta.nf`

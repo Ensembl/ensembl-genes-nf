@@ -1,0 +1,386 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Statistics Pipeline Overview &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../repeat/README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../repeat/README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../repeat/README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Statistics Pipeline Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/pipelines/statistics/overview.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="statistics-pipeline-overview">
+<h1>Statistics Pipeline Overview<a class="headerlink" href="#statistics-pipeline-overview" title="Link to this heading"></a></h1>
+<p>The Ensembl Genes Statistics pipeline is a comprehensive quality control and metrics generation workflow designed for genome annotation projects. It evaluates assembly quality, annotation completeness, and generates essential statistics for Ensembl core databases.</p>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Link to this heading"></a></h2>
+<p>This pipeline serves multiple critical functions in the genome annotation workflow:</p>
+<ol class="arabic simple">
+<li><p><strong>Quality Assessment</strong>: Evaluate the completeness and accuracy of genome assemblies and gene annotations</p></li>
+<li><p><strong>Metrics Generation</strong>: Compute standardized statistics for comparative genomics</p></li>
+<li><p><strong>Database Integration</strong>: Load metadata and statistics into Ensembl core databases</p></li>
+<li><p><strong>Reproducibility</strong>: Ensure consistent quality metrics across all Ensembl genomes</p></li>
+</ol>
+</section>
+<section id="workflow-components">
+<h2>Workflow Components<a class="headerlink" href="#workflow-components" title="Link to this heading"></a></h2>
+<p>The pipeline consists of three main analytical workflows:</p>
+<section id="busco-analysis">
+<h3>1. BUSCO Analysis<a class="headerlink" href="#busco-analysis" title="Link to this heading"></a></h3>
+<p><strong>Benchmarking Universal Single-Copy Orthologs (BUSCO)</strong> provides quantitative measures of genome assembly and annotation completeness.</p>
+<ul class="simple">
+<li><p><strong>Protein Mode</strong>: Assesses gene set completeness using canonical transcripts</p></li>
+<li><p><strong>Genome Mode</strong>: Evaluates assembly quality by detecting conserved genes directly in the genome</p></li>
+<li><p><strong>Both Modes</strong>: Comprehensive assessment of both assembly and annotation</p></li>
+</ul>
+<p><strong>Key Outputs:</strong></p>
+<ul class="simple">
+<li><p>Complete/Single-copy genes</p></li>
+<li><p>Duplicated genes</p></li>
+<li><p>Fragmented genes</p></li>
+<li><p>Missing genes</p></li>
+</ul>
+<p><a class="reference internal" href="workflows/busco.html"><span class="std std-doc">Learn more about BUSCO workflow →</span></a></p>
+</section>
+<section id="omark-analysis">
+<h3>2. OMArk Analysis<a class="headerlink" href="#omark-analysis" title="Link to this heading"></a></h3>
+<p><strong>Orthology MARKer (OMArk)</strong> evaluates proteome completeness based on the presence of conserved genes from the target lineage.</p>
+<ul class="simple">
+<li><p>Uses the OMAmer database for orthology detection</p></li>
+<li><p>Provides lineage-specific completeness metrics</p></li>
+<li><p>Identifies potentially contaminated or misassigned sequences</p></li>
+</ul>
+<p><strong>Key Outputs:</strong></p>
+<ul class="simple">
+<li><p>Proteome completeness score</p></li>
+<li><p>Conserved genes presence/absence</p></li>
+<li><p>Detailed summary statistics</p></li>
+</ul>
+<p><a class="reference internal" href="workflows/omark.html"><span class="std std-doc">Learn more about OMArk workflow →</span></a></p>
+</section>
+<section id="ensembl-statistics">
+<h3>3. Ensembl Statistics<a class="headerlink" href="#ensembl-statistics" title="Link to this heading"></a></h3>
+<p>Generates comprehensive gene set statistics for Ensembl core databases.</p>
+<ul class="simple">
+<li><p><strong>Statistics Generation</strong>: Core metrics including gene counts, transcript counts, etc.</p></li>
+<li><p><strong>Beta Metakeys</strong>: Additional metadata for beta releases</p></li>
+<li><p><strong>Database Loading</strong>: Optional automatic insertion of statistics into the database</p></li>
+</ul>
+<p><strong>Key Outputs:</strong></p>
+<ul class="simple">
+<li><p>Gene and transcript counts</p></li>
+<li><p>Exon and intron statistics</p></li>
+<li><p>Protein-coding vs. non-coding gene ratios</p></li>
+<li><p>Assembly statistics</p></li>
+</ul>
+<p><a class="reference internal" href="workflows/ensembl-stats.html"><span class="std std-doc">Learn more about Ensembl Stats workflow →</span></a></p>
+</section>
+</section>
+<section id="pipeline-architecture">
+<h2>Pipeline Architecture<a class="headerlink" href="#pipeline-architecture" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    A[Input CSV File] --&gt; B{Workflow Selection}
+    B --&gt;|run_busco_core| C[BUSCO Core DB]
+    B --&gt;|run_busco_ncbi| D[BUSCO NCBI]
+    B --&gt;|run_omark| E[OMArk]
+    B --&gt;|run_ensembl_stats| F[Ensembl Stats]
+    
+    C --&gt; G[Protein Mode]
+    C --&gt; H[Genome Mode]
+    D --&gt; I[Genome Mode Only]
+    
+    G --&gt; J[BUSCO Results]
+    H --&gt; J
+    I --&gt; J
+    E --&gt; K[OMArk Results]
+    F --&gt; L[Statistics JSON]
+    
+    J --&gt; M[Published Reports]
+    K --&gt; M
+    L --&gt; M
+    
+    M --&gt; N{Apply to DB?}
+    N --&gt;|Yes| O[Update Core Database]
+    N --&gt;|No| P[Final Results]
+</pre></div>
+</div>
+</section>
+<section id="flexible-execution">
+<h2>Flexible Execution<a class="headerlink" href="#flexible-execution" title="Link to this heading"></a></h2>
+<p>The pipeline is designed to be modular—you can run individual workflows or any combination:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Workflow</p></th>
+<th class="head"><p>Parameter</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>BUSCO (Core DB)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--run_busco_core</span></code></p></td>
+<td><p>Run BUSCO using MySQL core database</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUSCO (NCBI)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--run_busco_ncbi</span></code></p></td>
+<td><p>Run BUSCO using NCBI assembly accession</p></td>
+</tr>
+<tr class="row-even"><td><p>OMArk</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--run_omark</span></code></p></td>
+<td><p>Run OMArk proteome assessment</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ensembl Stats</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--run_ensembl_stats</span></code></p></td>
+<td><p>Generate Ensembl statistics</p></td>
+</tr>
+<tr class="row-even"><td><p>Beta Metakeys</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">--run_ensembl_beta_metakeys</span></code></p></td>
+<td><p>Generate beta metadata</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="input-requirements">
+<h2>Input Requirements<a class="headerlink" href="#input-requirements" title="Link to this heading"></a></h2>
+<p>The pipeline uses a CSV file to specify samples and their metadata. Each row represents one genome to be analyzed.</p>
+<p><strong>Required columns vary by workflow:</strong></p>
+<ul class="simple">
+<li><p><strong>BUSCO Core</strong>: <code class="docutils literal notranslate"><span class="pre">dbname</span></code>, <code class="docutils literal notranslate"><span class="pre">species_id</span></code>, <code class="docutils literal notranslate"><span class="pre">busco_dataset</span></code>, <code class="docutils literal notranslate"><span class="pre">taxon_id</span></code></p></li>
+<li><p><strong>BUSCO NCBI</strong>: <code class="docutils literal notranslate"><span class="pre">gca</span></code>, <code class="docutils literal notranslate"><span class="pre">taxon_id</span></code>, <code class="docutils literal notranslate"><span class="pre">busco_dataset</span></code></p></li>
+<li><p><strong>OMArk</strong>: <code class="docutils literal notranslate"><span class="pre">dbname</span></code>, <code class="docutils literal notranslate"><span class="pre">species_id</span></code>, <code class="docutils literal notranslate"><span class="pre">taxon_id</span></code></p></li>
+<li><p><strong>Ensembl Stats</strong>: <code class="docutils literal notranslate"><span class="pre">dbname</span></code>, <code class="docutils literal notranslate"><span class="pre">species_id</span></code></p></li>
+</ul>
+<p><a class="reference internal" href="input.html"><span class="std std-doc">View detailed input specifications →</span></a></p>
+</section>
+<section id="output-structure">
+<h2>Output Structure<a class="headerlink" href="#output-structure" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>results/
+├── busco/
+│   ├── {sample}_busco_short_summary.txt
+│   ├── {sample}_genome_busco_short_summary.txt
+├── omark/
+│   └── omark_proteins_detailed_summary.txt
+├── ensembl_stats/
+│   └── {sample}_statistics.json
+└── pipeline_info/
+    ├── software_versions.yml
+    └── execution_trace.txt
+</pre></div>
+</div>
+<p><a class="reference internal" href="output.html"><span class="std std-doc">View detailed output documentation →</span></a></p>
+</section>
+<section id="use-cases">
+<h2>Use Cases<a class="headerlink" href="#use-cases" title="Link to this heading"></a></h2>
+<section id="quality-control-for-new-annotations">
+<h3>1. Quality Control for New Annotations<a class="headerlink" href="#quality-control-for-new-annotations" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>pipelines/statistics/main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-c<span class="w"> </span>pipelines/statistics/nextflow.config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>genomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_omark<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--outdir<span class="w"> </span>qc_results
+</pre></div>
+</div>
+</section>
+<section id="quick-assembly-assessment-from-ncbi">
+<h3>2. Quick Assembly Assessment from NCBI<a class="headerlink" href="#quick-assembly-assessment-from-ncbi" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>pipelines/statistics/main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-c<span class="w"> </span>pipelines/statistics/nextflow.config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>ncbi_assemblies.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_ncbi<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--outdir<span class="w"> </span>ncbi_qc
+</pre></div>
+</div>
+</section>
+<section id="statistics-generation-for-database-release">
+<h3>3. Statistics Generation for Database Release<a class="headerlink" href="#statistics-generation-for-database-release" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>pipelines/statistics/main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-c<span class="w"> </span>pipelines/statistics/nextflow.config<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>production_dbs.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--apply_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--outdir<span class="w"> </span>stats_output
+</pre></div>
+</div>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="parameters.html"><span class="std std-doc">Parameters Reference</span></a> - Complete parameter documentation</p></li>
+<li><p><a class="reference internal" href="input.html"><span class="std std-doc">Input Format</span></a> - Detailed input file specifications</p></li>
+<li><p><a class="reference internal" href="troubleshooting.html"><span class="std std-doc">Troubleshooting</span></a> - Common issues and solutions</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

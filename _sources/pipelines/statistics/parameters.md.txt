@@ -1,0 +1,46 @@
+# Statistics Parameters
+
+Automatically generated from the pipeline `nextflow_schema.json`.
+
+## Input/output options
+
+Define where the pipeline should find input data and save output data.
+
+| Parameter | Type | Default | Required | Description |
+|-----------|------|---------|----------|-------------|
+| `run_busco_core` | boolean |  | no | Run BUSCO (protein or genome mode see --busco_mode) given a mysql db |
+| `run_busco_ncbi` | boolean |  | no | Run BUSCO given a assembly_accession and taxonomy id in genome mode only |
+| `run_omark` | boolean |  | no | Run OMARK given a mysql db |
+| `run_ensembl_stats` | boolean |  | no | Run Ensembl statistics given a mysql db |
+| `run_ensembl_beta_metakeys` | boolean |  | no | Run Ensembl beta metakeys given a mysql db |
+| `apply_ensembl_stats` | boolean |  | no | Insert Ensembl statistics into a mysql db |
+| `apply_ensembl_beta_metakeys` | boolean |  | no | Insert Ensembl beta metakeys into a mysql db |
+| `apply_busco_metakeys` | boolean |  | no | Create JSON file with Busco metakeys and load it into the db |
+| `dbname` | string |  | no |  |
+| `host` | string |  | no | Db host server |
+| `port` | integer |  | no | Db port |
+| `user` | string |  | no | Db user |
+| `user_r` | string |  | no | Db user read_only |
+| `password` | string |  | no | Server password |
+| `busco_dataset` | string |  | no | Busco lineage specified by the user |
+| `mysql_ensadmin` | string | /hps/software/users/ensembl/ensw/mysql-cmds/ensembl/ensadmin | no |  |
+| `ncbiBaseUrl` | string | https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession | no | NCBI API |
+| `readme` | string | README.txt | no |  |
+| `project` | string | ensembl | no |  |
+| `team` | string |  | no | Team responsible metakey |
+| `csvFile` | string |  | yes | Path to the input CSV metadata file. |
+| `enscode` | string |  | no | Enscode path |
+| `bioperl` | string | /bioperl-1.6.924 | no | BioPerl path |
+| `cacheDir` | string | ./results/cache | no | Directory for caching files. |
+| `outdir` | string | ./results | yes | Output directory. |
+| `tracedir` | string | ./results/pipeline_info | no | Directory for tracing pipeline. |
+| `files_latency` | integer | 60 | no | Latency in seconds for file operations. |
+| `cleanCache` | boolean | False | no | Option to clean the cache directory after running the pipeline. |
+| `busco_version` | string | v6.0.0_cv1 | no | BUSCO image version |
+| `download_path` | string | /nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/busco_data/data_odb12/ | no | BUSCO lineages path |
+| `busco_mode` | string (protein, genome, both) | both | no | Busco mode: genome, protein or both |
+| `busco_datasets_file` | string | data/busco_lineage.json | no |  |
+| `dump_params` | string | --canonical_only | no |  |
+| `omamer_database` | string | /nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/data/omamer_db/LUCA_MinFamSize6_OR_MinFamComp05_A21_k6.h5 | no |  |
+| `omark_singularity_path` | string | /hps/software/users/ensembl/genebuild/genebuild_virtual_user/singularity/omark.sif | no |  |
+| `meta_query_file` | string | ../bin/meta.sql | no |  |

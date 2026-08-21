@@ -1,0 +1,481 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Output &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../statistics/README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../statistics/README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../statistics/README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Output</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/pipelines/repeat/output.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="output">
+<h1>Output<a class="headerlink" href="#output" title="Link to this heading"></a></h1>
+</section>
+<section id="repeat-pipeline-output-guide">
+<h1>Repeat Pipeline Output Guide<a class="headerlink" href="#repeat-pipeline-output-guide" title="Link to this heading"></a></h1>
+<p>This guide describes all outputs generated by the Ensembl genes repeat annotation pipeline, including file formats, locations and interpretation.</p>
+<section id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Output Directory Structure</p></li>
+<li><p>Module Outputs</p></li>
+<li><p>File Formats</p></li>
+<li><p>Cached Outputs</p></li>
+<li><p>Version Tracking</p></li>
+<li><p>Interpreting Results</p></li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="output-directory-structure">
+<h1>Output Directory Structure<a class="headerlink" href="#output-directory-structure" title="Link to this heading"></a></h1>
+<section id="standard-layout">
+<h2>Standard Layout<a class="headerlink" href="#standard-layout" title="Link to this heading"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>${params.outdir}/
+├── ${meta.gca}/
+│   ├── rm_library/                  # Downloaded RepeatModeler library
+│   ├── repeatmasker/                # RepeatMasker results
+│   ├── red/                         # RED repeat detection results
+│   ├── repeat_statistics/           # Repeat annotation statistics
+│   ├── reports/                     # Summary reports
+│   └── versions.yml                 # Software versions
+│
+└── pipeline_info/
+    ├── execution_report.html
+    ├── execution_timeline.html
+    └── execution_trace.txt
+</pre></div>
+</div>
+</section>
+<section id="cache-directory-structure">
+<h2>Cache Directory Structure<a class="headerlink" href="#cache-directory-structure" title="Link to this heading"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>${params.cacheDir}/
+├── ${meta.gca}/
+│   ├── repeatmodeler/
+│   ├── repeatmasker/
+│   └── red/
+│
+└── repeat_libraries/
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="module-outputs">
+<h1>Module Outputs<a class="headerlink" href="#module-outputs" title="Link to this heading"></a></h1>
+<section id="check-and-download-rmlibrary">
+<h2>CHECK_AND_DOWNLOAD_RMLIBRARY<a class="headerlink" href="#check-and-download-rmlibrary" title="Link to this heading"></a></h2>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/rm_library/</span></code></p>
+<section id="files">
+<h3>Files<a class="headerlink" href="#files" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">${meta.gca}.repeatmodeler.fa</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">versions.yml</span></code></p></li>
+</ul>
+</section>
+<section id="description">
+<h3>Description<a class="headerlink" href="#description" title="Link to this heading"></a></h3>
+<p>Downloads the RepeatModeler repeat library from the supplied URL after validating that the resource exists.</p>
+</section>
+<section id="typical-output">
+<h3>Typical Output<a class="headerlink" href="#typical-output" title="Link to this heading"></a></h3>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>rm_library/
+├── GCA_XXXXXXXXX.X.repeatmodeler.fa
+└── versions.yml
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="check-and-download-dfam">
+<h2>CHECK_AND_DOWNLOAD_DFAM<a class="headerlink" href="#check-and-download-dfam" title="Link to this heading"></a></h2>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/dfam/</span></code></p>
+<section id="id1">
+<h3>Files<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Dfam repeat library</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">versions.yml</span></code></p></li>
+</ul>
+</section>
+<section id="id2">
+<h3>Description<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>Downloads and prepares the selected Dfam repeat library for downstream annotation.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="run-repeatmasker">
+<h2>RUN_REPEATMASKER<a class="headerlink" href="#run-repeatmasker" title="Link to this heading"></a></h2>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/repeatmasker/</span></code></p>
+<section id="typical-files">
+<h3>Typical Files<a class="headerlink" href="#typical-files" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Masked genome FASTA</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.out</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.tbl</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.cat.gz</span></code></p></li>
+<li><p>Annotation files</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">versions.yml</span></code></p></li>
+</ul>
+</section>
+<section id="id3">
+<h3>Description<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<p>Runs RepeatMasker using the configured repeat library and produces masked genome sequences together with detailed repeat annotations.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="run-red">
+<h2>RUN_RED<a class="headerlink" href="#run-red" title="Link to this heading"></a></h2>
+<p><strong>Published to:</strong> <code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/red/</span></code></p>
+<section id="id4">
+<h3>Typical Files<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Repeat coordinates</p></li>
+<li><p>Soft-masked genome</p></li>
+<li><p>Summary statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">versions.yml</span></code></p></li>
+</ul>
+</section>
+<section id="id5">
+<h3>Description<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<p>Detects repetitive regions using RED without relying on a predefined repeat library.</p>
+</section>
+</section>
+</section>
+<hr class="docutils" />
+<section id="file-formats">
+<h1>File Formats<a class="headerlink" href="#file-formats" title="Link to this heading"></a></h1>
+<section id="fasta">
+<h2>FASTA<a class="headerlink" href="#fasta" title="Link to this heading"></a></h2>
+<p>Used for:</p>
+<ul class="simple">
+<li><p>RepeatModeler libraries</p></li>
+<li><p>Masked genome assemblies</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="gff-bed">
+<h2>GFF/BED<a class="headerlink" href="#gff-bed" title="Link to this heading"></a></h2>
+<p>Used for genomic repeat coordinates.</p>
+<p>Typical fields include:</p>
+<ul class="simple">
+<li><p>sequence</p></li>
+<li><p>start</p></li>
+<li><p>end</p></li>
+<li><p>strand</p></li>
+<li><p>repeat class</p></li>
+<li><p>repeat family</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="repeatmasker-output">
+<h2>RepeatMasker Output<a class="headerlink" href="#repeatmasker-output" title="Link to this heading"></a></h2>
+<p>Typical files include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">.out</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.tbl</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.cat.gz</span></code></p></li>
+</ul>
+<p>These contain the detailed RepeatMasker annotation and summary statistics.</p>
+</section>
+<hr class="docutils" />
+<section id="yaml">
+<h2>YAML<a class="headerlink" href="#yaml" title="Link to this heading"></a></h2>
+<p>Every module generates a <code class="docutils literal notranslate"><span class="pre">versions.yml</span></code> file describing the software versions used during execution.</p>
+<p>Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">CHECK_AND_DOWNLOAD_RMLIBRARY</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">wget</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.24</span>
+
+<span class="nt">RUN_REPEATMASKER</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">RepeatMasker</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4.1.x</span>
+
+<span class="nt">RUN_RED</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">RED</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.x</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="cached-outputs">
+<h1>Cached Outputs<a class="headerlink" href="#cached-outputs" title="Link to this heading"></a></h1>
+<p>The pipeline caches expensive resources whenever possible.</p>
+<p>Examples include:</p>
+<ul class="simple">
+<li><p>downloaded RepeatModeler libraries</p></li>
+<li><p>downloaded Dfam libraries</p></li>
+<li><p>RepeatMasker intermediate files</p></li>
+<li><p>RED intermediate files</p></li>
+</ul>
+<p>Caching avoids repeated downloads and unnecessary recomputation.</p>
+</section>
+<hr class="docutils" />
+<section id="version-tracking">
+<h1>Version Tracking<a class="headerlink" href="#version-tracking" title="Link to this heading"></a></h1>
+<p>Every module generates a <code class="docutils literal notranslate"><span class="pre">versions.yml</span></code> file recording the versions of the software used during execution.</p>
+<p>Typical tools include:</p>
+<ul class="simple">
+<li><p>RepeatMasker</p></li>
+<li><p>RepeatModeler</p></li>
+<li><p>RED</p></li>
+<li><p>wget</p></li>
+<li><p>Perl</p></li>
+<li><p>Python</p></li>
+</ul>
+<p>These files support reproducibility and troubleshooting.</p>
+</section>
+<hr class="docutils" />
+<section id="interpreting-results">
+<h1>Interpreting Results<a class="headerlink" href="#interpreting-results" title="Link to this heading"></a></h1>
+<section id="repeatmasker">
+<h2>RepeatMasker<a class="headerlink" href="#repeatmasker" title="Link to this heading"></a></h2>
+<p>The RepeatMasker output provides:</p>
+<ul class="simple">
+<li><p>repeat family assignments</p></li>
+<li><p>repeat class assignments</p></li>
+<li><p>genomic coordinates</p></li>
+<li><p>percentage divergence from the consensus sequence</p></li>
+</ul>
+<p>Higher repeat coverage generally indicates a more repetitive genome.</p>
+</section>
+<hr class="docutils" />
+<section id="red">
+<h2>RED<a class="headerlink" href="#red" title="Link to this heading"></a></h2>
+<p>RED identifies repetitive regions independently of known repeat libraries.</p>
+<p>Comparing RED and RepeatMasker results can help identify:</p>
+<ul class="simple">
+<li><p>novel repeat content</p></li>
+<li><p>lineage-specific repeats</p></li>
+<li><p>gaps in curated repeat libraries</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="output-checklist">
+<h2>Output Checklist<a class="headerlink" href="#output-checklist" title="Link to this heading"></a></h2>
+<p>After pipeline completion verify that:</p>
+<ul class="simple">
+<li><p>RepeatModeler libraries were downloaded successfully.</p></li>
+<li><p>RepeatMasker completed without errors.</p></li>
+<li><p>RED completed successfully.</p></li>
+<li><p>Repeat statistics were generated.</p></li>
+<li><p>All expected output directories are present.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">versions.yml</span></code> files exist.</p></li>
+<li><p>Pipeline execution reports were produced.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="quick-reference">
+<h2>Quick Reference<a class="headerlink" href="#quick-reference" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Primary Output</p></th>
+<th class="head"><p>Location</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>CHECK_AND_DOWNLOAD_RMLIBRARY</p></td>
+<td><p>RepeatModeler library</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/rm_library/</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>CHECK_AND_DOWNLOAD_DFAM</p></td>
+<td><p>Dfam library</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/dfam/</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>RUN_REPEATMASKER</p></td>
+<td><p>Repeat annotations</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/repeatmasker/</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>RUN_RED</p></td>
+<td><p>RED repeat annotations</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/red/</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>All modules</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">versions.yml</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">${params.outdir}/${meta.gca}/</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<hr class="docutils" />
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="parameters.html"><span class="std std-doc">Parameters Reference</span></a></p></li>
+<li><p><a class="reference internal" href="input.html"><span class="std std-doc">Input Documentation</span></a></p></li>
+<li><p><a class="reference internal" href="modules/index.html"><span class="std std-doc">Module Documentation</span></a></p></li>
+<li><p><a class="reference internal" href="workflows/index.html"><span class="std std-doc">Workflow Documentation</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

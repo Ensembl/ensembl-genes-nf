@@ -1,0 +1,743 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BUSCO Workflow &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../repeat/README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">BUSCO Workflow</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/pipelines/statistics/workflows/busco.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="busco-workflow">
+<h1>BUSCO Workflow<a class="headerlink" href="#busco-workflow" title="Link to this heading"></a></h1>
+<p><strong>BUSCO</strong> (Benchmarking Universal Single-Copy Orthologs) provides quantitative assessment of genome assembly and annotation completeness based on evolutionarily-informed expectations.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>BUSCO assesses genome quality by searching for conserved orthologous genes that are expected to be present in single copy in a given lineage. The presence, absence, or duplication of these genes provides insights into assembly and annotation quality.</p>
+</section>
+<section id="how-busco-works">
+<h2>How BUSCO Works<a class="headerlink" href="#how-busco-works" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Lineage Selection</strong>: Choose an appropriate lineage dataset based on taxonomy</p></li>
+<li><p><strong>Gene Search</strong>: Search for conserved single-copy orthologs using HMMER</p></li>
+<li><p><strong>Classification</strong>: Genes are classified as Complete, Duplicated, Fragmented, or Missing</p></li>
+<li><p><strong>Scoring</strong>: Generate completeness scores and detailed reports</p></li>
+</ol>
+</section>
+<section id="analysis-modes">
+<h2>Analysis Modes<a class="headerlink" href="#analysis-modes" title="Link to this heading"></a></h2>
+<section id="protein-mode">
+<h3>Protein Mode<a class="headerlink" href="#protein-mode" title="Link to this heading"></a></h3>
+<p>Analyzes translated protein sequences from gene predictions.</p>
+<p><strong>When to use:</strong></p>
+<ul class="simple">
+<li><p>Assessing annotation quality</p></li>
+<li><p>Evaluating gene prediction completeness</p></li>
+<li><p>Comparing gene sets across species</p></li>
+</ul>
+<p><strong>Input:</strong> Protein FASTA from canonical transcripts</p>
+<p><strong>Advantages:</strong></p>
+<ul class="simple">
+<li><p>Direct assessment of annotation quality</p></li>
+<li><p>Faster than genome mode</p></li>
+<li><p>Better for comparing gene sets</p></li>
+</ul>
+</section>
+<section id="genome-mode">
+<h3>Genome Mode<a class="headerlink" href="#genome-mode" title="Link to this heading"></a></h3>
+<p>Analyzes the genome assembly directly using AUGUSTUS for gene prediction.</p>
+<p><strong>When to use:</strong></p>
+<ul class="simple">
+<li><p>Assessing assembly completeness</p></li>
+<li><p>Checking for missing genes in annotation</p></li>
+<li><p>Validating genome assembly quality</p></li>
+</ul>
+<p><strong>Input:</strong> Genome FASTA (DNA sequence)</p>
+<p><strong>Advantages:</strong></p>
+<ul class="simple">
+<li><p>Independent of existing annotation</p></li>
+<li><p>Can detect genes missed by annotation pipeline</p></li>
+<li><p>Better for assembly quality assessment</p></li>
+</ul>
+</section>
+<section id="both-modes">
+<h3>Both Modes<a class="headerlink" href="#both-modes" title="Link to this heading"></a></h3>
+<p>Run both protein and genome modes for comprehensive assessment.</p>
+<p><strong>When to use:</strong></p>
+<ul class="simple">
+<li><p>Complete quality control</p></li>
+<li><p>Comparing annotation vs. assembly completeness</p></li>
+<li><p>Production annotation validation</p></li>
+</ul>
+<p><strong>Provides:</strong></p>
+<ul class="simple">
+<li><p>Annotation completeness (protein mode)</p></li>
+<li><p>Assembly completeness (genome mode)</p></li>
+<li><p>Comparison of both metrics</p></li>
+</ul>
+</section>
+</section>
+<section id="running-busco">
+<h2>Running BUSCO<a class="headerlink" href="#running-busco" title="Link to this heading"></a></h2>
+<section id="using-core-database">
+<h3>Using Core Database<a class="headerlink" href="#using-core-database" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Protein mode only</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>genomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--busco_mode<span class="w"> </span>protein<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+
+<span class="c1"># Genome mode only</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>genomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--busco_mode<span class="w"> </span>genome<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+
+<span class="c1"># Both modes (recommended for QC)</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>genomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--busco_mode<span class="w"> </span>both<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+</section>
+<section id="using-ncbi-assembly">
+<h3>Using NCBI Assembly<a class="headerlink" href="#using-ncbi-assembly" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Automatically download and analyze genome from NCBI</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>ncbi_genomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_ncbi<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--outdir<span class="w"> </span>results
+</pre></div>
+</div>
+<p>!!! info “NCBI Mode”
+NCBI mode only supports genome mode analysis. The assembly is automatically downloaded using the NCBI Datasets API.</p>
+</section>
+</section>
+<section id="choosing-a-lineage">
+<h2>Choosing a Lineage<a class="headerlink" href="#choosing-a-lineage" title="Link to this heading"></a></h2>
+<p>Select the <strong>most specific</strong> lineage that applies to your organism. More specific lineages provide better sensitivity.</p>
+<section id="decision-tree">
+<h3>Decision Tree<a class="headerlink" href="#decision-tree" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Is your organism a...
+├─ Eukaryote?
+│  ├─ Animal (Metazoa)?
+│  │  ├─ Vertebrate?
+│  │  │  ├─ Mammal?
+│  │  │  │  ├─ Primate? → primates_odb12
+│  │  │  │  └─ Other → mammalia_odb12
+│  │  │  ├─ Bird? → aves_odb12
+│  │  │  ├─ Fish? → actinopterygii_odb12
+│  │  │  └─ Other → vertebrata_odb12
+│  │  └─ Invertebrate?
+│  │     ├─ Insect?
+│  │     │  ├─ Fly/Mosquito? → diptera_odb12
+│  │     │  └─ Other → insecta_odb12
+│  │     └─ Other → metazoa_odb12
+│  ├─ Plant (Viridiplantae)?
+│  │  ├─ Land plant? → embryophyta_odb12
+│  │  └─ Other → viridiplantae_odb12
+│  └─ Fungus?
+│     ├─ Yeast? → saccharomycetes_odb12
+│     └─ Other → fungi_odb12
+└─ Bacteria? → bacteria_odb10
+</pre></div>
+</div>
+</section>
+<section id="common-lineages">
+<h3>Common Lineages<a class="headerlink" href="#common-lineages" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Lineage</p></th>
+<th class="head"><p># BUSCOs</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example Species</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">primates_odb12</span></code></p></td>
+<td><p>13,780</p></td>
+<td><p>Primates</p></td>
+<td><p>Human, chimp, gorilla</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mammalia_odb12</span></code></p></td>
+<td><p>9,226</p></td>
+<td><p>Mammals</p></td>
+<td><p>Mouse, dog, cow, whale</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aves_odb12</span></code></p></td>
+<td><p>8,338</p></td>
+<td><p>Birds</p></td>
+<td><p>Chicken, zebra finch</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">actinopterygii_odb12</span></code></p></td>
+<td><p>3,640</p></td>
+<td><p>Ray-finned fish</p></td>
+<td><p>Zebrafish, medaka</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">vertebrata_odb12</span></code></p></td>
+<td><p>3,354</p></td>
+<td><p>Vertebrates</p></td>
+<td><p>Any vertebrate</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">diptera_odb12</span></code></p></td>
+<td><p>3,285</p></td>
+<td><p>Flies and mosquitoes</p></td>
+<td><p><em>Drosophila</em>, <em>Anopheles</em></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">insecta_odb12</span></code></p></td>
+<td><p>1,367</p></td>
+<td><p>Insects</p></td>
+<td><p>Bee, beetle, butterfly</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">embryophyta_odb12</span></code></p></td>
+<td><p>1,614</p></td>
+<td><p>Land plants</p></td>
+<td><p>Arabidopsis, rice</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fungi_odb12</span></code></p></td>
+<td><p>758</p></td>
+<td><p>Fungi</p></td>
+<td><p>Yeast, <em>Aspergillus</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">metazoa_odb12</span></code></p></td>
+<td><p>954</p></td>
+<td><p>Animals</p></td>
+<td><p>Any animal</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">eukaryota_odb12</span></code></p></td>
+<td><p>255</p></td>
+<td><p>Eukaryotes</p></td>
+<td><p>Any eukaryote</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="understanding-results">
+<h2>Understanding Results<a class="headerlink" href="#understanding-results" title="Link to this heading"></a></h2>
+<section id="busco-categories">
+<h3>BUSCO Categories<a class="headerlink" href="#busco-categories" title="Link to this heading"></a></h3>
+<p>BUSCO classifies each searched gene into one of four categories:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Category</p></th>
+<th class="head"><p>Code</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Interpretation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Complete (C)</strong></p></td>
+<td><p>C</p></td>
+<td><p>Gene found in single copy with expected length</p></td>
+<td><p>✅ Good</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Complete and Duplicated (D)</strong></p></td>
+<td><p>D</p></td>
+<td><p>Gene found multiple times</p></td>
+<td><p>⚠️ May indicate duplication or misassembly</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Fragmented (F)</strong></p></td>
+<td><p>F</p></td>
+<td><p>Gene found but incomplete</p></td>
+<td><p>⚠️ Partial gene or assembly issue</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Missing (M)</strong></p></td>
+<td><p>M</p></td>
+<td><p>Gene not found</p></td>
+<td><p>❌ Gap in assembly/annotation</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="score-interpretation">
+<h3>Score Interpretation<a class="headerlink" href="#score-interpretation" title="Link to this heading"></a></h3>
+<p><strong>Completeness Score = (C + D) / Total BUSCOs × 100</strong></p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Score Range</p></th>
+<th class="head"><p>Quality</p></th>
+<th class="head"><p>Interpretation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>95-100%</strong></p></td>
+<td><p>Excellent</p></td>
+<td><p>High-quality assembly/annotation</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>90-95%</strong></p></td>
+<td><p>Good</p></td>
+<td><p>Acceptable for most analyses</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>80-90%</strong></p></td>
+<td><p>Fair</p></td>
+<td><p>Some missing genes; investigate</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>&lt;80%</strong></p></td>
+<td><p>Poor</p></td>
+<td><p>Significant issues; troubleshoot</p></td>
+</tr>
+</tbody>
+</table>
+<p>!!! warning “Context Matters”
+Scores should be interpreted in context:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>- **Protein mode**: Lower scores may indicate annotation issues
+- **Genome mode**: Lower scores suggest assembly gaps
+- **Duplications**: High duplication (&gt;5%) may indicate misassembly or polyploidy
+</pre></div>
+</div>
+</section>
+<section id="example-output">
+<h3>Example Output<a class="headerlink" href="#example-output" title="Link to this heading"></a></h3>
+<section id="short-summary-busco-short-summary-txt">
+<h4>Short Summary (<code class="docutils literal notranslate"><span class="pre">*_busco_short_summary.txt</span></code>)<a class="headerlink" href="#short-summary-busco-short-summary-txt" title="Link to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># BUSCO version is: 5.4.7 </span>
+<span class="c1"># The lineage dataset is: primates_odb12 (Creation date: 2024-01-08, number of genomes: 44, number of BUSCOs: 13780)</span>
+<span class="c1"># Summarized benchmarking in BUSCO notation for file /data/proteins.fa</span>
+<span class="c1"># BUSCO was run in mode: protein</span>
+<span class="c1"># Gene predictor used: None</span>
+
+<span class="o">*****</span> <span class="n">Results</span><span class="p">:</span> <span class="o">*****</span>
+
+<span class="n">C</span><span class="p">:</span><span class="mf">98.5</span><span class="o">%</span><span class="p">[</span><span class="n">S</span><span class="p">:</span><span class="mf">97.8</span><span class="o">%</span><span class="p">,</span><span class="n">D</span><span class="p">:</span><span class="mf">0.7</span><span class="o">%</span><span class="p">],</span><span class="n">F</span><span class="p">:</span><span class="mf">0.8</span><span class="o">%</span><span class="p">,</span><span class="n">M</span><span class="p">:</span><span class="mf">0.7</span><span class="o">%</span><span class="p">,</span><span class="n">n</span><span class="p">:</span><span class="mi">13780</span>	   
+<span class="mi">13570</span>	<span class="n">Complete</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">C</span><span class="p">)</span>			   
+<span class="mi">13474</span>	<span class="n">Complete</span> <span class="ow">and</span> <span class="n">single</span><span class="o">-</span><span class="n">copy</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">S</span><span class="p">)</span>	   
+<span class="mi">96</span>	<span class="n">Complete</span> <span class="ow">and</span> <span class="n">duplicated</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">D</span><span class="p">)</span>	   
+<span class="mi">110</span>	<span class="n">Fragmented</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">F</span><span class="p">)</span>			   
+<span class="mi">100</span>	<span class="n">Missing</span> <span class="n">BUSCOs</span> <span class="p">(</span><span class="n">M</span><span class="p">)</span>			   
+<span class="mi">13780</span>	<span class="n">Total</span> <span class="n">BUSCO</span> <span class="n">groups</span> <span class="n">searched</span>		   
+</pre></div>
+</div>
+<p><strong>Interpretation:</strong></p>
+<ul class="simple">
+<li><p>✅ Excellent completeness (98.5%)</p></li>
+<li><p>✅ Low duplication (0.7%)</p></li>
+<li><p>✅ Very few fragmented (0.8%) or missing (0.7%)</p></li>
+<li><p><strong>Conclusion</strong>: High-quality annotation</p></li>
+</ul>
+</section>
+<section id="full-table-busco-full-table-tsv">
+<h4>Full Table (<code class="docutils literal notranslate"><span class="pre">*_busco_full_table.tsv</span></code>)<a class="headerlink" href="#full-table-busco-full-table-tsv" title="Link to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Busco id	Status	Sequence	Gene Start	Gene End	Strand	Score	Length</span>
+<span class="mi">1000092</span><span class="n">at7742</span>	<span class="n">Complete</span>	<span class="n">ENSP00000262735</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="mf">1256.4</span>	<span class="mi">416</span>
+<span class="mi">1000093</span><span class="n">at7742</span>	<span class="n">Complete</span>	<span class="n">ENSP00000344818</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="mf">2145.7</span>	<span class="mi">712</span>
+<span class="mi">1000094</span><span class="n">at7742</span>	<span class="n">Missing</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="o">-</span>
+<span class="mi">1000095</span><span class="n">at7742</span>	<span class="n">Fragmented</span>	<span class="n">ENSP00000123456</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="o">-</span>	<span class="mf">456.2</span>	<span class="mi">189</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="per-sample-outputs">
+<h3>Per-Sample Outputs<a class="headerlink" href="#per-sample-outputs" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Size</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">{sample}_busco_short_summary.txt</span></code></p></td>
+<td><p>Summary statistics (protein mode)</p></td>
+<td><p>~1 KB</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">{sample}_genome_busco_short_summary.txt</span></code></p></td>
+<td><p>Summary statistics (genome mode)</p></td>
+<td><p>~1 KB</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">{sample}_busco_full_table.tsv</span></code></p></td>
+<td><p>Detailed results per BUSCO</p></td>
+<td><p>~1-5 MB</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">{sample}_busco_missing_busco_list.tsv</span></code></p></td>
+<td><p>List of missing BUSCOs</p></td>
+<td><p>Variable</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="directory-structure">
+<h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>results/
+└── busco/
+    ├── sample1_busco_short_summary.txt
+    ├── sample1_genome_busco_short_summary.txt
+    ├── sample1_busco_full_table.tsv
+    ├── sample2_busco_short_summary.txt
+    └── sample2_genome_busco_short_summary.txt
+</pre></div>
+</div>
+</section>
+</section>
+<section id="interpreting-results-by-mode">
+<h2>Interpreting Results by Mode<a class="headerlink" href="#interpreting-results-by-mode" title="Link to this heading"></a></h2>
+<section id="protein-vs-genome-comparison">
+<h3>Protein vs. Genome Comparison<a class="headerlink" href="#protein-vs-genome-comparison" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Scenario</p></th>
+<th class="head"><p>Protein Score</p></th>
+<th class="head"><p>Genome Score</p></th>
+<th class="head"><p>Interpretation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Ideal</strong></p></td>
+<td><p>High (&gt;95%)</p></td>
+<td><p>High (&gt;95%)</p></td>
+<td><p>Excellent assembly and annotation</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Good annotation</strong></p></td>
+<td><p>High (&gt;95%)</p></td>
+<td><p>Medium (85-95%)</p></td>
+<td><p>Good annotation, some assembly gaps</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Annotation issues</strong></p></td>
+<td><p>Medium (85-95%)</p></td>
+<td><p>High (&gt;95%)</p></td>
+<td><p>Assembly good, annotation needs improvement</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Both medium</strong></p></td>
+<td><p>85-95%</p></td>
+<td><p>85-95%</p></td>
+<td><p>Both assembly and annotation have room for improvement</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Assembly problems</strong></p></td>
+<td><p>Low (&lt;85%)</p></td>
+<td><p>Low (&lt;85%)</p></td>
+<td><p>Significant assembly gaps affecting annotation</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="high-duplication-5">
+<h3>High Duplication (&gt;5%)<a class="headerlink" href="#high-duplication-5" title="Link to this heading"></a></h3>
+<p>Possible causes:</p>
+<ul class="simple">
+<li><p><strong>Polyploidy</strong>: Natural in some species (e.g., wheat, salmon)</p></li>
+<li><p><strong>Recent whole-genome duplication</strong>: Normal in some lineages</p></li>
+<li><p><strong>Misassembly</strong>: Collapsed repeats or chimeric contigs</p></li>
+<li><p><strong>Contamination</strong>: Mixed samples</p></li>
+<li><p><strong>Incorrect lineage</strong>: Using too broad a lineage</p></li>
+</ul>
+<p><strong>Action:</strong> Check genome characteristics and assembly quality metrics.</p>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="low-completeness-scores">
+<h3>Low Completeness Scores<a class="headerlink" href="#low-completeness-scores" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> BUSCO completeness &lt;80%</p>
+<p><strong>Possible causes:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Wrong lineage</strong>: Using inappropriate lineage dataset</p></li>
+<li><p><strong>Assembly gaps</strong>: Incomplete genome assembly</p></li>
+<li><p><strong>Annotation issues</strong>: Missing or incomplete gene predictions</p></li>
+<li><p><strong>Contamination</strong>: Non-target sequences in assembly</p></li>
+<li><p><strong>Unusual biology</strong>: Genuine gene loss (rare)</p></li>
+</ol>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Try a broader lineage (e.g., vertebrata instead of primates)</p></li>
+<li><p>Check assembly statistics (N50, gaps, contiguity)</p></li>
+<li><p>Review annotation pipeline parameters</p></li>
+<li><p>Screen for contamination</p></li>
+</ul>
+</section>
+<section id="high-fragmentation">
+<h3>High Fragmentation<a class="headerlink" href="#high-fragmentation" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> Many fragmented BUSCOs (&gt;5%)</p>
+<p><strong>Possible causes:</strong></p>
+<ul class="simple">
+<li><p>Assembly fragmentation (low N50)</p></li>
+<li><p>Incorrect gene models</p></li>
+<li><p>Pseudogenes or processed pseudogenes</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Improve assembly contiguity</p></li>
+<li><p>Adjust gene prediction parameters</p></li>
+<li><p>Check for frame shifts or premature stop codons</p></li>
+</ul>
+</section>
+<section id="high-duplication">
+<h3>High Duplication<a class="headerlink" href="#high-duplication" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> &gt;10% duplicated BUSCOs (when not expected)</p>
+<p><strong>Possible causes:</strong></p>
+<ul class="simple">
+<li><p>Haplotigs not removed during assembly</p></li>
+<li><p>Collapsed repeats</p></li>
+<li><p>Chimeric sequences</p></li>
+<li><p>Recent gene duplications (normal)</p></li>
+</ul>
+<p><strong>Solutions:</strong></p>
+<ul class="simple">
+<li><p>Run purge_dups or similar tools</p></li>
+<li><p>Check assembly for haplotigs</p></li>
+<li><p>Validate with Hi-C or genetic maps</p></li>
+</ul>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<p>!!! tip “Choose the right lineage”
+Use the <strong>most specific lineage</strong> available for your organism. More specific = better sensitivity and specificity.</p>
+<p>!!! tip “Run both modes”
+For production annotations, always run both protein and genome modes to get complete picture of quality.</p>
+<p>!!! tip “Compare across releases”
+Track BUSCO scores across annotation updates to monitor improvements or catch regressions.</p>
+<p>!!! tip “Use with other QC metrics”
+BUSCO is one metric—combine with N50, BUSCO, gene count trends, and manual inspection.</p>
+<p>!!! tip “Document exceptions”
+Some genuine biological variations (gene loss, lineage-specific duplications) can affect scores—document these.</p>
+</section>
+<section id="advanced-topics">
+<h2>Advanced Topics<a class="headerlink" href="#advanced-topics" title="Link to this heading"></a></h2>
+<section id="custom-lineages">
+<h3>Custom Lineages<a class="headerlink" href="#custom-lineages" title="Link to this heading"></a></h3>
+<p>For specialized projects, you can create custom lineage datasets:</p>
+<ol class="arabic simple">
+<li><p>Download from <a class="reference external" href="https://www.orthodb.org/">OrthoDB</a></p></li>
+<li><p>Place in the lineage directory</p></li>
+<li><p>Reference in your CSV or with <code class="docutils literal notranslate"><span class="pre">--busco_dataset</span></code></p></li>
+</ol>
+</section>
+<section id="offline-mode">
+<h3>Offline Mode<a class="headerlink" href="#offline-mode" title="Link to this heading"></a></h3>
+<p>Pre-download lineage datasets:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Download lineages</span>
+busco<span class="w"> </span>--download_path<span class="w"> </span>/data/busco_lineages<span class="w"> </span>--download<span class="w"> </span>vertebrata_odb12
+
+<span class="c1"># Use in pipeline</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>genomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--download_path<span class="w"> </span>/data/busco_lineages
+</pre></div>
+</div>
+</section>
+<section id="metakey-integration">
+<h3>Metakey Integration<a class="headerlink" href="#metakey-integration" title="Link to this heading"></a></h3>
+<p>Load BUSCO results as database metakeys:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>genomes.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_busco_core<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--apply_busco_metakeys<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user<span class="w"> </span>ensadmin<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--password<span class="w"> </span>secret123
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<section id="primary-citations">
+<h3>Primary Citations<a class="headerlink" href="#primary-citations" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Manni et al. (2021).</strong> BUSCO Update: Novel and Streamlined Workflows along with Broader and Deeper Phylogenetic Coverage for Scoring of Eukaryotic, Prokaryotic, and Viral Genomes. <em>Molecular Biology and Evolution</em>, 38(10):4647–4654. <a class="reference external" href="https://doi.org/10.1093/molbev/msab199">DOI: 10.1093/molbev/msab199</a></p></li>
+<li><p><strong>Manni et al. (2021).</strong> BUSCO: Assessing genomic data quality and beyond. <em>Current Protocols</em>, 1:e323. <a class="reference external" href="https://doi.org/10.1002/cpz1.323">DOI: 10.1002/cpz1.323</a></p></li>
+</ul>
+</section>
+<section id="additional-resources">
+<h3>Additional Resources<a class="headerlink" href="#additional-resources" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><a class="reference external" href="https://busco.ezlab.org/">BUSCO Website</a></p></li>
+<li><p><a class="reference external" href="https://busco.ezlab.org/busco_userguide.html">BUSCO User Guide</a></p></li>
+<li><p><a class="reference external" href="https://www.orthodb.org/">OrthoDB Database</a></p></li>
+<li><p><a class="reference external" href="https://busco.ezlab.org/publications.html">BUSCO Publications</a></p></li>
+</ul>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="omark.html"><span class="std std-doc">OMArk Workflow</span></a> - Complementary proteome assessment</p></li>
+<li><p><a class="reference internal" href="../output.html"><span class="std std-doc">Output Documentation</span></a> - Detailed output file specifications</p></li>
+<li><p><a class="reference internal" href="../troubleshooting.html"><span class="std std-doc">Troubleshooting</span></a> - Solve common issues</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

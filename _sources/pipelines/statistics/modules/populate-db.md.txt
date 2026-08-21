@@ -1,0 +1,41 @@
+# POPULATE_DB
+
+POPULATE_DB process to populate core database with statistics and metakeys
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+- sql_file: path to the SQL file to be executed
+Outputs:
+- versions.yml: versions file containing software versions used
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `POPULATE_DB` |
+| Label | `'default'` |
+| Tag | `${meta.dbname}` |
+| cache | `false` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path(sql_file)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+path ("versions.yml"), emit: versions_file, optional: true
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/populate_db.nf`

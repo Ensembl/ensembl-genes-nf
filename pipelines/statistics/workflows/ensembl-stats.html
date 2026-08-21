@@ -1,0 +1,939 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ensembl Statistics Workflow &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Ensembl Genes Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../example/README.html">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../qc/README.html">Qc</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../qc/README.html#documentation">Documentation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/input.html">Input</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/output.html">Output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/parameters.html">Qc Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/workflows/index.html">Workflows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../qc/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../repeat/README.html">Repeat Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-overview">Pipeline Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-workflow">Pipeline Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#main-components">Main Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#genome-retrieval">Genome Retrieval</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeat-library-preparation">Repeat Library Preparation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeat-annotation">Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#result-publication">Result Publication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#reproducibility">Reproducibility</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#execution-modes">Execution Modes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#complete-repeat-annotation">Complete Repeat Annotation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#repeatmasker-only">RepeatMasker Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#red-only">RED Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#dust-only">DUST Only</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../repeat/README.html#trf-only">TRF Only</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#pipeline-parameters">Pipeline Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#input">Input</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#outputs">Outputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#workflow-documentation">Workflow Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#id1">Reproducibility</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../repeat/README.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../README.html">Statistics Pipeline Modules Documentation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#module-overview">Module Overview</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#data-retrieval-modules">Data Retrieval Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#busco-quality-assessment-modules">BUSCO Quality Assessment Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#orthology-analysis-modules">Orthology Analysis Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#statistics-generation-modules">Statistics Generation Modules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-operations-modules">Database Operations Modules</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#pipeline-flow">Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#module-categories-by-function">Module Categories by Function</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#quality-control">Quality Control</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#statistics-metrics">Statistics &amp; Metrics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-management">Database Management</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#resource-management">Resource Management</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#key-dependencies">Key Dependencies</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#external-tools">External Tools</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#ensembl-dependencies">Ensembl Dependencies</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#databases">Databases</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#common-parameters">Common Parameters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#database-connection">Database Connection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#paths">Paths</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../README.html#execution-control">Execution Control</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#caching-strategy">Caching Strategy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#conditional-execution">Conditional Execution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#output-structure">Output Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#metadata-requirements">Metadata Requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#documentation-format">Documentation Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#version-tracking">Version Tracking</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../README.html#for-more-information">For More Information</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Ensembl Genes Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Ensembl Statistics Workflow</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/pipelines/statistics/workflows/ensembl-stats.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ensembl-statistics-workflow">
+<h1>Ensembl Statistics Workflow<a class="headerlink" href="#ensembl-statistics-workflow" title="Link to this heading"></a></h1>
+<p>The Ensembl Statistics workflow generates comprehensive gene set metrics for Ensembl core databases, producing standardized statistics used across all Ensembl projects.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This workflow computes essential statistics about genes, transcripts, exons, and other genomic features stored in Ensembl core databases. These statistics are critical for:</p>
+<ul class="simple">
+<li><p>Database quality assessment</p></li>
+<li><p>Public data displays on Ensembl website</p></li>
+<li><p>Comparative genomics analyses</p></li>
+<li><p>Release validation and consistency checks</p></li>
+</ul>
+</section>
+<section id="workflow-components">
+<h2>Workflow Components<a class="headerlink" href="#workflow-components" title="Link to this heading"></a></h2>
+<section id="statistics-generation">
+<h3>1. Statistics Generation<a class="headerlink" href="#statistics-generation" title="Link to this heading"></a></h3>
+<p>Computes core metrics from the database:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>databases.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">3306</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/path/to/ensembl/modules<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--outdir<span class="w"> </span>results
+</pre></div>
+</div>
+</section>
+<section id="beta-metakeys">
+<h3>2. Beta Metakeys<a class="headerlink" href="#beta-metakeys" title="Link to this heading"></a></h3>
+<p>Generates metadata for beta releases:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>databases.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_beta_metakeys<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/path/to/ensembl/modules
+</pre></div>
+</div>
+</section>
+<section id="apply-to-database">
+<h3>3. Apply to Database<a class="headerlink" href="#apply-to-database" title="Link to this heading"></a></h3>
+<p>Load generated statistics back into the database:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>databases.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--apply_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user<span class="w"> </span>ensadmin<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--password<span class="w"> </span>secret123<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/path/to/ensembl/modules<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--team<span class="w"> </span>genebuild
+</pre></div>
+</div>
+</section>
+</section>
+<section id="required-parameters">
+<h2>Required Parameters<a class="headerlink" href="#required-parameters" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--enscode</span></code></p></td>
+<td><p>Path to Ensembl API modules</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/nfs/software/ensembl/ENSCODE</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--host</span></code></p></td>
+<td><p>Database host server</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mysql-ens-sta-5.ebi.ac.uk</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--port</span></code></p></td>
+<td><p>Database port</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">4686</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--user_r</span></code></p></td>
+<td><p>Read-only user (for generation)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ensro</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--user</span></code></p></td>
+<td><p>Write user (for applying)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ensadmin</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--password</span></code></p></td>
+<td><p>Database password (for applying)</p></td>
+<td><p>-</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--team</span></code></p></td>
+<td><p>Team responsible (metakey)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">genebuild</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<section id="csv-input">
+<h3>CSV Input<a class="headerlink" href="#csv-input" title="Link to this heading"></a></h3>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>dbname,species_id
+homo_sapiens_core_110_38,1
+mus_musculus_core_110_39,1
+danio_rerio_core_110_11,1
+</pre></div>
+</div>
+</section>
+</section>
+<section id="generated-statistics">
+<h2>Generated Statistics<a class="headerlink" href="#generated-statistics" title="Link to this heading"></a></h2>
+<section id="gene-level-metrics">
+<h3>Gene-Level Metrics<a class="headerlink" href="#gene-level-metrics" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Statistic</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">coding_cnt</span></code></p></td>
+<td><p>Number of protein-coding genes</p></td>
+<td><p>19,950</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">pseudogene_cnt</span></code></p></td>
+<td><p>Number of pseudogenes</p></td>
+<td><p>14,723</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">noncoding_cnt_*</span></code></p></td>
+<td><p>Non-coding genes by biotype</p></td>
+<td><p>varies</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">gene_cnt</span></code></p></td>
+<td><p>Total gene count</p></td>
+<td><p>60,670</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">alt_gene_cnt</span></code></p></td>
+<td><p>Genes on alternate sequences</p></td>
+<td><p>2,156</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="transcript-level-metrics">
+<h3>Transcript-Level Metrics<a class="headerlink" href="#transcript-level-metrics" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Statistic</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">coding_transcript_cnt</span></code></p></td>
+<td><p>Protein-coding transcripts</p></td>
+<td><p>87,521</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">noncoding_transcript_cnt</span></code></p></td>
+<td><p>Non-coding transcripts</p></td>
+<td><p>51,210</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">transcript_cnt</span></code></p></td>
+<td><p>Total transcripts</p></td>
+<td><p>251,769</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">alt_transcript_cnt</span></code></p></td>
+<td><p>Transcripts on alternate seqs</p></td>
+<td><p>8,452</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="structural-metrics">
+<h3>Structural Metrics<a class="headerlink" href="#structural-metrics" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Statistic</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">exon_cnt</span></code></p></td>
+<td><p>Total exons</p></td>
+<td><p>756,234</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">intron_cnt</span></code></p></td>
+<td><p>Total introns</p></td>
+<td><p>504,465</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">coding_exon_cnt</span></code></p></td>
+<td><p>Coding exons</p></td>
+<td><p>512,890</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="assembly-statistics">
+<h3>Assembly Statistics<a class="headerlink" href="#assembly-statistics" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Statistic</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">toplevel_seq_cnt</span></code></p></td>
+<td><p>Top-level sequences</p></td>
+<td><p>639</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">chromosome_cnt</span></code></p></td>
+<td><p>Chromosomes</p></td>
+<td><p>24</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">scaffold_cnt</span></code></p></td>
+<td><p>Scaffolds</p></td>
+<td><p>615</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">contig_cnt</span></code></p></td>
+<td><p>Contigs</p></td>
+<td><p>50,543</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="gene-set-characteristics">
+<h3>Gene Set Characteristics<a class="headerlink" href="#gene-set-characteristics" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Statistic</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">known_gene_cnt</span></code></p></td>
+<td><p>Genes with external refs</p></td>
+<td><p>18,234</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">novel_gene_cnt</span></code></p></td>
+<td><p>Novel predictions</p></td>
+<td><p>1,716</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">avg_transcript_per_gene</span></code></p></td>
+<td><p>Mean transcripts/gene</p></td>
+<td><p>4.15</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">avg_exon_per_transcript</span></code></p></td>
+<td><p>Mean exons/transcript</p></td>
+<td><p>8.7</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="statistics-json">
+<h3>Statistics JSON<a class="headerlink" href="#statistics-json" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">{database}_statistics.json</span></code></p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">"database"</span><span class="p">:</span><span class="w"> </span><span class="s2">"homo_sapiens_core_110_38"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"species_id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"generated_date"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-15T10:30:00"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"statistics"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"coding_cnt"</span><span class="p">:</span><span class="w"> </span><span class="mi">19950</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"pseudogene_cnt"</span><span class="p">:</span><span class="w"> </span><span class="mi">14723</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"noncoding_cnt_lncRNA"</span><span class="p">:</span><span class="w"> </span><span class="mi">17910</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"noncoding_cnt_misc_RNA"</span><span class="p">:</span><span class="w"> </span><span class="mi">2212</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"noncoding_cnt_miRNA"</span><span class="p">:</span><span class="w"> </span><span class="mi">1879</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"noncoding_cnt_rRNA"</span><span class="p">:</span><span class="w"> </span><span class="mi">549</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"noncoding_cnt_snoRNA"</span><span class="p">:</span><span class="w"> </span><span class="mi">943</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"noncoding_cnt_snRNA"</span><span class="p">:</span><span class="w"> </span><span class="mi">1901</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"gene_cnt"</span><span class="p">:</span><span class="w"> </span><span class="mi">60670</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"transcript_cnt"</span><span class="p">:</span><span class="w"> </span><span class="mi">251769</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"coding_transcript_cnt"</span><span class="p">:</span><span class="w"> </span><span class="mi">87521</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"exon_cnt"</span><span class="p">:</span><span class="w"> </span><span class="mi">756234</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"toplevel_seq_cnt"</span><span class="p">:</span><span class="w"> </span><span class="mi">639</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"chromosome_cnt"</span><span class="p">:</span><span class="w"> </span><span class="mi">24</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="directory-structure">
+<h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>results/
+└── ensembl_stats/
+    ├── homo_sapiens_core_110_38_statistics.json
+    ├── mus_musculus_core_110_39_statistics.json
+    └── danio_rerio_core_110_11_statistics.json
+</pre></div>
+</div>
+</section>
+</section>
+<section id="use-cases">
+<h2>Use Cases<a class="headerlink" href="#use-cases" title="Link to this heading"></a></h2>
+<section id="release-validation">
+<h3>1. Release Validation<a class="headerlink" href="#release-validation" title="Link to this heading"></a></h3>
+<p>Validate statistics before public release:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate statistics for all release databases</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>release_110_databases.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-ens-sta-5.ebi.ac.uk<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">4686</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/nfs/software/ensembl/ENSCODE<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--outdir<span class="w"> </span>release_110_stats
+</pre></div>
+</div>
+<p><strong>Check for:</strong></p>
+<ul class="simple">
+<li><p>Gene count consistency with previous release</p></li>
+<li><p>Reasonable transcript-to-gene ratios</p></li>
+<li><p>Expected biotype distributions</p></li>
+<li><p>Assembly sequence counts match expectations</p></li>
+</ul>
+</section>
+<section id="database-updates">
+<h3>2. Database Updates<a class="headerlink" href="#database-updates" title="Link to this heading"></a></h3>
+<p>Generate and apply statistics to updated databases:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>updated_databases.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--apply_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-ens-sta-5.ebi.ac.uk<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--port<span class="w"> </span><span class="m">4686</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user<span class="w"> </span>ensadmin<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--password<span class="w"> </span><span class="si">${</span><span class="nv">DB_PASSWORD</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/nfs/software/ensembl/ENSCODE<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--team<span class="w"> </span>genebuild<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--project<span class="w"> </span>ensembl
+</pre></div>
+</div>
+</section>
+<section id="comparative-analysis">
+<h3>3. Comparative Analysis<a class="headerlink" href="#comparative-analysis" title="Link to this heading"></a></h3>
+<p>Compare statistics across species:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate stats for a taxonomic group</span>
+cat<span class="w"> </span>&gt;<span class="w"> </span>vertebrates.csv<span class="w"> </span><span class="s">&lt;&lt; EOF</span>
+<span class="s">dbname,species_id</span>
+<span class="s">homo_sapiens_core_110_38,1</span>
+<span class="s">mus_musculus_core_110_39,1</span>
+<span class="s">gallus_gallus_core_110_7,1</span>
+<span class="s">xenopus_tropicalis_core_110_10,1</span>
+<span class="s">danio_rerio_core_110_11,1</span>
+<span class="s">EOF</span>
+
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>vertebrates.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/software/ensembl/ENSCODE
+</pre></div>
+</div>
+<p>Then analyze:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Load all statistics</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"results/ensembl_stats/*.json"</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">as</span> <span class="n">fh</span><span class="p">:</span>
+        <span class="n">stats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fh</span><span class="p">))</span>
+
+<span class="c1"># Create comparison DataFrame</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="n">s</span><span class="p">[</span><span class="s1">'statistics'</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">])</span>
+<span class="n">df</span><span class="p">[</span><span class="s1">'species'</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s1">'database'</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'_core_'</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">]</span>
+
+<span class="c1"># Compare metrics</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">[[</span><span class="s1">'species'</span><span class="p">,</span> <span class="s1">'gene_cnt'</span><span class="p">,</span> <span class="s1">'coding_cnt'</span><span class="p">,</span> <span class="s1">'avg_transcript_per_gene'</span><span class="p">]])</span>
+</pre></div>
+</div>
+</section>
+<section id="quality-metrics-tracking">
+<h3>4. Quality Metrics Tracking<a class="headerlink" href="#quality-metrics-tracking" title="Link to this heading"></a></h3>
+<p>Track metrics over time:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate statistics for version tracking</span>
+cat<span class="w"> </span>&gt;<span class="w"> </span>versions.csv<span class="w"> </span><span class="s">&lt;&lt; EOF</span>
+<span class="s">dbname,species_id</span>
+<span class="s">species_v1_core,1</span>
+<span class="s">species_v2_core,1</span>
+<span class="s">species_v3_core,1</span>
+<span class="s">EOF</span>
+
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>versions.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/software/ensembl/ENSCODE
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id1">
+<h2>Beta Metakeys<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<section id="what-are-beta-metakeys">
+<h3>What are Beta Metakeys?<a class="headerlink" href="#what-are-beta-metakeys" title="Link to this heading"></a></h3>
+<p>Metadata entries for beta/pre-release databases that include:</p>
+<ul class="simple">
+<li><p>Release preparation status</p></li>
+<li><p>Data freeze dates</p></li>
+<li><p>Validation checkpoints</p></li>
+<li><p>Team responsibilities</p></li>
+</ul>
+</section>
+<section id="generating-beta-metakeys">
+<h3>Generating Beta Metakeys<a class="headerlink" href="#generating-beta-metakeys" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>beta_databases.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_beta_metakeys<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-ens-staging.ebi.ac.uk<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/software/ensembl/ENSCODE<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--team<span class="w"> </span>genebuild
+</pre></div>
+</div>
+</section>
+<section id="applying-beta-metakeys">
+<h3>Applying Beta Metakeys<a class="headerlink" href="#applying-beta-metakeys" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>beta_databases.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_beta_metakeys<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--apply_ensembl_beta_metakeys<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-ens-staging.ebi.ac.uk<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user<span class="w"> </span>ensadmin<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--password<span class="w"> </span><span class="si">${</span><span class="nv">DB_PASSWORD</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/software/ensembl/ENSCODE<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--team<span class="w"> </span>genebuild<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--project<span class="w"> </span>ensembl
+</pre></div>
+</div>
+</section>
+</section>
+<section id="interpreting-statistics">
+<h2>Interpreting Statistics<a class="headerlink" href="#interpreting-statistics" title="Link to this heading"></a></h2>
+<section id="gene-count-expectations">
+<h3>Gene Count Expectations<a class="headerlink" href="#gene-count-expectations" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Organism Type</p></th>
+<th class="head"><p>Typical Gene Count</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Mammals</p></td>
+<td><p>20,000 - 25,000</p></td>
+<td><p>Fairly consistent</p></td>
+</tr>
+<tr class="row-odd"><td><p>Birds</p></td>
+<td><p>15,000 - 20,000</p></td>
+<td><p>Slightly lower than mammals</p></td>
+</tr>
+<tr class="row-even"><td><p>Fish</p></td>
+<td><p>20,000 - 30,000</p></td>
+<td><p>Variable; some WGD events</p></td>
+</tr>
+<tr class="row-odd"><td><p>Insects</p></td>
+<td><p>10,000 - 20,000</p></td>
+<td><p><em>Drosophila</em> ~14k</p></td>
+</tr>
+<tr class="row-even"><td><p>Plants</p></td>
+<td><p>25,000 - 40,000</p></td>
+<td><p>Often polyploid</p></td>
+</tr>
+<tr class="row-odd"><td><p>Fungi</p></td>
+<td><p>5,000 - 15,000</p></td>
+<td><p>Yeast ~6k</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="transcript-to-gene-ratios">
+<h3>Transcript-to-Gene Ratios<a class="headerlink" href="#transcript-to-gene-ratios" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Ratio</p></th>
+<th class="head"><p>Interpretation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>1.0 - 2.0</p></td>
+<td><p>Simple organisms or minimal annotation</p></td>
+</tr>
+<tr class="row-odd"><td><p>2.0 - 5.0</p></td>
+<td><p>Typical for well-annotated genomes</p></td>
+</tr>
+<tr class="row-even"><td><p>5.0 - 10.0</p></td>
+<td><p>Complex alternative splicing (e.g., human)</p></td>
+</tr>
+<tr class="row-odd"><td><p>&gt;10.0</p></td>
+<td><p>Possible over-prediction; review</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="coding-vs-non-coding">
+<h3>Coding vs. Non-coding<a class="headerlink" href="#coding-vs-non-coding" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Organism</p></th>
+<th class="head"><p>Typical Coding %</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Mammals</p></td>
+<td><p>30-40%</p></td>
+<td><p>Many lncRNAs annotated</p></td>
+</tr>
+<tr class="row-odd"><td><p>Fish</p></td>
+<td><p>40-60%</p></td>
+<td><p>Variable annotation depth</p></td>
+</tr>
+<tr class="row-even"><td><p>Insects</p></td>
+<td><p>60-80%</p></td>
+<td><p>Fewer non-coding annotated</p></td>
+</tr>
+<tr class="row-odd"><td><p>Yeast</p></td>
+<td><p>80-90%</p></td>
+<td><p>Compact genomes</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="applying-statistics-to-database">
+<h2>Applying Statistics to Database<a class="headerlink" href="#applying-statistics-to-database" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Write access to database (<code class="docutils literal notranslate"><span class="pre">--user</span></code> and <code class="docutils literal notranslate"><span class="pre">--password</span></code>)</p></li>
+<li><p>Ensembl API modules configured (<code class="docutils literal notranslate"><span class="pre">--enscode</span></code>)</p></li>
+<li><p>Valid <code class="docutils literal notranslate"><span class="pre">meta</span></code> table in core database</p></li>
+</ul>
+</section>
+<section id="process">
+<h3>Process<a class="headerlink" href="#process" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Generate statistics</strong> from database queries</p></li>
+<li><p><strong>Validate</strong> computed metrics</p></li>
+<li><p><strong>Insert</strong> into <code class="docutils literal notranslate"><span class="pre">meta</span></code> table with appropriate keys</p></li>
+<li><p><strong>Update</strong> display names and descriptions</p></li>
+</ol>
+</section>
+<section id="metakey-format">
+<h3>Metakey Format<a class="headerlink" href="#metakey-format" title="Link to this heading"></a></h3>
+<p>Statistics are stored as <code class="docutils literal notranslate"><span class="pre">meta</span></code> table entries:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>meta_key</p></th>
+<th class="head"><p>meta_value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">genebuild.statistics.gene_cnt</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">60670</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">genebuild.statistics.coding_cnt</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">19950</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">genebuild.statistics.transcript_cnt</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">251769</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="team-attribution">
+<h3>Team Attribution<a class="headerlink" href="#team-attribution" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">--team</span></code> parameter adds responsibility metadata:</p>
+<div class="highlight-sql notranslate"><div class="highlight"><pre><span></span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">meta</span><span class="w"> </span><span class="p">(</span><span class="n">meta_key</span><span class="p">,</span><span class="w"> </span><span class="n">meta_value</span><span class="p">)</span><span class="w"> </span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'genebuild.team'</span><span class="p">,</span><span class="w"> </span><span class="s1">'genebuild'</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="missing-ensembl-api">
+<h3>Missing Ensembl API<a class="headerlink" href="#missing-ensembl-api" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> Pipeline cannot find Ensembl modules</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Error</span><span class="p">:</span> <span class="n">Can</span><span class="s1">'t locate Bio/EnsEMBL/DBSQL/DBAdaptor.pm</span>
+</pre></div>
+</div>
+<p><strong>Solution:</strong> Provide correct path to ENSCODE:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check Ensembl installation</span>
+ls<span class="w"> </span>/nfs/software/ensembl/ENSCODE/ensembl/modules
+
+<span class="c1"># Set in pipeline</span>
+--enscode<span class="w"> </span>/nfs/software/ensembl/ENSCODE
+</pre></div>
+</div>
+</section>
+<section id="database-connection-failed">
+<h3>Database Connection Failed<a class="headerlink" href="#database-connection-failed" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> Cannot connect to database</p>
+<p><strong>Solutions:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test connection</span>
+mysql<span class="w"> </span>-h<span class="w"> </span>mysql-server.example.com<span class="w"> </span>-P<span class="w"> </span><span class="m">3306</span><span class="w"> </span>-u<span class="w"> </span>ensro<span class="w"> </span>-e<span class="w"> </span><span class="s2">"SHOW DATABASES;"</span>
+
+<span class="c1"># Check credentials</span>
+--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+--port<span class="w"> </span><span class="m">3306</span><span class="w"> </span><span class="se">\</span>
+--user_r<span class="w"> </span>ensro
+</pre></div>
+</div>
+</section>
+<section id="bioperl-issues">
+<h3>BioPerl Issues<a class="headerlink" href="#bioperl-issues" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> BioPerl not found</p>
+<p><strong>Solution:</strong> Specify BioPerl path:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--bioperl<span class="w"> </span>/usr/local/bioperl-1.6.924
+</pre></div>
+</div>
+</section>
+<section id="permission-denied-apply-mode">
+<h3>Permission Denied (Apply Mode)<a class="headerlink" href="#permission-denied-apply-mode" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> Cannot write to database</p>
+<p><strong>Solution:</strong> Use user with write permissions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--user<span class="w"> </span>ensadmin<span class="w"> </span><span class="se">\</span>
+--password<span class="w"> </span><span class="si">${</span><span class="nv">DB_PASSWORD</span><span class="si">}</span>
+</pre></div>
+</div>
+</section>
+<section id="unexpected-statistics">
+<h3>Unexpected Statistics<a class="headerlink" href="#unexpected-statistics" title="Link to this heading"></a></h3>
+<p><strong>Problem:</strong> Gene counts seem wrong</p>
+<p><strong>Solutions:</strong></p>
+<ol class="arabic simple">
+<li><p>Check <code class="docutils literal notranslate"><span class="pre">species_id</span></code> is correct</p></li>
+<li><p>Verify database schema version</p></li>
+<li><p>Check for PAR regions (pseudoautosomal)</p></li>
+<li><p>Review gene biotype classifications</p></li>
+</ol>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<p>!!! tip “Generate Before Applying”
+Always run with <code class="docutils literal notranslate"><span class="pre">--run_ensembl_stats</span></code> alone first to review statistics before applying to the database.</p>
+<p>!!! tip “Version Control Statistics”
+Keep JSON outputs in version control to track changes across releases.</p>
+<p>!!! tip “Validate Against Previous Release”
+Compare statistics to previous release to catch unexpected changes:
+<code class="docutils literal notranslate"><span class="pre">bash</span>&#160;&#160;&#160;&#160; <span class="pre">diff</span> <span class="pre">release_109_stats/</span> <span class="pre">release_110_stats/</span>&#160;&#160;&#160;&#160; </code></p>
+<p>!!! tip “Use Read-Only User for Generation”
+Generate statistics with <code class="docutils literal notranslate"><span class="pre">--user_r</span></code> (read-only) to avoid accidental modifications.</p>
+<p>!!! tip “Backup Before Applying”
+Always backup the database before applying statistics:
+<code class="docutils literal notranslate"><span class="pre">bash</span>&#160;&#160;&#160;&#160; <span class="pre">mysqldump</span> <span class="pre">-h</span> <span class="pre">host</span> <span class="pre">-u</span> <span class="pre">user</span> <span class="pre">-p</span> <span class="pre">database</span> <span class="pre">&gt;</span> <span class="pre">backup.sql</span>&#160;&#160;&#160;&#160; </code></p>
+</section>
+<section id="advanced-topics">
+<h2>Advanced Topics<a class="headerlink" href="#advanced-topics" title="Link to this heading"></a></h2>
+<section id="custom-statistics-queries">
+<h3>Custom Statistics Queries<a class="headerlink" href="#custom-statistics-queries" title="Link to this heading"></a></h3>
+<p>Modify or add statistics by editing SQL query files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--meta_query_file<span class="w"> </span>custom_queries.sql
+</pre></div>
+</div>
+</section>
+<section id="batch-processing">
+<h3>Batch Processing<a class="headerlink" href="#batch-processing" title="Link to this heading"></a></h3>
+<p>Process hundreds of databases:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get all core databases for a release</span>
+mysql<span class="w"> </span>-h<span class="w"> </span>mysql-server.example.com<span class="w"> </span>-u<span class="w"> </span>ensro<span class="w"> </span>-e<span class="w"> </span><span class="s2">"</span>
+<span class="s2">  SELECT schema_name, 1 </span>
+<span class="s2">  FROM information_schema.schemata </span>
+<span class="s2">  WHERE schema_name LIKE '%_core_110_%'</span>
+<span class="s2">"</span><span class="w"> </span>&gt;<span class="w"> </span>release_110_cores.csv
+
+<span class="c1"># Add header</span>
+sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">'1s/^/dbname,species_id\n/'</span><span class="w"> </span>release_110_cores.csv
+
+<span class="c1"># Run pipeline</span>
+nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span>release_110_cores.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span>mysql-server.example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user_r<span class="w"> </span>ensro<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span>/software/ensembl/ENSCODE
+</pre></div>
+</div>
+</section>
+<section id="integration-with-ensembl-production">
+<h3>Integration with Ensembl Production<a class="headerlink" href="#integration-with-ensembl-production" title="Link to this heading"></a></h3>
+<p>For Ensembl production pipelines:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--csvFile<span class="w"> </span><span class="si">${</span><span class="nv">ENSEMBL_RELEASE</span><span class="si">}</span>/databases.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--run_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--apply_ensembl_stats<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--host<span class="w"> </span><span class="si">${</span><span class="nv">ENSEMBL_STAGING_HOST</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--user<span class="w"> </span><span class="si">${</span><span class="nv">ENSEMBL_ADMIN_USER</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--password<span class="w"> </span><span class="si">${</span><span class="nv">ENSEMBL_ADMIN_PASS</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--enscode<span class="w"> </span><span class="si">${</span><span class="nv">ENSCODE</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--team<span class="w"> </span>genebuild<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--project<span class="w"> </span>ensembl<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--mysql_ensadmin<span class="w"> </span>/software/ensembl/ensadmin
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance">
+<h2>Performance<a class="headerlink" href="#performance" title="Link to this heading"></a></h2>
+<section id="resource-requirements">
+<h3>Resource Requirements<a class="headerlink" href="#resource-requirements" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Database Size</p></th>
+<th class="head"><p>Memory</p></th>
+<th class="head"><p>CPU</p></th>
+<th class="head"><p>Runtime</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Small (&lt;10k genes)</p></td>
+<td><p>4 GB</p></td>
+<td><p>2</p></td>
+<td><p>1-2 min</p></td>
+</tr>
+<tr class="row-odd"><td><p>Medium (10-30k genes)</p></td>
+<td><p>8 GB</p></td>
+<td><p>4</p></td>
+<td><p>2-5 min</p></td>
+</tr>
+<tr class="row-even"><td><p>Large (&gt;30k genes)</p></td>
+<td><p>16 GB</p></td>
+<td><p>8</p></td>
+<td><p>5-10 min</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="optimization">
+<h3>Optimization<a class="headerlink" href="#optimization" title="Link to this heading"></a></h3>
+<p>Statistics generation is database I/O bound:</p>
+<ul class="simple">
+<li><p>Use local database connections when possible</p></li>
+<li><p>Ensure database server has adequate resources</p></li>
+<li><p>Process multiple databases in parallel</p></li>
+</ul>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="busco.html"><span class="std std-doc">BUSCO Workflow</span></a> - Gene set completeness assessment</p></li>
+<li><p><a class="reference internal" href="omark.html"><span class="std std-doc">OMArk Workflow</span></a> - Proteome quality validation</p></li>
+<li><p><a class="reference internal" href="../output.html"><span class="std std-doc">Output Documentation</span></a> - Complete output reference</p></li>
+<li><p><a class="reference internal" href="../troubleshooting.html"><span class="std std-doc">Troubleshooting</span></a> - Common issues and solutions</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

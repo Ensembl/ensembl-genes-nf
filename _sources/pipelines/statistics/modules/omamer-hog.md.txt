@@ -1,0 +1,44 @@
+# OMAMER_HOG
+
+OMAMER_HOG process to run OMAMER HOG search
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+- translation_file: path to the protein FASTA file
+Outputs:
+- omamer_hog_output: tuple of meta and OMAMER output files
+- versions.yml: versions file containing software versions used
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `OMAMER_HOG` |
+| Label | `'omamer'` |
+| Tag | `${meta.gca}` |
+| maxForks | `15` |
+| storeDir | `"${params.cacheDir}/${meta.gca}/omamer/"` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path(translation_file)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("proteins.omamer"), emit: omamer_hog_output
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/omamer_hog.nf`

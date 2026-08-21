@@ -1,0 +1,26 @@
+# CLEANING
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `CLEANING` |
+| Label | `'default'` |
+| Tag | `cleaning` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val taxon_id
+val run_accession
+```
+
+## Outputs
+
+*No outputs documented.*
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/cleaning.nf`

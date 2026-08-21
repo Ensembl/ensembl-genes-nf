@@ -1,0 +1,44 @@
+# BUSCO_CORE_METAKEYS
+
+BUSCO_CORE_METAKEYS process to add BUSCO results to core database metadata
+Inputs:
+- meta: metadata map containing dbname, species_id, taxon_id, gca
+- summary_file: path to the BUSCO summary file
+Outputs:
+- versions.yml: versions file containing software versions used
+- *_busco_<mode>_metakey.json: JSON file containing BUSCO metakeys
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `BUSCO_CORE_METAKEYS` |
+| Label | `'python'` |
+| Tag | `${meta.gca}` |
+| Publish directory | `"${params.outdir}/${meta.gca}", mode: 'copy'` |
+| cache | `false` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path(summary_file)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("*_busco_${meta.busco_mode}_metakey.json"), emit: metakey_json
+path "versions_busco_${meta.busco_mode}_metakeys.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Execute Python script
+
+## Source
+
+`/home/runner/work/ensembl-genes-nf/ensembl-genes-nf/pipelines/statistics/modules/busco_core_metakeys.nf`
