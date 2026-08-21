@@ -7,7 +7,7 @@ process PREP_AA_FASTA {
         tuple val(meta), path(genome_fasta), path(gff3)
 
     output:
-        tuple val(meta), path("*.faa"), emit: aa_fasta
+        tuple val(meta), path("*.clean.faa"), emit: aa_fasta
         path 'versions.yml', emit: versions
 
     script:
@@ -21,7 +21,7 @@ process PREP_AA_FASTA {
                 gsub(/[^ACDEFGHIKLMNPQRSTVWY]/, "X", sequence)
                 print sequence
             }
-        ' ${meta.id}.raw.faa > ${meta.id}.faa
+        ' ${meta.id}.raw.faa > ${meta.id}.clean.faa
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
