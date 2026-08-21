@@ -51,12 +51,17 @@ ensembl-genes-nf/  (template branch)
 
 ## Documentation
 
-**[docs/](docs/)** - Complete documentation
+The Sphinx documentation source lives in **[docs/source/](docs/source/)**. It includes a pipeline catalog, per-pipeline usage pages, shared configuration notes, and generated parameter references built from each `nextflow_schema.json`.
 
-Start with:
-- **[docs/QUICK_START.md](docs/QUICK_START.md)** - Step-by-step guide from basics to advanced
-- **[docs/PATTERNS.md](docs/PATTERNS.md)** - 12 common Nextflow patterns with examples
-- **[pipelines/example/README.md](pipelines/example/README.md)** - Example pipeline overview
+Build it locally with:
+
+```bash
+python -m pip install -r docs/requirements.txt
+python docs/scripts/render_schema_docs.py
+sphinx-build -b html docs/source docs/build/html
+```
+
+The older Markdown guides under **[docs/](docs/)** are still available while the Sphinx site becomes the primary documentation surface.
 
 ## Key Features
 
@@ -121,4 +126,3 @@ Contributions to improve templates and documentation are welcome! Consider:
 ## License
 
 [Add license information]
-

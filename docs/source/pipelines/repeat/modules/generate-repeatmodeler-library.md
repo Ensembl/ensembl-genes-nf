@@ -1,0 +1,44 @@
+# GENERATE_REPEATMODELER_LIBRARY
+
+This process runs RepeatModeler on a given genome file to generate a RepeatModeler library.
+It uses the BuildDatabase tool to create a database from the genome file and then runs
+RepeatModeler with the specified engine and number of threads.
+The output files are renamed to include the GCA accession in their names
+and are saved in the "library" directory under the output directory for
+the given GCA accession. The process also generates a versions.yml file
+containing the version of RepeatModeler used.
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `GENERATE_REPEATMODELER_LIBRARY` |
+| Label | `'repeatmodeler'` |
+| Tag | `$meta.gca:run_repeatmodeler` |
+| Publish directory | `"${params.outdir}/${meta.gca}/library", mode: 'copy'` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val(meta)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("*repeatmodeler.fa"), path("*families.stk.gz"), path("*rmod.log"), emit: repeatmodeler_library_out
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Rename output files
+- Generate software version report
+
+## Source
+
+`/Users/ftricomi/Documents/ensembl-genes-nf/pipelines/repeat/modules/generate_repeatmodeler_library.nf`
