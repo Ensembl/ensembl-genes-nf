@@ -3,7 +3,7 @@ process RIBOMETRIC {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
-    container "ghcr.io/jackcurragh/ribometric:1.4.2"
+    container "ghcr.io/jackcurragh/ribometric:1.4.3"
 
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
@@ -121,7 +121,7 @@ process RIBOMETRIC {
     touch ${prefix}_RiboMetric.json
     touch ${prefix}_RiboMetric.csv
     cat <<-END_OFFSETS > ${prefix}.offsets.tsv
-    sample	offset_source	offset_target	offset_calculation_method	read_length	n_reads	n_unique_offsets	applied_offsets	min_offset	max_offset	computed_offset	global_offset	frame_adjusted	old_offset	new_offset	dominant_frame	dominant_fraction	frame_adjustment_reads
+    sample	offset_source	offset_target	offset_calculation_method	read_length	n_reads	n_unique_offsets	applied_offsets	raw_offset	final_offset	min_offset	max_offset	computed_offset	global_offset	frame_adjusted	old_offset	new_offset	dominant_frame	dominant_fraction	frame_adjustment_reads
     ${prefix}	calculated	a_site	tripsviz	28	1	1	15	15	15	15		False
     END_OFFSETS
     cat <<-END_BEST_OFFSET > ${prefix}.best_offset.txt
@@ -131,7 +131,7 @@ process RIBOMETRIC {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        ribometric: 1.4.2
+        ribometric: 1.4.3
     END_VERSIONS
     """
 }
