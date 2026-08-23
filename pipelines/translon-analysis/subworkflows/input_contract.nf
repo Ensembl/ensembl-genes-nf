@@ -75,7 +75,7 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
         ? channel.fromPath(offsets_glob, checkIfExists: false)
         : (sheet_rows
             ? sheet_rows.filter { row -> row.offsets }
-                .map { row -> tuple([id: row.sample_id], file(row.offsets, checkIfExists: true)) }
+                .map { row -> tuple([id: row.sample_id, merge_group: row.merge_group ?: row.sample_id], file(row.offsets, checkIfExists: true)) }
             : (root ? channel.fromPath("${root}/**/*.offsets.{pass,selected,good,great}.tsv", checkIfExists: false) : channel.empty()))
     translonscorer = translonscorer_glob
         ? channel.fromPath(translonscorer_glob, checkIfExists: false)

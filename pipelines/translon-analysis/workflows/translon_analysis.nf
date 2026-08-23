@@ -44,13 +44,14 @@ workflow TRANSLON_ANALYSIS {
     MERGE_RIBO_INPUTS(
         LOAD_RIBOSEQ_OUTPUTS.out.transcriptome,
         LOAD_RIBOSEQ_OUTPUTS.out.genome,
+        LOAD_RIBOSEQ_OUTPUTS.out.offsets,
         params.merge_inputs,
         params.merge_group
     )
     tx = MERGE_RIBO_INPUTS.out.transcriptome
     gn = MERGE_RIBO_INPUTS.out.genome
     ribo_fastq = LOAD_RIBOSEQ_OUTPUTS.out.ribo_fastq
-    offsets = LOAD_RIBOSEQ_OUTPUTS.out.offsets
+    offsets = MERGE_RIBO_INPUTS.out.offsets
     selected_tools = params.tools.split(',').collect { it.trim().toLowerCase() }.findAll { it }
     // The upstream transcriptome BAM is already the native input for
     // Ribotricer, RiboTIE and most learned callers. Prepare legacy models
