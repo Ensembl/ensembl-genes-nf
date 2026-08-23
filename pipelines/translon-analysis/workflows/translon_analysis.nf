@@ -7,6 +7,7 @@ include { GEDI_PRICE } from '../../../modules/nf-core/gedi/price/main.nf'
 include { COLLECT_ORF_CALLS } from '../modules/collect_orf_calls.nf'
 include { TRANSLON_CONSENSUS_BRIDGE } from './translon_consensus_bridge.nf'
 include { TRANSLON_CHARACTERISATION } from '../../translon-characterisation/workflows/translon_characterisation.nf'
+include { RIBOMETRIC } from '../../riboseq/modules/ribometric.nf'
 
 def tool_selected(selected_tools, name) {
     def tool_groups = [
@@ -51,7 +52,23 @@ workflow TRANSLON_ANALYSIS {
     tx = MERGE_RIBO_INPUTS.out.transcriptome
     gn = MERGE_RIBO_INPUTS.out.genome
     ribo_fastq = LOAD_RIBOSEQ_OUTPUTS.out.ribo_fastq
-    offsets = MERGE_RIBO_INPUTS.out.offsets
+    if (params.merge_inputs) {
+        if (!params.ribometric_annotation) {
+            error 'Merged inputs require --ribometric_annotation so offsets can be recalculated on the pooled BAM'
+        }
+        ribometric_annotation = channel.value(file(params.ribometric_annotation, checkIfExists: true))
+        // A pooled BAM needs pooled QC and offsets. Do not combine offsets from
+        // the individual libraries: those offsets are library-specific.
+        RIBOMETRIC(
+            tx,
+            ribometric_annotation,
+            channel.value(file('NO_OFFSET_FILE'))
+        )
+        offsets = RIBOMETRIC.out.offsets
+    } else {
+        // In per-sample mode retain the QC-selected offsets produced upstream.
+        offsets = MERGE_RIBO_INPUTS.out.offsets
+    }
     selected_tools = params.tools.split(',').collect { it.trim().toLowerCase() }.findAll { it }
     // The upstream transcriptome BAM is already the native input for
     // Ribotricer, RiboTIE and most learned callers. Prepare legacy models

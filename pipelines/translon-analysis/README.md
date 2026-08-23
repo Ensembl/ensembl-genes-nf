@@ -76,7 +76,13 @@ The usual alignment contracts are:
   RibORF;
 - FASTQ plus ribosomal and adapter FASTAs: Rp-Bp.
 
-RibORF requires a samplesheet `offsets` column containing QC-selected offsets.
+In per-sample mode, RibORF consumes the QC-selected offsets from the
+samplesheet. In merged mode, per-sample offsets are deliberately not combined:
+the merged transcriptome BAM is first passed through RiboMetric, and RibORF
+uses the newly calculated pooled offsets. Merged runs therefore require
+`--ribometric_annotation`, pointing to the same RiboMetric annotation used by
+the Ribo-seq run. The pooled RiboMetric report and offset files are published
+under `RiboMetric/`.
 ORF-RATER requires `--orfrater_model`, a directory containing
 `orfratings.h5`, `metagene.txt`, and `offsets.txt`. iRibo, ORF-RATER, RibORF,
 and RiboTIE use configurable tool containers; the default configuration leaves
@@ -109,8 +115,11 @@ sample_b   pancreas     ...                 ...                ...         ...  
 Transcriptome and genome BAMs are always merged independently. The merge step
 stages all source BAMs and indexes, writes a source manifest, and passes the
 merged alignment to downstream callers. Without `--merge_inputs true`, each
-sample remains independent. The default generated `merge_group` is the sample
-ID, so generated sheets do not pool samples accidentally.
+sample remains independent. When merging is enabled, RiboMetric is run after
+the transcriptome BAM merge to recalculate offsets for the pooled alignment;
+the source-library offsets are retained as input provenance but are not merged.
+The default generated `merge_group` is the sample ID, so generated sheets do
+not pool samples accidentally.
 
 ## Outputs
 
@@ -124,6 +133,7 @@ The output directory uses semantic names:
   output tree;
 - `merged_inputs/<merge_group>/<transcriptome-or-genome>/`: merged BAM, BAI,
   and `merge_manifest.tsv` when merging is enabled;
+- `RiboMetric/`: pooled RiboMetric reports and offsets for merged runs;
 - `consensus_outputs/`: normalised calls, BED12 intervals, and downstream
   consensus outputs when `--run_consensus true`;
 - `pipeline_info/`: the Nextflow report, timeline, trace, and DAG.

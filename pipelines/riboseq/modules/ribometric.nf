@@ -1,6 +1,7 @@
 process RIBOMETRIC {
     tag "${meta.id}"
     label 'process_medium'
+    publishDir "${params.outdir}/RiboMetric", mode: 'copy'
 
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
     container "ghcr.io/jackcurragh/ribometric:1.4.3"
