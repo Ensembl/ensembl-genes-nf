@@ -5,7 +5,9 @@ process PREPARE_TRANSCRIPT_MODELS {
     tag "${meta.id}"
     label 'process_low'
     errorStrategy 'terminate'
-    container 'python:3.12-slim'
+    // Nextflow's task-metrics wrapper requires `ps`; the slim image omits
+    // procps, so use the full Debian runtime for this process.
+    container 'python:3.12-bookworm'
     input:
     tuple val(meta), path(bam), path(bai)
     path gtf
