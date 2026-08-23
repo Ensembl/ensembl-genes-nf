@@ -199,7 +199,10 @@ process RUN_IRIBO {
     printf '%s\n' '${bam}' > raw/riboseq_bams.txt
     iRibo --RunMode=GetCandidateORFs --Genome=${fasta} --Annotations=${gtf} --Output=raw/candidates --Threads=${threads} ${args}
     iRibo --RunMode=GenerateTranslationProfile --Genome=${fasta} --Annotations=${gtf} --Riboseq=raw/riboseq_bams.txt --CandidateORFs=raw/candidates/candidate_orfs --Output=raw/profile --Threads=${threads} ${args}
-    Rscript \$IRIBO_HOME/GenerateTranslatome.R --TranslationCalls=raw/profile/translation_calls --NullDistribution=raw/profile/null_distribution --CandidateORFs=raw/candidates/candidate_orfs --Output=raw/translatome --Threads=${threads}
+    # GenerateTranslationProfile defaults to one scramble; pass the same
+    # value here because GenerateTranslatome.R otherwise defaults to 100 and
+    # indexes non-existent scrambled1..scrambled100 columns.
+    Rscript \$IRIBO_HOME/GenerateTranslatome.R --TranslationCalls=raw/profile/translation_calls --NullDistribution=raw/profile/null_distribution --CandidateORFs=raw/candidates/candidate_orfs --Output=raw/translatome --Threads=${threads} --Scrambles=1
     test -s raw/translatome/translated_orfs.csv || { echo 'iRibo produced no native translated_orfs.csv' >&2; exit 1; }
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
