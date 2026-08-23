@@ -5,7 +5,7 @@
 process RUN_RIBOCODE {
     tag "${meta.id}"
     label 'process_medium'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     conda 'bioconda::ribocode'
     container 'quay.io/biocontainers/ribocode:1.2.15--pyhdc42f0e_1'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
@@ -29,7 +29,7 @@ process RUN_RIBOCODE {
     python ${projectDir}/bin/make_transcriptome_annotation.py \\
         --gtf ${gtf} --fasta ${fasta} \\
         --out-gtf raw/transcriptome.gtf --out-fasta raw/transcriptome.fa
-    RiboCode_onestep -g raw/transcriptome.gtf -f raw/transcriptome.fa -r ${bam} -l no -o raw/ribocode -t ${threads} ${args}
+    RiboCode_onestep -g raw/transcriptome.gtf -f raw/transcriptome.fa -r ${bam} -l no -s ATG -o raw/ribocode -t ${threads} ${args}
     test -n "\$(find raw -type f | head -1)" || { echo 'RiboCode produced no output' >&2; exit 1; }
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -47,7 +47,7 @@ process RUN_RIBOCODE {
 process RUN_RIBOTRICER {
     tag "${meta.id}"
     label 'process_single_medium'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     conda 'bioconda::ribotricer'
     container 'quay.io/biocontainers/ribotricer:1.5.0--pyhdfd78af_0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
@@ -67,7 +67,7 @@ process RUN_RIBOTRICER {
     mkdir -p raw prep
     export MPLCONFIGDIR=\$PWD/.mplconfig
     mkdir -p "\$MPLCONFIGDIR"
-    ribotricer prepare-orfs --gtf ${gtf} --fasta ${fasta} --prefix raw/orfs
+    ribotricer prepare-orfs --gtf ${gtf} --fasta ${fasta} --prefix raw/orfs --start_codons ATG
     ribotricer detect-orfs --bam ${bam} --ribotricer_index raw/orfs_candidate_orfs.tsv --prefix raw/ribotricer ${args}
     test -n "\$(find raw -type f | head -1)" || { echo 'Ribotricer produced no output' >&2; exit 1; }
     cat <<-END_VERSIONS > versions.yml
@@ -86,7 +86,7 @@ process RUN_RIBOTRICER {
 process RUN_ORFQUANT {
     tag "${meta.id}"
     label 'process_medium'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container 'ghcr.io/jackcurragh/translon-orfquant:1.1.0-txdbmaker2'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
@@ -127,7 +127,7 @@ process RUN_ORFQUANT {
 process RUN_RPBP {
     tag "${meta.id}"
     label 'process_medium'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container 'quay.io/biocontainers/rpbp:3.0.1--py310h30d9df9_0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
@@ -178,7 +178,7 @@ process RUN_RPBP {
 process RUN_IRIBO {
     tag "${meta.id}"
     label 'process_ultra_high'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container 'ghcr.io/jackcurragh/translon-iribo:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
@@ -220,7 +220,7 @@ process RUN_IRIBO {
 process RUN_ORFRATER {
     tag "${meta.id}"
     label 'process_single_high_memory'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container 'ghcr.io/jackcurragh/translon-orfrater:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
@@ -258,7 +258,7 @@ process RUN_ORFRATER {
 process RUN_RIBORF {
     tag "${meta.id}"
     label 'process_single_high_memory'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container 'ghcr.io/jackcurragh/translon-riborf:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
@@ -293,7 +293,7 @@ process RUN_RIBORF {
 process RUN_RIBOTISH {
     tag "${meta.id}"
     label 'process_medium'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container 'quay.io/biocontainers/ribotish:0.2.8--pyhdfd78af_0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
@@ -329,7 +329,7 @@ process RUN_RIBOTISH {
 process RUN_RIBOTIE {
     tag "${meta.id}"
     label 'process_high'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container params.ribotie_gpu ? \
         'ghcr.io/jackcurragh/translon-ribotie-cuda:1.0.0' : \
         'ghcr.io/jackcurragh/translon-ribotie:1.0.0'
@@ -379,7 +379,7 @@ process RUN_RIBOTIE {
 process STANDARDISE_CALLER {
     tag "${meta.id}"
     label 'process_light'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     conda 'conda-forge::python=3.11'
     // The standardiser is Python-only, but Nextflow task metrics also need
     // `ps` inside the container; the pinned tool image provides both.

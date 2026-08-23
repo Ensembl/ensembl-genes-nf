@@ -4,7 +4,7 @@
 process PREPARE_TRANSCRIPT_MODELS {
     tag "${meta.id}"
     label 'process_low'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     // Nextflow's task-metrics wrapper requires `ps`; the slim image omits
     // procps, so use the full Debian runtime for this process.
     container 'python:3.12-bookworm'
@@ -28,7 +28,7 @@ process PREPARE_TRANSCRIPT_MODELS {
 process PREPARE_RIBORF_READS {
     tag "${meta.id}"
     label 'process_low'
-    errorStrategy { task.exitStatus == 137 ? 'retry' : 'ignore' }
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     // This step uses both samtools and RibORF's offsetCorrect.pl. The
     // RibORF image provides samtools plus RIBORF_HOME; the samtools-only
     // image cannot satisfy the offset-correction contract.
