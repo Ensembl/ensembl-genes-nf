@@ -29,7 +29,10 @@ process PREPARE_RIBORF_READS {
     tag "${meta.id}"
     label 'process_low'
     errorStrategy 'terminate'
-    container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
+    // This step uses both samtools and RibORF's offsetCorrect.pl. The
+    // RibORF image provides samtools plus RIBORF_HOME; the samtools-only
+    // image cannot satisfy the offset-correction contract.
+    container 'ghcr.io/jackcurragh/translon-riborf:1.0.0'
     input:
     tuple val(meta), path(bam), path(bai), path(genepred), path(bed12), path(offsets)
     output:
