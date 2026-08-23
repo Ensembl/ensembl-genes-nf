@@ -7,34 +7,30 @@ process PUBLISH_STAR_ALIGNMENTS {
     label 'process_low'
 
     publishDir "${params.outdir}/star_align", mode: 'copy', saveAs: { filename ->
-        "${bam_type}/${meta.id}/${filename}"
+        def suffix = bam_type == 'genome'
+            ? 'Aligned.sortedByCoord.out'
+            : 'Aligned.toTranscriptome.out'
+        def published_name = filename.endsWith('.bai')
+            ? "${meta.id}.${suffix}.bam.bai"
+            : "${meta.id}.${suffix}.bam"
+        "${bam_type}/${meta.id}/${published_name}"
     }
 
     input:
     tuple val(meta), path(bam), path(bai), val(bam_type)
 
     output:
-    tuple val(meta), path('*.bam'), path('*.bai'), emit: published
+    tuple val(meta), path('published.bam'), path('published.bam.bai'), emit: published
 
     script:
-    def suffix = bam_type == 'genome'
-        ? 'Aligned.sortedByCoord.out'
-        : 'Aligned.toTranscriptome.out'
     """
-    if [ "${bam}" != "${meta.id}.${suffix}.bam" ]; then
-        cp -L ${bam} ${meta.id}.${suffix}.bam
-    fi
-    if [ "${bai}" != "${meta.id}.${suffix}.bam.bai" ]; then
-        cp -L ${bai} ${meta.id}.${suffix}.bam.bai
-    fi
+    cp -L ${bam} published.bam
+    cp -L ${bai} published.bam.bai
     """
 
     stub:
-    def suffix = bam_type == 'genome'
-        ? 'Aligned.sortedByCoord.out'
-        : 'Aligned.toTranscriptome.out'
     """
-    touch ${meta.id}.${suffix}.bam
-    touch ${meta.id}.${suffix}.bam.bai
+    touch published.bam
+    touch published.bam.bai
     """
 }
