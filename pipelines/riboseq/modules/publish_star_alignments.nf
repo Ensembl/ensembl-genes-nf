@@ -21,8 +21,12 @@ process PUBLISH_STAR_ALIGNMENTS {
         ? 'Aligned.sortedByCoord.out'
         : 'Aligned.toTranscriptome.out'
     """
-    cp -L ${bam} ${meta.id}.${suffix}.bam
-    cp -L ${bai} ${meta.id}.${suffix}.bam.bai
+    if [ "${bam}" != "${meta.id}.${suffix}.bam" ]; then
+        cp -L ${bam} ${meta.id}.${suffix}.bam
+    fi
+    if [ "${bai}" != "${meta.id}.${suffix}.bam.bai" ]; then
+        cp -L ${bai} ${meta.id}.${suffix}.bam.bai
+    fi
     """
 
     stub:
