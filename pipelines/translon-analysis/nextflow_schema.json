@@ -58,6 +58,8 @@
     "container_orfrater": {"type": ["string", "null"]},
     "container_riborf": {"type": ["string", "null"]},
     "container_ribotie": {"type": ["string", "null"]},
+    "container_ribotie_gpu": {"type": ["string", "null"], "description": "CUDA-capable RiboTIE container"},
+    "ribotie_gpu": {"type": "boolean", "default": false, "description": "Request one GPU and require a CUDA-capable RiboTIE container"},
     "args_iribo": {"type": "string", "default": ""},
     "args_orfrater": {"type": "string", "default": ""},
     "args_riborf": {"type": "string", "default": ""},

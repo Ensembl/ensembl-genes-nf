@@ -83,6 +83,10 @@ uses the newly calculated pooled offsets. Merged runs therefore require
 `--ribometric_annotation`, pointing to the same RiboMetric annotation used by
 the Ribo-seq run. The pooled RiboMetric report and offset files are published
 under `RiboMetric/`.
+
+ORFquant uses the same offset contract. Its cutoff file is generated from the
+per-sample QC offsets or the merged RiboMetric offsets, rather than from a
+fixed offset string. This keeps ORFquant aligned with the BAM being analysed.
 ORF-RATER requires `--orfrater_model`, a directory containing
 `orfratings.h5`, `metagene.txt`, and `offsets.txt`. iRibo, ORF-RATER, RibORF,
 and RiboTIE use configurable tool containers; the default configuration leaves
@@ -98,8 +102,11 @@ This skips Rp-Bp even if it is included by `--tools all`. It does not skip
 RibORF, which uses a SAM representation derived from the transcriptome BAM and
 still requires offsets.
 
-RiboTIE currently has a high-memory CPU resource profile; no GPU requirement
-is encoded in this pipeline configuration.
+RiboTIE is GPU-only in this workflow. It requires `--ribotie_gpu true`, a
+CUDA-capable `--container_ribotie_gpu`, and a Nextflow executor/profile that
+honours the one-GPU `accelerator` request. The CUDA image is scaffolded at
+`containers/Dockerfile.ribotie.cuda`; it must be built and published as the
+SIF named by the HPC config before selecting RiboTIE.
 
 ## Merging inputs
 

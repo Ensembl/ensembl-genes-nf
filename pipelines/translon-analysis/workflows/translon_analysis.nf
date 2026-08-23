@@ -100,7 +100,11 @@ workflow TRANSLON_ANALYSIS {
         STANDARDISE_RIBOTRICER(RUN_RIBOTRICER.out.raw, 'ribotricer', orf_gtf)
     }
     if (tool_selected(selected_tools, 'orfquant')) {
-        RUN_ORFQUANT(gn.ifEmpty(tx), orf_gtf, fasta)
+        orfquant_alignments = gn.ifEmpty(tx)
+            .map { meta, bam, bai -> tuple(meta.id, meta, bam, bai) }
+            .join(offsets.map { meta, offset -> tuple(meta.id, offset) }, by: 0)
+            .map { id, meta, bam, bai, offset -> tuple(meta, bam, bai, offset) }
+        RUN_ORFQUANT(orfquant_alignments, orf_gtf, fasta)
         STANDARDISE_ORFQUANT(RUN_ORFQUANT.out.raw, 'orfquant', orf_gtf)
     }
     if (tool_selected(selected_tools, 'rpbp') && !params.skip_fastq_tools) {
@@ -145,6 +149,12 @@ workflow TRANSLON_ANALYSIS {
         STANDARDISE_RIBOTISH(RUN_RIBOTISH.out.raw, 'ribotish', orf_gtf)
     }
     if (tool_selected(selected_tools, 'ribotie')) {
+        if (!params.ribotie_gpu) {
+            error 'RiboTIE requires --ribotie_gpu true and a CUDA-capable container'
+        }
+        if (!params.container_ribotie_gpu) {
+            error 'RiboTIE requires --container_ribotie_gpu pointing to a CUDA-capable container'
+        }
         RUN_RIBOTIE(published_inputs, orf_gtf, fasta)
         STANDARDISE_RIBOTIE(RUN_RIBOTIE.out.raw, 'ribotie', orf_gtf)
     }

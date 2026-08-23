@@ -35,7 +35,9 @@ The full suite needs:
 - ribo-seq FASTQ, rRNA FASTA and adapter FASTA for Rp-Bp;
 - an ORF-RATER model directory containing `orfratings.h5`,
   `metagene.txt` and `offsets.txt`;
-- a RiboTIE model/data bundle if using a non-default model or species;
+- a CUDA-capable RiboTIE image if RiboTIE is selected; the current runner
+  fine-tunes and predicts from the supplied Ribo-seq BAMs unless additional
+  arguments are supplied;
 - custom containers for iRibo, ORF-RATER, RibORF, RiboTIE, ORFquant and
   GEDI/PRICE.
 

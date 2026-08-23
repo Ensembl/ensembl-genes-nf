@@ -91,7 +91,7 @@ process RUN_ORFQUANT {
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
-    tuple val(meta), path(bam), path(bai)
+    tuple val(meta), path(bam), path(bai), path(offsets)
     path gtf
     path fasta
     output:
@@ -107,7 +107,8 @@ process RUN_ORFQUANT {
         --gtf ${gtf} --fasta ${fasta} --bam ${bam} --outdir raw \\
         --threads ${task.cpus ?: params.threads_orfquant ?: 2} \\
         --read-lengths '${params.read_lengths_orfquant}' \\
-        --psite-offsets '${params.psite_offsets_orfquant}'
+        --psite-offsets '${params.psite_offsets_orfquant}' \\
+        --psite-offsets-file ${offsets}
     test -s raw/orfquant_Detected_ORFs.gtf || { echo 'ORFquant produced no output' >&2; exit 1; }
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -326,7 +327,8 @@ process RUN_RIBOTIE {
     tag "${meta.id}"
     label 'process_high'
     errorStrategy 'terminate'
-    container params.container_ribotie
+    container params.ribotie_gpu ? params.container_ribotie_gpu : params.container_ribotie
+    accelerator 1
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -342,6 +344,12 @@ process RUN_RIBOTIE {
     def args = task.ext.args ?: params.args_ribotie ?: ''
     """
     mkdir -p raw
+    python - <<'PY'
+    import torch
+    if not torch.cuda.is_available():
+        raise SystemExit('RiboTIE requires CUDA, but torch.cuda.is_available() is false')
+    print('RiboTIE CUDA device:', torch.cuda.get_device_name(0))
+    PY
     cat > raw/ribotie.yml <<-END_CONFIG
     gtf_path: ${gtf}
     fa_path: ${fasta}

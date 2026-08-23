@@ -28,6 +28,7 @@ outdir <- get_arg("--outdir", "raw")
 threads <- as.integer(get_arg("--threads", "2"))
 read_lengths <- strsplit(get_arg("--read-lengths", "27,28,29,30"), ",", fixed = TRUE)[[1]]
 offsets <- strsplit(get_arg("--psite-offsets", "12,12,12,12"), ",", fixed = TRUE)[[1]]
+offsets_file <- get_arg("--psite-offsets-file")
 
 stopifnot(!is.null(gtf), !is.null(fasta), !is.null(bam))
 dir.create(outdir, recursive = TRUE, showWarnings = FALSE)
@@ -35,10 +36,29 @@ annotation_dir <- file.path(outdir, "annotation")
 dir.create(annotation_dir, recursive = TRUE, showWarnings = FALSE)
 
 cutoff_file <- file.path(outdir, "rl_cutoff.tsv")
-write.table(
-    data.frame(read_length = as.integer(read_lengths), cutoff = as.integer(offsets), comp = "nucl"),
-    cutoff_file, sep = "\t", quote = FALSE, row.names = FALSE
-)
+if (!is.null(offsets_file) && offsets_file != "NO_OFFSET_FILE") {
+    offset_table <- read.delim(offsets_file, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+    names(offset_table) <- tolower(names(offset_table))
+    length_col <- intersect(c("read_length", "read_len", "length"), names(offset_table))[1]
+    offset_col <- intersect(c("offset", "final_offset", "new_offset"), names(offset_table))[1]
+    if (is.na(length_col) || is.na(offset_col)) {
+        stop("ORFquant offset file must contain a read length column and an offset column")
+    }
+    cutoff_table <- data.frame(
+        read_length = as.integer(offset_table[[length_col]]),
+        cutoff = as.integer(offset_table[[offset_col]]),
+        comp = "nucl"
+    )
+    cutoff_table <- cutoff_table[complete.cases(cutoff_table), , drop = FALSE]
+    if (nrow(cutoff_table) == 0) stop("ORFquant offset file contains no usable offsets")
+} else {
+    cutoff_table <- data.frame(
+        read_length = as.integer(read_lengths),
+        cutoff = as.integer(offsets),
+        comp = "nucl"
+    )
+}
+write.table(cutoff_table, cutoff_file, sep = "\t", quote = FALSE, row.names = FALSE)
 
 annotation_files <- prepare_annotation_files(
     annotation_directory = annotation_dir,
