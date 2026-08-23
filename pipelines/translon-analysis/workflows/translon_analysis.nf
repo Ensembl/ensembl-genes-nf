@@ -79,9 +79,10 @@ workflow TRANSLON_ANALYSIS {
         if (tool_selected(selected_tools, 'riborf') && !params.samplesheet) {
             error 'RibORF requires a samplesheet with an offsets column so RiboSeq QC offsets can be converted for offsetCorrect.pl'
         }
-        caller_offsets = tool_selected(selected_tools, 'riborf')
-            ? offsets.ifEmpty { error 'RibORF requires QC-selected offsets' }
-            : channel.empty()
+        // Do not call ifEmpty here. In merged mode this channel is produced by
+        // RiboMetric, so checking it during workflow construction races the
+        // upstream process and can falsely report that offsets are missing.
+        caller_offsets = tool_selected(selected_tools, 'riborf') ? offsets : channel.empty()
         PREPARE_CALLER_INPUTS(tx, orf_gtf, caller_offsets)
         transcript_models = PREPARE_CALLER_INPUTS.out.transcript_models
         riborf_inputs = PREPARE_CALLER_INPUTS.out.riborf
