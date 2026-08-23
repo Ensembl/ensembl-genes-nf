@@ -56,7 +56,6 @@ params {{
 
     // Organism Info
     organism = "${organism}"
-    genome_version = "${version}"
 
     // Default Alignment Parameters (can be overridden)
     mismatches = 3

@@ -146,7 +146,7 @@ workflow {
             params.gget_which ?: ['dna', 'gtf']
         )
 
-        log.info "Organism setup complete. Config file generated at: ${params.outdir}/organism_setup/${params.organism}/${params.ensembl_version ?: 'custom'}/riboseq_params.config"
+        log.info "Organism setup complete. Reusable config: ${params.outdir}/pipeline_info/riboseq_params.config"
     } else {
 
     //
@@ -189,7 +189,7 @@ workflow {
                 params.gget_which ?: ['dna', 'gtf']
             )
 
-            log.info "Reference indices built. Proceeding with data processing..."
+            log.info "Reference indices built. Reusable config: ${params.outdir}/pipeline_info/riboseq_params.config"
         }
         }
 

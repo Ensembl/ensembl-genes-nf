@@ -49,6 +49,33 @@ The input-resolution table is published under
 as pipeline inputs: `-resume` is the mechanism for task reuse, while
 `storeDir` should be reserved for stable reference/cache data.
 
+## Reusing organism setup outputs
+
+When `--run_organism_setup` is used, the pipeline publishes the generated
+reference configuration at:
+
+```bash
+$OUT/pipeline_info/riboseq_params.config
+```
+
+Use that file as the `-c` input for later processing runs. It contains the
+absolute paths to the organism setup outputs; processing-specific inputs such
+as `--sample_sheet`, `--collapsed_read_path`, `--outdir`, and `--fetch` should
+still be supplied for each run.
+
+```bash
+nextflow run pipelines/riboseq/main.nf \
+  -profile slurm \
+  -resume \
+  -work-dir "$WORK" \
+  -c "$OUT/pipeline_info/riboseq_params.config" \
+  --sample_sheet "$MANIFEST" \
+  --collapsed_read_path "$OLD_COLLAPSED" \
+  --fetch false \
+  --run_matrix_mode false \
+  --outdir "$OUT"
+```
+
 ## Structure
 
 ```
