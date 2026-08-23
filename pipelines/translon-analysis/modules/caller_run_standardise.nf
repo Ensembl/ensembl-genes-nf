@@ -46,7 +46,7 @@ process RUN_RIBOCODE {
 
 process RUN_RIBOTRICER {
     tag "${meta.id}"
-    label 'process_medium'
+    label 'process_single_medium'
     errorStrategy 'terminate'
     conda 'bioconda::ribotricer'
     container 'quay.io/biocontainers/ribotricer:1.5.0--pyhdfd78af_0'
@@ -216,7 +216,7 @@ process RUN_IRIBO {
 
 process RUN_ORFRATER {
     tag "${meta.id}"
-    label 'process_medium'
+    label 'process_single_high_memory'
     errorStrategy 'terminate'
     container 'ghcr.io/jackcurragh/translon-orfrater:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
@@ -254,7 +254,7 @@ process RUN_ORFRATER {
 
 process RUN_RIBORF {
     tag "${meta.id}"
-    label 'process_medium'
+    label 'process_single_high_memory'
     errorStrategy 'terminate'
     container 'ghcr.io/jackcurragh/translon-riborf:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
