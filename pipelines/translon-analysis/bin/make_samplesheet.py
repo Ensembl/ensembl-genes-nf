@@ -5,7 +5,7 @@ import csv
 from pathlib import Path
 
 
-def discover(root):
+def discover(root, merge_group=None):
     records = {}
     for bam in root.rglob("*.bam"):
         if bam.name.endswith("Aligned.toTranscriptome.out.bam"):
@@ -19,7 +19,7 @@ def discover(root):
         record = records[sample]
         # Keep the default conservative: samples are not pooled unless the
         # user edits merge_group (for example, to a cohort or study ID).
-        row = {"sample_id": sample, "merge_group": sample}
+        row = {"sample_id": sample, "merge_group": merge_group or sample}
         for kind in ("transcriptome_bam", "genome_bam"):
             bam = record.get(kind)
             row[kind] = str(bam.resolve()) if bam else ""
@@ -38,8 +38,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--riboseq-outdir", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument(
+        "--merge-group",
+        help="Optional merge_group value to assign to every discovered sample",
+    )
     args = parser.parse_args()
-    rows = discover(args.riboseq_outdir)
+    rows = discover(args.riboseq_outdir, args.merge_group)
     if not rows:
         raise SystemExit(f"No published STAR BAMs found below {args.riboseq_outdir}")
     args.output.parent.mkdir(parents=True, exist_ok=True)

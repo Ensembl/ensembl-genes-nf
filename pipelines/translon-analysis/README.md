@@ -36,6 +36,7 @@ For a defined cohort, generate a samplesheet first:
 ```bash
 python pipelines/translon-analysis/bin/make_samplesheet.py \
   --riboseq-outdir results/riboseq \
+  --merge-group pancreas \
   --output results/riboseq_samplesheet.tsv
 
 nextflow run pipelines/translon-analysis \
