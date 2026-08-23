@@ -328,7 +328,6 @@ process RUN_RIBOTIE {
     label 'process_high'
     errorStrategy 'terminate'
     container params.ribotie_gpu ? params.container_ribotie_gpu : params.container_ribotie
-    accelerator 1
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:

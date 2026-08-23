@@ -104,9 +104,11 @@ still requires offsets.
 
 RiboTIE is GPU-only in this workflow. It requires `--ribotie_gpu true`, a
 CUDA-capable `--container_ribotie_gpu`, and a Nextflow executor/profile that
-honours the one-GPU `accelerator` request. The CUDA image is scaffolded at
+honours the explicit one-GPU SLURM GRES request. The CUDA image is scaffolded at
 `containers/Dockerfile.ribotie.cuda`; it must be built and published as the
-SIF named by the HPC config before selecting RiboTIE.
+SIF named by the HPC config before selecting RiboTIE. On SLURM, the task also
+receives `--partition`, `--gres`, and optional `--qos` values from
+`ribotie_slurm_partition`, `ribotie_slurm_gres`, and `ribotie_slurm_qos`.
 
 ## Merging inputs
 
