@@ -42,6 +42,15 @@ process PREPARE_RIBORF_READS {
         samtools: \$(samtools --version | head -n1)
     END_VERSIONS
     """
+
+    stub:
+    """
+    touch reads.sam
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        samtools: stub
+    END_VERSIONS
+    """
 }
 
 workflow PREPARE_CALLER_INPUTS {

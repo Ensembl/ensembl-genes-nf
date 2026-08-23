@@ -1,4 +1,5 @@
 include { LOAD_RIBOSEQ_OUTPUTS } from '../subworkflows/input_contract.nf'
+include { MERGE_RIBO_INPUTS } from '../modules/merge_bams.nf'
 include { PREPARE_CALLER_INPUTS } from '../subworkflows/caller_inputs.nf'
 include { RUN_RIBOCODE; RUN_RIBOTRICER; RUN_ORFQUANT; RUN_RPBP; RUN_IRIBO; RUN_ORFRATER; RUN_RIBORF; RUN_RIBOTISH; RUN_RIBOTIE; STANDARDISE_CALLER as STANDARDISE_RIBOCODE; STANDARDISE_CALLER as STANDARDISE_RIBOTRICER; STANDARDISE_CALLER as STANDARDISE_ORFQUANT; STANDARDISE_CALLER as STANDARDISE_RPBP; STANDARDISE_CALLER as STANDARDISE_IRIBO; STANDARDISE_CALLER as STANDARDISE_ORFRATER; STANDARDISE_CALLER as STANDARDISE_PRICE; STANDARDISE_CALLER as STANDARDISE_RIBORF; STANDARDISE_CALLER as STANDARDISE_RIBOTISH; STANDARDISE_CALLER as STANDARDISE_RIBOTIE } from '../modules/caller_run_standardise.nf'
 include { GEDI_INDEXGENOME } from '../../../modules/nf-core/gedi/indexgenome/main.nf'
@@ -29,7 +30,8 @@ workflow TRANSLON_ANALYSIS {
         params.transcriptome_bam_glob,
         params.genome_bam_glob,
         params.offsets_glob,
-        params.translonscorer_glob
+        params.translonscorer_glob,
+        params.merge_group
     )
 
     gtf = channel.value(file(params.gtf, checkIfExists: true))
@@ -39,8 +41,14 @@ workflow TRANSLON_ANALYSIS {
     fasta = channel.value(file(params.fasta, checkIfExists: true))
     ribosomal_fasta = params.ribosomal_fasta ? channel.value(file(params.ribosomal_fasta, checkIfExists: true)) : channel.empty()
     adapter_fasta = params.adapter_fasta ? channel.value(file(params.adapter_fasta, checkIfExists: true)) : channel.empty()
-    tx = LOAD_RIBOSEQ_OUTPUTS.out.transcriptome
-    gn = LOAD_RIBOSEQ_OUTPUTS.out.genome
+    MERGE_RIBO_INPUTS(
+        LOAD_RIBOSEQ_OUTPUTS.out.transcriptome,
+        LOAD_RIBOSEQ_OUTPUTS.out.genome,
+        params.merge_inputs,
+        params.merge_group
+    )
+    tx = MERGE_RIBO_INPUTS.out.transcriptome
+    gn = MERGE_RIBO_INPUTS.out.genome
     ribo_fastq = LOAD_RIBOSEQ_OUTPUTS.out.ribo_fastq
     offsets = LOAD_RIBOSEQ_OUTPUTS.out.offsets
     selected_tools = params.tools.split(',').collect { it.trim().toLowerCase() }.findAll { it }
@@ -76,7 +84,7 @@ workflow TRANSLON_ANALYSIS {
         RUN_ORFQUANT(gn.ifEmpty(tx), orf_gtf, fasta)
         STANDARDISE_ORFQUANT(RUN_ORFQUANT.out.raw, 'orfquant', orf_gtf)
     }
-    if (tool_selected(selected_tools, 'rpbp')) {
+    if (tool_selected(selected_tools, 'rpbp') && !params.skip_fastq_tools) {
         if (!params.ribosomal_fasta || !params.adapter_fasta) {
             error 'Rp-Bp was selected but --ribosomal_fasta and --adapter_fasta were not provided'
         }
@@ -136,7 +144,7 @@ workflow TRANSLON_ANALYSIS {
         standardized = standardized.mix(STANDARDISE_ORFQUANT.out.standardized)
         beds = beds.mix(STANDARDISE_ORFQUANT.out.bed12)
     }
-    if (tool_selected(selected_tools, 'rpbp')) {
+    if (tool_selected(selected_tools, 'rpbp') && !params.skip_fastq_tools) {
         standardized = standardized.mix(STANDARDISE_RPBP.out.standardized)
         beds = beds.mix(STANDARDISE_RPBP.out.bed12)
     }

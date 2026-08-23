@@ -14,6 +14,7 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
     genome_bam_glob
     offsets_glob
     translonscorer_glob
+    merge_group
 
     main:
     if (!riboseq_outdir && !samplesheet) {
@@ -34,7 +35,7 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
             .map { row ->
                 def bam = file(row.transcriptome_bam, checkIfExists: true)
                 def bai = row.transcriptome_bai ? file(row.transcriptome_bai, checkIfExists: true) : file("${bam}.bai", checkIfExists: true)
-                tuple([id: row.sample_id, bam_type: 'transcriptome'], bam, bai)
+                tuple([id: row.sample_id, merge_group: row.merge_group ?: row.sample_id, bam_type: 'transcriptome'], bam, bai)
             }
         : (tx_pattern
             ? channel.fromPath(tx_pattern, checkIfExists: true)
@@ -44,7 +45,7 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
             def bai = file("${bam}.bai", checkIfExists: false)
             if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai", checkIfExists: false)
             def id = bam.baseName.replaceAll(/\.Aligned\.toTranscriptome\.out$/, '')
-            tuple([id: id, bam_type: 'transcriptome'], bam, bai)
+            tuple([id: id, merge_group: merge_group, bam_type: 'transcriptome'], bam, bai)
         }
 
     genome = sheet_rows
@@ -52,7 +53,7 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
             .map { row ->
                 def bam = file(row.genome_bam, checkIfExists: true)
                 def bai = row.genome_bai ? file(row.genome_bai, checkIfExists: true) : file("${bam}.bai", checkIfExists: true)
-                tuple([id: row.sample_id, bam_type: 'genome'], bam, bai)
+                tuple([id: row.sample_id, merge_group: row.merge_group ?: row.sample_id, bam_type: 'genome'], bam, bai)
             }
         : (gn_pattern
             ? channel.fromPath(gn_pattern, checkIfExists: true)
@@ -62,7 +63,7 @@ workflow LOAD_RIBOSEQ_OUTPUTS {
             def bai = file("${bam}.bai", checkIfExists: false)
             if (!bai.exists()) bai = file("${bam.parent}/${bam.baseName}.bai", checkIfExists: false)
             def id = bam.baseName.replaceAll(/\.Aligned\.sortedByCoord\.out$/, '')
-            tuple([id: id, bam_type: 'genome'], bam, bai)
+            tuple([id: id, merge_group: merge_group, bam_type: 'genome'], bam, bai)
         }
 
     ribo_fastq = sheet_rows

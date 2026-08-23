@@ -8,6 +8,8 @@ process RUN_RIBOCODE {
     errorStrategy 'terminate'
     conda 'bioconda::ribocode'
     container params.container_ribocode
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
     tuple val(meta), path(bam), path(bai)
     path gtf
@@ -48,6 +50,8 @@ process RUN_RIBOTRICER {
     errorStrategy 'terminate'
     conda 'bioconda::ribotricer'
     container params.container_ribotricer
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
     tuple val(meta), path(bam), path(bai)
     path gtf
@@ -84,6 +88,8 @@ process RUN_ORFQUANT {
     label 'process_medium'
     errorStrategy 'terminate'
     container params.container_orfquant
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
     tuple val(meta), path(bam), path(bai)
     path gtf
@@ -122,6 +128,8 @@ process RUN_RPBP {
     label 'process_medium'
     errorStrategy 'terminate'
     container params.container_rpbp
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
     tuple val(meta), path(fastq)
     path gtf
@@ -171,6 +179,8 @@ process RUN_IRIBO {
     label 'process_medium'
     errorStrategy 'terminate'
     container params.container_iribo
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
     tuple val(meta), path(bam), path(bai)
     path gtf
@@ -198,6 +208,7 @@ process RUN_IRIBO {
     stub:
     """
     mkdir -p raw
+    printf 'stub\n' > raw/iribo_stub.tsv
     printf '"stub":\n    iRibo: stub\n' > versions.yml
     """
 }
@@ -207,6 +218,8 @@ process RUN_ORFRATER {
     label 'process_medium'
     errorStrategy 'terminate'
     container params.container_orfrater
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
     tuple val(meta), path(bam), path(bai), path(bed12)
     path gtf
@@ -233,6 +246,7 @@ process RUN_ORFRATER {
     stub:
     """
     mkdir -p raw
+    printf 'stub\n' > raw/orfrater_stub.tsv
     printf '"stub":\n    ORF-RATER: stub\n' > versions.yml
     """
 }
@@ -242,6 +256,8 @@ process RUN_RIBORF {
     label 'process_medium'
     errorStrategy 'terminate'
     container params.container_riborf
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
     tuple val(meta), path(reads_sam), path(genepred), path(bed12)
     path gtf
@@ -265,6 +281,7 @@ process RUN_RIBORF {
     stub:
     """
     mkdir -p raw
+    printf 'stub\n' > raw/riborf_stub.tsv
     printf '"stub":\n    RibORF: stub\n' > versions.yml
     """
 }
@@ -274,6 +291,8 @@ process RUN_RIBOTISH {
     label 'process_medium'
     errorStrategy 'terminate'
     container params.container_ribotish
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
     tuple val(meta), path(bam), path(bai)
     path gtf
@@ -298,6 +317,7 @@ process RUN_RIBOTISH {
     stub:
     """
     mkdir -p raw
+    printf 'stub\n' > raw/ribotish_stub.tsv
     printf '"stub":\n    RiboTISH: stub\n' > versions.yml
     """
 }
@@ -307,6 +327,8 @@ process RUN_RIBOTIE {
     label 'process_high'
     errorStrategy 'terminate'
     container params.container_ribotie
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
     tuple val(meta), path(bam), path(bai)
     path gtf
@@ -337,6 +359,7 @@ process RUN_RIBOTIE {
     stub:
     """
     mkdir -p raw
+    printf 'stub\n' > raw/ribotie_stub.tsv
     printf '"stub":\n    RiboTIE: stub\n' > versions.yml
     """
 }

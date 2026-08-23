@@ -17,7 +17,9 @@ def discover(root):
     rows = []
     for sample in sorted(records):
         record = records[sample]
-        row = {"sample_id": sample}
+        # Keep the default conservative: samples are not pooled unless the
+        # user edits merge_group (for example, to a cohort or study ID).
+        row = {"sample_id": sample, "merge_group": sample}
         for kind in ("transcriptome_bam", "genome_bam"):
             bam = record.get(kind)
             row[kind] = str(bam.resolve()) if bam else ""
@@ -41,7 +43,7 @@ def main():
     if not rows:
         raise SystemExit(f"No published STAR BAMs found below {args.riboseq_outdir}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    fields = ["sample_id", "transcriptome_bam", "transcriptome_bai", "genome_bam", "genome_bai", "ribo_fastq", "offsets"]
+    fields = ["sample_id", "merge_group", "transcriptome_bam", "transcriptome_bai", "genome_bam", "genome_bai", "ribo_fastq", "offsets"]
     for row in rows:
         row.setdefault("ribo_fastq", "")
         row.setdefault("offsets", "")

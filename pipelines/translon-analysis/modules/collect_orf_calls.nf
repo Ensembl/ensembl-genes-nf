@@ -1,6 +1,6 @@
 process COLLECT_ORF_CALLS {
     label 'process_medium'
-    publishDir "${params.outdir}/01_consensus", mode: 'copy'
+    publishDir "${params.outdir}/consensus_outputs", mode: 'copy'
 
     input:
     tuple val(meta), path(standardized_tsvs), path(bed12s)

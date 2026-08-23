@@ -3,6 +3,7 @@ process GEDI_PRICE {
     label 'process_medium'
     label 'process_long'
     errorStrategy 'terminate'
+    publishDir "${params.outdir}/native_outputs", mode: 'copy', saveAs: { filename -> "price/${meta.id}/${filename}" }
 
     conda "${moduleDir}/environment.yml"
     container "${ params.container_gedi_price ?: (workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?

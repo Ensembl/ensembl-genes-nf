@@ -12,6 +12,9 @@ params {
     threads_ribotricer: Integer = 4
     threads_orfquant: Integer = 4
     threads_rpbp: Integer = 4
+    merge_inputs: Boolean = false
+    merge_group: String = 'all'
+    skip_fastq_tools: Boolean = false
 }
 
 include { validateParameters } from 'plugin/nf-schema'
