@@ -19,9 +19,9 @@ process MERGE_RIBO_BAMS {
     script:
     """
     set -euo pipefail
-    bam_count=\$(find bams -maxdepth 1 -type f -name '*.bam' | wc -l | tr -d ' ')
-    test "\$bam_count" -gt 0 || { echo 'No BAMs supplied to MERGE_RIBO_BAMS' >&2; exit 1; }
-    samtools merge -f -@ ${task.cpus ?: 4} merged.bam bams/*.bam
+    bam_files=(bams/*.bam)
+    test -e "\${bam_files[0]}" || { echo 'No BAMs supplied to MERGE_RIBO_BAMS' >&2; exit 1; }
+    samtools merge -f -@ ${task.cpus ?: 4} merged.bam "\${bam_files[@]}"
     samtools index -@ ${task.cpus ?: 4} merged.bam
     {
         printf 'merge_group\\tbam_type\\tmerged_bam\\tsource_bam\\n'
