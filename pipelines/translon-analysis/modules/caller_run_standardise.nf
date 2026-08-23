@@ -7,7 +7,7 @@ process RUN_RIBOCODE {
     label 'process_medium'
     errorStrategy 'terminate'
     conda 'bioconda::ribocode'
-    container params.container_ribocode
+    container 'quay.io/biocontainers/ribocode:1.2.15--pyhdc42f0e_1'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -49,7 +49,7 @@ process RUN_RIBOTRICER {
     label 'process_medium'
     errorStrategy 'terminate'
     conda 'bioconda::ribotricer'
-    container params.container_ribotricer
+    container 'quay.io/biocontainers/ribotricer:1.5.0--pyhdfd78af_0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -87,7 +87,7 @@ process RUN_ORFQUANT {
     tag "${meta.id}"
     label 'process_medium'
     errorStrategy 'terminate'
-    container params.container_orfquant
+    container 'ghcr.io/jackcurragh/translon-orfquant:1.1.0-txdbmaker2'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -128,7 +128,7 @@ process RUN_RPBP {
     tag "${meta.id}"
     label 'process_medium'
     errorStrategy 'terminate'
-    container params.container_rpbp
+    container 'quay.io/biocontainers/rpbp:3.0.1--py310h30d9df9_0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -179,7 +179,7 @@ process RUN_IRIBO {
     tag "${meta.id}"
     label 'process_medium'
     errorStrategy 'terminate'
-    container params.container_iribo
+    container 'ghcr.io/jackcurragh/translon-iribo:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -218,7 +218,7 @@ process RUN_ORFRATER {
     tag "${meta.id}"
     label 'process_medium'
     errorStrategy 'terminate'
-    container params.container_orfrater
+    container 'ghcr.io/jackcurragh/translon-orfrater:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -256,7 +256,7 @@ process RUN_RIBORF {
     tag "${meta.id}"
     label 'process_medium'
     errorStrategy 'terminate'
-    container params.container_riborf
+    container 'ghcr.io/jackcurragh/translon-riborf:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -291,7 +291,7 @@ process RUN_RIBOTISH {
     tag "${meta.id}"
     label 'process_medium'
     errorStrategy 'terminate'
-    container params.container_ribotish
+    container 'quay.io/biocontainers/ribotish:0.2.8--pyhdfd78af_0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -327,7 +327,9 @@ process RUN_RIBOTIE {
     tag "${meta.id}"
     label 'process_high'
     errorStrategy 'terminate'
-    container params.ribotie_gpu ? params.container_ribotie_gpu : params.container_ribotie
+    container params.ribotie_gpu ? \
+        'ghcr.io/jackcurragh/translon-ribotie-cuda:1.0.0' : \
+        'ghcr.io/jackcurragh/translon-ribotie:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
@@ -378,7 +380,7 @@ process STANDARDISE_CALLER {
     conda 'conda-forge::python=3.11'
     // The standardiser is Python-only, but Nextflow task metrics also need
     // `ps` inside the container; the pinned tool image provides both.
-    container params.container_ribotricer
+    container 'quay.io/biocontainers/ribotricer:1.5.0--pyhdfd78af_0'
     input:
     tuple val(meta), path(rawdir)
     val tool

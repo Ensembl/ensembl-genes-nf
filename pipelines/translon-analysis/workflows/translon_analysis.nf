@@ -152,9 +152,6 @@ workflow TRANSLON_ANALYSIS {
         if (!params.ribotie_gpu) {
             error 'RiboTIE requires --ribotie_gpu true and a CUDA-capable container'
         }
-        if (!params.container_ribotie_gpu) {
-            error 'RiboTIE requires --container_ribotie_gpu pointing to a CUDA-capable container'
-        }
         RUN_RIBOTIE(published_inputs, orf_gtf, fasta)
         STANDARDISE_RIBOTIE(RUN_RIBOTIE.out.raw, 'ribotie', orf_gtf)
     }

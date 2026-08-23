@@ -88,9 +88,7 @@ ORFquant uses the same offset contract. Its cutoff file is generated from the
 per-sample QC offsets or the merged RiboMetric offsets, rather than from a
 fixed offset string. This keeps ORFquant aligned with the BAM being analysed.
 ORF-RATER requires `--orfrater_model`, a directory containing
-`orfratings.h5`, `metagene.txt`, and `offsets.txt`. iRibo, ORF-RATER, RibORF,
-and RiboTIE use configurable tool containers; the default configuration leaves
-these containers unset until they are supplied by the deployment.
+`orfratings.h5`, `metagene.txt`, and `offsets.txt`.
 
 For a BAM-only run, set:
 
@@ -102,12 +100,10 @@ This skips Rp-Bp even if it is included by `--tools all`. It does not skip
 RibORF, which uses a SAM representation derived from the transcriptome BAM and
 still requires offsets.
 
-RiboTIE is GPU-only in this workflow. It requires `--ribotie_gpu true`, a
-CUDA-capable `--container_ribotie_gpu`, and a Nextflow executor/profile that
-honours the explicit one-GPU SLURM GRES request. The CUDA image is scaffolded at
-`containers/Dockerfile.ribotie.cuda`; it must be built and published as the
-SIF named by the HPC config before selecting RiboTIE. On SLURM, the task also
-receives `--partition`, `--gres`, and optional `--qos` values from
+RiboTIE is GPU-only in this workflow. It requires `--ribotie_gpu true` and a
+Nextflow executor/profile that honours the explicit one-GPU SLURM GRES request.
+The process selects the CPU or CUDA image directly from its process definition.
+On SLURM, the task also receives `--partition`, `--gres`, and optional `--qos` values from
 `ribotie_slurm_partition`, `ribotie_slurm_gres`, and `ribotie_slurm_qos`.
 
 ## Merging inputs

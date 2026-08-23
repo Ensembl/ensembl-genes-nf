@@ -5,7 +5,7 @@ process PREPARE_TRANSCRIPT_MODELS {
     tag "${meta.id}"
     label 'process_low'
     errorStrategy 'terminate'
-    container params.container_transcript_models
+    container 'python:3.12-slim'
     input:
     tuple val(meta), path(bam), path(bai)
     path gtf
@@ -27,7 +27,7 @@ process PREPARE_RIBORF_READS {
     tag "${meta.id}"
     label 'process_low'
     errorStrategy 'terminate'
-    container params.container_samtools
+    container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
     input:
     tuple val(meta), path(bam), path(bai), path(genepred), path(bed12), path(offsets)
     output:

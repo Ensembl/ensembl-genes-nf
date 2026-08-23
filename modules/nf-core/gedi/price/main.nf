@@ -6,9 +6,7 @@ process GEDI_PRICE {
     publishDir "${params.outdir}/native_outputs", mode: 'copy', saveAs: { filename -> "price/${meta.id}/${filename}" }
 
     conda "${moduleDir}/environment.yml"
-    container "${ params.container_gedi_price ?: (workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
-        'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/cd/cd008e5721759d5909909254c77ec449778e0fc7c669b7c926b68f0c9059f510/data' :
-        'community.wave.seqera.io/library/gedi_price:2392624d5f803049') }"
+    container 'ghcr.io/jackcurragh/translon-gedi-price:1.0.0'
 
     input:
     tuple val(meta), path(bams, stageAs: 'bams/*'), path(bais, stageAs: 'bams/*')
