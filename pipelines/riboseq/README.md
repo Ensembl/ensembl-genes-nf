@@ -2,6 +2,10 @@
 
 Ribosome profiling pipeline: organism setup, data acquisition/collapsing, QC, STAR alignment (genome+transcriptome), RiboMetric + RiboWaltz, BEDGraph/BigWig, optional TrackHub, and optional TranslonScorer scoring.
 
+The final indexed STAR genome and transcriptome BAMs are published under
+`star_align/<genome|transcriptome>/<sample>/` for downstream workflows such as
+`pipelines/translon-analysis`.
+
 ## Quick Start
 
 ```bash

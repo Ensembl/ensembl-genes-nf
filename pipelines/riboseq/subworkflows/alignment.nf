@@ -8,6 +8,7 @@ include { STAR_ALIGN } from '../modules/star_align.nf'
 include { SAMTOOLS_SORT } from '../modules/samtools_sort.nf'
 include { SAMTOOLS_INDEX as SAMTOOLS_INDEX_GENOME } from '../modules/samtools_index.nf'
 include { SAMTOOLS_INDEX as SAMTOOLS_INDEX_TRANSCRIPTOME } from '../modules/samtools_index.nf'
+include { PUBLISH_STAR_ALIGNMENTS } from '../modules/publish_star_alignments.nf'
 
 workflow ALIGNMENT {
     take:
@@ -32,6 +33,15 @@ workflow ALIGNMENT {
 
     // Index sorted transcriptome BAM
     SAMTOOLS_INDEX_TRANSCRIPTOME(SAMTOOLS_SORT.out.bam)
+
+    // Publish only the final indexed STAR alignments using the conventional
+    // names consumed by downstream ORF-calling workflows.
+    PUBLISH_STAR_ALIGNMENTS(
+        SAMTOOLS_INDEX_GENOME.out.bam_and_bai.map { meta, bam, bai -> tuple(meta, bam, bai, 'genome') }
+            .mix(
+                SAMTOOLS_INDEX_TRANSCRIPTOME.out.bam_and_bai.map { meta, bam, bai -> tuple(meta, bam, bai, 'transcriptome') }
+            )
+    )
 
 
     emit:
