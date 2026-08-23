@@ -21,7 +21,7 @@ process RUN_RIBOCODE {
     task.ext.when == null || task.ext.when
     script:
     def args = task.ext.args ?: params.args_ribocode ?: ''
-    def threads = task.cpus ?: params.threads_ribocode ?: 4
+    def threads = task.cpus ?: 1
     """
     mkdir -p raw prep
     export MPLCONFIGDIR=\$PWD/.mplconfig
@@ -105,7 +105,7 @@ process RUN_ORFQUANT {
     mkdir -p raw "\$MPLCONFIGDIR"
     Rscript ${projectDir}/bin/run_orfquant.R \\
         --gtf ${gtf} --fasta ${fasta} --bam ${bam} --outdir raw \\
-        --threads ${task.cpus ?: params.threads_orfquant ?: 2} \\
+        --threads ${task.cpus ?: 1} \\
         --read-lengths '${params.read_lengths_orfquant}' \\
         --psite-offsets '${params.psite_offsets_orfquant}' \\
         --psite-offsets-file ${offsets}
@@ -159,8 +159,8 @@ process RUN_RPBP {
     ${adapter_yaml}
     riboseq_data: raw/data
     END_CONFIG
-    prepare-rpbp-genome raw/rpbp.yaml --star-options '--genomeSAindexNbases 8' --num-cpus ${task.cpus ?: params.threads_rpbp ?: 2} --logging-level INFO
-    run-all-rpbp-instances raw/rpbp.yaml --profiles-only --num-cpus ${task.cpus ?: params.threads_rpbp ?: 2} --logging-level INFO
+    prepare-rpbp-genome raw/rpbp.yaml --star-options '--genomeSAindexNbases 8' --num-cpus ${task.cpus ?: 1} --logging-level INFO
+    run-all-rpbp-instances raw/rpbp.yaml --profiles-only --num-cpus ${task.cpus ?: 1} --logging-level INFO
     test -n "\$(find raw -type f | head -1)" || { echo 'Rp-Bp produced no output' >&2; exit 1; }
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -177,7 +177,7 @@ process RUN_RPBP {
 
 process RUN_IRIBO {
     tag "${meta.id}"
-    label 'process_medium'
+    label 'process_ultra_high'
     errorStrategy 'terminate'
     container 'ghcr.io/jackcurragh/translon-iribo:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
@@ -193,7 +193,7 @@ process RUN_IRIBO {
     task.ext.when == null || task.ext.when
     script:
     def args = task.ext.args ?: params.args_iribo ?: ''
-    def threads = params.threads_iribo ?: 2
+    def threads = task.cpus ?: 2
     """
     mkdir -p raw
     printf '%s\n' '${bam}' > raw/riboseq_bams.txt
@@ -305,7 +305,7 @@ process RUN_RIBOTISH {
     task.ext.when == null || task.ext.when
     script:
     def args = task.ext.args ?: params.args_ribotish ?: ''
-    def threads = task.cpus ?: params.threads_ribotish ?: 2
+    def threads = task.cpus ?: 1
     """
     mkdir -p raw
     ribotish predict -b ${bam} -g ${gtf} -f ${fasta} -o raw/ribotish.txt --blocks --seq --aaseq -p ${threads} ${args}
