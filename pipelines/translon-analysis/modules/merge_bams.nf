@@ -5,7 +5,7 @@
 process MERGE_RIBO_BAMS {
     tag "${meta.merge_group}:${meta.bam_type}"
     label 'process_medium'
-    errorStrategy 'terminate'
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
     publishDir "${params.outdir}/merged_inputs", mode: 'copy', saveAs: { filename -> "${meta.merge_group}/${meta.bam_type}/${filename}" }
 
@@ -45,7 +45,7 @@ process MERGE_RIBO_BAMS {
 process INFLATE_UNIQUE_BAM {
     tag "${meta.merge_group ?: meta.id}:${meta.bam_type}"
     label 'process_long'
-    errorStrategy 'terminate'
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
     publishDir "${params.outdir}/inflated_inputs", mode: 'copy', saveAs: { filename -> "${meta.merge_group ?: meta.id}/${meta.bam_type}/${filename}" }
 
