@@ -48,10 +48,12 @@ danio_rerio_core_110_11,1
 
 | Statistic | Description | Example Value |
 |-----------|-------------|---------------|
-| `IsoPoint` | Isoelectric point | 19,950 |
-| `Charge` | Charge | 14,723 |
-| `MolecularWeight*` | Number of residues | varies |
-| `AvgResWeight` | Ave. residue weight | 60,670 |
+| `IsoPoint` | Isoelectric point | 10.0024 |
+| `Charge` | Charge | -0.5 |
+| `MolecularWeight` | Number of residues | 100008.72 |
+| `AvgResWeight` | Ave. residue weight | 100.092 |
+| `NumResidues` | Number of residues | 100 |
+
 
 
 ## Output Files
