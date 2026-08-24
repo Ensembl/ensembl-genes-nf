@@ -1,7 +1,7 @@
 include { LOAD_RIBOSEQ_OUTPUTS } from '../subworkflows/input_contract.nf'
 include { MERGE_RIBO_INPUTS; INFLATE_UNIQUE_BAM } from '../modules/merge_bams.nf'
 include { PREPARE_CALLER_INPUTS } from '../subworkflows/caller_inputs.nf'
-include { RUN_RIBOCODE; RUN_RIBOTRICER; RUN_ORFQUANT; RUN_RPBP; RUN_IRIBO; RUN_ORFRATER; RUN_RIBORF; RUN_RIBOTISH; RUN_RIBOTIE; STANDARDISE_CALLER as STANDARDISE_RIBOCODE; STANDARDISE_CALLER as STANDARDISE_RIBOTRICER; STANDARDISE_CALLER as STANDARDISE_ORFQUANT; STANDARDISE_CALLER as STANDARDISE_RPBP; STANDARDISE_CALLER as STANDARDISE_IRIBO; STANDARDISE_CALLER as STANDARDISE_ORFRATER; STANDARDISE_CALLER as STANDARDISE_PRICE; STANDARDISE_CALLER as STANDARDISE_RIBORF; STANDARDISE_CALLER as STANDARDISE_RIBOTISH; STANDARDISE_CALLER as STANDARDISE_RIBOTIE } from '../modules/caller_run_standardise.nf'
+include { RUN_RIBOCODE; RUN_RIBOTRICER; RUN_ORFQUANT; RUN_RPBP; RUN_IRIBO; TRAIN_ORFRATER; RUN_ORFRATER; RUN_RIBORF; RUN_RIBOTISH; RUN_RIBOTIE; STANDARDISE_CALLER as STANDARDISE_RIBOCODE; STANDARDISE_CALLER as STANDARDISE_RIBOTRICER; STANDARDISE_CALLER as STANDARDISE_ORFQUANT; STANDARDISE_CALLER as STANDARDISE_RPBP; STANDARDISE_CALLER as STANDARDISE_IRIBO; STANDARDISE_CALLER as STANDARDISE_ORFRATER; STANDARDISE_CALLER as STANDARDISE_PRICE; STANDARDISE_CALLER as STANDARDISE_RIBORF; STANDARDISE_CALLER as STANDARDISE_RIBOTISH; STANDARDISE_CALLER as STANDARDISE_RIBOTIE } from '../modules/caller_run_standardise.nf'
 include { GEDI_INDEXGENOME } from '../../../modules/nf-core/gedi/indexgenome/main.nf'
 include { GEDI_PRICE } from '../../../modules/nf-core/gedi/price/main.nf'
 include { COLLECT_ORF_CALLS } from '../modules/collect_orf_calls.nf'
@@ -131,19 +131,30 @@ workflow TRANSLON_ANALYSIS {
         STANDARDISE_IRIBO(RUN_IRIBO.out.raw, 'iribo', orf_gtf)
     }
     if (tool_selected(selected_tools, 'orfrater')) {
-        if (!params.orfrater_model) {
-            error 'ORF-RATER requires --orfrater_model containing orfratings.h5, metagene.txt and offsets.txt'
-        }
-        orfrater_model_path = file(params.orfrater_model, checkIfExists: true)
-        required_orfrater_files = ['orfratings.h5', 'metagene.txt', 'offsets.txt']
-        missing_orfrater_files = required_orfrater_files.findAll { name -> !file("${orfrater_model_path}/${name}").exists() }
-        if (missing_orfrater_files) {
-            error "ORF-RATER model directory is missing: ${missing_orfrater_files.join(', ')} (${orfrater_model_path})"
-        }
-        orfrater_model = channel.value(orfrater_model_path)
         orfrater_inputs = transcript_models
             .map { meta, bam, bai, _genepred, bed12 -> tuple(meta, bam, bai, bed12) }
-        RUN_ORFRATER(orfrater_inputs, orf_gtf, fasta, orfrater_model)
+        if (params.orfrater_model) {
+            orfrater_model_path = file(params.orfrater_model, checkIfExists: true)
+            required_orfrater_files = ['orfratings.h5', 'metagene.txt', 'offsets.txt']
+            missing_orfrater_files = required_orfrater_files.findAll { name -> !file("${orfrater_model_path}/${name}").exists() }
+            if (missing_orfrater_files) {
+                error "ORF-RATER model directory is missing: ${missing_orfrater_files.join(', ')} (${orfrater_model_path})"
+            }
+            orfrater_inputs_with_model = orfrater_inputs
+                .map { meta, bam, bai, bed12 -> tuple(meta, bam, bai, bed12, orfrater_model_path) }
+            RUN_ORFRATER(orfrater_inputs_with_model, orf_gtf, fasta)
+        } else {
+            training_inputs = transcript_models
+                .map { meta, bam, bai, _genepred, bed12 -> tuple(meta.id, meta, bam, bai, bed12) }
+                .join(offsets.map { meta, offset -> tuple(meta.id, offset) }, by: 0)
+                .map { id, meta, bam, bai, bed12, offset -> tuple(meta, bam, bai, bed12, offset) }
+            TRAIN_ORFRATER(training_inputs, fasta)
+            orfrater_inputs_with_model = orfrater_inputs
+                .map { meta, bam, bai, bed12 -> tuple(meta.id, meta, bam, bai, bed12) }
+                .join(TRAIN_ORFRATER.out.model.map { meta, model -> tuple(meta.id, model) }, by: 0)
+                .map { id, meta, bam, bai, bed12, model -> tuple(meta, bam, bai, bed12, model) }
+            RUN_ORFRATER(orfrater_inputs_with_model, orf_gtf, fasta)
+        }
         STANDARDISE_ORFRATER(RUN_ORFRATER.out.raw, 'orfrater', orf_gtf)
     }
     if (tool_selected(selected_tools, 'price')) {

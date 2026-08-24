@@ -217,6 +217,51 @@ process RUN_IRIBO {
     """
 }
 
+process TRAIN_ORFRATER {
+    tag "${meta.id}"
+    label 'process_single_high_memory'
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
+    container 'ghcr.io/jackcurragh/translon-orfrater:1.0.0'
+    publishDir "${params.outdir}/trained_models", mode: 'copy', pattern: 'model', saveAs: { filename -> "${meta.id}/${filename}" }
+    input:
+    tuple val(meta), path(bam), path(bai), path(bed12), path(offsets)
+    path fasta
+    output:
+    tuple val(meta), path('model'), emit: model
+    path 'versions.yml', emit: versions, topic: versions
+    when:
+    task.ext.when == null || task.ext.when
+    script:
+    def threads = task.cpus ?: 1
+    """
+    mkdir -p model
+    python \$ORFRATER_HOME/make_tfams.py --inbed ${bed12} --tfamstem model/tfams --force
+    python \$ORFRATER_HOME/find_orfs_and_types.py ${fasta} --tfamstem model/tfams --inbed ${bed12} --orfstore model/orf.h5 --force
+    cp ${offsets} model/offsets.txt
+    python \$ORFRATER_HOME/regress_orfs.py ${bam} \\
+        --orfstore model/orf.h5 --inbed ${bed12} --offsetfile model/offsets.txt \\
+        --regressfile model/regression.h5 --metagenefile model/metagene.txt \\
+        --numproc ${threads} --force
+    python \$ORFRATER_HOME/rate_regression_output.py model/regression.h5 \\
+        --orfstore model/orf.h5 --ratingsfile model/orfratings.h5 \\
+        --numproc ${threads} --force
+    test -s model/orfratings.h5
+    test -s model/metagene.txt
+    test -s model/offsets.txt
+    cat <<-END_VERSIONS > versions.yml
+    "\${task.process}":
+        ORF-RATER: source-pinned
+        training: dataset-specific
+    END_VERSIONS
+    """
+    stub:
+    """
+    mkdir -p model
+    touch model/orfratings.h5 model/metagene.txt model/offsets.txt
+    printf '"stub":\n    ORF-RATER: stub\n' > versions.yml
+    """
+}
+
 process RUN_ORFRATER {
     tag "${meta.id}"
     label 'process_single_high_memory'
@@ -225,10 +270,9 @@ process RUN_ORFRATER {
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'versions.yml', saveAs: { filename -> "${meta.id}/${task.process}/${filename}" }
     input:
-    tuple val(meta), path(bam), path(bai), path(bed12)
+    tuple val(meta), path(bam), path(bai), path(bed12), path(model)
     path gtf
     path fasta
-    path model
     output:
     tuple val(meta), path('raw'), emit: raw
     path 'versions.yml', emit: versions, topic: versions

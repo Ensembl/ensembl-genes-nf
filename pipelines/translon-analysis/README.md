@@ -96,8 +96,12 @@ single-copy records; malformed `_x` suffixes fail the inflation process.
 ORFquant uses the same offset contract. Its cutoff file is generated from the
 per-sample QC offsets or the merged RiboMetric offsets, rather than from a
 fixed offset string. This keeps ORFquant aligned with the BAM being analysed.
-ORF-RATER requires `--orfrater_model`, a directory containing
-`orfratings.h5`, `metagene.txt`, and `offsets.txt`.
+ORF-RATER trains a dataset-specific model by default from the inflated
+transcriptome BAM, the transcript BED12 models, the reference FASTA, and the
+pooled/per-sample P-site offsets. The trained bundle is written under
+`trained_models/` and then passed directly to ORF-RATER quantification. An
+existing model bundle can still be supplied with `--orfrater_model`; it must
+contain `orfratings.h5`, `metagene.txt`, and `offsets.txt`.
 
 For a BAM-only run, set:
 
