@@ -74,13 +74,9 @@ nav:
       - BUSCO: pipelines/statistics/workflows/busco.md
       - OMArk: pipelines/statistics/workflows/omark.md
       - Ensembl Stats: pipelines/statistics/workflows/ensembl-stats.md
+      - Pepstats: pipelines/statistics/workflows/pepstats.md
     - Modules:
           - Overview: pipelines/statistics/modules/index.md  
     - Output: pipelines/statistics/output.md
     - Troubleshooting: pipelines/statistics/troubleshooting.md
-  - Ensembl import Pipeline:
-    - Overview: pipelines/ensembl-import/index.md
-    - Inputs: pipelines/ensembl-import/inputs.md
-    - Processes: pipelines/ensembl-import/processes.md
-    - Workflows: pipelines/ensembl-import/workflows.md
 
