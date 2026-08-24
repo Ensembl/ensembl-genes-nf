@@ -378,7 +378,7 @@ process RUN_RIBOTIE {
 
 process STANDARDISE_CALLER {
     tag "${meta.id}"
-    label 'process_light'
+    label 'process_low'
     errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     conda 'conda-forge::python=3.11'
     // The standardiser is Python-only, but Nextflow task metrics also need
