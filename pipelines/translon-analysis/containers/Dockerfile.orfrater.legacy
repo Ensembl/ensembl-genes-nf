@@ -1,0 +1,29 @@
+FROM python:2.7.18-slim
+
+ARG ORFRATER_COMMIT=5ae4cd69fc845e811e9c978ddbe48b706a071061
+ARG MULTIISOTONIC_COMMIT=107a27870670212a6d981c05f8858fc33c8b0634
+
+RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+           -e 's/security.debian.org/archive.debian.org/g' \
+           -e '/stretch-updates/d' /etc/apt/sources.list \
+    && apt-get -o Acquire::Check-Valid-Until=false update \
+    && apt-get install -y --no-install-recommends \
+       git gcc g++ make bedtools zlib1g-dev libbz2-dev liblzma-dev \
+       libcurl4-openssl-dev libssl-dev libncurses5-dev \
+       libigraph0-dev pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone https://github.com/alexfields/ORF-RATER.git /opt/orfrater \
+    && cd /opt/orfrater \
+    && git checkout ${ORFRATER_COMMIT} \
+    && git clone https://github.com/alexfields/multiisotonic.git /opt/orfrater/multiisotonic \
+    && cd /opt/orfrater/multiisotonic \
+    && git checkout ${MULTIISOTONIC_COMMIT} \
+    && pip install --no-cache-dir \
+       'numpy<1.17' 'scipy<1.3' 'pysam==0.15.4' 'biopython==1.76' \
+       'pandas==0.24.2' 'tables==3.5.2' 'numexpr==2.6.9' 'scikit-learn<0.21' \
+       'pybedtools==0.8.2' 'python-igraph<0.8' \
+    && pip install --no-cache-dir --no-deps 'plastid==0.5.1'
+
+ENV ORFRATER_HOME=/opt/orfrater
+ENV PYTHONPATH=/opt/orfrater

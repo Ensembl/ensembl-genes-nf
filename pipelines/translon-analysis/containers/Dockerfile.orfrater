@@ -1,9 +1,24 @@
-FROM python:2.7.18-slim
-ARG ORFRATER_COMMIT=5ae4cd69fc845e811e9c978ddbe48b706a071061
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git gcc g++ make bedtools \
+FROM python:3.11-slim
+ARG PLASTID_COMMIT=d97f239d73b3a7c2eff46f71928b777431891f90
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends bedtools git build-essential \
+       zlib1g-dev libbz2-dev liblzma-dev libssl-dev \
     && rm -rf /var/lib/apt/lists/*
-RUN git clone https://github.com/alexfields/ORF-RATER.git /opt/orfrater \
-    && cd /opt/orfrater && git checkout ${ORFRATER_COMMIT} \
-    && pip install --no-cache-dir numpy scipy pysam biopython pandas tables scikit-learn pybedtools plastid
+
+COPY pipelines/translon-analysis/containers/orfrater/ /opt/orfrater/
+RUN pip install --no-cache-dir 'setuptools<81' \
+    && pip install --no-cache-dir --no-build-isolation --requirement /opt/orfrater/requirements.txt \
+    && git clone https://github.com/joshuagryphon/plastid.git /tmp/plastid \
+    && cd /tmp/plastid \
+    && git checkout ${PLASTID_COMMIT} \
+    && sed -i -e 's/np\.long_t/np.int64_t/g' -e 's/numpy\.long_t/numpy.int64_t/g' \
+       plastid/genomics/map_factories.pyx plastid/genomics/roitools.pyx \
+    && find plastid -type f \( -name '*.py' -o -name '*.pyx' \) -exec sed -i -E 's/(numpy|np)\.(int|float|bool)\b/\2/g' {} + \
+    && sed -i -e 's/sd = NULL/sd = -1/g' -e 's/ci->socket = NULL/ci->socket = -1/g' kent/src/lib/udc.c \
+    && python setup.py build_ext --recythonize --inplace \
+    && pip install --no-cache-dir --no-build-isolation . \
+    && pip install --no-cache-dir 'setuptools<81'
+
 ENV ORFRATER_HOME=/opt/orfrater
+ENV PYTHONPATH=/opt/orfrater

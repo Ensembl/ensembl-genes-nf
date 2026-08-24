@@ -1,0 +1,12 @@
+# Python 3 runtime for the parity port of ORF-RATER commit
+# 5ae4cd69fc845e811e9c978ddbe48b706a071061.
+numpy==1.26.4
+cython==0.29.37
+scipy==1.13.1
+pandas==2.2.2
+pysam==0.22.1
+biopython==1.83
+tables==3.9.2
+scikit-learn==1.5.1
+pybedtools==0.10.0
+igraph==0.11.6

@@ -4,5 +4,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends git gcc g++ \
     && rm -rf /var/lib/apt/lists/*
 RUN git clone https://github.com/TRISTAN-ORF/RiboTIE.git /opt/ribotie \
     && cd /opt/ribotie && git checkout ${RIBOTIE_COMMIT} \
+    && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.4.1 \
     && pip install --no-cache-dir transcript-transformer
 ENV PATH=/opt/ribotie:$PATH
