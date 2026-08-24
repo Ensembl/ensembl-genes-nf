@@ -25,6 +25,10 @@ def tool_selected(selected_tools, name) {
 }
 
 workflow TRANSLON_ANALYSIS {
+    ribotie_gpu_enabled = params.ribotie_gpu instanceof Boolean
+        ? params.ribotie_gpu
+        : params.ribotie_gpu.toString().toBoolean()
+
     LOAD_RIBOSEQ_OUTPUTS(
         params.riboseq_outdir,
         params.samplesheet,
@@ -130,7 +134,13 @@ workflow TRANSLON_ANALYSIS {
         if (!params.orfrater_model) {
             error 'ORF-RATER requires --orfrater_model containing orfratings.h5, metagene.txt and offsets.txt'
         }
-        orfrater_model = channel.value(file(params.orfrater_model, checkIfExists: true))
+        orfrater_model_path = file(params.orfrater_model, checkIfExists: true)
+        required_orfrater_files = ['orfratings.h5', 'metagene.txt', 'offsets.txt']
+        missing_orfrater_files = required_orfrater_files.findAll { name -> !file("${orfrater_model_path}/${name}").exists() }
+        if (missing_orfrater_files) {
+            error "ORF-RATER model directory is missing: ${missing_orfrater_files.join(', ')} (${orfrater_model_path})"
+        }
+        orfrater_model = channel.value(orfrater_model_path)
         orfrater_inputs = transcript_models
             .map { meta, bam, bai, _genepred, bed12 -> tuple(meta, bam, bai, bed12) }
         RUN_ORFRATER(orfrater_inputs, orf_gtf, fasta, orfrater_model)
@@ -157,7 +167,7 @@ workflow TRANSLON_ANALYSIS {
         STANDARDISE_RIBOTISH(RUN_RIBOTISH.out.raw, 'ribotish', orf_gtf)
     }
     if (tool_selected(selected_tools, 'ribotie')) {
-        if (!params.ribotie_gpu) {
+        if (!ribotie_gpu_enabled) {
             error 'RiboTIE requires --ribotie_gpu true and a CUDA-capable container'
         }
         RUN_RIBOTIE(published_inputs, orf_gtf, fasta)

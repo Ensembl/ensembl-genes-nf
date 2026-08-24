@@ -330,7 +330,7 @@ process RUN_RIBOTIE {
     tag "${meta.id}"
     label 'process_high'
     errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
-    container params.ribotie_gpu ? \
+    container params.ribotie_gpu.toString().toBoolean() ? \
         'ghcr.io/jackcurragh/translon-ribotie-cuda:1.0.0' : \
         'ghcr.io/jackcurragh/translon-ribotie:1.0.0'
     publishDir "${params.outdir}/native_outputs", mode: 'copy', pattern: 'raw', saveAs: { filename -> "${meta.id}/${task.process}/raw" }

@@ -36,7 +36,7 @@
     "command_orfquant": {"type": ["string", "null"]},
     "command_rpbp": {"type": ["string", "null"]},
     "args_ribotish": {"type": "string", "default": ""},
-    "ribotie_gpu": {"type": "boolean", "default": false, "description": "Request one GPU and use the process-local CUDA RiboTIE container"},
+    "ribotie_gpu": {"type": ["boolean", "string"], "default": false, "description": "Request one GPU and use the process-local CUDA RiboTIE container"},
     "ribotie_slurm_partition": {"type": ["string", "null"], "default": "gpu", "description": "SLURM partition for RiboTIE"},
     "ribotie_slurm_gres": {"type": ["string", "null"], "default": "gpu:1", "description": "SLURM GRES request for RiboTIE, for example gpu:1 or gpu:a100:1"},
     "ribotie_slurm_qos": {"type": ["string", "null"], "description": "Optional SLURM QoS for RiboTIE"},
