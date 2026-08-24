@@ -21,10 +21,9 @@ process FETCH_REFSEQ {
 
     script:
     def args = task.ext.args ?: ''
-    def script = "${params.ensembl_genes_repo}/src/python/ensembl/genes/ensembl_loading/gff_cli.py"
 
     """
-    python ${script} \
+    gff-loader \
         --log-file gff-loader.log \
         refseq \
         run \
@@ -35,7 +34,8 @@ process FETCH_REFSEQ {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version 2>&1 | awk '{print \$2}')
-        gff_cli.py: unknown
+        ensembl-genes: \$(python -c 'from importlib.metadata import version; print(version("ensembl-genes"))')
+
     END_VERSIONS
     """
 
@@ -49,7 +49,7 @@ process FETCH_REFSEQ {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: stub
-        gff_cli.py: stub
+        ensembl-genes: stub
     END_VERSIONS
     """
 }

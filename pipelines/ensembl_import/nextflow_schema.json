@@ -15,11 +15,6 @@
       "format": "file-path",
       "description": "Path to the server settings file"
     },
-    "ensembl_genes_repo": {
-      "type": "string",
-      "format": "directory-path",
-      "description": "Path to a local ensembl-genes checkout"
-    },
     "outdir": {
       "type": "string",
       "default": "./results",
@@ -32,7 +27,6 @@
   },
   "required": [
     "input_csv",
-    "ensembl_genes_repo",
     "server_settings"
   ]
 }

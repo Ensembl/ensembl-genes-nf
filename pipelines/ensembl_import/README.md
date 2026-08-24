@@ -9,9 +9,7 @@ CSV for the statistics pipeline.
 
 - Nextflow `26.04.0` or a compatible 26.x release
 - Singularity for normal execution
-- A local checkout of `ensembl-genes` containing:
-  - `src/python/ensembl/genes/ensembl_loading/gff_cli.py`
-  - `src/python/ensembl/genes/metadata/core_metadata.py`
+- A local installation of `ensembl-genes`
 - Network access to RefSeq and NCBI for non-stub runs
 - MySQL access to the target server
 
@@ -41,11 +39,11 @@ Pass a JSON file with `--server_settings`:
 
 ```json
 {
-  "db_host": "mysql.example.org",
-  "db_port": 3306,
-  "db_user": "writeuser",
-  "db_password": "secret",
-  "db_read_user": "readuser"
+    "db_host": "mysql.example.org",
+    "db_port": 3306,
+    "db_user": "writeuser",
+    "db_password": "secret",
+    "db_read_user": "readuser"
 }
 ```
 
@@ -60,7 +58,6 @@ The pipeline entrypoint is `main.nf`. From the repository root:
 nextflow run pipelines/ensembl_import/main.nf \
   --input_csv /path/to/assemblies.csv \
   --server_settings /path/to/server_settings.json \
-  --ensembl_genes_repo /path/to/ensembl-genes \
   --outdir /path/to/results
 ```
 
@@ -72,7 +69,6 @@ nextflow run pipelines/ensembl_import/main.nf \
   -stub-run \
   --input_csv /path/to/assemblies.csv \
   --server_settings /path/to/server_settings.json \
-  --ensembl_genes_repo /path/to/ensembl-genes \
   --outdir /tmp/ensembl_import_results
 ```
 
@@ -104,7 +100,7 @@ Each assembly is processed independently.
 3. `GET_SAMPLE_GENE` selects and inserts sample gene metadata.
 4. `ADD_STATIC_METAKEYS` inserts configured static metadata keys.
 5. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
-  core database.
+   core database.
 6. `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
 
 ## Outputs
@@ -141,3 +137,42 @@ The parameter schema is in
 in [`assets/schema_input.json`](assets/schema_input.json).
 
 The registry update modules are not part of the runnable import workflow yet.
+
+## Next steps
+Run the statistics pipeline on the output CSV to generate statistics for handover.
+
+Create a params file with all the analyses you wish to run. 
+For handover, you want to run all analyses.
+
+```bash
+{
+  "csvFile": "/path/to/statistics_input.csv",
+  "outdir": "stats_out",
+  "run_busco_core": true,
+  "busco_mode": "both",
+  "apply_busco_metakeys": true,
+  "run_ensembl_stats": true,
+  "apply_ensembl_stats": true,
+  "run_ensembl_beta_metakeys": true,
+  "apply_ensembl_beta_metakeys": true,
+  "run_pepstats": true,
+  "team": "genebuild"
+  "host": "",
+  "port": ,
+  "user": "",
+  "user_r": "",
+  "password": "",
+  "enscode": "/path/to/enscode"
+}
+```
+
+Once you have a params file, you can run the statistics pipeline.
+
+```bash
+cd statistics_input
+
+nextflow run pipelines/statistics/main.nf \
+  -params-file /path/to/stats_params.json
+```
+
+## Run production sync as normal
