@@ -1,5 +1,5 @@
 include { LOAD_RIBOSEQ_OUTPUTS } from '../subworkflows/input_contract.nf'
-include { MERGE_RIBO_INPUTS } from '../modules/merge_bams.nf'
+include { MERGE_RIBO_INPUTS; INFLATE_UNIQUE_BAM } from '../modules/merge_bams.nf'
 include { PREPARE_CALLER_INPUTS } from '../subworkflows/caller_inputs.nf'
 include { RUN_RIBOCODE; RUN_RIBOTRICER; RUN_ORFQUANT; RUN_RPBP; RUN_IRIBO; RUN_ORFRATER; RUN_RIBORF; RUN_RIBOTISH; RUN_RIBOTIE; STANDARDISE_CALLER as STANDARDISE_RIBOCODE; STANDARDISE_CALLER as STANDARDISE_RIBOTRICER; STANDARDISE_CALLER as STANDARDISE_ORFQUANT; STANDARDISE_CALLER as STANDARDISE_RPBP; STANDARDISE_CALLER as STANDARDISE_IRIBO; STANDARDISE_CALLER as STANDARDISE_ORFRATER; STANDARDISE_CALLER as STANDARDISE_PRICE; STANDARDISE_CALLER as STANDARDISE_RIBORF; STANDARDISE_CALLER as STANDARDISE_RIBOTISH; STANDARDISE_CALLER as STANDARDISE_RIBOTIE } from '../modules/caller_run_standardise.nf'
 include { GEDI_INDEXGENOME } from '../../../modules/nf-core/gedi/indexgenome/main.nf'
@@ -49,8 +49,16 @@ workflow TRANSLON_ANALYSIS {
         params.merge_inputs,
         params.merge_group
     )
-    tx = MERGE_RIBO_INPUTS.out.transcriptome
-    gn = MERGE_RIBO_INPUTS.out.genome
+    // Input BAMs contain one record per unique sequence, with abundance in
+    // the read-name suffix (_xN). Inflate both coordinate systems before any
+    // caller or pooled QC sees the alignments.
+    inflated_inputs = MERGE_RIBO_INPUTS.out.transcriptome
+        .mix(MERGE_RIBO_INPUTS.out.genome)
+    INFLATE_UNIQUE_BAM(inflated_inputs)
+    tx = INFLATE_UNIQUE_BAM.out.inflated
+        .filter { meta, bam, bai -> meta.bam_type == 'transcriptome' }
+    gn = INFLATE_UNIQUE_BAM.out.inflated
+        .filter { meta, bam, bai -> meta.bam_type == 'genome' }
     ribo_fastq = LOAD_RIBOSEQ_OUTPUTS.out.ribo_fastq
     if (params.merge_inputs) {
         if (!params.ribometric_annotation) {

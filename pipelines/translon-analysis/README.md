@@ -84,6 +84,15 @@ uses the newly calculated pooled offsets. Merged runs therefore require
 the Ribo-seq run. The pooled RiboMetric report and offset files are published
 under `RiboMetric/`.
 
+### Collapsed-read BAMs
+
+The input BAMs may contain one alignment per unique sequence, with observed
+read multiplicity encoded in the read name as a suffix such as `_x2` or
+`_x15`. The pipeline inflates both transcriptome and genome BAMs immediately
+after the merge/input step so every downstream caller sees one alignment
+record per sequenced read. BAMs without a multiplicity suffix are treated as
+single-copy records; malformed `_x` suffixes fail the inflation process.
+
 ORFquant uses the same offset contract. Its cutoff file is generated from the
 per-sample QC offsets or the merged RiboMetric offsets, rather than from a
 fixed offset string. This keeps ORFquant aligned with the BAM being analysed.

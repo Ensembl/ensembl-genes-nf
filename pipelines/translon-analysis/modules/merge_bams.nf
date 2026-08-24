@@ -38,6 +38,46 @@ process MERGE_RIBO_BAMS {
     """
 }
 
+/* The upstream BAMs are sequence-collapsed: a read name ending in _xN
+ * represents N copies of the same sequenced read.  Callers must see one
+ * alignment record per sequenced read, so expand that multiplicity before any
+ * downstream analysis. */
+process INFLATE_UNIQUE_BAM {
+    tag "${meta.merge_group ?: meta.id}:${meta.bam_type}"
+    label 'process_long'
+    errorStrategy 'terminate'
+    container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
+    publishDir "${params.outdir}/inflated_inputs", mode: 'copy', saveAs: { filename -> "${meta.merge_group ?: meta.id}/${meta.bam_type}/${filename}" }
+
+    input:
+    tuple val(meta), path(bam), path(bai)
+
+    output:
+    tuple val(meta), path('inflated.bam'), path('inflated.bam.bai'), emit: inflated
+    path 'inflation_manifest.tsv', emit: manifest
+
+    script:
+    """
+    set -euo pipefail
+    samtools view -h ${bam} \\
+        | awk -v manifest=inflation_manifest.tsv -f ${projectDir}/bin/inflate_sam.awk \\
+        | samtools sort -@ ${task.cpus ?: 4} -m 2G -o inflated.bam -
+    samtools index -@ ${task.cpus ?: 4} inflated.bam
+    expected=\$(awk -F '\\t' '\$1 == "inflated_alignments" { print \$2 }' inflation_manifest.tsv)
+    actual=\$(samtools view -c inflated.bam)
+    test -n "\$expected" && test "\$expected" -eq "\$actual" || {
+        echo "Inflated BAM count mismatch: manifest=\$expected BAM=\$actual" >&2
+        exit 1
+    }
+    """
+
+    stub:
+    """
+    touch inflated.bam inflated.bam.bai
+    printf 'metric\\tvalue\\nsource_alignments\\t0\\ninflated_alignments\\t0\\nsuffixed_alignments\\t0\\n' > inflation_manifest.tsv
+    """
+}
+
 workflow MERGE_RIBO_INPUTS {
     take:
     transcriptome
