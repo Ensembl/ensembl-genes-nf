@@ -45,6 +45,8 @@ Finally, we run BUSCO in the selected mode(s) and populate the core database wit
 workflow RUN_BUSCO {
     take:
     csvFile
+    protein_input
+    use_shared_proteins
 
     main:
     def data
@@ -121,11 +123,21 @@ workflow RUN_BUSCO {
     }
 
     if (busco_mode.contains('protein')) {
-        def proteinData = FETCH_PROTEINS(dataset_db).fasta_file_output
-            .map { meta, fasta_file ->
+        def proteinData
+        if (use_shared_proteins) {
+            proteinData = protein_input
+                .map { meta, fasta_file -> tuple(meta.dbname, fasta_file) }
+                .join(dataset_db.map { meta -> tuple(meta.dbname, meta) })
+                .map { row -> tuple(row[2], row[1]) }
+        } else {
+            proteinData = FETCH_PROTEINS(dataset_db).fasta_file_output
+        }
+        proteinData = proteinData.map { meta, fasta_file ->
                 return tuple(meta + [busco_mode: 'protein'], fasta_file)
-            }
-        ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
+        }
+        if (!use_shared_proteins) {
+            ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
+        }
 
         buscoInput = buscoInput != null ? buscoInput.mix(proteinData) : proteinData
     }

@@ -29,7 +29,7 @@ process BUSCO_CORE_METAKEYS {
     label 'python'
     tag "${meta.gca}"
     cache false
-    publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
+    publishDir { "${params.outdir}/${meta.gca}" }, mode: 'copy'
     afterScript "sleep ${params.files_latency}"
 
     input:

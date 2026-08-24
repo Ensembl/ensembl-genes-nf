@@ -27,7 +27,7 @@ process OMARK {
     label 'omamer'
     tag "${meta.gca}"
 
-    publishDir "${params.outdir}/${meta.gca}", mode: 'copy'
+    publishDir { "${params.outdir}/${meta.gca}" }, mode: 'copy'
     afterScript "sleep ${params.files_latency}"
     // Needed because of file system latency
     maxForks 15
