@@ -39,16 +39,6 @@ workflow GET_METADATA_CORE {
             tuple(meta, static_marker)
         }
 
-        //GET_METADATA(
-        //    metadata_post_static,
-        //    db_write_config_ch
-        //)
-
-        //LOAD_METADATA(
-        //    GET_METADATA.out.sql,
-        //    db_write_config_ch
-        //)
-
         LOAD_TAXONOMY(
             metadata_post_static,
             db_config_ch
@@ -56,13 +46,9 @@ workflow GET_METADATA_CORE {
 
         versions_ch = GET_SAMPLE_GENE.out.versions
             .mix(ADD_STATIC_METAKEYS.out.versions)
-            //.mix(GET_METADATA.out.versions)
-            //.mix(LOAD_METADATA.out.versions)
             .mix(LOAD_TAXONOMY.out.versions)
 
     emit:
-        //metadata_sql = GET_METADATA.out.sql
-        //loaded_metadata = LOAD_METADATA.out.loaded
         taxonomy_loaded = LOAD_TAXONOMY.out.taxonomy
         versions = versions_ch
     }
