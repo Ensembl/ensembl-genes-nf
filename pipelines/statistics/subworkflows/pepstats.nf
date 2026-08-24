@@ -1,5 +1,5 @@
 include { DB_METADATA } from '../modules/db_metadata.nf'
-include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
+include { FETCH_PROTEINS_ALL } from '../modules/fetch_proteins.nf'
 include { RUN_PEPSTATS } from '../modules/run_pepstats.nf'
 include { PARSE_PEPSTATS } from '../modules/parse_pepstats.nf'
 
@@ -34,14 +34,14 @@ workflow PEPSTATS {
         ]
     }
 
-    proteins = FETCH_PROTEINS(metadata).fasta_file_output
+    proteins = FETCH_PROTEINS_ALL(metadata).fasta_file_output
     pepstats = RUN_PEPSTATS(proteins).pepstats_output
     PARSE_PEPSTATS(pepstats)
 
     emit:
     proteins = proteins
     versions = DB_METADATA.out.versions_file
-        .mix(FETCH_PROTEINS.out.versions_file)
+        .mix(FETCH_PROTEINS_ALL.out.versions_file)
         .mix(RUN_PEPSTATS.out.versions_file)
         .mix(PARSE_PEPSTATS.out.versions)
 }

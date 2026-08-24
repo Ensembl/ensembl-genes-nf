@@ -76,13 +76,7 @@ workflow {
     }
 
     if (params.run_busco_core || params.run_busco_ncbi) {
-        def share_proteins = params.run_pepstats && params.run_busco_core &&
-            (params.busco_mode == 'protein' || params.busco_mode == 'both')
-        RUN_BUSCO(
-            params.csvFile,
-            share_proteins ? PEPSTATS.out.proteins : channel.empty(),
-            share_proteins
-        )
+        RUN_BUSCO(params.csvFile)
     }
 
     if (params.run_omark) {
