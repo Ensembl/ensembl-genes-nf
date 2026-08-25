@@ -5,11 +5,43 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, Sequence
 
 import pymysql
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def mysql_connection(
+    database: str,
+    host: str,
+    port: int,
+    user: str,
+    password: str = "",
+) -> Iterator[pymysql.connections.Connection]:
+    """Open a MySQL connection and close it safely after use.
+
+    Transactions remain controlled by the caller. Unhandled exceptions roll
+    back the current transaction before the connection is closed.
+    """
+    conn = pymysql.connect(
+        host=host,
+        user=user,
+        password=password,
+        port=port,
+        database=database.strip(),
+        autocommit=False,
+    )
+    try:
+        yield conn
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def mysql_fetch_data(

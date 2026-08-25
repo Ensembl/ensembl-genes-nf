@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-from typing import List, Tuple
 
 from _mysq_helper import mysql_execute_query, mysql_fetch_data
 from Bio import Entrez
@@ -60,7 +59,7 @@ def get_species_taxonomy_meta_from_ncbi(
         raise ValueError(f"No taxonomy record found in NCBI for taxon_id {taxon_id}")
 
     rec = records[0]
-    meta_pairs: List[Tuple[str, str]] = [("species.taxonomy_id", str(taxon_id))]
+    meta_pairs: list[tuple[str, str]] = [("species.taxonomy_id", str(taxon_id))]
 
     scientific_name = rec.get("ScientificName")
     if scientific_name:

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Select and store the sample location metadata for a core database.
 
 This follows the selection rules used by Ensembl's
@@ -11,9 +10,10 @@ from __future__ import annotations
 import argparse
 import logging
 from dataclasses import dataclass
-from typing import Optional, Sequence
+from typing import Sequence
 
 import pymysql
+from _mysq_helper import mysql_connection
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ def longest_seq_regions(connection: pymysql.connections.Connection) -> Sequence[
 
 def select_supported_transcript(
     connection: pymysql.connections.Connection, seq_region_id: int
-) -> Optional[SampleGene]:
+) -> SampleGene | None:
     """Select the first supported protein-coding transcript on a region."""
     query = """
         SELECT g.stable_id, t.stable_id, sr.name,
@@ -79,9 +79,7 @@ def select_supported_transcript(
     return SampleGene(*row) if row else None
 
 
-def select_largest_gene(
-    connection: pymysql.connections.Connection, seq_region_id: int
-) -> Optional[SampleGene]:
+def select_largest_gene(connection: pymysql.connections.Connection, seq_region_id: int) -> SampleGene | None:
     """Select the protein-coding gene with the most exons on a region."""
     query = """
         SELECT g.stable_id, t.stable_id, sr.name,
@@ -168,20 +166,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args = parse_args()
-    connection = pymysql.connect(
-        host=args.host,
-        port=args.port,
-        user=args.user,
-        password=args.password,
-        database=args.db_name,
-        autocommit=False,
-    )
-    try:
+    with mysql_connection(args.db_name, args.host, args.port, args.user, args.password) as connection:
         sample_gene = choose_sample_gene(connection)
         store_sample_metadata(connection, sample_gene, args.species_id)
         LOGGER.info("Stored sample metadata for %s (%s)", sample_gene.gene_stable_id, sample_gene.location)
-    finally:
-        connection.close()
 
 
 if __name__ == "__main__":

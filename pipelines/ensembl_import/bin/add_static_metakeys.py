@@ -3,7 +3,7 @@
 import argparse
 import json
 
-import pymysql
+from _mysq_helper import mysql_connection
 
 
 def parse_json(json_file: str) -> dict:
@@ -23,15 +23,7 @@ def add_metakeys(
 
     metakeys = data[source]
 
-    conn = pymysql.connect(
-        host=db_host,
-        user=db_user,
-        password=db_password,
-        database=db_name,
-        port=db_port,
-    )
-
-    try:
+    with mysql_connection(db_name, db_host, db_port, db_user, db_password) as conn:
         with conn.cursor() as cursor:
             for meta_key, meta_value in metakeys.items():
                 cursor.execute(
@@ -42,8 +34,6 @@ def add_metakeys(
                     (1, meta_key, meta_value),
                 )
         conn.commit()
-    finally:
-        conn.close()
 
     print(f"Added {len(metakeys)} metakeys for '{source}'.")
 
