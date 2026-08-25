@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ensembl Import Pipeline Parameters",
+  "description": "Parameter schema for the Ensembl import pipeline",
+  "type": "object",
+  "properties": {
+    "input_csv": {
+      "type": "string",
+      "format": "file-path",
+      "schema": "assets/schema_input.json",
+      "description": "Path to the input CSV file"
+    },
+    "server_settings": {
+      "type": "string",
+      "format": "file-path",
+      "description": "Path to the server settings file"
+    },
+    "outdir": {
+      "type": "string",
+      "default": "./results",
+      "description": "Output directory"
+    },
+    "tracedir": {
+      "type": "string",
+      "description": "Directory for Nextflow execution reports"
+    }
+  },
+  "required": [
+    "input_csv",
+    "server_settings"
+  ]
+}
