@@ -7,7 +7,7 @@ workflow INSTANCE_CONTEXT {
 
     main:
     REGULATORY_GEOMETRY(instances)
-    requests = instances.combine(Channel.of('expression_context'))
+    requests = instances.combine(channel.of('expression_context'))
         .map { meta, file, axis -> tuple(meta, axis, file) }
     TYPED_AXIS(requests)
 

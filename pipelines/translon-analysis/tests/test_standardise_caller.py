@@ -1,4 +1,5 @@
 import csv
+import json
 import subprocess
 import sys
 import tempfile
@@ -22,9 +23,12 @@ class StandardiseCallerTest(unittest.TestCase):
                 gtf.write_text(gtf_content)
             tsv = root / "S1.tsv"
             bed = root / "S1.bed12"
+            status = root / "S1.status.json"
             subprocess.run([
                 sys.executable, str(SCRIPT), "--raw", str(raw), "--tool", tool,
                 "--sample", "S1", "--output", str(tsv), "--bed12", str(bed),
+                "--status", str(status), "--requested-start-codons", "ATG,CTG",
+                "--requested-stop-codons", "TAA,TAG,TGA",
                 *( ["--gtf", str(gtf)] if gtf else [] ),
             ], check=True)
             with tsv.open() as handle:
@@ -33,6 +37,9 @@ class StandardiseCallerTest(unittest.TestCase):
             self.assertEqual(rows[0]["tool"], tool)
             self.assertEqual(rows[0]["chrom"], "chr1")
             self.assertEqual(len(bed.read_text().splitlines()[0].split("\t")), 12)
+            metadata = json.loads(rows[0]["extra_json"])
+            self.assertEqual(metadata["requested_start_codons"], "ATG,CTG")
+            self.assertEqual(json.loads(status.read_text())["status"], "ok")
 
     def test_bed_callers(self):
         self.run_standardiser("rpbp", "calls.bed", "chr1\t10\t40\tORF1\t+\t12\n")
@@ -74,6 +81,16 @@ class StandardiseCallerTest(unittest.TestCase):
         content = "Id\tLocation\tType\tp value\tGene\n"
         content += "ENST0001_iORF_1\tchr1+:101-130|151-180\tiORF\t0.001\tGENE1\n"
         self.run_standardiser("price", "price.orfs.tsv", content)
+
+    def test_native_iribo_csv(self):
+        content = "id,chrom,start,end,strand,start_codon,score\n"
+        content += "IR1,chr1,10,40,+,CTG,0.9\n"
+        self.run_standardiser("iribo", "translated_orfs.csv", content)
+
+    def test_native_ribotie_gff3(self):
+        content = "##gff-version 3\n"
+        content += "chr1\tRiboTIE\tORF\t11\t40\t0.8\t+\t0\tID=RT1;start_codon=GTG\n"
+        self.run_standardiser("ribotie", "predictions.gff3", content)
 
     def test_transcript_coordinates_project_to_genome_blocks(self):
         content = "transcript_id\tstart\tend\tframe\tscore\nTX1\t0\t15\t0\t5\n"

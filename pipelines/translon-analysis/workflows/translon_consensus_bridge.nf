@@ -13,7 +13,7 @@ workflow TRANSLON_CONSENSUS_BRIDGE {
     grouped = renamed
         .map { meta, file -> tuple(meta.id, file) }
         .groupTuple()
-        .map { id, files -> tuple([id: id], files.sort { it.name }) }
+        .map { id, files -> tuple([id: id], files.sort { file -> file.name }) }
 
     CREATE_SAMPLESHEET(grouped)
     REPORT_CONSENSUS(

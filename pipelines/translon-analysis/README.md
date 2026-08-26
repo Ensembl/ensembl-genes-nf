@@ -119,6 +119,18 @@ The process selects the CPU or CUDA image directly from its process definition.
 On SLURM, the task also receives `--partition`, `--gres`, and optional `--qos` values from
 `ribotie_slurm_partition`, `ribotie_slurm_gres`, and `ribotie_slurm_qos`.
 
+ORF-RATER training is split into resumable `MAKE_ORFRATER_TFAMS`,
+`FIND_ORFRATER_ORFS`, `REGRESS_ORFRATER`, and `RATE_ORFRATER` processes. Training
+remains per sample until shard-level model equivalence has been demonstrated.
+
+`bin/make_partition_manifest.py` provides the partitioning foundation. It emits
+transcriptome partitions from BED12 records or genome windows from a FASTA index,
+with annotation load, optional BAM read-load estimates, and configurable padding.
+The manifest is preparatory at this stage; caller-specific BAM/reference sharding
+is opt-in for RiboCode and the iRibo candidate/profile prototype. iRibo keeps
+the complete reference FASTA to preserve absolute GTF coordinates, while
+sharding BAM/annotation inputs; its translatome step remains one global task.
+
 ## Merging inputs
 
 Add `merge_group` to the samplesheet. Rows with the same value are pooled when

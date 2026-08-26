@@ -31,7 +31,23 @@ def rows_from_raw(raw, tool, sample):
     def candidates(*patterns):
         if raw.is_file():
             return [raw] if any(raw.match(pattern) for pattern in patterns) else []
-        return sorted({path for pattern in patterns for path in raw.glob(pattern)})
+        return sorted({path for pattern in patterns for path in raw.rglob(pattern)})
+
+    def parse_attrs(value):
+        attrs = {}
+        for item in value.split(";"):
+            item = item.strip()
+            if not item:
+                continue
+            if "=" in item:
+                key, value = item.split("=", 1)
+            else:
+                bits = item.split(None, 1)
+                if len(bits) != 2:
+                    continue
+                key, value = bits
+            attrs[key.strip()] = value.strip().strip('"')
+        return attrs
 
     if tool == "orfquant":
         orfquant_paths = candidates("*_Detected_ORFs.gtf")
@@ -68,7 +84,7 @@ def rows_from_raw(raw, tool, sample):
                        attrs.get("pval", ""), attrs.get("qval", ""), json.dumps(extra)]
         if orfquant_paths:
             return
-    if tool in {"rpbp", "iribo", "price", "riborf"}:
+    if tool in {"rpbp", "iribo", "price", "riborf", "ribotie"}:
         if tool == "price":
             for path in candidates("*.tsv"):
                 with path.open() as handle:
@@ -100,6 +116,65 @@ def rows_from_raw(raw, tool, sample):
                         yield [sample, tool, match.group("chrom"), blocks[0][0], blocks[-1][1],
                                match.group("strand"), ".", transcript_id, orf_id,
                                pval, pval, "", json.dumps(extra)]
+            return
+        native_rows = False
+        for path in candidates("*.csv"):
+            with path.open(newline="") as handle:
+                reader = csv.DictReader(handle)
+                for row in reader:
+                    row = {str(k).strip().lower(): (v or "").strip() for k, v in row.items() if k is not None}
+                    location = row.get("location", "")
+                    match = re.match(r"^(?P<chrom>.+?)(?P<strand>[+-])?:(?P<start>\d+)-(?P<end>\d+)$", location)
+                    chrom = row.get("chrom") or row.get("chr") or (match.group("chrom") if match else ".")
+                    strand = row.get("strand") or (match.group("strand") if match and match.group("strand") else ".")
+                    start = row.get("start") or row.get("genomic_start") or (match.group("start") if match else "")
+                    end = row.get("end") or row.get("stop") or row.get("genomic_end") or (match.group("end") if match else "")
+                    if not start or not end:
+                        continue
+                    try:
+                        start, end = int(start), int(end)
+                        if match and not row.get("start") and not row.get("genomic_start"):
+                            start -= 1
+                    except ValueError:
+                        continue
+                    native_rows = True
+                    orf_id = row.get("orf_id") or row.get("orf") or row.get("id") or row.get("name") or "orf"
+                    transcript_id = row.get("transcript_id") or row.get("transcript") or ""
+                    extra = dict(row)
+                    yield [sample, tool, chrom, start, end, strand, row.get("frame", "."),
+                           transcript_id, orf_id, row.get("score") or row.get("pvalue") or "",
+                           row.get("pval") or row.get("p_value") or row.get("pvalue") or "",
+                           row.get("qval") or row.get("q_value") or row.get("qvalue") or "", json.dumps(extra)]
+        for path in candidates("*.gff", "*.gff3"):
+            grouped = {}
+            with path.open() as handle:
+                for line in handle:
+                    if not line.strip() or line.startswith("#"):
+                        continue
+                    fields = line.rstrip("\n").split("\t")
+                    if len(fields) < 9:
+                        continue
+                    if fields[2].lower() in {"gene", "transcript", "mrna", "exon"}:
+                        continue
+                    attrs = parse_attrs(fields[8])
+                    orf_id = attrs.get("ID") or attrs.get("orf_id") or attrs.get("Parent")
+                    if not orf_id:
+                        continue
+                    try:
+                        block = (int(fields[3]) - 1, int(fields[4]))
+                    except ValueError:
+                        continue
+                    record = grouped.setdefault(orf_id, {"fields": fields, "attrs": attrs, "blocks": []})
+                    record["blocks"].append(block)
+            for orf_id, record in grouped.items():
+                native_rows = True
+                fields, attrs, blocks = record["fields"], record["attrs"], sorted(record["blocks"])
+                extra = dict(attrs)
+                extra["_blocks"] = blocks
+                yield [sample, tool, fields[0], blocks[0][0], blocks[-1][1], fields[6], fields[7],
+                       attrs.get("transcript_id") or attrs.get("Parent", ""), orf_id,
+                       fields[5] if fields[5] != "." else "", "", "", json.dumps(extra)]
+        if native_rows:
             return
         for bed in candidates("*.bed"):
             with bed.open() as handle:
@@ -244,12 +319,29 @@ def main():
     parser.add_argument("--sample", required=True)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--bed12", required=True, type=Path)
+    parser.add_argument("--status", type=Path)
     parser.add_argument("--gtf", type=Path)
+    parser.add_argument("--requested-start-codons", default="")
+    parser.add_argument("--requested-stop-codons", default="")
+    parser.add_argument("--caller-codon", default="")
+    parser.add_argument("--shard-id", default="all")
     parser.add_argument("--adapter-version", default="1")
     args = parser.parse_args()
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     rows = list(rows_from_raw(args.raw, args.tool, args.sample))
+    for row in rows:
+        try:
+            extra = json.loads(row[12]) if row[12] else {}
+        except (TypeError, ValueError, json.JSONDecodeError):
+            extra = {}
+        extra["requested_start_codons"] = args.requested_start_codons
+        extra["requested_stop_codons"] = args.requested_stop_codons
+        extra["caller_codon"] = args.caller_codon
+        extra["shard_id"] = args.shard_id
+        extra["effective_start_codon"] = (extra.get("start_codon") or extra.get("startcodon") or
+                                           extra.get("start_codon_sequence") or "unknown")
+        row[12] = json.dumps(extra, sort_keys=True)
     transcripts = load_transcripts(args.gtf)
     blocks_by_row = {}
     for index, row in enumerate(rows):
@@ -284,6 +376,21 @@ def main():
             chrom_start, chrom_end = min(x[0] for x in blocks), max(x[1] for x in blocks)
             handle.write("\t".join(map(str, [chrom, chrom_start, chrom_end, name, score(row[9], row[10]),
                 strand, chrom_start, chrom_end, "0,0,0", len(blocks), sizes, offsets])) + "\n")
+
+    if args.status:
+        raw_files = [p for p in (args.raw.rglob("*") if args.raw.is_dir() else [args.raw]) if p.is_file()]
+        status = "ok" if rows else ("no_calls_or_unparsed_native_output" if raw_files else "missing_native_output")
+        args.status.write_text(json.dumps({
+            "sample_id": args.sample,
+            "tool": args.tool,
+            "status": status,
+            "native_files": len(raw_files),
+            "standardised_rows": len(rows),
+            "requested_start_codons": args.requested_start_codons,
+            "requested_stop_codons": args.requested_stop_codons,
+            "caller_codon": args.caller_codon,
+            "shard_id": args.shard_id,
+        }, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":

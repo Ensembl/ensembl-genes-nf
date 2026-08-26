@@ -18,7 +18,6 @@ process MSA_EXTRACT {
     task.ext.when == null || task.ext.when
 
     script:
-    def prefix = task.ext.prefix ?: meta.id
     """
     extract_msas.py --instances ${instances} --maf-dir ${maf_dir} --outdir msas --axis-output msa_extract.axis.jsonl --identity-output msa_identity.jsonl --reference ${params.alignment_reference} --species-map ${params.phylocsf_species_map}
     cat <<-END_VERSIONS > versions.yml

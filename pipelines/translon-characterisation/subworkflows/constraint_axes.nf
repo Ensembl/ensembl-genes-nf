@@ -5,7 +5,8 @@ include { PREPARE_MSA_INPUTS } from '../modules/prepare_msa_inputs.nf'
 include { ORBL_TOOLS } from '../modules/orbl_tools.nf'
 include { FANBACK_ORBL } from '../modules/fanback_orbl.nf'
 include { ORBL_ALIGNMENT_DOWNLOAD } from '../modules/orbl_alignment_download.nf'
-include { PHYLOCSF_SCORE; PHYLOCSF_PARSE } from '../modules/phylocsf.nf'
+include { PHYLOCSF_SCORE } from '../modules/phylocsf_score.nf'
+include { PHYLOCSF_PARSE } from '../modules/phylocsf_parse.nf'
 include { FANBACK_PHYLOCSF } from '../modules/fanback_phylocsf.nf'
 include { MSA_REFERENCE_SETUP } from '../modules/msa_reference_setup.nf'
 include { MSA_EXTRACT } from '../modules/msa_extract.nf'
@@ -27,7 +28,7 @@ workflow CONSTRAINT_AXES {
         msa_axis_versions = MSA_EXTRACT.out.versions.concat(FANBACK_MSA.out.versions)
         msa_reference_versions = MSA_REFERENCE_SETUP.out.versions.concat(MSA_EXTRACT.out.versions).concat(FANBACK_MSA.out.versions)
     } else if (params.maf_dir) {
-        MSA_EXTRACT(instances, Channel.value(file(params.maf_dir, checkIfExists: true)))
+        MSA_EXTRACT(instances, channel.value(file(params.maf_dir, checkIfExists: true)))
         FANBACK_MSA(instances, MSA_EXTRACT.out.axis)
         msa_axes = FANBACK_MSA.out.axis.map { meta, file -> tuple(meta, 'msa_extract', file) }
         msa_axis_versions = MSA_EXTRACT.out.versions.concat(FANBACK_MSA.out.versions)
@@ -37,13 +38,13 @@ workflow CONSTRAINT_AXES {
         MSA_UNINFORMATIVE(msa_requests)
         msa_axes = MSA_UNINFORMATIVE.out.axis
         msa_axis_versions = MSA_UNINFORMATIVE.out.versions
-        msa_reference_versions = Channel.empty()
+        msa_reference_versions = channel.empty()
     }
     ORBL_TOOLS(instances)
     ORBL_ALIGNMENT_DOWNLOAD(instances)
     FANBACK_ORBL(instances, ORBL_TOOLS.out.axis)
     if (params.phylocsf_matched_null) {
-        matched_null = Channel.fromPath(params.phylocsf_matched_null, checkIfExists: true)
+        matched_null = channel.fromPath(params.phylocsf_matched_null, checkIfExists: true)
         PHYLOCSF_SCORE(MSA_EXTRACT.out.alignments)
         phylocsf_parse_input = PHYLOCSF_SCORE.out.scored.combine(matched_null)
             .map { meta, identities, raw, null_file -> tuple(meta, identities, raw, null_file) }
@@ -51,13 +52,13 @@ workflow CONSTRAINT_AXES {
         FANBACK_PHYLOCSF(instances, PHYLOCSF_PARSE.out.axis)
         phylocsf_axes = FANBACK_PHYLOCSF.out.axis.map { meta, file -> tuple(meta, 'phylocsf', file) }
         phylocsf_versions = PHYLOCSF_SCORE.out.versions.concat(PHYLOCSF_PARSE.out.versions).concat(FANBACK_PHYLOCSF.out.versions)
-        constraint_names = Channel.of('pop_constraint', 'gpn_score')
+        constraint_names = channel.of('pop_constraint', 'gpn_score')
     } else {
         phylocsf_requests = instances.map { meta, file -> tuple(meta, 'phylocsf', file) }
         PHYLOCSF_UNINFORMATIVE(phylocsf_requests)
         phylocsf_axes = PHYLOCSF_UNINFORMATIVE.out.axis
         phylocsf_versions = PHYLOCSF_UNINFORMATIVE.out.versions
-        constraint_names = Channel.of('pop_constraint', 'gpn_score')
+        constraint_names = channel.of('pop_constraint', 'gpn_score')
     }
     requests = instances.combine(constraint_names)
         .map { meta, file, axis -> tuple(meta, axis, file) }

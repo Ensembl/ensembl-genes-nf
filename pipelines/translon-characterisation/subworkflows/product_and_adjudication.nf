@@ -8,7 +8,7 @@ workflow PRODUCT_AND_ADJUDICATION {
     main:
     // Both operations require the complete translon set; no earlier subworkflow collects.
     complete_set = characterised
-        .map { meta, instance -> instance }
+        .map { _meta, instance -> instance }
         .collect()
         .map { files -> tuple([id: 'translon-set'], files) }
     PRODUCT_CLUSTERING(complete_set)

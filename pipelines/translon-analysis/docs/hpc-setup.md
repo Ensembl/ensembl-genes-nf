@@ -101,14 +101,20 @@ nextflow run pipelines/translon-analysis \
   --outdir /hps/nobackup/.../translon/results
 ```
 
-The companion config maps every tool to a SIF under
-`$TRANSLON_CONTAINER_DIR`, defaulting to
-`/hps/nobackup/flicek/ensembl/genebuild/translon-containers`. Set that
-environment variable if the images are installed elsewhere.
+The process definitions use immutable public registry image references directly.
+Apptainer will cache those images under `NXF_APPTAINER_CACHEDIR`; pre-pulling is
+optional but recommended for controlled HPC runs. The custom GHCR images must
+exist and be readable from the cluster before launching.
 
 Start with `--tools ribocode,ribotricer,ribotish` on one sample, then add the
 legacy and cohort-level callers. PRICE is cohort-level and deliberately uses
 more memory; do not use it as the first smoke test.
+
+For the opt-in sharded RiboCode path, add `--partition_count N`
+`--partition_mode transcriptome` and, for iRibo genomic sharding, also provide
+`--partition_fai /absolute/path/to/genome.fa.fai` with
+`--partition_mode genome`. Keep `--partition_padding 0` until equivalence has
+been demonstrated on the target reference.
 
 ## Acceptance checks
 

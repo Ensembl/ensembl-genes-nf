@@ -11,7 +11,7 @@ workflow PEPTIDE_AXES {
     main:
     PEPTIDE_UNIQUENESS(peptides, proteome)
     FANBACK_PEPTIDE_AXIS(instances, PEPTIDE_UNIQUENESS.out.results)
-    requests = instances.combine(Channel.of('peptide_features', 'structure', 'detectability'))
+    requests = instances.combine(channel.of('peptide_features', 'structure', 'detectability'))
         .map { meta, file, axis -> tuple(meta, axis, file) }
     TYPED_AXIS(requests)
 

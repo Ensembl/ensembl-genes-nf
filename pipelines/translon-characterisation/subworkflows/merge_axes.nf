@@ -5,7 +5,7 @@ workflow MERGE_TYPED_AXES {
     axes // [meta, axis_name, axis.jsonl]
 
     main:
-    grouped = axes.map { meta, axis, file -> tuple(meta, file) }.groupTuple()
+    grouped = axes.map { meta, _axis, file -> tuple(meta, file) }.groupTuple()
     MERGE_AXES(grouped)
 
     emit:
