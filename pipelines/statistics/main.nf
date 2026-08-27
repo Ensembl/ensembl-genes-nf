@@ -36,7 +36,7 @@ include { RUN_BUSCO } from './subworkflows/run_busco.nf'
 include { RUN_OMARK } from './subworkflows/run_omark.nf'
 include { RUN_ENSEMBL_STATS } from './subworkflows/run_ensembl_stats.nf'
 include { COLLECT_SOFTWARE_VERSIONS } from './modules/collect_software_versions.nf'
-
+include { PEPSTATS } from './subworkflows/pepstats.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
@@ -71,6 +71,10 @@ workflow {
     // Print summary of supplied parameters
     log.info(paramsSummaryLog(workflow))
 
+    if (params.run_pepstats) {
+        PEPSTATS(params.csvFile)
+    }
+
     if (params.run_busco_core || params.run_busco_ncbi) {
         RUN_BUSCO(params.csvFile)
     }
@@ -87,29 +91,18 @@ workflow {
     def busco_versions = params.run_busco_core || params.run_busco_ncbi ? RUN_BUSCO.out.versions : channel.empty()
     def omark_versions = params.run_omark ? RUN_OMARK.out.versions : channel.empty()
     def stats_versions = params.run_ensembl_stats || params.run_ensembl_beta_metakeys ? RUN_ENSEMBL_STATS.out.versions : channel.empty()
+    def pepstats_versions = params.run_pepstats ? PEPSTATS.out.versions : channel.empty()
 
     // Mix all versions
     def ch_all_versions = channel.empty()
         .mix(busco_versions)
         .mix(omark_versions)
         .mix(stats_versions)
+        .mix(pepstats_versions)
 
     // Merge into single file and publish
     COLLECT_SOFTWARE_VERSIONS(ch_all_versions.collect())
-}
 
-// nextflow-lint-disable
-workflow.onComplete {
-    log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
-    log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
-    cleanCacheDirectory()
-}
-
-// nextflow-lint-disable
-workflow.onError {
-    def error_report = workflow.errorReport ?: workflow.errorMessage ?: 'Unknown error'
-    log.error("Pipeline execution stopped with the following message: ${error_report}")
-}
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,3 +110,17 @@ workflow.onError {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+    // nextflow-lint-disable
+    workflow.onComplete {
+        log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
+        log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
+        cleanCacheDirectory()
+    }
+
+    // nextflow-lint-disable
+    workflow.onError {
+        def error_report = workflow.errorReport ?: workflow.errorMessage ?: 'Unknown error'
+        log.error("Pipeline execution stopped with the following message: ${error_report}")
+    }
+
+}
