@@ -102,7 +102,7 @@ workflow {
 
     // Merge into single file and publish
     COLLECT_SOFTWARE_VERSIONS(ch_all_versions.collect())
-}
+
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -110,16 +110,17 @@ workflow {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-// nextflow-lint-disable
-workflow.onComplete {
-    log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
-    log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
-    cleanCacheDirectory()
-}
+    // nextflow-lint-disable
+    workflow.onComplete {
+        log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
+        log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
+        cleanCacheDirectory()
+    }
 
-// nextflow-lint-disable
-workflow.onError {
-    def error_report = workflow.errorReport ?: workflow.errorMessage ?: 'Unknown error'
-    log.error("Pipeline execution stopped with the following message: ${error_report}")
-}
+    // nextflow-lint-disable
+    workflow.onError {
+        def error_report = workflow.errorReport ?: workflow.errorMessage ?: 'Unknown error'
+        log.error("Pipeline execution stopped with the following message: ${error_report}")
+    }
 
+}
