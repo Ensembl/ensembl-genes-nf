@@ -4,7 +4,7 @@ nextflow.enable.dsl = 2
 
 include { RESOLVE_SPECIES_INPUTS } from './modules/local/resolve_species_inputs.nf'
 include { STAGE_SPECIES_INPUTS } from './modules/local/stage_species_inputs.nf'
-include { LIFTON_PROJECTION } from './modules/local/lifton_projection.nf'
+include { LIFTON_PROJECTION } from './subworkflows/lifton_projection.nf'
 include { STRUCTURAL_MATCHING } from './modules/local/structural_matching.nf'
 include { STABLE_ID_DECISIONS } from './modules/local/stable_id_decisions.nf'
 include { RENDER_STABLE_ID_SQL } from './modules/local/render_stable_id_sql.nf'
