@@ -17,8 +17,8 @@ The pipeline is designed for the Ensembl genebuild cluster environment. It expec
 - LiftOn, available as `lifton` by default;
 - the `gb1-w` database command for the mapping SQL dry run;
 - the `GBS1` and `GBP1` environment variables for the database host and port;
-- read access to the target core database and `gb_a_m_test`;
-- write access to `gb_a_m_test.annotation_events` when a new mapping session is created;
+- read access to the target core database and `gb_assembly_metadata`;
+- write access to `gb_assembly_metadata.annotation_events` when a new mapping session is created;
 - access to the Ensembl FTP filesystem trees used by the resolver.
 
 Use the `slurm` profile on the cluster. Input resolution and staging are assigned to the `datamover` queue by this profile.
@@ -114,7 +114,7 @@ The resolver uses the database assembly accession and registry information to ch
 
 Force stable-ID mapping. An earlier live assembly version must exist. If it does not, the run fails rather than falling back to reassignment.
 
-If `mapping_session_id` is not supplied, the resolver inserts a new `stable_id_mapping` event in `gb_a_m_test.annotation_events` and uses its ID. A fresh, non-resumed run can therefore create a new mapping session.
+If `mapping_session_id` is not supplied, the resolver inserts a new `stable_id_mapping` event in `gb_assembly_metadata.annotation_events` and uses its ID. A fresh, non-resumed run can therefore create a new mapping session.
 
 ### `reassign`
 
@@ -124,7 +124,7 @@ This route does not require reference or target FASTA/GFF files and does not cre
 
 ## Input discovery
 
-The resolver reads `assembly.accession` and `species.scientific_name` from the target core database. It obtains stable-ID prefixes and numeric ranges from `gb_a_m_test`.
+The resolver reads `assembly.accession` and `species.scientific_name` from the target core database. It obtains stable-ID prefixes and numeric ranges from `gb_assembly_metadata`.
 
 For a mapping run, omitted files are resolved as follows.
 

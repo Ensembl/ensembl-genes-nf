@@ -20,6 +20,7 @@ process RESOLVE_SPECIES_INPUTS {
     """
     python3 ${projectDir}/bin/resolve_species_inputs.py \
         --db-name ${db_name} \
+		--assembly-metadata-db '${params.assembly_metadata_db}' \
         --mode ${requested_mode} \
         --target-fasta '${target_fasta}' \
         --target-gff '${target_gff}' \

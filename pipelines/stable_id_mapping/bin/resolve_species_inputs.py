@@ -111,11 +111,12 @@ def fetch_core_db_meta(db_name: str) -> dict[str, str]:
 def resolve_target_assembly(
     target_chain: str,
     target_version: int,
+    assembly_metadata_db: str,
 ) -> tuple[int, int]:
     conn = _connect_ro()
     try:
         with conn.cursor() as cur:
-            cur.execute("USE gb_a_m_test")
+            cur.execute(f"USE {assembly_metadata_db}")
             cur.execute(
                 "SELECT a.assembly_id, gs.genebuild_status_id "
                 "FROM assembly a "
@@ -140,11 +141,12 @@ def resolve_target_assembly(
 def resolve_live_reference(
     target_chain: str,
     target_version: int,
+    assembly_metadata_db: str,
 ) -> tuple[str, int, int] | None:
     conn = _connect_ro()
     try:
         with conn.cursor() as cur:
-            cur.execute("USE gb_a_m_test")
+            cur.execute(f"USE {assembly_metadata_db}")
             cur.execute(
                 "SELECT a.assembly_id, a.gca_version "
                 "FROM assembly a "
@@ -171,11 +173,14 @@ def resolve_live_reference(
     )
 
 
-def resolve_stable_id_ranges(gca_accession: str) -> dict[str, str]:
+def resolve_stable_id_ranges(
+    gca_accession: str,
+    assembly_metadata_db: str,
+) -> dict[str, str]:
     conn = _connect_ro()
     try:
         with conn.cursor() as cur:
-            cur.execute("USE gb_a_m_test")
+            cur.execute(f"USE {assembly_metadata_db}")
             cur.execute(
                 "SELECT prefix.prefix AS prefix, "
                 "stable.stable_space_start AS range_start, "
@@ -270,11 +275,15 @@ def stable_ids_require_reassignment(
     return disagreeing > 0
 
 
-def insert_mapping_session(genebuild_status_id: int, reference_assembly_id: int) -> int:
+def insert_mapping_session(
+    genebuild_status_id: int,
+    reference_assembly_id: int,
+    assembly_metadata_db: str,
+) -> int:
     conn = _connect_write()
     try:
         with conn.cursor() as cur:
-            cur.execute("USE gb_a_m_test")
+            cur.execute(f"USE {assembly_metadata_db}")
             value = f"ref:{reference_assembly_id};date:{date.today().isoformat()}"
             cur.execute(
                 "INSERT INTO annotation_events (genebuild_status_id, event, value) "
@@ -348,6 +357,7 @@ def resolve_pre_release_paths(
 def resolve_species_inputs(
     db_name: str,
     requested_mode: str = "auto",
+    assembly_metadata_db: str = "gb_assembly_metadata",
     target_fasta_override: Path | None = None,
     target_gff_override: Path | None = None,
     mapping_session_id_override: int | None = None,
@@ -372,10 +382,12 @@ def resolve_species_inputs(
     ) = resolve_target_assembly(
         target_chain,
         target_version,
+        assembly_metadata_db,
     )
 
     ranges = resolve_stable_id_ranges(
-        f"{target_chain}.{target_version}"
+        f"{target_chain}.{target_version}",
+        assembly_metadata_db
     )
 
 
@@ -385,6 +397,7 @@ def resolve_species_inputs(
         reference = resolve_live_reference(
             target_chain,
             target_version,
+            assembly_metadata_db,
         )
 
     if requested_mode == "map":
@@ -475,6 +488,7 @@ def resolve_species_inputs(
             mapping_session_id = insert_mapping_session(
                 target_genebuild_status_id,
                 reference_assembly_id,
+                assembly_metadata_db,
             )
     else:
         reference_chain = None
@@ -520,6 +534,7 @@ def resolve_species_inputs(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db-name", required=True)
+    parser.add_argument("--assembly-metadata-db", required=True)
     parser.add_argument(
         "--mode",
         choices=("auto", "map", "reassign"),
