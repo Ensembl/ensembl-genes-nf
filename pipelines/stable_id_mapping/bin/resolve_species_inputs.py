@@ -9,7 +9,7 @@ import os
 import re
 import sys
 from dataclasses import asdict, dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import pymysql
@@ -279,14 +279,15 @@ def insert_mapping_session(
     genebuild_status_id: int,
     reference_assembly_id: int,
     assembly_metadata_db: str,
+    gca_chain: str,
 ) -> int:
     conn = _connect_write()
     try:
         with conn.cursor() as cur:
             cur.execute(f"USE {assembly_metadata_db}")
-            value = f"ref:{reference_assembly_id};date:{date.today().isoformat()}"
+            value = f"ref:{reference_assembly_id}({gca_chain});date:{datetime.now().isoformat(timespec='minutes')};not_executed"
             cur.execute(
-                "INSERT INTO annotation_events (genebuild_status_id, event, value) "
+                "INSERT ignore INTO annotation_events (genebuild_status_id, event, value) "
                 "VALUES (%s, %s, %s)",
                 (genebuild_status_id, "stable_id_mapping", value),
             )
@@ -489,6 +490,7 @@ def resolve_species_inputs(
                 target_genebuild_status_id,
                 reference_assembly_id,
                 assembly_metadata_db,
+                target_chain,
             )
     else:
         reference_chain = None
