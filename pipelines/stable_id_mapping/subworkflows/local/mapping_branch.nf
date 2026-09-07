@@ -41,8 +41,10 @@ workflow MAPPING_BRANCH {
     )
 
     DRY_RUN_SQL(
-        RENDER_STABLE_ID_SQL.out.rendered
-    )
+	    RENDER_STABLE_ID_SQL.out.rendered.map { db_name, ref_gff, target_gff, mapping_session_id, locus_comparison, decisions_tsv, score_evidence_tsv, executable_sql, dry_run_sql ->
+	        tuple(db_name, dry_run_sql)
+	    }
+	)
 
     emit:
     audit = AUDIT_RUN.out.audit

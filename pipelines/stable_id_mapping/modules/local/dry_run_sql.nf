@@ -9,13 +9,6 @@ process DRY_RUN_SQL {
 
     input:
         tuple val(db_name),
-              path(ref_gff),
-              path(target_gff),
-              val(mapping_session_id),
-              path(locus_comparison),
-              path(decisions_tsv),
-              path(score_evidence_tsv),
-              path(executable_sql),
               path(dry_run_sql)
 
     output:
