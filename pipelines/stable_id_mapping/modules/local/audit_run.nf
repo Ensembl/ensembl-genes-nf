@@ -1,6 +1,6 @@
 // modules/local/audit_run.nf
 process AUDIT_RUN {
-    // tag "$db_name"
+    tag "$db_name"
 
     publishDir {
         "${params.output_dir}/${db_name}/audit"

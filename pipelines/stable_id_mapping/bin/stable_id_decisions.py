@@ -21,6 +21,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--db-name", required=True)
     parser.add_argument("--ref-gff", type=Path, required=True)
     parser.add_argument("--target-gff", type=Path, required=True)
+    parser.add_argument("--ref-fasta", type=Path, required=True)
+    parser.add_argument("--target-fasta", type=Path, required=True)
     parser.add_argument("--mapped-gff", type=Path, required=True)
     parser.add_argument("--missing-report", type=Path, required=True)
     parser.add_argument("--transcript-pairs", type=Path, required=True)
@@ -52,6 +54,8 @@ def main() -> None:
             StableIdEventConfig(
                 ref_gff=args.ref_gff,
                 target_gff=args.target_gff,
+                ref_fasta=args.ref_fasta,
+                target_fasta=args.target_fasta,
                 mapped_gff=args.mapped_gff,
                 report=args.missing_report,
                 mapping_session_id=args.mapping_session_id,
@@ -79,6 +83,7 @@ def main() -> None:
                     decision.new_stable_id is not None for decision in decisions
                 ),
                 "missing": action_counts["missing"],
+                "exons_assigned": feature_counts["exon"],
                 "actions": dict(sorted(action_counts.items())),
                 "feature_types": dict(sorted(feature_counts.items())),
             },

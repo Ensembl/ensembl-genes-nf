@@ -1,3 +1,2 @@
-db_name,target_fasta,target_gff,mapping_session_id,ref_fasta,ref_gff
-bos_taurus_gca002263795v3_core_110_1_test,,,,,
-sus_scrofa_gca000003025v7_core_114_1_nf_test,/hps/nobackup/flicek/ensembl/genebuild/ereboperezsilva/annot_farm/sus_scrofa/refv7/sus_scrofa_toplevel.fa,/hps/nobackup/flicek/ensembl/genebuild/ereboperezsilva/annot_farm/sus_scrofa/refv7/Sus_scrofa_gca000003025v7.T2T-Sscrofa.114.gff3.gz,,,
+db_name
+<DB_NAME>,<other options possible, check README>

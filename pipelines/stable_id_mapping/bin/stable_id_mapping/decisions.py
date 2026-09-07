@@ -656,6 +656,48 @@ def build_translation_decisions(
     return decisions
 
 
+def build_exon_decisions(
+    target_features: dict[str, dict[str, Feature]],
+    allocators: dict[str, IdAllocator],
+    mapping_session_id: int,
+) -> list[Decision]:
+    """Assign a new stable ID and version 1 to every target exon."""
+    decisions: list[Decision] = []
+
+    ordered_exons = sorted(
+        target_features["exon"].values(),
+        key=lambda exon: (
+            exon.seqid,
+            exon.start,
+            exon.end,
+            exon.strand,
+            exon.stable_id,
+        ),
+    )
+
+    for target in ordered_exons:
+        decisions.append(
+            Decision(
+                feature_type="exon",
+                action="new",
+                current_stable_id=target.stable_id,
+                current_version=target.version,
+                old_stable_id=None,
+                old_version=0,
+                new_stable_id=allocators["exon"].allocate(),
+                new_version=1,
+                mapping_session_id=mapping_session_id,
+                score=0.0,
+                reason=(
+                    "target exon assigned a new stable ID; "
+                    "exons are not mapped"
+                ),
+            )
+        )
+
+    return decisions
+
+
 def build_decisions(
     ref_features: dict[str, dict[str, Feature]],
     target_features: dict[str, dict[str, Feature]],
@@ -709,4 +751,15 @@ def build_decisions(
         if include_translations
         else []
     )
-    return gene_decisions + transcript_decisions + translation_decisions
+    exon_decisions = build_exon_decisions(
+        target_features,
+        allocators,
+        mapping_session_id,
+    )
+
+    return (
+        gene_decisions
+        + transcript_decisions
+        + translation_decisions
+        + exon_decisions
+    )

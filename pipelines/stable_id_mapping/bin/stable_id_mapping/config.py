@@ -26,6 +26,8 @@ class StableIdEventConfig:
     transcript_range: StableIdRange
     translation_range: StableIdRange
     output_sql: Path
+    ref_fasta: Optional[Path] = None
+    target_fasta: Optional[Path] = None
     output_tsv: Optional[Path] = None
     db_name: Optional[str] = None
     include_translations: bool = False
@@ -42,6 +44,18 @@ class StableIdEventConfig:
             raise ValueError("batch_size must be >= 1")
         if self.min_overlap < 0:
             raise ValueError("min_overlap must be >= 0")
-        for path in (self.ref_gff, self.target_gff, self.mapped_gff, self.report):
+        if self.ref_fasta is None or self.target_fasta is None:
+            raise ValueError(
+                "ref_fasta and target_fasta are required "
+                "for stable-ID version comparison"
+            )
+        for path in (
+            self.ref_gff,
+            self.target_gff,
+            self.mapped_gff,
+            self.report,
+            self.ref_fasta,
+            self.target_fasta,
+        ):
             if not path.exists():
                 raise FileNotFoundError(path)

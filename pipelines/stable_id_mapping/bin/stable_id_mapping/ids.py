@@ -69,6 +69,21 @@ def make_allocator(
     )
 
 
+def exon_range_from_gene_range(gene_range: StableIdRange) -> StableIdRange:
+    """Derive the exon stable-ID range from the gene stable-ID range."""
+    if not gene_range.prefix.endswith("G"):
+        raise ValueError(
+            f"Cannot derive exon range from gene prefix {gene_range.prefix!r}"
+        )
+
+    return StableIdRange(
+        prefix=f"{gene_range.prefix[:-1]}E",
+        start=gene_range.start,
+        end=gene_range.end,
+        width=gene_range.width,
+    )
+
+
 def collect_reserved_ids(*feature_sets: dict[str, dict[str, Feature]]) -> set[str]:
     reserved: set[str] = set()
     for features_by_type in feature_sets:

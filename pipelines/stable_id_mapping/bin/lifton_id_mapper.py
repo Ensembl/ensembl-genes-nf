@@ -309,8 +309,30 @@ def load_gff3_as_annotation(path: str, label: str) -> Annotation:
     explicit_gene_ids: Set[str] = set()
     explicit_transcript_ids: Set[str] = set()
 
-    # Keep this aligned with stable_id_mapping.gff3.TRANSCRIPT_FEATURE_TYPES.
-    TRANSCRIPT_TYPES = {'mrna', 'transcript'}
+    # Keep these aligned with stable_id_mapping.gff3.
+    GENE_TYPES = {
+        'gene',
+        'ncrna_gene',
+        'pseudogene',
+    }
+
+    TRANSCRIPT_TYPES = {
+        'c_gene_segment',
+        'd_gene_segment',
+        'j_gene_segment',
+        'lnc_rna',
+        'mirna',
+        'mrna',
+        'ncrna',
+        'pseudogenic_transcript',
+        'rrna',
+        'scrna',
+        'snorna',
+        'transcript',
+        'trna',
+        'v_gene_segment',
+        'y_rna',
+    }
 
     def norm_parent_gene_id(x: Optional[str]) -> Optional[str]:
         if not x:
@@ -362,7 +384,7 @@ def load_gff3_as_annotation(path: str, label: str) -> Annotation:
                     for k, v in attrs.items():
                         t.attrs.setdefault(k, v)
 
-            elif ftype_l == 'gene':
+            elif ftype_l in GENE_TYPES:
                 gid = attrs.get('ID') or attrs.get('gene_id') or attrs.get('Name')
                 if not gid:
                     continue

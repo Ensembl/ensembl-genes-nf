@@ -200,6 +200,8 @@ def run_single_species_pipeline(
         StableIdEventConfig(
             ref_gff=config.ref_gff,
             target_gff=config.target_gff,
+            ref_fasta=config.ref_fasta,
+            target_fasta=config.target_fasta,
             mapped_gff=config.lifton_output_gff,
             report=missing_gene_report,
             mapping_session_id=config.mapping_session_id,

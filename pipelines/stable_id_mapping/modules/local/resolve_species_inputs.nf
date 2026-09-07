@@ -1,27 +1,31 @@
-// modules/local/resolve_species_inputs.nf
 process RESOLVE_SPECIES_INPUTS {
-    // tag "$db_name"
+    tag "$db_name ($requested_mode)"
+
+	debug true
 
     input:
-    	tuple val(db_name),
-    	      val(target_fasta),
-    	      val(target_gff),
-    	      val(mapping_session_id),
-    	      val(ref_fasta),
-    	      val(ref_gff)
+    tuple val(db_name),
+          val(requested_mode),
+          val(target_fasta),
+          val(target_gff),
+          val(mapping_session_id),
+          val(ref_fasta),
+          val(ref_gff)
 
     output:
-        path "${db_name}.species_inputs.json", emit: inputs_json, optional: true
+    path "${db_name}.species_inputs.json",
+         emit: inputs_json
 
     script:
-	"""
-	python3 ${projectDir}/bin/resolve_species_inputs.py \
-	    --db-name ${db_name} \
-	    --target-fasta '${target_fasta}' \
-	    --target-gff '${target_gff}' \
-	    --mapping-session-id '${mapping_session_id}' \
-	    --ref-fasta '${ref_fasta}' \
-	    --ref-gff '${ref_gff}' \
-	    --output-json ${db_name}.species_inputs.json
-	"""
+    """
+    python3 ${projectDir}/bin/resolve_species_inputs.py \
+        --db-name ${db_name} \
+        --mode ${requested_mode} \
+        --target-fasta '${target_fasta}' \
+        --target-gff '${target_gff}' \
+        --mapping-session-id '${mapping_session_id}' \
+        --ref-fasta '${ref_fasta}' \
+        --ref-gff '${ref_gff}' \
+        --output-json ${db_name}.species_inputs.json
+    """
 }

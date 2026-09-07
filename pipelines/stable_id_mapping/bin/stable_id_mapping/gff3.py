@@ -7,8 +7,30 @@ from typing import Optional
 
 from .models import CdsRow, Feature, RawFeature
 
-GENE_FEATURE_TYPES = {"gene"}
-TRANSCRIPT_FEATURE_TYPES = {"mrna", "transcript"}
+GENE_FEATURE_TYPES = {
+    "gene",
+    "ncrna_gene",
+    "pseudogene",
+}
+
+TRANSCRIPT_FEATURE_TYPES = {
+    "c_gene_segment",
+    "d_gene_segment",
+    "j_gene_segment",
+    "lnc_rna",
+    "mirna",
+    "mrna",
+    "ncrna",
+    "pseudogenic_transcript",
+    "rrna",
+    "scrna",
+    "snorna",
+    "snrna",
+    "transcript",
+    "trna",
+    "v_gene_segment",
+    "y_rna",
+}
 
 
 def parse_attrs(attr_text: str) -> dict[str, str]:
@@ -68,17 +90,21 @@ def parse_version(
     return default
 
 
-def parse_gff3(path: str | Path) -> dict[str, dict[str, Feature]]:
+def parse_gff3(
+    path: str | Path,
+    require_exon_ids: bool = False,
+) -> dict[str, dict[str, Feature]]:
     features: dict[str, dict[str, Feature]] = {
         "gene": {},
         "transcript": {},
         "translation": {},
+        "exon": {},
     }
     raw_features: list[RawFeature] = []
     cds_rows: list[CdsRow] = []
 
     with Path(path).open() as handle:
-        for line in handle:
+        for line_number, line in enumerate(handle, start=1):
             if not line or line.startswith("#"):
                 continue
             fields = line.rstrip("\n").split("\t")
@@ -92,6 +118,63 @@ def parse_gff3(path: str | Path) -> dict[str, dict[str, Feature]]:
             feature_type_lc = feature_type.lower()
 
             parents = parent_ids(attrs.get("Parent"))
+
+            if feature_type_lc == "exon":
+                exon_stable_id, embedded_version = split_stable_id(
+                    attrs.get("ID")
+                    or attrs.get("exon_id")
+                    or attrs.get("Name")
+                )
+
+                if not exon_stable_id:
+                    if require_exon_ids:
+                        raise ValueError(
+                            f"{path}:{line_number}: target exon has no usable ID"
+                        )
+                    continue
+
+                parsed_parent_ids = tuple(
+                    parent_stable_id
+                    for parent_stable_id, _parent_version in parents
+                )
+
+                previous = features["exon"].get(exon_stable_id)
+                if previous is not None:
+                    if (
+                        previous.seqid != seqid
+                        or previous.start != start_i
+                        or previous.end != end_i
+                        or previous.strand != strand
+                    ):
+                        raise ValueError(
+                            f"{path}:{line_number}: exon {exon_stable_id!r} "
+                            "appears with conflicting coordinates"
+                        )
+
+                    combined_parent_ids = tuple(
+                        dict.fromkeys(
+                            previous.parent_stable_ids + parsed_parent_ids
+                        )
+                    )
+                else:
+                    combined_parent_ids = parsed_parent_ids
+
+                features["exon"][exon_stable_id] = Feature(
+                    stable_id=exon_stable_id,
+                    version=parse_version(attrs, embedded_version),
+                    seqid=seqid,
+                    start=start_i,
+                    end=end_i,
+                    strand=strand,
+                    parent_stable_id=(
+                        combined_parent_ids[0]
+                        if combined_parent_ids
+                        else None
+                    ),
+                    parent_stable_ids=combined_parent_ids,
+                )
+                continue
+
             if feature_type_lc == "cds":
                 protein_stable_id, protein_version = split_stable_id(attrs.get("protein_id"))
                 for parent_stable_id, parent_version in parents:

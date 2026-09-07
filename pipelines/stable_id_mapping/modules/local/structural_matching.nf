@@ -1,6 +1,6 @@
 // modules/local/structural_matching.nf
 process STRUCTURAL_MATCHING {
-    // tag "$db_name"
+    tag "$db_name"
 
     publishDir {
 	    "${params.output_dir}/${db_name}/matching"
@@ -13,7 +13,9 @@ process STRUCTURAL_MATCHING {
 
     input:
         tuple val(db_name),
+              path(ref_fasta),
               path(ref_gff),
+              path(target_fasta),
               path(target_gff),
               val(mapping_session_id),
               val(gene_range),
@@ -26,19 +28,21 @@ process STRUCTURAL_MATCHING {
 
     output:
     	tuple val(db_name),
-    	      path(ref_gff),
-    	      path(target_gff),
-    	      val(mapping_session_id),
-    	      val(gene_range),
-    	      val(transcript_range),
-    	      val(translation_range),
-    	      path(projected_gff),
-    	      path(missing_report),
-    	      path("matching/${db_name}.lifton.transcript_pairs.tsv"),
-    	      path("matching/${db_name}.lifton.gene_pairs.tsv"),
-    	      path("matching/${db_name}.lifton.gene_locus_comparison.tsv"),
-    	      path("${db_name}.structural_matching.json"),
-    	      emit: matches
+              path(ref_fasta),
+              path(ref_gff),
+              path(target_fasta),
+              path(target_gff),
+              val(mapping_session_id),
+              val(gene_range),
+              val(transcript_range),
+              val(translation_range),
+              path(projected_gff),
+              path(missing_report),
+              path("matching/${db_name}.lifton.transcript_pairs.tsv"),
+              path("matching/${db_name}.lifton.gene_pairs.tsv"),
+              path("matching/${db_name}.lifton.gene_locus_comparison.tsv"),
+              path("${db_name}.structural_matching.json"),
+              emit: matches
 
     script:
     """

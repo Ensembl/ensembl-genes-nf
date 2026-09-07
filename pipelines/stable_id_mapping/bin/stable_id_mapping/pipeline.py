@@ -8,10 +8,16 @@ from collections import Counter
 from .config import StableIdEventConfig
 from .decisions import build_decisions
 from .gff3 import parse_gff3, parse_missing_gene_ids
-from .ids import IdAllocator, collect_reserved_ids, make_allocator
+from .ids import (
+    IdAllocator,
+    collect_reserved_ids,
+    exon_range_from_gene_range,
+    make_allocator,
+)
 from .models import ACTION_ORDER, FEATURE_ORDER, Decision
 from .outputs import write_sql, write_tsv
 from .scoring import write_score_evidence_tsv
+from .versioning import apply_version_rules
 
 
 def make_allocators(
@@ -22,6 +28,10 @@ def make_allocators(
         "gene": make_allocator(config.gene_range, reserved_ids),
         "transcript": make_allocator(config.transcript_range, reserved_ids),
         "translation": make_allocator(config.translation_range, reserved_ids),
+        "exon": make_allocator(
+            exon_range_from_gene_range(config.gene_range),
+            reserved_ids,
+        ),
     }
 
 
@@ -99,13 +109,33 @@ def print_score_evidence_summary(
 
 def run_pipeline(config: StableIdEventConfig) -> list[Decision]:
     config.validate()
+
     ref_features = parse_gff3(config.ref_gff)
-    target_features = parse_gff3(config.target_gff)
+    target_features = parse_gff3(
+        config.target_gff,
+        require_exon_ids=True,
+    )
     mapped_features = parse_gff3(config.mapped_gff)
+
     missing_gene_ids = parse_missing_gene_ids(config.report)
-    print_score_evidence_summary(config, mapped_features, target_features)
-    reserved_ids = collect_reserved_ids(ref_features, target_features, mapped_features)
-    allocators = make_allocators(config, reserved_ids)
+
+    print_score_evidence_summary(
+        config,
+        mapped_features,
+        target_features,
+    )
+
+    reserved_ids = collect_reserved_ids(
+        ref_features,
+        target_features,
+        mapped_features,
+    )
+
+    allocators = make_allocators(
+        config,
+        reserved_ids,
+    )
+
     decisions = build_decisions(
         ref_features,
         target_features,
@@ -117,10 +147,40 @@ def run_pipeline(config: StableIdEventConfig) -> list[Decision]:
         config.include_translations,
         config.score_evidence,
     )
-    write_sql(decisions, config.output_sql, config)
+
+    assert config.ref_fasta is not None
+    assert config.target_fasta is not None
+
+    decisions = apply_version_rules(
+        decisions=decisions,
+        ref_features=ref_features,
+        target_features=target_features,
+        mapped_features=mapped_features,
+        ref_gff=config.ref_gff,
+        target_gff=config.target_gff,
+        mapped_gff=config.mapped_gff,
+        ref_fasta=config.ref_fasta,
+        target_fasta=config.target_fasta,
+    )
+
+    write_sql(
+        decisions,
+        config.output_sql,
+        config,
+    )
+
     if config.output_tsv:
-        write_tsv(decisions, config.output_tsv)
+        write_tsv(
+            decisions,
+            config.output_tsv,
+        )
+
     if config.output_score_evidence_tsv:
-        write_score_evidence_tsv(config.score_evidence, config.output_score_evidence_tsv)
+        write_score_evidence_tsv(
+            config.score_evidence,
+            config.output_score_evidence_tsv,
+        )
+
     print_summary(decisions)
+
     return decisions

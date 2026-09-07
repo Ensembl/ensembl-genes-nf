@@ -13,7 +13,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Optional
 
-from stable_id_mapping.gff3 import parent_ids, parse_attrs, split_stable_id
+from stable_id_mapping.gff3 import (
+    GENE_FEATURE_TYPES,
+    parent_ids,
+    parse_attrs,
+    split_stable_id,
+)
 
 
 BIOTYPE_KEYS = (
@@ -35,6 +40,7 @@ class GeneInfo:
     strand: str
     biotype: str
     raw_id: str
+    feature_type: str
     child_feature_types: tuple[str, ...] = ()
 
     @property
@@ -45,6 +51,10 @@ class GeneInfo:
     def annotation_class(self) -> str:
         if self.biotype:
             return self.biotype
+
+        if self.feature_type and self.feature_type != "gene":
+            return self.feature_type
+
         child_types = set(self.child_feature_types)
         if "mrna" in child_types:
             return "protein_coding_like_from_mRNA"
@@ -224,7 +234,45 @@ def audit_run(
         "paths": paths,
         "locus_path": locus_path,
         "locus_rows_loaded": len(locus_rows),
-        "counts": Counter((row.get("type"), row.get("action")) for row in decisions),
+        "feature_summary": build_feature_summary(decisions),
+        "mapping_evidence_summary": build_mapping_evidence_summary(
+            decisions
+        ),
+        "review_flags": {
+            "coordinate_genes_below_0_50": sum(
+                1
+                for row in coordinate_mapped
+                if to_float(row.get("score")) < 0.50
+            ),
+            "missing_genes_with_claimed_candidate": sum(
+                1
+                for row in missing_rows
+                if (
+                    row.get(
+                        "target_gene_by_locus_claimed_by_old"
+                    )
+                    or row.get(
+                        "structure_accepted_target_claimed_by_old"
+                    )
+                )
+            ),
+            "mapped_features_comparison_unavailable": sum(
+                1
+                for row in decisions
+                if row.get("action") == "mapped"
+                and "comparison unavailable"
+                in row.get("reason", "")
+            ),
+        },
+        "gene_annotation_summary": build_gene_annotation_summary(
+            gene_decisions,
+            ref_genes,
+            target_genes,
+        ),
+        "counts": Counter(
+            (row.get("type"), row.get("action"))
+            for row in decisions
+        ),
         "gene_counts": {
             "structural_mapped": len(structural_mapped),
             "coordinate_mapped": len(coordinate_mapped),
@@ -518,7 +566,7 @@ def load_gene_info(path: Path) -> dict[str, GeneInfo]:
         seqid, _source, feature_type, start, end, _score, strand, _phase, attrs_text = fields
         feature_type_lc = feature_type.lower()
         attrs = parse_attrs(attrs_text)
-        if feature_type_lc == "gene":
+        if feature_type_lc in GENE_FEATURE_TYPES:
             stable_id, _version = split_stable_id(attrs.get("ID"))
             if not stable_id:
                 continue
@@ -544,6 +592,7 @@ def load_gene_info(path: Path) -> dict[str, GeneInfo]:
             strand=strand,
             biotype=biotype,
             raw_id=raw_id,
+            feature_type=feature_type,
             child_feature_types=tuple(sorted(child_types_by_gene.get(stable_id, ()))),
         )
         for stable_id, (
@@ -553,7 +602,7 @@ def load_gene_info(path: Path) -> dict[str, GeneInfo]:
             strand,
             biotype,
             raw_id,
-            _feature_type,
+            feature_type,
         ) in gene_rows.items()
     }
 
@@ -593,7 +642,556 @@ def write_dicts(path: Path, rows: list[dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
+def percentage(part: int, total: int) -> Optional[float]:
+    if total == 0:
+        return None
+    return (part / total) * 100.0
+
+
+def build_feature_summary(
+    decisions: list[dict[str, str]],
+) -> list[dict[str, object]]:
+    feature_order = (
+        "gene",
+        "transcript",
+        "translation",
+        "exon",
+    )
+    counts = Counter(
+        (row.get("type", ""), row.get("action", ""))
+        for row in decisions
+    )
+
+    rows: list[dict[str, object]] = []
+
+    for feature_type in feature_order:
+        retained = counts[(feature_type, "mapped")]
+        missing = counts[(feature_type, "missing")]
+        new = counts[(feature_type, "new")]
+
+        reference_total = retained + missing
+        target_total = retained + new
+
+        mapped_rows = [
+            row
+            for row in decisions
+            if row.get("type") == feature_type
+            and row.get("action") == "mapped"
+        ]
+
+        version_unchanged = sum(
+            1
+            for row in mapped_rows
+            if int(row.get("new_version") or 0)
+            == int(row.get("old_version") or 0)
+        )
+        version_incremented = sum(
+            1
+            for row in mapped_rows
+            if int(row.get("new_version") or 0)
+            > int(row.get("old_version") or 0)
+        )
+        comparison_unavailable = sum(
+            1
+            for row in mapped_rows
+            if "comparison unavailable" in row.get("reason", "")
+        )
+
+        rows.append(
+            {
+                "feature_type": feature_type,
+                "reference_total": reference_total,
+                "retained": retained,
+                "retained_percent": percentage(
+                    retained,
+                    reference_total,
+                ),
+                "missing": missing,
+                "target_total": target_total,
+                "new": new,
+                "new_percent": percentage(
+                    new,
+                    target_total,
+                ),
+                "version_unchanged": version_unchanged,
+                "version_incremented": version_incremented,
+                "comparison_unavailable": comparison_unavailable,
+            }
+        )
+
+    return rows
+
+
+def build_mapping_evidence_summary(
+    decisions: list[dict[str, str]],
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+
+    for feature_type in ("gene", "transcript"):
+        mapped_rows = [
+            row
+            for row in decisions
+            if row.get("type") == feature_type
+            and row.get("action") == "mapped"
+        ]
+
+        total = len(mapped_rows)
+        structural = sum(
+            1
+            for row in mapped_rows
+            if "lifton structural evidence"
+            in row.get("reason", "")
+        )
+        coordinate = sum(
+            1
+            for row in mapped_rows
+            if "coordinate overlap"
+            in row.get("reason", "")
+        )
+        other = total - structural - coordinate
+
+        rows.append(
+            {
+                "feature_type": feature_type,
+                "total": total,
+                "structural": structural,
+                "structural_percent": percentage(
+                    structural,
+                    total,
+                ),
+                "coordinate": coordinate,
+                "coordinate_percent": percentage(
+                    coordinate,
+                    total,
+                ),
+                "other": other,
+                "other_percent": percentage(
+                    other,
+                    total,
+                ),
+            }
+        )
+
+    return rows
+
+
+def gene_annotation_key(
+    gene_info: Optional[GeneInfo],
+) -> tuple[str, str]:
+    if gene_info is None:
+        return "<unknown>", "<unknown>"
+
+    return (
+        gene_info.feature_type,
+        gene_info.annotation_class,
+    )
+
+
+def build_gene_annotation_summary(
+    gene_decisions: list[dict[str, str]],
+    ref_genes: dict[str, GeneInfo],
+    target_genes: dict[str, GeneInfo],
+) -> dict[str, object]:
+    reference_counts: dict[
+        tuple[str, str],
+        Counter,
+    ] = defaultdict(Counter)
+
+    target_counts: dict[
+        tuple[str, str],
+        Counter,
+    ] = defaultdict(Counter)
+
+    transitions: Counter = Counter()
+
+    for row in gene_decisions:
+        action = row.get("action", "")
+
+        old_info = ref_genes.get(
+            row.get("old_stable_id", "")
+        )
+        target_info = target_genes.get(
+            row.get("current_stable_id", "")
+        )
+
+        if action in {"mapped", "missing"}:
+            reference_key = gene_annotation_key(old_info)
+            reference_counts[reference_key]["total"] += 1
+            reference_counts[reference_key][action] += 1
+
+        if action in {"mapped", "new"}:
+            target_key = gene_annotation_key(target_info)
+            target_counts[target_key]["total"] += 1
+            target_counts[target_key][action] += 1
+
+        if action == "mapped":
+            reference_key = gene_annotation_key(old_info)
+            target_key = gene_annotation_key(target_info)
+
+            if reference_key != target_key:
+                transitions[
+                    (
+                        reference_key[0],
+                        reference_key[1],
+                        target_key[0],
+                        target_key[1],
+                    )
+                ] += 1
+
+    reference_rows: list[dict[str, object]] = []
+
+    for (
+        feature_type,
+        annotation_class,
+    ), values in sorted(
+        reference_counts.items(),
+        key=lambda item: (
+            -item[1]["total"],
+            item[0][0],
+            item[0][1],
+        ),
+    ):
+        total = values["total"]
+        retained = values["mapped"]
+        missing = values["missing"]
+
+        reference_rows.append(
+            {
+                "feature_type": feature_type,
+                "annotation_class": annotation_class,
+                "reference_total": total,
+                "retained": retained,
+                "retained_percent": percentage(
+                    retained,
+                    total,
+                ),
+                "missing": missing,
+            }
+        )
+
+    target_rows: list[dict[str, object]] = []
+
+    for (
+        feature_type,
+        annotation_class,
+    ), values in sorted(
+        target_counts.items(),
+        key=lambda item: (
+            -item[1]["total"],
+            item[0][0],
+            item[0][1],
+        ),
+    ):
+        total = values["total"]
+        retained = values["mapped"]
+        new = values["new"]
+
+        target_rows.append(
+            {
+                "feature_type": feature_type,
+                "annotation_class": annotation_class,
+                "target_total": total,
+                "retained": retained,
+                "new": new,
+                "new_percent": percentage(
+                    new,
+                    total,
+                ),
+            }
+        )
+
+    transition_rows = [
+        {
+            "reference_feature_type": reference_feature_type,
+            "reference_annotation_class": reference_annotation_class,
+            "target_feature_type": target_feature_type,
+            "target_annotation_class": target_annotation_class,
+            "count": count,
+        }
+        for (
+            reference_feature_type,
+            reference_annotation_class,
+            target_feature_type,
+            target_annotation_class,
+        ), count in transitions.most_common()
+    ]
+
+    return {
+        "reference": reference_rows,
+        "target": target_rows,
+        "transitions": transition_rows,
+    }
+
+
+def format_percentage(value: object) -> str:
+    if value is None:
+        return "-"
+    return f"{float(value):.2f}%"
+
+
+def format_count(
+    value: object,
+    applicable: bool = True,
+) -> str:
+    if not applicable:
+        return "-"
+    return f"{int(value):,}"
+
+
+def print_feature_summary(
+    rows: list[dict[str, object]],
+) -> None:
+    print("STABLE-ID MAPPING SUMMARY")
+    print()
+    print(
+        f"{'Feature':<12}"
+        f"{'Reference':>12}"
+        f"{'Retained':>12}"
+        f"{'Retained %':>13}"
+        f"{'Missing':>12}"
+        f"{'Target':>12}"
+        f"{'New':>12}"
+        f"{'New %':>11}"
+    )
+
+    for row in rows:
+        reference_total = int(row["reference_total"])
+        target_total = int(row["target_total"])
+        reference_applicable = reference_total > 0
+        target_applicable = target_total > 0
+
+        print(
+            f"{str(row['feature_type']):<12}"
+            f"{format_count(reference_total, reference_applicable):>12}"
+            f"{format_count(row['retained'], reference_applicable):>12}"
+            f"{format_percentage(row['retained_percent']):>13}"
+            f"{format_count(row['missing'], reference_applicable):>12}"
+            f"{format_count(target_total, target_applicable):>12}"
+            f"{format_count(row['new'], target_applicable):>12}"
+            f"{format_percentage(row['new_percent']):>11}"
+        )
+
+    print()
+    print("VERSION OUTCOMES AMONG RETAINED IDS")
+    print()
+    print(
+        f"{'Feature':<12}"
+        f"{'Retained':>12}"
+        f"{'Unchanged':>12}"
+        f"{'Unchanged %':>13}"
+        f"{'Incremented':>13}"
+        f"{'Incremented %':>15}"
+        f"{'Unavailable':>13}"
+    )
+
+    for row in rows:
+        retained = int(row["retained"])
+
+        if retained == 0:
+            continue
+
+        unchanged = int(row["version_unchanged"])
+        incremented = int(row["version_incremented"])
+
+        print(
+            f"{str(row['feature_type']):<12}"
+            f"{retained:>12,}"
+            f"{unchanged:>12,}"
+            f"{format_percentage(percentage(unchanged, retained)):>13}"
+            f"{incremented:>13,}"
+            f"{format_percentage(percentage(incremented, retained)):>15}"
+            f"{int(row['comparison_unavailable']):>13,}"
+        )
+
+    print()
+    print(
+        "Retained % = mapped reference features / all reference features."
+    )
+    print(
+        "New % = newly assigned target features / all target features."
+    )
+    print(
+        "Exons are target-only assignments and therefore have no "
+        "retention percentage."
+    )
+
+
+def print_gene_annotation_summary(
+    summary: dict[str, object],
+    transition_limit: int,
+) -> None:
+    reference_rows = summary["reference"]
+    target_rows = summary["target"]
+    transitions = summary["transitions"]
+
+    assert isinstance(reference_rows, list)
+    assert isinstance(target_rows, list)
+    assert isinstance(transitions, list)
+
+    print()
+    print("REFERENCE GENE CLASSES")
+    print()
+    print(
+        f"{'GFF type / annotation class':<45}"
+        f"{'Reference':>12}"
+        f"{'Retained':>12}"
+        f"{'Retained %':>13}"
+        f"{'Missing':>12}"
+    )
+
+    for row in reference_rows:
+        label = (
+            f"{row['feature_type']} / "
+            f"{row['annotation_class']}"
+        )
+        print(
+            f"{label:<45}"
+            f"{int(row['reference_total']):>12,}"
+            f"{int(row['retained']):>12,}"
+            f"{format_percentage(row['retained_percent']):>13}"
+            f"{int(row['missing']):>12,}"
+        )
+
+    print()
+    print("TARGET GENE CLASSES")
+    print()
+    print(
+        f"{'GFF type / annotation class':<45}"
+        f"{'Target':>12}"
+        f"{'Retained':>12}"
+        f"{'New':>12}"
+        f"{'New %':>11}"
+    )
+
+    for row in target_rows:
+        label = (
+            f"{row['feature_type']} / "
+            f"{row['annotation_class']}"
+        )
+        print(
+            f"{label:<45}"
+            f"{int(row['target_total']):>12,}"
+            f"{int(row['retained']):>12,}"
+            f"{int(row['new']):>12,}"
+            f"{format_percentage(row['new_percent']):>11}"
+        )
+
+    print()
+    print("ANNOTATION-CLASS CHANGES AMONG RETAINED GENES")
+    print()
+
+    if not transitions:
+        print("  none")
+        return
+
+    total_retained = sum(
+        int(row["retained"])
+        for row in reference_rows
+    )
+
+    for row in transitions[:transition_limit]:
+        reference_label = (
+            f"{row['reference_feature_type']} / "
+            f"{row['reference_annotation_class']}"
+        )
+        target_label = (
+            f"{row['target_feature_type']} / "
+            f"{row['target_annotation_class']}"
+        )
+        count = int(row["count"])
+
+        print(
+            f"  {reference_label} -> {target_label}: "
+            f"{count:,} "
+            f"({format_percentage(percentage(count, total_retained))})"
+        )
+
+
+def print_mapping_evidence_summary(
+    rows: list[dict[str, object]],
+) -> None:
+    print()
+    print("MAPPING EVIDENCE AMONG RETAINED IDS")
+    print()
+    print(
+        f"{'Feature':<12}"
+        f"{'Mapped':>12}"
+        f"{'Structural':>12}"
+        f"{'Structural %':>14}"
+        f"{'Coordinate':>12}"
+        f"{'Coordinate %':>14}"
+        f"{'Other':>10}"
+        f"{'Other %':>10}"
+    )
+
+    for row in rows:
+        print(
+            f"{str(row['feature_type']):<12}"
+            f"{int(row['total']):>12,}"
+            f"{int(row['structural']):>12,}"
+            f"{format_percentage(row['structural_percent']):>14}"
+            f"{int(row['coordinate']):>12,}"
+            f"{format_percentage(row['coordinate_percent']):>14}"
+            f"{int(row['other']):>10,}"
+            f"{format_percentage(row['other_percent']):>10}"
+        )
+
+
+def print_review_flags(
+    flags: dict[str, object],
+) -> None:
+    print()
+    print("REVIEW FLAGS")
+    print()
+    print(
+        "  Coordinate-only genes with score below 0.50: "
+        f"{int(flags['coordinate_genes_below_0_50']):,}"
+    )
+    print(
+        "  Missing genes with a candidate claimed elsewhere: "
+        f"{int(flags['missing_genes_with_claimed_candidate']):,}"
+    )
+    print(
+        "  Mapped features with unavailable version comparisons: "
+        f"{int(flags['mapped_features_comparison_unavailable']):,}"
+    )
+
+
 def print_summary(summary: dict[str, object], limit: int) -> None:
+    feature_summary = summary["feature_summary"]
+    assert isinstance(feature_summary, list)
+    print_feature_summary(feature_summary)
+
+    mapping_evidence_summary = summary[
+        "mapping_evidence_summary"
+    ]
+    assert isinstance(mapping_evidence_summary, list)
+    print_mapping_evidence_summary(
+        mapping_evidence_summary
+    )
+
+    review_flags = summary["review_flags"]
+    assert isinstance(review_flags, dict)
+    print_review_flags(review_flags)
+
+    gene_annotation_summary = summary["gene_annotation_summary"]
+    assert isinstance(gene_annotation_summary, dict)
+    print_gene_annotation_summary(
+        gene_annotation_summary,
+        transition_limit=limit,
+    )
+
+    print()
+    print("DETAILED MAPPING AUDIT")
+    print()
+
+    decision_counts = summary["counts"]
+    assert isinstance(decision_counts, Counter)
+
+    print("All stable-ID decisions:")
+    for (feature_type, action), count in sorted(decision_counts.items()):
+        print(f"  {feature_type}:{action}: {count}")
+    
     gene_counts = summary["gene_counts"]
     assert isinstance(gene_counts, dict)
     print("Gene decision audit:")

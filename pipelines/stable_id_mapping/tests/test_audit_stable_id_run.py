@@ -6,7 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from audit_stable_id_run import audit_run
+from audit_stable_id_run import audit_run, print_summary
 
 
 def write_text(path: Path, text: str) -> None:
@@ -24,6 +24,7 @@ def write_tsv(path: Path, header: list[str], rows: list[list[str]]) -> None:
 
 def test_audit_run_writes_missing_coordinate_and_new_gene_tables(
     tmp_path: Path,
+    capsys,
 ) -> None:
     run_dir = tmp_path / "run"
     ref_gff = tmp_path / "ref.gff3"
@@ -150,6 +151,116 @@ gene	new	ENSG0003	2		0	ENSNEWG1	1	1	0	target gene was not claimed by any mapped 
 
     summary = audit_run(run_dir, ref_gff, target_gff, output_dir)
 
+    feature_summary = {
+        row["feature_type"]: row
+        for row in summary["feature_summary"]
+    }
+    gene_summary = feature_summary["gene"]
+
+    assert gene_summary["reference_total"] == 3
+    assert gene_summary["retained"] == 2
+    assert round(gene_summary["retained_percent"], 2) == 66.67
+    assert gene_summary["missing"] == 1
+    assert gene_summary["target_total"] == 3
+    assert gene_summary["new"] == 1
+    assert round(gene_summary["new_percent"], 2) == 33.33
+    assert gene_summary["version_unchanged"] == 0
+    assert gene_summary["version_incremented"] == 2
+    assert gene_summary["comparison_unavailable"] == 0
+
+    evidence_summary = {
+        row["feature_type"]: row
+        for row in summary["mapping_evidence_summary"]
+    }
+    gene_evidence = evidence_summary["gene"]
+
+    assert gene_evidence["total"] == 2
+    assert gene_evidence["structural"] == 1
+    assert gene_evidence["structural_percent"] == 50.0
+    assert gene_evidence["coordinate"] == 1
+    assert gene_evidence["coordinate_percent"] == 50.0
+    assert gene_evidence["other"] == 0
+
+    assert (
+        summary["review_flags"]["coordinate_genes_below_0_50"]
+        == 1
+    )
+    assert (
+        summary["review_flags"][
+            "missing_genes_with_claimed_candidate"
+        ]
+        == 0
+    )
+    assert (
+        summary["review_flags"][
+            "mapped_features_comparison_unavailable"
+        ]
+        == 0
+    )
+
+    annotation_summary = summary["gene_annotation_summary"]
+
+    reference_classes = {
+        (
+            row["feature_type"],
+            row["annotation_class"],
+        ): row
+        for row in annotation_summary["reference"]
+    }
+    target_classes = {
+        (
+            row["feature_type"],
+            row["annotation_class"],
+        ): row
+        for row in annotation_summary["target"]
+    }
+
+    reference_protein_coding = reference_classes[
+        ("gene", "protein_coding")
+    ]
+    assert reference_protein_coding["reference_total"] == 2
+    assert reference_protein_coding["retained"] == 2
+    assert reference_protein_coding["retained_percent"] == 100.0
+    assert reference_protein_coding["missing"] == 0
+
+    reference_lncrna = reference_classes[
+        ("gene", "lncRNA")
+    ]
+    assert reference_lncrna["reference_total"] == 1
+    assert reference_lncrna["retained"] == 0
+    assert reference_lncrna["retained_percent"] == 0.0
+    assert reference_lncrna["missing"] == 1
+
+    target_protein_coding = target_classes[
+        ("gene", "protein_coding")
+    ]
+    assert target_protein_coding["target_total"] == 2
+    assert target_protein_coding["retained"] == 2
+    assert target_protein_coding["new"] == 0
+    assert target_protein_coding["new_percent"] == 0.0
+
+    target_lncrna = target_classes[
+        ("gene", "lncRNA")
+    ]
+    assert target_lncrna["target_total"] == 1
+    assert target_lncrna["retained"] == 0
+    assert target_lncrna["new"] == 1
+    assert target_lncrna["new_percent"] == 100.0
+
+    assert annotation_summary["transitions"] == []
+
+    print_summary(summary, limit=1)
+    printed = capsys.readouterr().out
+
+    assert "STABLE-ID MAPPING SUMMARY" in printed
+    assert "VERSION OUTCOMES AMONG RETAINED IDS" in printed
+    assert "MAPPING EVIDENCE AMONG RETAINED IDS" in printed
+    assert "REVIEW FLAGS" in printed
+    assert "REFERENCE GENE CLASSES" in printed
+    assert "TARGET GENE CLASSES" in printed
+    assert "gene / protein_coding" in printed
+    assert "gene / lncRNA" in printed
+    assert "DETAILED MAPPING AUDIT" in printed
     assert summary["gene_counts"]["structural_mapped"] == 1
     assert summary["gene_counts"]["coordinate_mapped"] == 1
     assert summary["gene_counts"]["missing"] == 1

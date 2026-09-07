@@ -5,19 +5,21 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-FEATURE_ORDER = ("gene", "transcript", "translation")
+FEATURE_ORDER = ("gene", "transcript", "translation", "exon")
 ACTION_ORDER = ("mapped", "missing", "new")
 
 PK_BY_TYPE = {
     "gene": "gene_id",
     "transcript": "transcript_id",
     "translation": "translation_id",
+    "exon": "exon_id",
 }
 
 TABLE_BY_TYPE = {
     "gene": "gene",
     "transcript": "transcript",
     "translation": "translation",
+    "exon": "exon",
 }
 
 
@@ -30,6 +32,7 @@ class Feature:
     end: int
     strand: str
     parent_stable_id: Optional[str] = None
+    parent_stable_ids: tuple[str, ...] = ()
 
     @property
     def length(self) -> int:

@@ -1,6 +1,6 @@
 // modules/local/render_stable_id_sql.nf
 process RENDER_STABLE_ID_SQL {
-    // tag "$db_name"
+   	tag "$db_name"
 
     publishDir {
         "${params.output_dir}/${db_name}/sql"

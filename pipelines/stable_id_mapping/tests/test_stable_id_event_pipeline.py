@@ -16,6 +16,18 @@ def write_text(path: Path, text: str) -> None:
     path.write_text(text.strip() + "\n", encoding="utf-8")
 
 
+def write_test_fastas(tmp_path):
+    sequence = "A" * 10000
+
+    ref_fasta = tmp_path / "ref.fa"
+    target_fasta = tmp_path / "target.fa"
+
+    write_text(ref_fasta, f">chr1\n{sequence}\n>chrT\n{sequence}")
+    write_text(target_fasta, f">chr1\n{sequence}\n>chrT\n{sequence}")
+
+    return ref_fasta, target_fasta
+
+
 def test_parse_gff3_ignores_region_records(tmp_path: Path) -> None:
     gff = tmp_path / "input.gff3"
     write_text(
@@ -43,6 +55,8 @@ def test_stable_id_event_pipeline_versions_and_sql(tmp_path: Path) -> None:
     report = tmp_path / "report.txt"
     output_sql = tmp_path / "out.sql"
     output_tsv = tmp_path / "out.tsv"
+
+    ref_fasta, target_fasta = write_test_fastas(tmp_path)
 
     write_text(
         ref_gff,
@@ -100,6 +114,8 @@ Missing gene IDs:
         include_translations=True,
         dry_run=True,
         backup_prefix="stable_id_mapper_backup_test",
+        ref_fasta=ref_fasta,
+        target_fasta=target_fasta,
     )
 
     decisions = run_pipeline(config)
@@ -108,9 +124,9 @@ Missing gene IDs:
         for decision in decisions
     }
 
-    assert by_key[("gene", "mapped", "ENSXG0001")].new_version == 5
+    assert by_key[("gene", "mapped", "ENSXG0001")].new_version == 4
     assert by_key[("transcript", "mapped", "ENSXT0001")].new_version == 10
-    assert by_key[("translation", "mapped", "ENSXP0001")].new_version == 3
+    assert by_key[("translation", "mapped", "ENSXP0001")].new_version == 2
     assert by_key[("gene", "missing", "ENSXG0002")].new_stable_id is None
     assert "USE `species_core`;" in output_sql.read_text(encoding="utf-8")
     assert "ROLLBACK;" in output_sql.read_text(encoding="utf-8")
@@ -126,6 +142,8 @@ def test_pipeline_maps_by_lifton_evidence_before_coordinate_overlap(
     target_gff = tmp_path / "target.gff3"
     mapped_gff = tmp_path / "mapped.gff3"
     report = tmp_path / "report.txt"
+
+    ref_fasta, target_fasta = write_test_fastas(tmp_path)
 
     write_text(
         ref_gff,
@@ -189,6 +207,8 @@ chrT	test	mRNA	5000	5500	.	+	.	ID=transcript:ENSXT0001.9;Parent=gene:ENSXG0001.4
             include_translations=False,
             dry_run=True,
             score_evidence=evidence,
+            ref_fasta=ref_fasta,
+            target_fasta=target_fasta,
         )
     )
 
@@ -220,6 +240,8 @@ def test_pipeline_does_not_map_projected_ids_without_a_target_match(
     target_gff = tmp_path / "target.gff3"
     mapped_gff = tmp_path / "mapped.gff3"
     report = tmp_path / "report.txt"
+
+    ref_fasta, target_fasta = write_test_fastas(tmp_path)
 
     write_text(
         ref_gff,
@@ -260,6 +282,8 @@ chrT	test	mRNA	5000	5500	.	+	.	ID=transcript:ENSXT0001.9;Parent=gene:ENSXG0001.4
             output_sql=tmp_path / "out.sql",
             include_translations=False,
             dry_run=True,
+            ref_fasta=ref_fasta,
+            target_fasta=target_fasta,
         )
     )
 
@@ -288,6 +312,8 @@ def test_gene_evidence_conflicts_are_resolved_by_score_before_overlap(
     target_gff = tmp_path / "target.gff3"
     mapped_gff = tmp_path / "mapped.gff3"
     report = tmp_path / "report.txt"
+
+    ref_fasta, target_fasta = write_test_fastas(tmp_path)
 
     write_text(
         ref_gff,
@@ -350,6 +376,8 @@ chrT	test	gene	100	200	.	+	.	ID=gene:ENSXG0002.1
             include_translations=False,
             dry_run=True,
             score_evidence=evidence,
+            ref_fasta=ref_fasta,
+            target_fasta=target_fasta,
         )
     )
 
@@ -378,6 +406,8 @@ def test_gene_same_stable_id_target_does_not_win_without_evidence(
     target_gff = tmp_path / "target.gff3"
     mapped_gff = tmp_path / "mapped.gff3"
     report = tmp_path / "report.txt"
+
+    ref_fasta, target_fasta = write_test_fastas(tmp_path)
 
     write_text(
         ref_gff,
@@ -433,6 +463,8 @@ chrT	test	mRNA	100	500	.	+	.	ID=transcript:ENSXT0001.4;Parent=gene:ENSXG0001.4
             include_translations=False,
             dry_run=True,
             score_evidence=evidence,
+            ref_fasta=ref_fasta,
+            target_fasta=target_fasta,
         )
     )
 
@@ -450,7 +482,7 @@ chrT	test	mRNA	100	500	.	+	.	ID=transcript:ENSXT0001.4;Parent=gene:ENSXG0001.4
 
     assert mapped_gene.old_stable_id == "ENSXG0001"
     assert mapped_gene.current_stable_id == "ENSXG9001"
-    assert mapped_gene.new_version == 5
+    assert mapped_gene.new_version == 4
     assert "by lifton structural evidence" in mapped_gene.reason
     assert new_same_id_target.new_stable_id == "ENSXG7000"
 
@@ -462,6 +494,8 @@ def test_lifton_copy_gene_ids_do_not_become_old_stable_id_decisions(
     target_gff = tmp_path / "target.gff3"
     mapped_gff = tmp_path / "mapped.gff3"
     report = tmp_path / "report.txt"
+
+    ref_fasta, target_fasta = write_test_fastas(tmp_path)
 
     write_text(
         ref_gff,
@@ -499,6 +533,8 @@ chrT	test	gene	100	500	.	+	.	ID=gene:ENSXG0001_1.4
             output_sql=tmp_path / "out.sql",
             include_translations=False,
             dry_run=True,
+            ref_fasta=ref_fasta,
+            target_fasta=target_fasta,
         )
     )
 

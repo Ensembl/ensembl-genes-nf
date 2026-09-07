@@ -1,6 +1,6 @@
 // modules/local/stage_species_inputs.nf
 process STAGE_SPECIES_INPUTS {
-    // tag "$db_name"
+    tag "$db_name"
 
     publishDir {
     	"${params.output_dir}/${db_name}/inputs"

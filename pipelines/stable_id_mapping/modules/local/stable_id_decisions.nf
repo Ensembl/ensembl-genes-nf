@@ -1,6 +1,6 @@
 // modules/local/stable_id_decisions.nf
 process STABLE_ID_DECISIONS {
-    // tag "$db_name"
+    tag "$db_name"
 
     publishDir {
         "${params.output_dir}/${db_name}/decisions"
@@ -13,7 +13,9 @@ process STABLE_ID_DECISIONS {
 
     input:
         tuple val(db_name),
+              path(ref_fasta),
               path(ref_gff),
+              path(target_fasta),
               path(target_gff),
               val(mapping_session_id),
               val(gene_range),
@@ -45,6 +47,8 @@ process STABLE_ID_DECISIONS {
         --db-name ${db_name} \
         --ref-gff ${ref_gff} \
         --target-gff ${target_gff} \
+		--ref-fasta ${ref_fasta} \
+        --target-fasta ${target_fasta} \
         --mapped-gff ${projected_gff} \
         --missing-report ${missing_report} \
         --transcript-pairs ${transcript_pairs} \

@@ -10,6 +10,8 @@ from typing import Optional, Sequence
 
 DEFAULT_LIFTON_FEATURE_TYPES = (
     "gene",
+    "ncRNA_gene",
+    "pseudogene",
 )
 GENERATED_FEATURE_TYPES_FILE_NAME = "lifton_feature_types.txt"
 
