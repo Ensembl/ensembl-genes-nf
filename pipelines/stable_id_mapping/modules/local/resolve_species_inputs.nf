@@ -1,7 +1,12 @@
 process RESOLVE_SPECIES_INPUTS {
-    tag "$db_name ($requested_mode)"
+    tag "$db_name ($requested_mode) ($params.assembly_metadata_db)"
 
-	debug true
+	// debug true
+
+	publishDir {
+        "${params.output_dir}/${db_name}/inputs"
+        }, mode: 'copy',
+        saveAs: { name -> name.startsWith("${db_name}.") ? name : null }
 
     input:
     tuple val(db_name),
