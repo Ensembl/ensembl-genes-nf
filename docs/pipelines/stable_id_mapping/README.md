@@ -54,7 +54,7 @@ Exactly one of `--db_name` or `--samplesheet` is required. They cannot be suppli
 nextflow run main.nf -profile slurm --db_name DATABASE_NAME
 ```
 
-Direct file overrides are supported only with `--db_name`:
+In CL direct file overrides are supported only with `--db_name`:
 
 ```bash
 nextflow run main.nf \
@@ -86,7 +86,7 @@ Run it with:
 nextflow run main.nf -profile slurm --samplesheet species.csv
 ```
 
-Samplesheet columns:
+Samplesheet optional columns:
 
 | Column | Required | Meaning |
 |---|---:|---|
@@ -176,7 +176,7 @@ Exactly one of these parameters must be provided.
 | `--audit_limit` | `20` | Mapping audit | Maximum number of example rows and some ranked categories printed in the text audit. It does not limit the TSV audit tables. |
 | `--replace_events_for_session` | `false` | Mapping SQL | Make the rendered SQL replace existing `stable_id_event` rows for the selected session. It does not replace the `annotation_events` mapping-session row. |
 | `--batch_size` | `500` | Mapping and reassignment SQL | Number of rows grouped into generated SQL insert batches. It does not change mapping decisions. |
-| `--lifton_threads` | `8` | Currently inactive | Defined in the configuration but not consumed by the active modular workflow. LiftOn currently uses `task.cpus`: 8 in the `slurm` profile and normally 1 without it. |
+| `--lifton_threads` | `8` | Currently inactive | Defined in the configuration but not consumed by the active modular workflow. LiftOn currently uses `task.cpus`: 8 in the `slurm` profile and normally 1 without it. Change it on the nextflow.config if need be. |
 | `--dry_run_sql` | `false` | Currently inactive | Defined for an older unused module. The active mapping branch always renders executable and dry-run SQL and runs the dry-run SQL. The reassignment branch generates both files but does not execute them. |
 
 Boolean parameters can be changed explicitly, for example:
@@ -326,32 +326,6 @@ The text report prints only a limited number of examples. The complete rows are 
 - `<db_name>.new_genes.tsv` — target genes receiving new IDs, their annotation classes and whether they were candidates for old genes.
 
 Use these TSV files for investigation and filtering rather than increasing `audit_limit` excessively.
-
-## Nextflow execution reports
-
-The mapping audit describes the biological/stable-ID results. Nextflow's own reports describe task execution time and resource use.
-
-Use timestamped filenames so repeated runs do not collide:
-
-```bash
-run_id=$(date +%Y%m%d_%H%M%S)
-mkdir -p results/pipeline_info
-
-nextflow run main.nf \
-    -profile slurm \
-    --db_name DATABASE_NAME \
-    -with-trace results/pipeline_info/trace_${run_id}.txt \
-    -with-report results/pipeline_info/report_${run_id}.html \
-    -with-timeline results/pipeline_info/timeline_${run_id}.html \
-    -with-dag results/pipeline_info/dag_${run_id}.html
-```
-
-- **Trace:** one row per task, useful for comparing requested and actual CPU, memory and run time.
-- **Report:** interactive summary of execution, resource use and task efficiency.
-- **Timeline:** chronological view of when tasks ran and overlapped.
-- **DAG:** diagram of the workflow structure.
-
-These are standard Nextflow options, not pipeline parameters; therefore they use a single hyphen.
 
 ## Safety and review
 
