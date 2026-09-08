@@ -28,26 +28,36 @@ NXF_VER=26.04.6 nextflow run pipelines/qc/main.nf --help
 
 ## Input
 
-The annotation manifest contains the shared inputs needed to derive proteins:
+The manifest columns depend on the selected mode. The pipeline validates the
+manifest against a mode-specific schema before starting any processes.
+
+For AGAT, only the GFF3 is required:
 
 ```csv
-sample,genome_fasta,gff3
-sample_1,/path/to/sample_1.fa,/path/to/sample_1.gff3
-sample_2,/path/to/sample_2.fa,/path/to/sample_2.gff3
+sample,gff3
+sample_1,/path/to/sample_1.gff3
 ```
 
-An optional precomputed protein FASTA can be supplied for any row:
+For InterProScan, either a precomputed protein FASTA or both the genome FASTA
+and GFF3 may be supplied. The latter allows proteins to be derived with
+`gffread`:
+
+```csv
+sample,protein_fasta
+sample_1,/path/to/sample_1.faa
+```
+
+For Diamond and combined mode, the genome FASTA and GFF3 are required because
+Diamond translation validation uses both. A precomputed protein FASTA is
+optional in those modes:
 
 ```csv
 sample,genome_fasta,gff3,protein_fasta
 sample_1,/path/to/sample_1.fa,/path/to/sample_1.gff3,/path/to/sample_1.faa
 ```
 
-AGAT consumes the GFF3 directly. InterProScan and Diamond use the supplied
-protein FASTA when present and otherwise consume a FASTA derived by `gffread`.
-Inputs that are not part of every annotation, such as splice-junction files,
-should be provided through their own manifest when a future QC workflow needs
-them.
+InterProScan and Diamond use the supplied protein FASTA when present and
+otherwise derive one with `gffread` where the required inputs are available.
 
 Diamond requires either a prebuilt database via `--diamond_reference_db` or a
 reference protein FASTA via `--diamond_reference_proteins`. The prebuilt
@@ -58,9 +68,9 @@ the fallback source for `diamond makedb`.
 
 | Parameter | Required | Description |
 | --- | --- | --- |
-| `--input_csv` | yes | CSV containing `sample`, `genome_fasta`, and `gff3` |
+| `--input_csv` | yes | Mode-specific CSV manifest; see the Input section |
 | `--mode` | yes | `agat`, `interproscan`, `diamond`, or `combined` |
-| `--data_file_path` | InterProScan modes | InterProScan data directory |
+| `--data_file_path` | InterProScan modes | InterProScan data directory; supply this through a site/user config |
 | `--diamond_reference_db` | Diamond modes | Existing prebuilt Diamond database; takes precedence over the FASTA |
 | `--diamond_reference_proteins` | Diamond modes | Reference protein FASTA used to build a database when no prebuilt database is supplied |
 | `--database` | no | InterProScan database, default `Pfam` |
@@ -71,16 +81,27 @@ the fallback source for `diamond makedb`.
 ```bash
 nextflow run pipelines/qc/main.nf \
   -profile slurm \
+  -c ~/.config/ensembl-genes-nf/ebi.config \
   --input_csv /path/to/annotation_samples.csv \
   --mode combined \
-  --data_file_path /path/to/interproscan/data \
   --diamond_reference_db /path/to/reference.dmnd \
   --outdir results
 ```
 
+The InterProScan data directory is site-specific and is intentionally not
+hard-coded in the repository. Create a user or site configuration containing,
+for example:
+
+```groovy
+params.data_file_path = '/nfs/production/flicek/ensembl/shared_data/interproscan-5.78-109.0/data'
+```
+
+Pass that file with `-c`. The parameter schema requires the value for
+`interproscan` and `combined` modes and validates that the directory exists.
+
 Do not put registry usernames, passwords, or tokens in the sample sheet or
-Nextflow configuration. Configure Apptainer or Singularity authentication on
-the execution host before launching the run.
+committed Nextflow configuration. Configure Apptainer or Singularity
+authentication on the execution host before launching the run.
 
 ## Registry Authentication
 
@@ -129,8 +150,9 @@ later run with `--diamond_reference_db`.
 
 ## Separation Of Concerns
 
-- `nextflow_schema.json` validates parameter types, enums, required mode-specific
-  inputs, and the annotation manifest schema.
+- `nextflow_schema.json` validates parameter types, enums, and required
+  mode-specific parameters.
+- `assets/*_samplesheet.json` validates the mode-specific annotation manifest.
 - `main.nf` loads validated inputs and starts the workflow.
 - `workflows/qc.nf` decides which analyses run and shares derived proteins.
 - Subworkflows connect reusable analysis chains.

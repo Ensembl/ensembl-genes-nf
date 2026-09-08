@@ -31,7 +31,7 @@ process PREP_AA_FASTA {
 
     stub:
         """
-        touch ${meta.id}.faa
+        touch ${meta.id}.clean.faa
         touch ${meta.id}.cds.fa
 
         cat <<-END_VERSIONS > versions.yml

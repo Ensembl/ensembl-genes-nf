@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Annotation QC pipeline parameters",
-  "description": "Run one or more QC analyses from a genome and GFF3 annotation manifest.",
+  "description": "Run one or more QC analyses from a mode-specific annotation manifest.",
   "type": "object",
   "properties": {
     "input_csv": {
@@ -9,7 +9,7 @@
       "format": "file-path",
       "exists": true,
       "pattern": "^\\S+\\.csv$",
-      "description": "CSV containing sample, genome_fasta, and gff3 columns."
+      "description": "Mode-specific CSV annotation manifest; see the pipeline README."
     },
     "mode": {
       "type": "string",

@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Full annotation QC sample sheet",
   "type": "array",
   "items": {
     "type": "object",
@@ -21,8 +22,7 @@
       "protein_fasta": {
         "type": "string",
         "format": "file-path",
-        "exists": true,
-        "description": "Optional precomputed protein FASTA. If absent, proteins are derived with gffread."
+        "exists": true
       }
     },
     "required": ["sample", "genome_fasta", "gff3"],

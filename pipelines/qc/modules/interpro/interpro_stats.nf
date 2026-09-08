@@ -24,7 +24,7 @@ process PROCESS_INTERPRO {
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            qc_parser: annotation-qc
+            qc_parser: \$(python -c 'import importlib.metadata; print(importlib.metadata.version("ensembl-genes"))')
         END_VERSIONS
         """
 
@@ -35,7 +35,7 @@ process PROCESS_INTERPRO {
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            qc_parser: annotation-qc
+            qc_parser: \$(python -c 'import importlib.metadata; print(importlib.metadata.version("ensembl-genes"))')
         END_VERSIONS
         """
 }

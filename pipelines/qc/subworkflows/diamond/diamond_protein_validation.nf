@@ -1,9 +1,11 @@
 include { PREP_DIAMOND_DB } from '../../modules/diamond/prep_diamond_db.nf'
 include { DIAMOND_BLASTP } from '../../modules/diamond/blastp.nf'
+include { DIAMOND_PARSE } from '../../modules/diamond/parse_diamond.nf'
 
 workflow DIAMOND_PROTEIN_VALIDATION {
     take:
         protein_ch
+        annotation_ch
         ref_protein_faa
         ref_diamond_db
 
@@ -22,7 +24,20 @@ workflow DIAMOND_PROTEIN_VALIDATION {
             diamond_db
         )
 
+        annotation_by_id = annotation_ch.map { meta, genome_fasta, gff3 ->
+            tuple(meta.id, meta, genome_fasta, gff3)
+        }
+        hits_by_id = hits.hits.map { meta, diamond_hits ->
+            tuple(meta.id, meta, diamond_hits)
+        }
+        parse_input = annotation_by_id.join(hits_by_id).map {
+            sample_id, meta, genome_fasta, gff3, _hit_meta, diamond_hits ->
+                tuple(meta, genome_fasta, gff3, diamond_hits)
+        }
+        parsed = DIAMOND_PARSE(parse_input)
+
     emit:
         diamond_tsv = hits.hits
-        versions = database_versions.mix(hits.versions)
+        diamond_stats = parsed.stats
+        versions = database_versions.mix(hits.versions).mix(parsed.versions)
 }

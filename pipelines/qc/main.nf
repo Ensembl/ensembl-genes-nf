@@ -10,8 +10,15 @@ workflow {
     // This is pipeline-owned configuration, not a user-supplied input.
     feature_levels_yaml = file("${projectDir}/assets/feature_levels.yaml")
 
+    def samplesheet_schema = [
+        agat:          'assets/agat_samplesheet.json',
+        interproscan:  'assets/protein_qc_samplesheet.json',
+        diamond:       'assets/full_annotation_samplesheet.json',
+        combined:      'assets/full_annotation_samplesheet.json'
+    ][params.mode]
+
     annotation_ch = channel.fromList(
-        samplesheetToList(params.input_csv, 'assets/annotation_samplesheet.json')
+        samplesheetToList(params.input_csv, samplesheet_schema)
     )
 
     QC(

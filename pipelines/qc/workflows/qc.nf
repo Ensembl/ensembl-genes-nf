@@ -19,11 +19,19 @@ workflow QC {
         // FASTA is used when present; otherwise it is derived with gffread.
         samples = annotation_ch.map { row ->
             def meta = [id: row[0], sample: row[0]]
+            def genome_fasta = row.size() > 1 && row[1] ? file(row[1]) : null
+            def gff3 = row.size() > 2 && row[2] ? file(row[2]) : null
             def protein = row.size() > 3 && row[3] ? file(row[3]) : null
-            tuple(meta, file(row[1]), file(row[2]), protein)
+            tuple(meta, genome_fasta, gff3, protein)
         }
 
-        gff_ch = samples.map { meta, _genome_fasta, gff3, _protein -> tuple(meta, gff3) }
+        annotation_for_diamond = samples.map { meta, genome_fasta, gff3, _protein ->
+            tuple(meta, genome_fasta, gff3)
+        }
+
+        gff_ch = samples
+            .filter { _meta, _genome_fasta, gff3, _protein -> gff3 }
+            .map { meta, _genome_fasta, gff3, _protein -> tuple(meta, gff3) }
 
         if (mode in ['agat', 'combined']) {
             AGAT_METRICS(
@@ -38,7 +46,7 @@ workflow QC {
                 .map { meta, _genome_fasta, _gff3, protein -> tuple(meta, protein) }
 
             samples_to_derive = samples
-                .filter { _meta, _genome_fasta, _gff3, protein -> !protein }
+                .filter { _meta, genome_fasta, gff3, protein -> !protein && genome_fasta && gff3 }
                 .map { meta, genome_fasta, gff3, _protein ->
                     tuple(meta, genome_fasta, gff3)
                 }
@@ -58,6 +66,7 @@ workflow QC {
         if (mode in ['diamond', 'combined']) {
             DIAMOND_PROTEIN_VALIDATION(
                 protein_ch,
+                annotation_for_diamond,
                 diamond_reference_proteins,
                 diamond_reference_db
             )
