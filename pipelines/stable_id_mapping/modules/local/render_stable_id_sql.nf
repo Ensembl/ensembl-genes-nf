@@ -6,8 +6,8 @@ process RENDER_STABLE_ID_SQL {
         "${params.output_dir}/${db_name}/sql"
     }, mode: 'copy',
     saveAs: { name ->
-        name == "${db_name}.stable_id_updates.sql" ||
-        name == "${db_name}.stable_id_updates.dry_run.sql" ? name : null
+        name == "${db_name}.incomplete.sql" ||
+        name == "${db_name}.incomplete.dry_run.sql" ? name : null
     }
 
     input:
@@ -28,8 +28,8 @@ process RENDER_STABLE_ID_SQL {
               path(locus_comparison),
               path(decisions_tsv),
               path(score_evidence_tsv),
-              path("${db_name}.stable_id_updates.sql"),
-              path("${db_name}.stable_id_updates.dry_run.sql"),
+              path("${db_name}.incomplete.sql"),
+              path("${db_name}.incomplete.dry_run.sql"),
               emit: rendered
 
     script:
@@ -39,7 +39,7 @@ process RENDER_STABLE_ID_SQL {
 		"""
 		python3 ${projectDir}/bin/render_stable_id_sql.py \
 		    --decisions-tsv ${decisions_tsv} \
-		    --output-sql ${db_name}.stable_id_updates.sql \
+		    --output-sql ${db_name}.incomplete.sql \
 		    --db-name ${db_name} \
 		    --mapping-session-id ${mapping_session_id} \
 		    --batch-size ${params.batch_size} \
@@ -48,7 +48,7 @@ process RENDER_STABLE_ID_SQL {
 		
 		python3 ${projectDir}/bin/render_stable_id_sql.py \
 		    --decisions-tsv ${decisions_tsv} \
-		    --output-sql ${db_name}.stable_id_updates.dry_run.sql \
+		    --output-sql ${db_name}.incomplete.dry_run.sql \
 		    --db-name ${db_name} \
 		    --mapping-session-id ${mapping_session_id} \
 		    --batch-size ${params.batch_size} \
