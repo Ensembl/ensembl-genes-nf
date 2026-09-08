@@ -4,7 +4,7 @@ process EXAMPLE_MODULE {
     label 'process_medium'
 
     // TODO: Update container URL to point to your tool's Singularity/Docker container
-    container "https://depot.galaxyproject.org/singularity/mulled-v2-example:latest"
+    container "docker://ubuntu@sha256:c664f8f86ed5a386b0a340d981b8f81714e21a8b9c73f658c4bea56aa179d54a"
     
     tag "${meta.id}"
 

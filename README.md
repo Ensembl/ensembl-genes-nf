@@ -89,15 +89,72 @@ The example pipeline demonstrates patterns from simple to complex:
 **Building a new pipeline?**
 1. Copy the structure from `pipelines/example/`
 2. Use module templates from `modules/` as starting points
-3. Follow the patterns in [docs/PATTERNS.md](docs/PATTERNS.md)
+3. Follow the patterns in [docs/template/PATTERNS.md](docs/template/PATTERNS.md)
 4. Reference the example implementations
 
 **Adding to an existing pipeline?** Browse `modules/` and `subworkflows/` for reusable components you can adapt.
 
-## Requirements
+## Requirements and Nextflow syntax versions
 
-- Nextflow ≥ 21.04.0 (DSL2)
-- Singularity 
+- Nextflow ≥ 25.10.2
+- Java 17 or newer
+- Singularity or Apptainer
+
+The repository uses Nextflow's strict/v2 syntax. Nextflow 26.04 and newer use
+the v2 parser by default. With Nextflow 25.10.2 through 25.x, enable it
+explicitly with `NXF_SYNTAX_PARSER=v2`.
+
+```bash
+# Recommended: Nextflow 26.04+
+nextflow -version
+nextflow run pipelines/example/main.nf -stub-run -profile test
+
+# Supported compatibility mode: Nextflow 25.10.2+
+NXF_SYNTAX_PARSER=v2 nextflow -version
+NXF_SYNTAX_PARSER=v2 nextflow run pipelines/example/main.nf -stub-run -profile test
+```
+
+The root configuration enforces Singularity and disables Docker and Conda.
+HPC-specific cache settings are kept in
+[`config/singularity.config`](config/singularity.config) and can be selected
+with `-c` when running on the Ensembl cluster:
+
+```bash
+nextflow run pipelines/example/main.nf \
+  -profile test \
+  -c config/singularity.config
+```
+
+See [docs/NEXTFLOW_REQUIREMENTS.md](docs/NEXTFLOW_REQUIREMENTS.md) for the
+repository contract and validation commands.
+
+## Private Container Registry
+
+Some implementation pipelines use private images from the EBI Docker registry.
+Authenticate Singularity or Apptainer outside Nextflow with an EBI/GitLab
+account or token that has registry-read permission:
+
+```bash
+export EBI_REGISTRY_USER="${EBI_REGISTRY_USER:-$USER}"
+read -r -s EBI_REGISTRY_TOKEN
+printf '\n'
+printf '%s\n' "$EBI_REGISTRY_TOKEN" | singularity registry login \
+  --username "$EBI_REGISTRY_USER" \
+  --password-stdin \
+  docker://dockerhub.ebi.ac.uk
+unset EBI_REGISTRY_TOKEN
+```
+
+Check access before launching a pipeline:
+
+```bash
+singularity registry list
+singularity pull docker://dockerhub.ebi.ac.uk/<project>/<image>:<tag>
+```
+
+For CI, use masked `APPTAINER_DOCKER_USERNAME` and
+`APPTAINER_DOCKER_PASSWORD` secrets. Never put registry credentials in a
+sample sheet, Nextflow parameter, or committed configuration file.
 
 ## Branch Structure
 
@@ -121,4 +178,3 @@ Contributions to improve templates and documentation are welcome! Consider:
 ## License
 
 [Add license information]
-

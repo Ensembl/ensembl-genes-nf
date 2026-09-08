@@ -21,5 +21,5 @@ New to this pipeline? Start here:
 
 **Quick Links:**
 - Back to [main README](../README.md)
-- [Example workflows](../workflows/)
-- [Advanced entry points](../advanced_entrypoints/)
+- [Example workflows](../../pipelines/example/workflows/)
+- [Example pipeline](../../pipelines/example/)

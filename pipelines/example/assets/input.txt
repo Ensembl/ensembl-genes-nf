@@ -1,0 +1,1 @@
+input data for the Nextflow template example
