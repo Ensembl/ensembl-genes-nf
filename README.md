@@ -89,15 +89,36 @@ The example pipeline demonstrates patterns from simple to complex:
 **Building a new pipeline?**
 1. Copy the structure from `pipelines/example/`
 2. Use module templates from `modules/` as starting points
-3. Follow the patterns in [docs/PATTERNS.md](docs/PATTERNS.md)
+3. Follow the patterns in [docs/template/PATTERNS.md](docs/template/PATTERNS.md)
 4. Reference the example implementations
 
 **Adding to an existing pipeline?** Browse `modules/` and `subworkflows/` for reusable components you can adapt.
 
-## Requirements
+## Requirements and Nextflow syntax versions
 
-- Nextflow ≥ 21.04.0 (DSL2)
-- Singularity 
+## Requirements and Nextflow syntax versions
+
+- Nextflow ≥ 25.10.2
+- Java 17 or newer
+- Singularity or Apptainer
+
+The repository uses Nextflow's strict/v2 syntax. Nextflow 26.04 and newer use
+the v2 parser by default. With Nextflow 25.10.2 through 25.x, enable it
+explicitly with `NXF_SYNTAX_PARSER=v2`.
+
+```bash
+# Recommended: Nextflow 26.04+
+nextflow -version
+nextflow run pipelines/example/main.nf -stub-run -profile test
+
+# Supported compatibility mode: Nextflow 25.10.2+
+NXF_SYNTAX_PARSER=v2 nextflow -version
+NXF_SYNTAX_PARSER=v2 nextflow run pipelines/example/main.nf -stub-run -profile test
+```
+
+The root configuration enforces Singularity and disables Docker and Conda.
+See [docs/NEXTFLOW_REQUIREMENTS.md](docs/NEXTFLOW_REQUIREMENTS.md) for the
+repository contract and validation commands.
 
 ## Private Container Registry
 

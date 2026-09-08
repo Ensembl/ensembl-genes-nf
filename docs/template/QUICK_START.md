@@ -1,6 +1,9 @@
 # Getting Started with the Example Pipeline
 
-This guide walks you through the example pipeline, starting with the simplest concepts and progressively building to more advanced patterns.
+This guide walks you through the example pipeline, starting with the simplest
+concepts and progressively building to more advanced patterns. It uses
+Nextflow's strict/v2 syntax. Nextflow 26.04 and newer use the v2 parser by
+default; Nextflow 25.10.2 needs `NXF_SYNTAX_PARSER=v2`.
 
 ## Your First Workflow
 
@@ -136,7 +139,9 @@ Follow this progression to build your understanding:
 4. Explore the entry point system in `advanced_entrypoints/`
 5. Read the design documentation to understand advanced concepts
 
----
+Start a module with `modules/module_example.nf`. Use
+`modules/reference_example.nf` when you need dynamic arguments, optional
+outputs, and retry configuration.
 
 ## Creating Your Own
 
