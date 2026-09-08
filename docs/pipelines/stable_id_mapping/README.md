@@ -15,11 +15,10 @@ The pipeline is designed for the Ensembl genebuild cluster environment. It expec
 - Nextflow with DSL2 support;
 - Python 3 with `pymysql`;
 - LiftOn, available as `lifton` by default;
-- the `gb1-w` database command for the mapping SQL dry run;
-- the `GBS1` and `GBP1` environment variables for the database host and port;
 - read access to the target core database and `gb_assembly_metadata`;
 - write access to `gb_assembly_metadata.annotation_events` when a new mapping session is created;
-- access to the Ensembl FTP filesystem trees used by the resolver.
+- access to the Ensembl FTP filesystem trees used by the resolver (datamover cluster queue);
+- knowledge of the mysql server writting access password;
 
 Use the `slurm` profile on the cluster. Input resolution and staging are assigned to the `datamover` queue by this profile.
 
@@ -30,7 +29,8 @@ Run one database and let the pipeline choose the appropriate operation:
 ```bash
 nextflow run main.nf \
     -profile slurm \
-    --db_name sus_scrofa_gca000003025v7_core_114_1
+    --db_name sus_scrofa_gca000003025v7_core_114_1 \
+	--ensadmin_password XXX
 ```
 
 Resume a previous run after correcting a failure or deleting a published result:
@@ -39,6 +39,7 @@ Resume a previous run after correcting a failure or deleting a published result:
 nextflow run main.nf \
     -profile slurm \
     --db_name sus_scrofa_gca000003025v7_core_114_1 \
+	--ensadmin_password XXX \
     -resume
 ```
 
@@ -46,12 +47,12 @@ Nextflow reuses a process only when its inputs, script and relevant configuratio
 
 ## Input modes
 
-Exactly one of `--db_name` or `--samplesheet` is required. They cannot be supplied together.
+Exactly one of `--db_name` or `--samplesheet` is required. They cannot be supplied together. Additionally, `--ensadmin_password XXX` is required.
 
 ### Single database
 
 ```bash
-nextflow run main.nf -profile slurm --db_name DATABASE_NAME
+nextflow run main.nf -profile slurm --db_name DATABASE_NAME --ensadmin_password XXX
 ```
 
 In CL direct file overrides are supported only with `--db_name`:
@@ -64,7 +65,8 @@ nextflow run main.nf \
     --ref_fasta /path/reference.fa.gz \
     --ref_gff /path/reference.gff3.gz \
     --target_fasta /path/target.fa.gz \
-    --target_gff /path/target.gff3.gz
+    --target_gff /path/target.gff3.gz \
+	--ensadmin_password XXX
 ```
 
 The FASTA and GFF for each assembly are a pair: provide both reference files or neither, and both target files or neither.
@@ -83,7 +85,7 @@ another_species_core,reassign,,,,,
 Run it with:
 
 ```bash
-nextflow run main.nf -profile slurm --samplesheet species.csv
+nextflow run main.nf -profile slurm --samplesheet species.csv --ensadmin_password XXX
 ```
 
 Samplesheet optional columns:
@@ -112,7 +114,7 @@ The resolver uses the database assembly accession and registry information to ch
 
 ### `map`
 
-Force stable-ID mapping. An earlier live assembly version must exist. If it does not, the run fails rather than falling back to reassignment.
+Force stable-ID mapping. *An earlier live assembly version must existi*. If it does not, the run fails rather than falling back to reassignment.
 
 If `mapping_session_id` is not supplied, the resolver inserts a new `stable_id_mapping` event in `gb_assembly_metadata.annotation_events` and uses its ID. A fresh, non-resumed run can therefore create a new mapping session.
 
@@ -155,8 +157,11 @@ The pre-release directory must contain exactly one `*.dna.softmasked.fa.gz` and 
 |---|---|---|
 | `--db_name` | `null` | Run a single target core database. Mutually exclusive with `--samplesheet`. |
 | `--samplesheet` | `null` | CSV containing one or more databases. Mutually exclusive with `--db_name`. |
+| `--ensadmin_password` | `null` | Password for the ensadmin (writing) user of the servers. |
 
-Exactly one of these parameters must be provided.
+Exactly one of `--db_name` or `--samplesheet` parameters must be provided.
+
+For ease of access to the results, `--output_dir` is highly recomended. For use in the cluster, `-profile slurm` is also required.
 
 ### Optional parameters
 
@@ -185,6 +190,7 @@ Boolean parameters can be changed explicitly, for example:
 nextflow run main.nf \
     -profile slurm \
     --db_name DATABASE_NAME \
+	--ensadmin_password XXX \
     --include_translations false \
     --replace_events_for_session true
 ```
@@ -225,8 +231,9 @@ Duplicate stable IDs across gene, transcript, translation and exon tables are tr
 3. **Structural matching:** compare projected transcripts with nearby target transcripts. Combine transcript evidence into candidate gene pairs and produce a gene-locus comparison table.
 4. **Stable-ID decisions:** attempt structural matching first. If no available structural match is accepted, use coordinate overlap as a fallback. A target feature can be assigned to only one reference feature.
 5. **Render SQL:** generate executable SQL and a rollback dry-run version.
-6. **Audit:** produce a readable summary plus detailed tables for missing, coordinate-only and new genes.
-7. **Database dry run:** execute the rollback SQL through `gb1-w` and save its output.
+6. **Append registry record:** with the sql files in place, append a query to update the initial insert into `annot_events` with the coverage (% of reference that has been mapped to the target, specifically) to both track and mark the event as completed.
+7. **Audit:** produce a readable summary plus detailed tables for missing, coordinate-only and new genes.
+8. **Database dry run:** execute the rollback SQL through `gb1-w` and save its output.
 
 Mapped genes, transcripts and translations retain their reference stable ID. Unmatched target features receive new IDs from the registry allocation. In the current implementation, target exons receive new assignments rather than participating in retention mapping.
 
@@ -235,7 +242,7 @@ Mapped genes, transcripts and translations retain their reference stable ID. Unm
 The pipeline checks the complete gene, transcript, translation and exon populations against the registry format and range. When reassignment is required, it generates:
 
 - executable reassignment SQL;
-- rollback dry-run SQL; and
+- rollback dry-run SQL (executed for review); and
 - a JSON summary.
 
 The generated reassignment SQL should be reviewed, and the dry-run SQL should be executed and checked before applying the executable SQL.
@@ -246,13 +253,13 @@ Outputs are published below `results/<db_name>/` by default.
 
 | Directory | Main contents |
 |---|---|
-| `inputs/` | Decompressed, consistently named reference and target FASTA/GFF files. |
+| `inputs/` | Decompressed, consistently named reference and target FASTA/GFF files. Also a JSON with the options used in the run. |
 | `lifton/` | Projected reference GFF3, missing-gene report and LiftOn projection JSON. |
 | `matching/` | Transcript pairs, gene pairs, gene-locus comparison and structural-matching JSON. |
 | `decisions/` | Stable-ID decisions TSV/JSON and score-evidence TSV. |
-| `sql/` | Executable mapping SQL and rollback dry-run SQL. |
+| `sql/` | Executable mapping SQL and rollback dry-run SQL. Plus intermediate files. |
 | `audit/` | Text audit and detailed missing, coordinate-only and new gene TSV tables. |
-| `dry_run_sql/` | Output captured when the mapping dry-run SQL is executed through `gb1-w`. |
+| `dry_run_sql/` | Output captured when the mapping dry-run SQL is executed. |
 | `reassignment/` | Executable reassignment SQL, rollback dry-run SQL and reassignment JSON. Present only for the reassignment route. |
 
 The mapping branch copies staged FASTA and GFF files into `inputs/`; these can be large.
@@ -264,6 +271,8 @@ The main report is:
 ```text
 results/<db_name>/audit/<db_name>.stable_id_audit.txt
 ```
+
+(Or your selected folder if `--output_dir` is used, for which `.results/` is the default.
 
 ### Stable-ID mapping summary
 
@@ -331,11 +340,10 @@ Use these TSV files for investigation and filtering rather than increasing `audi
 
 Before applying mapping or reassignment SQL:
 
-1. inspect the audit and decision tables;
-2. inspect warnings and errors from the dry run;
-3. confirm that assignment and matched-row counts agree for every feature type;
-4. confirm that the dry-run SQL ends with `ROLLBACK`; and
-5. apply executable SQL only after manual review.
+1. inspect the audit report;
+2. inspect warnings and errors from the dry run output;
+3. confirm that assignment and matched-row counts agree for every feature type; and
+4. apply executable SQL only after manual review.
 
 The executable SQL files are generated for deliberate manual execution. Do not treat successful pipeline completion alone as approval to modify the database.
 
