@@ -96,8 +96,6 @@ The example pipeline demonstrates patterns from simple to complex:
 
 ## Requirements and Nextflow syntax versions
 
-## Requirements and Nextflow syntax versions
-
 - Nextflow ≥ 25.10.2
 - Java 17 or newer
 - Singularity or Apptainer
@@ -117,6 +115,16 @@ NXF_SYNTAX_PARSER=v2 nextflow run pipelines/example/main.nf -stub-run -profile t
 ```
 
 The root configuration enforces Singularity and disables Docker and Conda.
+HPC-specific cache settings are kept in
+[`config/singularity.config`](config/singularity.config) and can be selected
+with `-c` when running on the Ensembl cluster:
+
+```bash
+nextflow run pipelines/example/main.nf \
+  -profile test \
+  -c config/singularity.config
+```
+
 See [docs/NEXTFLOW_REQUIREMENTS.md](docs/NEXTFLOW_REQUIREMENTS.md) for the
 repository contract and validation commands.
 

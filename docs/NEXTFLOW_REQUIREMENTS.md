@@ -46,6 +46,10 @@ The repository also contains established production pipelines. Run a
 repository-wide lint as a separate migration check when changing those
 pipelines; existing production code may not yet satisfy strict syntax.
 
+The root configuration selects Singularity and disables Docker and Conda. The
+Ensembl HPC cache location is not part of the portable default; apply
+`config/singularity.config` with `-c` on the cluster.
+
 ```bash
 cd ../..
 nextflow lint -o concise .
