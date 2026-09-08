@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 from dataclasses import asdict, dataclass
@@ -28,9 +27,11 @@ from stable_id_mapping.range_check import (
 
 FTP_ROOT = Path("/nfs/ftp/public/ensemblorganisms")
 PRE_RELEASE_ROOT = Path("/nfs/ftp/public/databases/ensembl/pre-release")
-GB_SERVER_HOST = os.environ["GBS1"]
-GB_SERVER_PORT = int(os.environ["GBP1"])
-ENSADMIN_PASSWORD = "ensembl"
+REG_SERVER_HOST: str
+REG_SERVER_PORT: int
+GB_SERVER_HOST: str
+GB_SERVER_PORT: int
+ENSADMIN_PASSWORD: str
 
 
 class NoLiveReferenceError(Exception):
@@ -58,6 +59,22 @@ class SpeciesInputs:
     gene_range: str
     transcript_range: str
     translation_range: str
+
+
+def _connect_reg_ro():
+    return pymysql.connect(
+        host=REG_SERVER_HOST, port=REG_SERVER_PORT,
+        user="ensro", password="",
+        cursorclass=pymysql.cursors.DictCursor,
+    )
+
+
+def _connect_reg_write():
+    return pymysql.connect(
+        host=REG_SERVER_HOST, port=REG_SERVER_PORT,
+        user="ensadmin", password=ENSADMIN_PASSWORD,
+        cursorclass=pymysql.cursors.DictCursor,
+    )
 
 
 def _connect_ro():
@@ -113,7 +130,7 @@ def resolve_target_assembly(
     target_version: int,
     assembly_metadata_db: str,
 ) -> tuple[int, int]:
-    conn = _connect_ro()
+    conn = _connect_reg_ro()
     try:
         with conn.cursor() as cur:
             cur.execute(f"USE {assembly_metadata_db}")
@@ -143,7 +160,7 @@ def resolve_live_reference(
     target_version: int,
     assembly_metadata_db: str,
 ) -> tuple[str, int, int] | None:
-    conn = _connect_ro()
+    conn = _connect_reg_ro()
     try:
         with conn.cursor() as cur:
             cur.execute(f"USE {assembly_metadata_db}")
@@ -177,7 +194,7 @@ def resolve_stable_id_ranges(
     gca_accession: str,
     assembly_metadata_db: str,
 ) -> dict[str, str]:
-    conn = _connect_ro()
+    conn = _connect_reg_ro()
     try:
         with conn.cursor() as cur:
             cur.execute(f"USE {assembly_metadata_db}")
@@ -281,7 +298,7 @@ def insert_mapping_session(
     assembly_metadata_db: str,
     gca_chain: str,
 ) -> int:
-    conn = _connect_write()
+    conn = _connect_reg_write()
     try:
         with conn.cursor() as cur:
             cur.execute(f"USE {assembly_metadata_db}")
@@ -548,8 +565,20 @@ def main() -> None:
     parser.add_argument("--mapping-session-id", default="")
     parser.add_argument("--ref-fasta", default="")
     parser.add_argument("--ref-gff", default="")
+    parser.add_argument("--reg-host", required=True)
+    parser.add_argument("--reg-port", required=True, type=int)
+    parser.add_argument("--gb-host", required=True)
+    parser.add_argument("--gb-port", required=True, type=int)
+    parser.add_argument("--ensadmin-password", required=True)
     args = parser.parse_args()
 
+    global REG_SERVER_HOST, REG_SERVER_PORT, GB_SERVER_HOST, GB_SERVER_PORT, ENSADMIN_PASSWORD
+    REG_SERVER_HOST = args.reg_host
+    REG_SERVER_PORT = args.reg_port
+    GB_SERVER_HOST = args.gb_host
+    GB_SERVER_PORT = args.gb_port
+    ENSADMIN_PASSWORD = args.ensadmin_password
+    
     try:
         mapping_session_id = (
             int(args.mapping_session_id)
