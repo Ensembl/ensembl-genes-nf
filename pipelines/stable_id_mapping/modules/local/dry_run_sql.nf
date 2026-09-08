@@ -17,7 +17,8 @@ process DRY_RUN_SQL {
 
     script:
     """
-    gb1-w < ${dry_run_sql} \
+    mysql -h '${params.gb_host}' -P ${params.gb_port} -u ensadmin -p'${params.ensadmin_password}' \
+		< ${dry_run_sql} \
         > ${db_name}.dry_run_sql.out
     """
 }
