@@ -323,6 +323,16 @@
       "default": 10000000,
       "description": "Number of reads to sample for RiboMetric analysis"
     },
+    "ribometric_container": {
+      "type": "string",
+      "default": "ghcr.io/jackcurragh/ribometric@sha256:9f1770d6d2c2eb98150bdd54f964b40920625c8a656cc43122bf405ff8695468",
+      "description": "Container image for every RiboMetric step (organism-setup prepare and per-sample run). Pin by digest so the annotation TSV and the metrics come from the same build."
+    },
+    "ribometric_ignore_errors": {
+      "type": "boolean",
+      "default": true,
+      "description": "Skip a sample whose RiboMetric task fails after one retry. Set false for validation runs, so a failure fails the run instead of dropping the sample."
+    },
     "run_choros": {
       "type": "boolean",
       "default": false,

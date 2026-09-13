@@ -7,7 +7,7 @@ process RIBOMETRIC_PREPARE {
     tag "${organism}_${version}"
     label 'process_medium'
 
-    container "ghcr.io/lapti-ucc/riboseqorg-nf-ribometric:latest"
+    container "${params.ribometric_container}"
 
     input:
     path(gtf)

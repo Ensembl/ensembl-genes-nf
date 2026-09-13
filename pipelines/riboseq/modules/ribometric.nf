@@ -3,7 +3,7 @@ process RIBOMETRIC {
     label 'process_medium'
 
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
-    container "ghcr.io/jackcurragh/ribometric:1.4.3"
+    container "${params.ribometric_container}"
 
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
