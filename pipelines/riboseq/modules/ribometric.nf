@@ -131,7 +131,7 @@ process RIBOMETRIC {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        ribometric: 1.4.3
+        ribometric: 1.5.0
     END_VERSIONS
     """
 }
