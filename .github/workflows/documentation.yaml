@@ -1,0 +1,59 @@
+name: Documentation
+
+on:
+  push:
+    branches: 
+      - "feature/repeat_pipeline"
+  pull_request:
+    branches: 
+      - "main"
+  workflow_dispatch: 
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r docs/requirements.txt
+
+      - name: Generate Parameter Reference
+        run: python -m docs.generate_docs
+
+      - name: Sphinx Build
+        run: sphinx-build  --keep-going -b html docs/source docs/build/html
+
+      
+
+      - name: Sphinx Link Check
+        if: ${{ github.event_name != 'pull_request' }}
+        continue-on-error: true
+        run: sphinx-build -b linkcheck docs/source docs/build/linkcheck
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/build/html
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' 
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: docs/build/html
+          force_orphan: true 

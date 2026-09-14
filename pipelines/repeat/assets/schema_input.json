@@ -1,0 +1,36 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/ensembl/ensembl-genes-nf/main/pipelines/repeat/assets/schema_input.json",
+    "title": "Ensembl repeat pipeline input schema",
+    "description": "Schema for the CSV file provided with params.csvFile",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "required": ["species_name", "gca"],
+        "properties": {
+            "species_name": {
+                "type": "string",
+                "description": "Species name ",
+                "pattern": "^\\S+$",
+                "errorMessage": "Please provide the species name",
+                "meta": ["species_name"]
+            },
+            "gca": {
+                "type": "string",
+                "description": "Genome assembly accession",
+                "pattern": "^GCA_\\d{9}\\.\\d$",
+                "errorMessage": "GCA must be in the format GCA_000000000.0",
+                "meta": ["gca"]
+            },
+            
+            "genome_file": {
+                    "type": "string",
+                    "pattern": "^(\\S+)?$",
+                    "description": "Optional local genome FASTA path. Leave blank to download by GCA.",
+                    "errorMessage": "Genome file path cannot contain spaces",
+                    "meta": ["genome_file"]
+                }
+
+        }
+    }
+}

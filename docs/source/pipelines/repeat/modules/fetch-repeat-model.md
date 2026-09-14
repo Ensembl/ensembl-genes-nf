@@ -1,0 +1,44 @@
+# FETCH_REPEAT_MODEL
+
+This process fetches the RepeatModeler library file for a given GCA accession.
+If the file is available at the specified URL, it downloads the file
+and saves it with the name "<GCA>.repeatmodeler.fa".
+If the file is not available, it outputs a message indicating that
+the download was skipped and creates an empty file with the same name.
+The fetched library file is saved in the "library" directory under
+the output directory for the given GCA accession.
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `FETCH_REPEAT_MODEL` |
+| Label | `'fetch_file'` |
+| Tag | `$meta.gca:repeatmodel` |
+| Publish directory | `"${params.outdir}/${meta.gca}/library/", mode: 'copy'` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val(meta)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("${meta.gca}.repeatmodeler.fa"), emit: rep_library_file_output
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+- Download external resources
+
+## Source
+
+`/Users/ftricomi/Documents/ensembl-genes-nf/pipelines/repeat/modules/fetch_repeat_model.nf`
