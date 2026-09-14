@@ -1,28 +1,33 @@
-# Nextflow requirements
+# Nextflow conventions and validation
 
-This repository targets Nextflow 25.10.2 or newer, Java 17 or newer, and
-strict/v2 syntax. Nextflow 26.04 enables the v2 parser by default; on
-Nextflow 25.10.2 through 25.x set `NXF_SYNTAX_PARSER=v2`.
+The example pipeline is developed and tested with Nextflow 26.04 or newer,
+Java 17 or newer, and strict syntax. Nextflow 26.04 enables the v2 parser by
+default. Nextflow 25.10.2 or newer may also work when `NXF_SYNTAX_PARSER=v2`
+is enabled.
 
-The following is the recommended baseline for maintained pipelines. It is a
-starting point rather than a checklist that every pipeline must follow without
-exception. If a pipeline needs a different choice, document the reason in its
-README and keep the test and user-facing behavior clear.
+The following are recommended defaults for new and maintained pipelines. They
+are a starting point, not a universal checklist. If a pipeline needs a
+different choice, document the reason where it will help future maintainers and
+keep the test and user-facing behavior clear.
 
 The usual defaults are:
 
-1. Use DSL2 with an explicit entry `workflow`.
-2. Put executable statements inside a process, workflow, or function.
-3. Validate parameters inside the entry workflow, where practical.
-4. Prefer `channel` over the deprecated `Channel` factory.
-5. Prefer `script:` for process commands and declare process inputs explicitly.
+1. Use DSL2 with an explicit entry `workflow` for new pipelines.
+2. Put executable statements inside a process, workflow, or function where
+   possible.
+3. Validate parameters inside the entry workflow when that makes ownership
+   clear.
+4. Prefer `channel` over the older `Channel` factory in new code.
+5. Prefer `script:` for process commands and declare process inputs explicitly
+   when applicable.
 6. Keep high-level branching in workflows and tool execution in modules when
    that makes the code easier to reuse.
 7. Pass reference files and helper scripts as process inputs when they are part
    of the task's data or need to be staged reproducibly.
-8. Provide a stub implementation for workflows that need quick structural
-   testing, with outputs that match the real process.
-9. Keep the schema, README, defaults, and test profile broadly consistent.
+8. Provide a stub implementation when quick structural testing is useful, with
+   outputs that match the real process.
+9. Keep the schema, README, defaults, and test profile broadly consistent when
+   those artifacts are present.
 
 ## Checks
 

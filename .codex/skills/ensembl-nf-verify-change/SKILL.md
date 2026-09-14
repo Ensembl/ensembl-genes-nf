@@ -9,11 +9,11 @@ Establish the changed surface with `git diff --check`, `git status --short`, and
 
 ## Review against repository rules
 
-- Confirm DSL2 entry points compose subworkflows and that a module has one primary tool responsibility.
+- Check that DSL2 entry points and subworkflows are structured clearly, and that module boundaries are sensible for the tools they wrap.
 - Trace each changed tuple from producer to consumer: `meta` is retained, file arity matches, and `emit` names match their consumers.
-- Confirm process settings use a resource label, version-pinned container/conda, `task.ext` defaults where applicable, a `versions.yml` output, and a faithful stub block.
+- Check applicable process conventions: resource labels, version-pinned container/Conda definitions, `task.ext` defaults, version reporting, and faithful stub blocks.
 - Confirm pipeline-specific params, tool arguments, resource overrides, and profiles live in `pipelines/<name>/nextflow.config`; root configuration remains shared only. Keep HPC-specific cache paths in an explicit config such as `config/singularity.config`.
-- Confirm declared output filenames, `publishDir` patterns, and stub outputs agree. Generated results, `work/`, `.nextflow*`, caches, and local reference paths must stay out of the diff.
+- Confirm declared output filenames, `publishDir` patterns, and stub outputs agree where those features are used. Generated results, `work/`, `.nextflow*`, caches, and local reference paths must stay out of the diff.
 
 ## Test in layers
 
