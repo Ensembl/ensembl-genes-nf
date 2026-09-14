@@ -175,6 +175,22 @@
       "default": false,
       "description": "Preserve UMI information in getRPF output"
     },
+    "getrpf_method": {
+      "type": "string",
+      "enum": ["structure", "legacy"],
+      "default": "structure",
+      "description": "EXTRACT_RPFS method: 'structure' infers the read structure and applies it to every read; 'legacy' uses the pre-0.4 architecture matching"
+    },
+    "getrpf_infer_reads": {
+      "type": "integer",
+      "default": 1000000,
+      "description": "Reads sampled for getRPF read-structure inference"
+    },
+    "getrpf_container": {
+      "type": "string",
+      "default": "ghcr.io/jackcurragh/get-rpf:0.4.0",
+      "description": "Container image for EXTRACT_RPFS (needs getRPF >= 0.4.0 for getrpf_method 'structure')"
+    },
     "adapter_detection_method": {
       "type": "string",
       "enum": ["auto", "fastqc_tophit", "explicit", "fasta"],

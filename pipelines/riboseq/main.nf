@@ -26,6 +26,7 @@ params {
     force_fetch: Boolean = false
     getrpf_max_reads: Integer = 5000
     getrpf_preserve_umi: Boolean = false
+    getrpf_infer_reads: Integer = 1000000
     min_read_length: Integer = 20
     max_read_length: Integer = 0
     run_rrna_filter: Boolean = false
