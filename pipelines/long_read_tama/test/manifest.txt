@@ -1,0 +1,1 @@
+liver tissue SRR000001 0 SRR000001.fastq.gz 0 0 0 ENA PACBIO_SMRT mixed tissue test https://example.org/SRR000001.fastq.gz d41d8cd98f00b204e9800998ecf8427e

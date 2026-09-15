@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://github.com/Ensembl/ensembl-genes-nf/long_read_tama",
+  "title": "Long-read TAMA transcript model pipeline",
+  "type": "object",
+  "properties": {
+    "manifest": {"type": "string", "description": "Historical candidate manifest used for inventory/classification"},
+    "taxon_id": {"type": ["string", "null"], "description": "NCBI taxonomy ID for automatic long-read discovery"},
+    "tree": {"type": "boolean", "default": false, "description": "Include subordinate taxa"},
+    "discovery_probe": {"type": "boolean", "default": true},
+    "target_sample_count": {"type": "integer", "default": 8},
+    "soft_download_budget": {"type": "number", "default": 250.0, "description": "Soft proposed-panel download budget in GB; unique biology may exceed it with a warning"},
+    "soft_raw_subread_budget": {"type": "integer", "default": 1, "description": "Soft count of difficult raw-subread candidates in the proposed panel"},
+    "discovery_cache_dir": {"type": ["string", "null"]},
+    "approved_manifest": {"type": "string", "description": "Reviewer-approved classification-bearing TSV for production processing"},
+    "metadata_json": {"type": "string", "description": "Optional captured ENA/SRA metadata JSON; omitted to resolve metadata automatically"},
+    "metadata_cache_dir": {"type": "string", "description": "Optional persistent cache for ENA metadata responses"},
+    "fastq_cache_dir": {"type": "string", "description": "Persistent shared cache for checksum-validated FASTQ files"},
+    "reference_fasta": {"type": "string", "description": "Reference FASTA used by minimap2 and TAMA"},
+    "reference_fai": {"type": "string", "description": "Optional FASTA index to validate alongside the reference"},
+    "minimap_index": {"type": "string", "description": "Existing minimap2 .mmi; omit to build it"},
+    "cohort_id": {"type": "string", "default": "bos_indicus_long_read"},
+    "outdir": {"type": "string", "default": "./long_read_tama_results"},
+    "minimap2_preset": {"type": "string", "default": "splice:hq"},
+    "secondary_mode": {"type": "string", "enum": ["no", "yes"], "default": "no"},
+    "samtools_sort_memory": {"type": "string", "default": "2G"},
+    "tama_container": {"type": ["string", "null"], "description": "Pinned TAMA container; required for non-stub execution"},
+    "ccs_container": {"type": ["string", "null"], "description": "Validated PacBio CCS container for BAM conversion"},
+    "ccs_command": {"type": "string", "default": "ccs"},
+    "ccs_args": {"type": "string", "default": ""},
+    "ccs_expected_version": {"type": ["string", "null"], "description": "Expected validated CCS version; required for non-stub BAM processing"},
+    "tama_cap_mode": {"type": "string", "enum": ["no_cap", "capped"], "default": "no_cap"},
+    "tama_end_mode": {"type": "string", "enum": ["common_ends", "longest_ends"], "default": "common_ends"},
+    "tama_run_mode": {"type": "string", "enum": ["low_mem", "original"], "default": "low_mem"},
+    "shard_mode": {"type": "string", "enum": ["none", "contig"], "default": "none"}
+  },
+  "anyOf": [
+    {"required": ["taxon_id"]},
+    {"required": ["manifest"]},
+    {"required": ["approved_manifest", "fastq_cache_dir"]}
+  ],
+  "required": []
+}

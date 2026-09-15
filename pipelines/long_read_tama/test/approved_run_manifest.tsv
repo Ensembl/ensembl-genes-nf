@@ -1,0 +1,2 @@
+run_accession	tissue	description	classification	proposed_action	selected_artifact_uri	selected_artifact_md5	selected_artifact_basename	minimap2_preset	expected_header_representation	classification_report_sha256	reviewer	reviewed_at	status	review_decision
+SRR000001	stub tissue	stub	ONT_FASTQ	ALIGN_ONT	https://example.org/SRR000001.fastq.gz	d41d8cd98f00b204e9800998ecf8427e	SRR000001.fastq.gz	splice	ONT	0000000000000000000000000000000000000000000000000000000000000000	test	2026-09-15T00:00:00Z	APPROVED	APPROVE
