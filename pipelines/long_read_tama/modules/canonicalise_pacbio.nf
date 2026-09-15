@@ -1,7 +1,7 @@
 process CANONICALISE_PACBIO_READS {
     tag "${meta.id}:${meta.classification}"
     label 'process_high_memory'
-    container { params.ccs_container ?: 'https://depot.galaxyproject.org/singularity/pbccs:6.0.0--h9ee0642_0' }
+    container { params.ccs_container ?: 'https://depot.galaxyproject.org/singularity/pbccs:6.4.0--h9ee0642_0' }
 
     input:
     tuple val(meta), path(input_bam)

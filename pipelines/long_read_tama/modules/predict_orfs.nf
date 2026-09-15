@@ -1,7 +1,7 @@
 process PREDICT_LONGEST_ATG_ORFS {
     tag "${meta.id}:orfs"
     label 'process_medium'
-    container 'https://depot.galaxyproject.org/singularity/python:3.11--he2b4eab_0'
+    container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
     tuple val(meta), path(transcripts)

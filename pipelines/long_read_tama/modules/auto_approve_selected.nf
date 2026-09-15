@@ -1,7 +1,7 @@
 process AUTO_APPROVE_SELECTED_LONG_READS {
     tag 'automatic-selection'
     label 'process_light'
-    container 'https://depot.galaxyproject.org/singularity/python:3.11--he2b4eab_0'
+    container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
     path classification_report

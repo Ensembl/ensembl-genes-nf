@@ -1,7 +1,7 @@
 process VALIDATE_APPROVED_LONG_READ_MANIFEST {
     tag 'approved-manifest'
     label 'process_light'
-    container 'https://depot.galaxyproject.org/singularity/python:3.11--he2b4eab_0'
+    container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
     path manifest
