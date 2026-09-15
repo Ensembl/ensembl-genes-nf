@@ -14,6 +14,7 @@ process RESOLVE_LONG_READ_METADATA {
 
     script:
     """
+    mkdir -p metadata_cache
     mkdir -p ${cache_dir}
     tail -n +2 ${manifest} | cut -f1 > accessions.txt
     python3 ${resolver} accessions.txt ${cache_dir} metadata.json
