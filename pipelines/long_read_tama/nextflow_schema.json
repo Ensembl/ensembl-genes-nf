@@ -33,6 +33,12 @@
     "tama_end_mode": {"type": "string", "enum": ["common_ends", "longest_ends"], "default": "common_ends"},
     "tama_run_mode": {"type": "string", "enum": ["low_mem", "original"], "default": "low_mem"},
     "shard_mode": {"type": "string", "enum": ["none", "contig"], "default": "none"}
+    ,"run_diamond_validation": {"type": "boolean", "default": false, "description": "Generate longest-ATG ORFs and validate them with Diamond"}
+    ,"diamond_reference_db": {"type": ["string", "null"], "description": "Existing Diamond database for combined-model validation"}
+    ,"diamond_reference_proteins": {"type": ["string", "null"], "description": "Reference protein FASTA used to build a Diamond database"}
+    ,"diamond_classification_type": {"type": "string", "enum": ["long_read", "standard", "standard_old", "gifts"], "default": "long_read", "description": "Legacy coverage/identity classification rule set"}
+    ,"ensembl_genes_container": {"type": "string", "default": "dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-genes", "description": "Container providing the transcriptomic data selector"}
+    ,"transcriptomic_data_command": {"type": "string", "default": "python3 -m ensembl.genes.transcriptomic_data.get_transcriptomic_data", "description": "Command used inside the Ensembl genes container to retrieve long-read candidates"}
   },
   "anyOf": [
     {"required": ["taxon_id"]},

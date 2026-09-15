@@ -35,8 +35,9 @@ and PacBio runs, enrich samples from BioSamples, retain run/sample/study and
 library metadata, probe small FASTQ prefixes, group runs by BioSample, and
 select a biologically diverse proposed panel. It writes a full inventory and
 `proposed_long_read_manifest.tsv`; that manifest is in the versioned input
-shape accepted by `normalise_manifest.py`, but remains `PROPOSED / REQUIRES
-REVIEW`, not an automatic production approval. Use `--tree` to include
+shape accepted by `normalise_manifest.py`. In taxon-only production mode, the
+pipeline continues automatically after inspection and promotes only safe
+`READY_FOR_REVIEW` rows into an auditable production manifest. Use `--tree` to include
 subordinate taxa, `--target_sample_count` to set the soft panel size,
 `--soft_download_budget` to control the default 250-GB acquisition preference,
 and `--soft_raw_subread_budget` to control the default preference for one
@@ -48,6 +49,22 @@ marginal-value selection. Biological context (tissue, developmental stage,
 and mixed-tissue breadth) is scored first; representation difficulty and
 estimated FASTQ size are penalties, not hard exclusions. Raw PacBio subread
 base counts are never treated as independent transcript coverage.
+
+The candidate set is obtained inside the configured Ensembl genes container
+with `get_transcriptomic_data.py`, then ranked by the selector above. The
+default command is
+`python3 -m ensembl.genes.transcriptomic_data.get_transcriptomic_data`; override
+it with `--transcriptomic_data_command` if the container exposes a different
+entry point.
+
+For example:
+
+```bash
+nextflow run pipelines/long_read_tama/main.nf -profile slurm \
+  --taxon_id 9913 --tree \
+  --reference_fasta genome.fa \
+  --fastq_cache_dir /shared/long-read-fastq-cache
+```
 
 Second, review the classification report and create an approved TSV. Production
 processing accepts only rows marked `APPROVED` with `review_decision=APPROVE`;
@@ -117,3 +134,39 @@ The pipeline pins GS-TAMA 1.0.3 by default. Set `--tama_container` only when
 using a site-local mirror or validated replacement image. The `splice:hq` /
 secondary-alignment choice must still be benchmarked on
 `SRR29278220_subreads.fastq` before rollout.
+
+## Combined-model Diamond validation
+
+The optional combined-model validation path starts only after the cohort-wide
+TAMA merge:
+
+```text
+combined_models.bed -> combined_transcripts.fa -> combined_transcripts.faa -> Diamond
+```
+
+Enable it with an existing Diamond database:
+
+```bash
+nextflow run pipelines/long_read_tama/main.nf -profile slurm \
+  --approved_manifest approved_run_manifest.tsv \
+  --fastq_cache_dir /shared/long-read-fastq-cache \
+  --reference_fasta genome.fa \
+  --run_diamond_validation \
+  --diamond_reference_db reference.dmnd
+```
+
+Alternatively, pass `--diamond_reference_proteins` and the pipeline will build
+the database with the pinned Diamond module. The initial peptide strategy is
+the longest ATG-initiated ORF per transcript. It emits
+`combined_orf_manifest.tsv`, including `NO_ATG` and `PARTIAL_ORF` rows, so a
+future ORF predictor can replace `PREDICT_LONGEST_ATG_ORFS` while preserving
+the same model-keyed Diamond report interface. Diamond reports retain every
+combined model and assign `HIT`, `NO_PROTEIN_HIT`, or `NO_PEPTIDE` status.
+
+The report also emulates the legacy `HiveClassifyTranscriptSupport` coverage
+and identity classes. The default `--diamond_classification_type long_read`
+uses classes `1`–`7` with the historical coverage/identity thresholds and
+emits the corresponding `_1`–`_7` suffix in
+`legacy_biotype_suffix`. The original Perl runnable updates an Ensembl
+transcript biotype in SQL; this pipeline records the suffix as a report field
+because the combined TAMA models are not yet in an Ensembl core database.
