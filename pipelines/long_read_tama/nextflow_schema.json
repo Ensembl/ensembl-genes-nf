@@ -13,6 +13,7 @@
     "soft_raw_subread_budget": {"type": "integer", "default": 1, "description": "Soft count of difficult raw-subread candidates in the proposed panel"},
     "discovery_cache_dir": {"type": ["string", "null"]},
     "approved_manifest": {"type": "string", "description": "Reviewer-approved classification-bearing TSV for production processing"},
+    "auto_approve_safe": {"type": "boolean", "default": false, "description": "Automatically process READY_FOR_REVIEW rows from --manifest and quarantine the rest"},
     "metadata_json": {"type": "string", "description": "Optional captured ENA/SRA metadata JSON; omitted to resolve metadata automatically"},
     "metadata_cache_dir": {"type": "string", "description": "Optional persistent cache for ENA metadata responses"},
     "fastq_cache_dir": {"type": "string", "description": "Persistent shared cache for checksum-validated FASTQ files"},

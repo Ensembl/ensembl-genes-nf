@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Promote selected, non-quarantined runs to the production manifest."""
+"""Promote safe selected runs and audit excluded candidate rows."""
 
 import csv
 import hashlib
@@ -14,16 +14,22 @@ ALLOWED = {"PACBIO_CCS_FASTQ", "PACBIO_PROCESSED_FASTQ", "PACBIO_CCS_BAM", "PACB
 
 
 def main():
-    report_dir, output = sys.argv[1:]
+    report_dir, output, audit_output = sys.argv[1:]
     report = f"{report_dir}/run_classification.tsv"
     report_hash = hashlib.sha256(open(report, "rb").read()).hexdigest()
     reviewed_at = datetime.now(timezone.utc).isoformat()
     rows = []
+    audit_rows = []
     with open(report, newline="") as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
-            if row.get("status") != "READY_FOR_REVIEW" or row.get("classification") not in ALLOWED:
-                raise SystemExit(f"selected run {row.get('run_accession')} was not safely classifiable: {row.get('status')} {row.get('classification')}")
-            classification = row["classification"]
+            accession = row.get("run_accession", "")
+            classification = row.get("classification", "")
+            status = row.get("status", "")
+            if status != "READY_FOR_REVIEW" or classification not in ALLOWED:
+                audit_rows.append({"run_accession": accession, "classification": classification,
+                                   "status": status, "decision": "QUARANTINE",
+                                   "detail": row.get("reason_codes", "not eligible for automatic processing")})
+                continue
             expected = "ONT" if classification == "ONT_FASTQ" else (
                 "PACBIO_CCS_ORIGINAL" if "NCBI_ORIGINAL_CCS_FASTQ" in row.get("reason_codes", "") else
                 "PACBIO_CCS" if classification in {"PACBIO_CCS_FASTQ", "PACBIO_CCS_BAM", "PACBIO_SUBREAD_BAM"} else "PACBIO_PROCESSED"
@@ -38,12 +44,19 @@ def main():
                 "reviewer": "automatic_selector", "reviewed_at": reviewed_at,
                 "status": "APPROVED", "review_decision": "APPROVE",
             })
+            audit_rows.append({"run_accession": accession, "classification": classification,
+                               "status": "APPROVED", "decision": "PROCESS",
+                               "detail": "READY_FOR_REVIEW and compatible classification"})
     if not rows:
-        raise SystemExit("automatic selection produced no usable runs")
+        raise SystemExit("automatic selection produced no safely runnable runs")
     with open(output, "w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS, delimiter="\t")
         writer.writeheader()
         writer.writerows(rows)
+    with open(audit_output, "w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["run_accession", "classification", "status", "decision", "detail"], delimiter="\t")
+        writer.writeheader()
+        writer.writerows(audit_rows)
 
 
 if __name__ == "__main__":

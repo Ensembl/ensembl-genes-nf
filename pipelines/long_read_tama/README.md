@@ -72,6 +72,14 @@ the validator rejects unsafe paths/checksums, incompatible actions, and
 unsupported classifications. The legacy whitespace parser remains a migration
 adapter and no longer requires `PACBIO_SMRT`.
 
+If human review is intentionally not required, pass `--auto_approve_safe` with
+the candidate `--manifest`, `--reference_fasta`, and `--fastq_cache_dir`. The
+pipeline then automatically promotes every `READY_FOR_REVIEW` row with a
+compatible classification, quarantines the remaining rows, writes
+`automatic_selection_audit.tsv`, and continues with production processing. It
+fails if no safely runnable rows are found. This mode is opt-in; without it,
+`--manifest` remains inventory-only.
+
 `fastq-dl=2.0.1` downloads one accession at a time into a persistent directory
 provided with `--fastq_cache_dir`. A lock prevents concurrent writers for the
 same filename. The resulting single FASTQ is gzip-checked, compared with the

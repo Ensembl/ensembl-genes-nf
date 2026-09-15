@@ -121,3 +121,19 @@ def test_approved_gate_rejects_conflict():
     except ValueError:
         return
     assert False, "conflict must not pass the approval gate"
+
+
+def test_auto_approve_safe_filters_quarantined_rows(tmp_path):
+    report_dir = tmp_path / "classification_report"
+    report_dir.mkdir()
+    (report_dir / "run_classification.tsv").write_text(
+        "run_accession\ttissue\tdescription\tclassification\tproposed_action\tselected_artifact_uri\tselected_artifact_md5\tselected_artifact_basename\treason_codes\tstatus\n"
+        "SRR1\tliver\tgood\tONT_FASTQ\tALIGN_ONT\thttps://example.org/a.fastq.gz\td41d8cd98f00b204e9800998ecf8427e\ta.fastq.gz\tOK\tREADY_FOR_REVIEW\n"
+        "SRR2\tbrain\tbad\tCONFLICT\tQUARANTINE\thttps://example.org/b.fastq.gz\td41d8cd98f00b204e9800998ecf8427e\tb.fastq.gz\tPLATFORM_CONFLICT\tQUARANTINED\n"
+    )
+    output = tmp_path / "approved.tsv"
+    audit = tmp_path / "audit.tsv"
+    subprocess.run(["python3", str(Path(__file__).parents[1] / "bin" / "auto_approve_selected.py"), str(report_dir), str(output), str(audit)], check=True)
+    assert "SRR1" in output.read_text()
+    assert "SRR2" not in output.read_text()
+    assert "SRR2\tCONFLICT\tQUARANTINED\tQUARANTINE" in audit.read_text()

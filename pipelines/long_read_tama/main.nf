@@ -36,9 +36,13 @@ def make_read_meta(row, cohort) {
 workflow {
     if (!params.manifest && !params.approved_manifest && !params.taxon_id) error 'Provide --taxon_id for discovery, --manifest for inventory, or --approved_manifest for production processing'
     if (params.approved_manifest && !params.reference_fasta) error 'Provide --reference_fasta with the reference FASTA for production processing'
+    if (params.auto_approve_safe && !params.manifest) error 'Provide --manifest with --auto_approve_safe'
+    if (params.auto_approve_safe && params.approved_manifest) error '--auto_approve_safe cannot be combined with --approved_manifest'
+    if (params.auto_approve_safe && !params.reference_fasta) error 'Provide --reference_fasta with --auto_approve_safe'
     if (!(params.shard_mode in ['none', 'contig'])) error "params.shard_mode must be 'none' or 'contig'"
     if (!(params.secondary_mode in ['no', 'yes'])) error "params.secondary_mode must be 'no' or 'yes'"
     if (!params.fastq_cache_dir && params.approved_manifest) error 'Provide --fastq_cache_dir for production processing'
+    if (!params.fastq_cache_dir && params.auto_approve_safe) error 'Provide --fastq_cache_dir with --auto_approve_safe'
     auto_select = params.taxon_id && !params.manifest && !params.approved_manifest
     if (auto_select && !params.reference_fasta) error 'Provide --reference_fasta when selecting transcriptomic runs automatically'
     if (auto_select && !params.fastq_cache_dir) error 'Provide --fastq_cache_dir when selecting transcriptomic runs automatically'
@@ -85,7 +89,15 @@ workflow {
             inventory_metadata = RESOLVE_LONG_READ_METADATA.out.metadata
         }
         INSPECT_LONG_READ_MANIFEST(VALIDATE_LONG_READ_MANIFEST.out.manifest, inventory_metadata, validator)
-        return
+        if (params.auto_approve_safe) {
+            AUTO_APPROVE_SELECTED_LONG_READS(
+                INSPECT_LONG_READ_MANIFEST.out.reports,
+                file("${baseDir}/bin/auto_approve_selected.py", checkIfExists: true)
+            )
+            approved_source = AUTO_APPROVE_SELECTED_LONG_READS.out.manifest
+        } else {
+            return
+        }
     } else {
         approved_source = channel.value(file(params.approved_manifest, checkIfExists: true))
     }
