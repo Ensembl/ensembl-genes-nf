@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Long-read run classification report",
+  "type": "object",
+  "required": ["run_accession", "classification", "confidence", "status", "proposed_action", "review_decision"],
+  "properties": {
+    "run_accession": {"type": "string", "pattern": "^(SRR|ERR|DRR)[0-9]+$"},
+    "submitted_representation": {"enum": ["PACBIO_SUBREAD", "PACBIO_CCS", "PACBIO_PROCESSED", "ONT", "UNKNOWN", "MIXED", "NOT_APPLICABLE"]},
+    "header_representation": {"enum": ["PACBIO_SUBREAD", "PACBIO_CCS", "ONT", "UNKNOWN", "MIXED", "NOT_APPLICABLE"]},
+    "ncbi_original_representation": {"enum": ["PACBIO_SUBREAD_BAM", "PACBIO_CCS_BAM", "PACBIO_CCS_FASTQ", "PACBIO_PROCESSED_FASTQ", "PACBIO_RAW_FASTQ", "UNKNOWN", "MIXED"]},
+    "classification": {"enum": ["PACBIO_SUBREAD_BAM", "PACBIO_SUBREAD_FASTQ_ONLY", "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE", "PACBIO_CCS_BAM", "PACBIO_CCS_FASTQ", "PACBIO_PROCESSED_FASTQ", "ONT_FASTQ", "CONFLICT", "UNKNOWN", "MIXED"]},
+    "confidence": {"enum": ["CONFIRMED", "PROBABLE", "INSUFFICIENT"]},
+    "status": {"enum": ["READY_FOR_REVIEW", "QUARANTINED", "APPROVED", "REJECTED"]},
+    "proposed_action": {"enum": ["RUN_CCS_THEN_ALIGN", "CANONICALISE_CCS_THEN_ALIGN", "ALIGN_PACBIO_CCS", "ALIGN_PACBIO_PROCESSED", "ALIGN_ONT", "QUARANTINE"]},
+    "review_decision": {"enum": ["PENDING", "APPROVE", "REJECT"]}
+  }
+}

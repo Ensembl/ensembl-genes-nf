@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Approved long-read production manifest",
+  "type": "object",
+  "required": ["run_accession", "classification", "proposed_action", "selected_artifact_uri", "selected_artifact_md5", "selected_artifact_basename", "minimap2_preset", "classification_report_sha256", "reviewer", "reviewed_at"],
+  "properties": {
+    "run_accession": {"type": "string", "pattern": "^(SRR|ERR|DRR)[0-9]+$"},
+    "classification": {"enum": ["PACBIO_SUBREAD_BAM", "PACBIO_CCS_BAM", "PACBIO_CCS_FASTQ", "PACBIO_PROCESSED_FASTQ", "ONT_FASTQ"]},
+    "proposed_action": {"enum": ["RUN_CCS_THEN_ALIGN", "CANONICALISE_CCS_THEN_ALIGN", "ALIGN_PACBIO_CCS", "ALIGN_PACBIO_PROCESSED", "ALIGN_ONT"]},
+    "selected_artifact_md5": {"type": "string", "pattern": "^[0-9a-fA-F]{32}$"},
+    "minimap2_preset": {"enum": ["splice", "splice:hq"]}
+    ,"required_artifact_uris": {"type": "string"},
+    "required_artifact_md5s": {"type": "string"}
+  }
+}
