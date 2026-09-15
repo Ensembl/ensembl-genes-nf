@@ -114,7 +114,8 @@ def _technical_annotation(row: dict) -> tuple[int, str, str]:
 
 
 def discover(taxon: str, tree: bool, cache: Path, probe: bool, target: int,
-             soft_download_budget: float = 250.0, soft_raw_subread_budget: int = 1):
+             soft_download_budget: float = 250.0, soft_raw_subread_budget: int = 1,
+             candidate_file: Path | None = None):
     query_taxon = f"tax_tree({taxon})" if tree else f"tax_eq({taxon})"
     query = f"{query_taxon} AND library_source=TRANSCRIPTOMIC AND (instrument_platform=OXFORD_NANOPORE OR instrument_platform=PACBIO_SMRT)"
     params = urllib.parse.urlencode({"display": "report", "domain": "read", "result": "read_run", "query": query, "fields": FIELDS})
@@ -128,6 +129,15 @@ def discover(taxon: str, tree: bool, cache: Path, probe: bool, target: int,
         raw = list(reader)
         (cache / "ena_discovery.json").parent.mkdir(parents=True, exist_ok=True)
         (cache / "ena_discovery.json").write_text(json.dumps(raw, indent=2) + "\n")
+    if candidate_file:
+        candidate_runs = {
+            fields[1].strip()
+            for line in candidate_file.read_text().splitlines()
+            if line.strip() and not line.startswith("#")
+            for fields in [line.split("\t")]
+            if len(fields) > 1
+        }
+        raw = [row for row in raw if row.get("run_accession", "") in candidate_runs]
     rows = []
     for row in raw:
         sample = (row.get("sample_accession") or "unknown").split(";")[0]
@@ -239,9 +249,9 @@ def select(rows: list[dict], target: int, soft_download_budget: float, soft_raw_
 
 
 def main():
-    p = argparse.ArgumentParser(); p.add_argument("taxon_id"); p.add_argument("output_dir"); p.add_argument("--tree", action="store_true"); p.add_argument("--cache-dir", default=None); p.add_argument("--no-probe", action="store_true"); p.add_argument("--target", type=int, default=8); p.add_argument("--soft-download-budget", type=float, default=250.0); p.add_argument("--soft-raw-subread-budget", type=int, default=1)
+    p = argparse.ArgumentParser(); p.add_argument("taxon_id"); p.add_argument("output_dir"); p.add_argument("--tree", action="store_true"); p.add_argument("--cache-dir", default=None); p.add_argument("--no-probe", action="store_true"); p.add_argument("--target", type=int, default=8); p.add_argument("--soft-download-budget", type=float, default=250.0); p.add_argument("--soft-raw-subread-budget", type=int, default=1); p.add_argument("--candidate-file", default=None)
     a = p.parse_args(); out = Path(a.output_dir); out.mkdir(parents=True, exist_ok=True); cache = Path(a.cache_dir or out / "cache")
-    rows, selected = discover(a.taxon_id, a.tree, cache, not a.no_probe, a.target, a.soft_download_budget, a.soft_raw_subread_budget)
+    rows, selected = discover(a.taxon_id, a.tree, cache, not a.no_probe, a.target, a.soft_download_budget, a.soft_raw_subread_budget, Path(a.candidate_file) if a.candidate_file else None)
     fields = list(rows[0]) if rows else ["run_accession", "selection_status"]
     with (out / "long_read_inventory.tsv").open("w", newline="") as h:
         w = csv.DictWriter(h, fieldnames=fields, delimiter="\t"); w.writeheader(); w.writerows(rows)

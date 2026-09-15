@@ -9,7 +9,7 @@ process INSPECT_LONG_READ_MANIFEST {
     path inspector
 
     output:
-    path 'classification_report/*', emit: reports
+    path 'classification_report', emit: reports
 
     script:
     """

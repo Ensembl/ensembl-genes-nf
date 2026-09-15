@@ -15,14 +15,18 @@ process DIAMOND_BLASTP {
     script:
         def out = "${meta.id}_diamond.tsv"
         """
-        diamond blastp \
-            --query ${query_protein} \
-            --db ${diamond_db} \
-            --threads ${task.cpus} \
-            --evalue 1e-5 \
-            --max-target-seqs 1 \
-            --outfmt 6 qseqid sseqid pident length qstart qend qlen qcovhsp sstart send slen evalue bitscore \
-            --out ${out}
+        if grep -q '^>' ${query_protein}; then
+            diamond blastp \
+                --query ${query_protein} \
+                --db ${diamond_db} \
+                --threads ${task.cpus} \
+                --evalue 1e-5 \
+                --max-target-seqs 1 \
+                --outfmt 6 qseqid sseqid pident length qstart qend qlen qcovhsp sstart send slen evalue bitscore \
+                --out ${out}
+        else
+            : > ${out}
+        fi
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
