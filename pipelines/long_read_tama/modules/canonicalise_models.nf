@@ -1,7 +1,7 @@
 process CANONICALISE_COMBINED_MODELS {
     tag "${meta.id}:combined-models"
     label 'process_light'
-    container 'https://depot.galaxyproject.org/singularity/python:3.11--he2b4eab_0'
+    container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
     tuple val(meta), path(tama_bed)
