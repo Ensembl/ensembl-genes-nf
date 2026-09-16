@@ -297,12 +297,13 @@ def insert_mapping_session(
     reference_assembly_id: int,
     assembly_metadata_db: str,
     gca_chain: str,
+    gca_version: int,
 ) -> int:
     conn = _connect_reg_write()
     try:
         with conn.cursor() as cur:
             cur.execute(f"USE {assembly_metadata_db}")
-            value = f"ref:{reference_assembly_id}({gca_chain});date:{datetime.now().isoformat(timespec='minutes')};not_executed"
+            value = f"ref:{reference_assembly_id}({gca_chain}.{gca_version});date:{datetime.now().isoformat(timespec='minutes')};not_executed"
             cur.execute(
                 "INSERT ignore INTO annotation_events (genebuild_status_id, event, value) "
                 "VALUES (%s, %s, %s)",
@@ -507,7 +508,8 @@ def resolve_species_inputs(
                 target_genebuild_status_id,
                 reference_assembly_id,
                 assembly_metadata_db,
-                target_chain,
+                reference_chain,
+                reference_version,
             )
     else:
         reference_chain = None
