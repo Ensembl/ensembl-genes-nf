@@ -1,7 +1,9 @@
 process VALIDATE_FASTQ {
     tag "${meta.id}:${meta.classification}"
     label 'process_light'
-    container 'https://depot.galaxyproject.org/singularity/seqkit:2.8.2--h9ee0642_0'
+    // The staged inspector and the FASTQ statistics helper both require Python.
+    // Keep this process on a runtime that actually provides python3.
+    container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
     tuple val(meta), path(reads)
@@ -19,7 +21,7 @@ process VALIDATE_FASTQ {
     """
     test -f "${reads}" || { echo "Expected FASTQ file for ${meta.id}" >&2; exit 1; }
     gzip -t "${reads}" || { echo "Invalid gzip FASTQ for ${meta.id}: ${reads}" >&2; exit 1; }
-    seqkit stats -T "${reads}" > read_validation.tsv || { echo "FASTQ structure validation failed for ${meta.id}" >&2; exit 1; }
+    python3 "${inspector}" stats "${reads}" read_validation.tsv || { echo "FASTQ structure validation failed for ${meta.id}" >&2; exit 1; }
     python3 "${inspector}" probe "${reads}" header_probe.json
     if [ "${classification}" != "UNCLASSIFIED" ]; then
         python3 "${inspector}" validate-fastq "${reads}" "${expected}" full_validation.json
@@ -45,7 +47,6 @@ PY
     cp -p "${reads}" reads.fastq.gz
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        seqkit: \$(seqkit version | awk '{print \$NF}')
         python: \$(python3 --version 2>&1 | awk '{print \$2}')
     END_VERSIONS
     """
@@ -55,6 +56,6 @@ PY
     printf '@stub/ccs\nACGT\n+\n!!!!\n' | gzip -c > reads.fastq.gz
     printf 'file\tformat\ttype\tnum_seqs\tsum_len\tmin_len\tavg_len\tmax_len\nreads.fastq.gz\tFASTQ\tDNA\t1\t4\t4\t4\t4\n' > read_validation.tsv
     printf 'run_accession\tclassification\theader_representation\trecords_sampled\tdistinct_ids\tdistinct_molecules\tmalformed\tstatus\n${meta.id}\t${meta.classification ?: 'UNCLASSIFIED'}\tUNKNOWN\t1\t1\t1\t0\tstub\n' > molecule_audit.tsv
-    printf '"%s":\n    seqkit: 2.8.2\n    python: 3.11.0\n' '${task.process}' > versions.yml
+    printf '"%s":\n    python: 3.11.0\n' '${task.process}' > versions.yml
     """
 }
