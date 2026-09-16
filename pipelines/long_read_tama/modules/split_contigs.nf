@@ -7,8 +7,8 @@ process SPLIT_BAM_BY_CONTIG {
     tuple val(meta), path(bam), path(bai), path(workload)
 
     output:
-    tuple val(meta), path('shards'), emit: shards
-    path 'contig_manifest.tsv', emit: manifest
+    // Keep the shard directory and its manifest keyed together.
+    tuple val(meta), path('shards'), path('contig_manifest.tsv'), emit: shards
     path 'versions.yml', emit: versions
 
     script:

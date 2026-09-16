@@ -115,6 +115,15 @@ Collapse. TAMA runs per contig, and those beds are merged per accession before
 the cohort merge. Use `--shard_mode none` only for deliberately small inputs.
 Arbitrary read sharding and genomic windows are intentionally unsupported.
 
+Known per-shard TAMA failures are recorded in `tama_status.tsv` and do not
+produce a BED for that shard; successful shards continue to the accession and
+cohort merges. Missing executables and scheduler/resource kills remain fatal or
+retryable. The default merge backend is TAMA. An experimental `tmerge` backend
+can be selected with `--merge_tool tmerge`; it uses the pinned public
+`community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552` image. `tmerge` consumes GTF, so the
+pipeline converts the collapsed BED12 models to GTF and converts its output
+back to BED12. It is not a drop-in replacement for TAMA's collapse algorithm.
+
 TAMA allocations use configurable workload tiers. The defaults are
 `128.GB`, `256.GB`, and `512.GB`, with five bounded retries. Exit statuses
 137, 140, and 143 advance through the tiers and are ignored after the retry
