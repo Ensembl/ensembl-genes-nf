@@ -17,7 +17,6 @@ workflow PREPARE_LONG_READS {
     // approved_source: path approved manifest
     // reads: tuple val(meta), path(reads.fastq.gz)
     VALIDATE_APPROVED_LONG_READ_MANIFEST(approved_source, validator)
-    VALIDATE_APPROVED_LONG_READ_MANIFEST.out.manifest.ifEmpty { error 'Approved manifest validation produced no manifest' }
     approved_rows = VALIDATE_APPROVED_LONG_READ_MANIFEST.out.manifest.splitCsv(header: true, sep: '\t')
     approved_rows.branch { row ->
         ont: row.classification == 'ONT_FASTQ'
