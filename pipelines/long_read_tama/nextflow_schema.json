@@ -39,8 +39,7 @@
     "tama_memory_small": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "128.GB", "description": "Initial TAMA allocation"},
     "tama_memory_large": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "256.GB", "description": "Second TAMA allocation after a resource kill"},
     "tama_memory_very_large": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "512.GB", "description": "Final TAMA allocation after resource retries"},
-    "tama_max_retries": {"type": "integer", "minimum": 0, "maximum": 10, "default": 3, "description": "Maximum bounded retries for scheduler memory kills; exhausted memory kills are ignored"}
-    ,"run_diamond_validation": {"enum": [true, false, "true", "false"], "default": false, "description": "Generate longest-ATG ORFs and validate them with Diamond"}
+    "run_diamond_validation": {"enum": [true, false, "true", "false"], "default": false, "description": "Generate longest-ATG ORFs and validate them with Diamond"}
     ,"diamond_reference_db": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Existing Diamond database for combined-model validation"}
     ,"diamond_reference_proteins": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Reference protein FASTA used to build a Diamond database"}
     ,"diamond_classification_type": {"type": "string", "enum": ["long_read", "standard", "standard_old", "gifts"], "default": "long_read", "description": "Legacy coverage/identity classification rule set"}

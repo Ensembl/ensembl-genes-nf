@@ -116,7 +116,7 @@ the cohort merge. Use `--shard_mode none` only for deliberately small inputs.
 Arbitrary read sharding and genomic windows are intentionally unsupported.
 
 TAMA allocations use configurable workload tiers. The defaults are
-`128.GB`, `256.GB`, and `512.GB`, with `--tama_max_retries 3`. Exit statuses
+`128.GB`, `256.GB`, and `512.GB`, with five bounded retries. Exit statuses
 137, 140, and 143 advance through the tiers and are ignored after the retry
 budget is exhausted; validation, malformed-input, and other tool failures
 still terminate. `--shard_contig_reads` is an operational mapped-read
