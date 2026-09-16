@@ -11,13 +11,6 @@ workflow INVENTORY_LONG_READS {
     take:
     manifest
     taxon_id
-    discovery_script
-    classifier_script
-    resolver_script
-    accession_extractor
-    normaliser_script
-    approver_script
-    validator_script
     metadata_json
     discovery_cache_dir
     metadata_cache_dir
@@ -29,9 +22,6 @@ workflow INVENTORY_LONG_READS {
         TRANSCRIPTOMIC_DATA(taxon_id)
         DISCOVER_LONG_READ_DATA(
             taxon_id,
-            discovery_script,
-            classifier_script,
-            resolver_script,
             TRANSCRIPTOMIC_DATA.out.candidates,
             discovery_cache_dir
         )
@@ -41,24 +31,21 @@ workflow INVENTORY_LONG_READS {
     }
 
     candidate_manifest = taxon_id ? discovered_manifest : manifest
-    VALIDATE_LONG_READ_MANIFEST(candidate_manifest, normaliser_script)
+    VALIDATE_LONG_READ_MANIFEST(candidate_manifest)
 
     if (metadata_json) {
         inventory_metadata = metadata_json
     } else {
             RESOLVE_LONG_READ_METADATA(
             VALIDATE_LONG_READ_MANIFEST.out.manifest,
-            resolver_script,
-            metadata_cache_dir,
-            accession_extractor
+            metadata_cache_dir
         )
         inventory_metadata = RESOLVE_LONG_READ_METADATA.out.metadata
     }
 
     INSPECT_LONG_READ_MANIFEST(
         VALIDATE_LONG_READ_MANIFEST.out.manifest,
-        inventory_metadata,
-        validator_script
+        inventory_metadata
     )
 
     approved_manifest = channel.empty()
@@ -71,8 +58,7 @@ workflow INVENTORY_LONG_READS {
 
     if (auto_approve) {
         AUTO_APPROVE_SELECTED_LONG_READS(
-            INSPECT_LONG_READ_MANIFEST.out.reports,
-            approver_script
+            INSPECT_LONG_READ_MANIFEST.out.reports
         )
         approved_manifest = AUTO_APPROVE_SELECTED_LONG_READS.out.manifest
         approval_audit = AUTO_APPROVE_SELECTED_LONG_READS.out.audit

@@ -9,7 +9,6 @@ process FASTQ_DL {
     input:
     tuple val(meta), val(run), val(expected_md5), val(expected_filename), val(source_uri)
     val cache_dir
-    path downloader
 
     output:
     tuple val(meta), path('downloaded/*.fastq.gz'), emit: fastq
@@ -18,7 +17,7 @@ process FASTQ_DL {
 
     script:
     """
-    ./${downloader} ${run} ${expected_md5} ${expected_filename} '${source_uri}' '${cache_dir}' '${meta.classification}' downloaded ${task.cpus} downloaded/checksum.tsv
+    download_fastq.py ${run} ${expected_md5} ${expected_filename} '${source_uri}' '${cache_dir}' '${meta.classification}' downloaded ${task.cpus} downloaded/checksum.tsv
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         fastq-dl: \$(fastq-dl --version | sed 's/fastq-dl //')

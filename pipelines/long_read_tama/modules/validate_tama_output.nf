@@ -5,7 +5,6 @@ process VALIDATE_TAMA_OUTPUT {
 
     input:
     tuple val(meta), val(shard), path(bed)
-    path validator
 
     output:
     tuple val(meta), val(shard), path('validated_tama.bed'), emit: bed
@@ -14,7 +13,7 @@ process VALIDATE_TAMA_OUTPUT {
 
     script:
     """
-    ./${validator} ${bed} tama_validation.tsv --validated-output validated_tama.bed --run '${meta.id}' --shard '${shard}'
+    validate_tama_bed.py ${bed} tama_validation.tsv --validated-output validated_tama.bed --run '${meta.id}' --shard '${shard}'
     printf '"%s":\n    tama_output_validation: pipeline\n' '${task.process}' > versions.yml
     """
 

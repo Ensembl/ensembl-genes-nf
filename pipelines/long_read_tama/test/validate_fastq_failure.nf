@@ -7,5 +7,5 @@ workflow {
         [id: 'invalid-fastq', classification: 'ONT_FASTQ', expected_header_representation: 'ONT'],
         file("${baseDir}/invalid.fastq.gz")
     ))
-    VALIDATE_FASTQ(invalid, file("${baseDir}/../bin/read_input_classification.py"), file("${baseDir}/../bin/audit_fastq.py"))
+    VALIDATE_FASTQ(invalid)
 }

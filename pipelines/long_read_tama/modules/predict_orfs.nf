@@ -5,7 +5,6 @@ process PREDICT_LONGEST_ATG_ORFS {
 
     input:
     tuple val(meta), path(transcripts)
-    path predictor
 
     output:
     tuple val(meta), path('combined_transcripts.faa'), emit: peptides
@@ -14,7 +13,7 @@ process PREDICT_LONGEST_ATG_ORFS {
 
     script:
     """
-    python3 ${predictor} ${transcripts} combined_transcripts.faa combined_orf_manifest.tsv
+    longest_atg_orf.py ${transcripts} combined_transcripts.faa combined_orf_manifest.tsv
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         longest_atg_orf: python-script

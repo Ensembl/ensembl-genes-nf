@@ -5,7 +5,6 @@ process STATS_FASTQ {
 
     input:
     tuple val(meta), path(reads)
-    path inspector
 
     output:
     tuple val(meta), path('read_validation.tsv'), emit: report
@@ -15,7 +14,7 @@ process STATS_FASTQ {
     """
     test -f "${reads}" || { echo "Expected FASTQ file for ${meta.id}" >&2; exit 1; }
     gzip -t "${reads}" || { echo "Invalid gzip FASTQ for ${meta.id}: ${reads}" >&2; exit 1; }
-    python3 "${inspector}" stats "${reads}" read_validation.tsv
+    read_input_classification.py stats "${reads}" read_validation.tsv
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python3 --version 2>&1 | awk '{print \$2}')

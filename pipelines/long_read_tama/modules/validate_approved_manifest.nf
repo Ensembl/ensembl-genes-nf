@@ -5,8 +5,6 @@ process VALIDATE_APPROVED_LONG_READ_MANIFEST {
 
     input:
     path manifest
-    path validator
-    path preparer
 
     output:
     path 'validated_approved_run_manifest.tsv', emit: manifest
@@ -15,8 +13,8 @@ process VALIDATE_APPROVED_LONG_READ_MANIFEST {
 
     script:
     """
-    python3 ${validator} validate-approved ${manifest}
-    ./${preparer} ${manifest} validated_approved_run_manifest.tsv approved_manifest_validation.tsv
+    read_input_classification.py validate-approved ${manifest}
+    prepare_approved_manifest.py ${manifest} validated_approved_run_manifest.tsv approved_manifest_validation.tsv
     printf '"%s":\\n    python: runtime\\n' '${task.process}' > versions.yml
     """
 

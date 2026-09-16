@@ -9,16 +9,14 @@ include { STAGE_VALIDATED_FASTQ } from '../modules/stage_validated_fastq.nf'
 workflow VALIDATE_FASTQ {
     take:
     reads
-    validator
-    auditor
 
     main:
-    STATS_FASTQ(reads, validator)
-    PROBE_FASTQ(reads, validator)
-    VALIDATE_FASTQ_RECORDS(reads, validator)
+    STATS_FASTQ(reads)
+    PROBE_FASTQ(reads)
+    VALIDATE_FASTQ_RECORDS(reads)
 
     audit_input = PROBE_FASTQ.out.probe.join(VALIDATE_FASTQ_RECORDS.out.validation, by: 0)
-    AUDIT_FASTQ(audit_input, auditor)
+    AUDIT_FASTQ(audit_input)
 
     stage_input = reads.join(VALIDATE_FASTQ_RECORDS.out.validation, by: 0)
     STAGE_VALIDATED_FASTQ(stage_input)

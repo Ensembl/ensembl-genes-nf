@@ -5,7 +5,6 @@ process PROBE_FASTQ {
 
     input:
     tuple val(meta), path(reads)
-    path inspector
 
     output:
     tuple val(meta), path('header_probe.json'), emit: probe
@@ -13,7 +12,7 @@ process PROBE_FASTQ {
 
     script:
     """
-    python3 "${inspector}" probe "${reads}" header_probe.json
+    read_input_classification.py probe "${reads}" header_probe.json
     test -s header_probe.json || { echo "Header probe produced no result for ${meta.id}" >&2; exit 1; }
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

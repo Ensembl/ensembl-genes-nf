@@ -10,17 +10,13 @@ workflow COLLAPSE_LONG_READ_MODELS {
     take:
     bam
     reference
-    inspector
-    splitter
-    validator
-    merge_filelist_builder
 
     main:
     // bam: tuple val(meta), path(sorted.bam), path(sorted.bam.bai)
-    INSPECT_BAM_WORKLOAD(bam, inspector)
+    INSPECT_BAM_WORKLOAD(bam)
     inspected_bam = INSPECT_BAM_WORKLOAD.out.workload
     if (params.shard_mode == 'contig') {
-        SPLIT_BAM_BY_CONTIG(inspected_bam, splitter)
+        SPLIT_BAM_BY_CONTIG(inspected_bam)
         contig_bams = SPLIT_BAM_BY_CONTIG.out.shards.combine(SPLIT_BAM_BY_CONTIG.out.manifest).flatMap { meta, shard_dir, manifest ->
             manifest.readLines().drop(1).findAll { it.trim() }.collect { line ->
                 def fields = line.split('\\t', -1)
@@ -32,11 +28,11 @@ workflow COLLAPSE_LONG_READ_MODELS {
             }
         }
         TAMA_COLLAPSE(contig_bams, reference)
-        VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed, validator)
+        VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed)
         accession_beds = VALIDATE_TAMA_OUTPUT.out.bed.map { meta, _shard, bed -> tuple(meta.id, bed) }
             .groupTuple()
             .map { accession, beds -> tuple(accession, beds.sort { left, right -> left.name <=> right.name }) }
-        TAMA_MERGE_ACCESSION(accession_beds, merge_filelist_builder)
+        TAMA_MERGE_ACCESSION(accession_beds)
         final_beds = TAMA_MERGE_ACCESSION.out.bed.collect()
         version_ch = INSPECT_BAM_WORKLOAD.out.versions
             .mix(SPLIT_BAM_BY_CONTIG.out.versions)
@@ -50,7 +46,7 @@ workflow COLLAPSE_LONG_READ_MODELS {
             tuple(meta, 'whole', resource_class, mapped_reads, bam_file, bai)
         }
         TAMA_COLLAPSE(whole_bams, reference)
-        VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed, validator)
+        VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed)
         final_beds = VALIDATE_TAMA_OUTPUT.out.bed.map { _meta, _shard, bed -> bed }.collect()
         version_ch = INSPECT_BAM_WORKLOAD.out.versions
             .mix(TAMA_COLLAPSE.out.versions)

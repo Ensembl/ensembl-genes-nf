@@ -4,7 +4,6 @@ process AUDIT_FASTQ {
 
     input:
     tuple val(meta), path(probe), path(validation)
-    path auditor
 
     output:
     tuple val(meta), path('molecule_audit.tsv'), emit: molecule_audit
@@ -12,7 +11,7 @@ process AUDIT_FASTQ {
 
     script:
     """
-    ./${auditor} ${probe} ${validation} '${meta.id}' '${meta.classification ?: 'UNCLASSIFIED'}' molecule_audit.tsv
+    audit_fastq.py ${probe} ${validation} '${meta.id}' '${meta.classification ?: 'UNCLASSIFIED'}' molecule_audit.tsv
     printf '"%s":\n    audit: generated\n' '${task.process}' > versions.yml
     """
 

@@ -5,7 +5,6 @@ process VALIDATE_LONG_READ_MODELS {
 
     input:
     path bed
-    path validator
 
     output:
     path 'model_validation.tsv', emit: report
@@ -13,7 +12,7 @@ process VALIDATE_LONG_READ_MODELS {
 
     script:
     """
-    ./${validator} ${bed} model_validation.tsv
+    validate_tama_bed.py ${bed} model_validation.tsv
     printf '"%s":\\n    validator: python\\n' '${task.process}' > versions.yml
     """
 
