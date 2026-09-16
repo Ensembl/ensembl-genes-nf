@@ -119,10 +119,13 @@ Known per-shard TAMA failures are recorded in `tama_status.tsv` and do not
 produce a BED for that shard; successful shards continue to the accession and
 cohort merges. Missing executables and scheduler/resource kills remain fatal or
 retryable. The default merge backend is TAMA. An experimental `tmerge` backend
-can be selected with `--merge_tool tmerge`; it uses the pinned public
-`community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552` image. `tmerge` consumes GTF, so the
-pipeline converts the collapsed BED12 models to GTF and converts its output
-back to BED12. It is not a drop-in replacement for TAMA's collapse algorithm.
+can be selected with `--merge_tool tmerge`; it runs as a separate `TMERGE`
+process using the pinned public
+`community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552` image. `tmerge`
+consumes a coordinate-sorted exon GTF, so the pipeline converts collapsed BED12
+models to GTF and converts its output back to BED12. In contig-sharded mode the
+selected backend is also used for the per-accession regrouping step before the
+cohort merge. It is not a drop-in replacement for TAMA's collapse algorithm.
 
 TAMA allocations use configurable workload tiers. The defaults are
 `128.GB`, `256.GB`, and `512.GB`, with five bounded retries. Exit statuses

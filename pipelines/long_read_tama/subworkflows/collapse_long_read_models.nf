@@ -4,6 +4,7 @@ include { SPLIT_BAM_BY_CONTIG } from '../modules/split_contigs.nf'
 include { INSPECT_BAM_WORKLOAD } from '../modules/inspect_bam_workload.nf'
 include { TAMA_COLLAPSE } from '../modules/tama_collapse.nf'
 include { TAMA_MERGE as TAMA_MERGE_ACCESSION } from '../modules/tama_merge.nf'
+include { TMERGE as TMERGE_ACCESSION } from '../modules/tmerge.nf'
 include { VALIDATE_TAMA_OUTPUT } from '../modules/validate_tama_output.nf'
 
 workflow COLLAPSE_LONG_READ_MODELS {
@@ -32,13 +33,18 @@ workflow COLLAPSE_LONG_READ_MODELS {
         accession_beds = VALIDATE_TAMA_OUTPUT.out.bed.map { meta, _shard, bed -> tuple(meta.id, bed) }
             .groupTuple()
             .map { accession, beds -> tuple(accession, beds.sort { left, right -> left.name <=> right.name }) }
-        TAMA_MERGE_ACCESSION(accession_beds)
-        final_beds = TAMA_MERGE_ACCESSION.out.bed.collect()
+        if (params.merge_tool == 'tmerge') {
+            TMERGE_ACCESSION(accession_beds)
+            final_beds = TMERGE_ACCESSION.out.bed.collect()
+        } else {
+            TAMA_MERGE_ACCESSION(accession_beds)
+            final_beds = TAMA_MERGE_ACCESSION.out.bed.collect()
+        }
         version_ch = INSPECT_BAM_WORKLOAD.out.versions
             .mix(SPLIT_BAM_BY_CONTIG.out.versions)
             .mix(TAMA_COLLAPSE.out.versions)
             .mix(VALIDATE_TAMA_OUTPUT.out.versions)
-            .mix(TAMA_MERGE_ACCESSION.out.versions)
+            .mix(params.merge_tool == 'tmerge' ? TMERGE_ACCESSION.out.versions : TAMA_MERGE_ACCESSION.out.versions)
     } else {
         whole_bams = inspected_bam.map { meta, bam_file, bai, workload ->
             def mapped_reads = workload.readLines().drop(1).findAll { it.trim() }.collect { it.split('\\t', -1)[2].toLong() }.sum()
