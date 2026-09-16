@@ -6,7 +6,6 @@ process INSPECT_LONG_READ_MANIFEST {
     input:
     path manifest
     path metadata
-    path inspector
 
     output:
     path 'classification_report', emit: reports
@@ -15,7 +14,7 @@ process INSPECT_LONG_READ_MANIFEST {
     script:
     """
     mkdir -p classification_report
-    python3 ${inspector} inspect ${manifest} ${metadata} classification_report
+    read_input_classification.py inspect ${manifest} ${metadata} classification_report
     printf '"%s":\\n    python: runtime\\n' '${task.process}' > versions.yml
     """
 

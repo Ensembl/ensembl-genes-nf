@@ -10,15 +10,13 @@ workflow RUN_DIAMOND_QC {
     take:
     combined_bed
     reference
-    predictor
-    reporter
 
     main:
     // combined_bed: tuple val(meta), path(combined_models.bed)
     if (!params.diamond_reference_db && !params.diamond_reference_proteins)
         error 'Provide --diamond_reference_db or --diamond_reference_proteins when --run_diamond_validation is enabled'
     EXTRACT_COMBINED_TRANSCRIPTS(combined_bed, reference)
-    PREDICT_LONGEST_ATG_ORFS(EXTRACT_COMBINED_TRANSCRIPTS.out.transcripts, predictor)
+    PREDICT_LONGEST_ATG_ORFS(EXTRACT_COMBINED_TRANSCRIPTS.out.transcripts)
 
     if (params.diamond_reference_db) {
         diamond_db = channel.value(file(params.diamond_reference_db, checkIfExists: true))
@@ -31,7 +29,7 @@ workflow RUN_DIAMOND_QC {
         .map { meta, manifest -> tuple(meta.id, meta, manifest) }
         .join(diamond_hits.hits.map { meta, hits -> tuple(meta.id, meta, hits) })
         .map { _id, meta, manifest, _hits_meta, hits -> tuple(meta, manifest, hits) }
-    REPORT_COMBINED_DIAMOND_MODELS(report_input, diamond_db, reporter)
+    REPORT_COMBINED_DIAMOND_MODELS(report_input, diamond_db)
 
     version_ch = PREDICT_LONGEST_ATG_ORFS.out.versions
         .mix(DIAMOND_BLASTP.out.versions)

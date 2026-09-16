@@ -5,11 +5,10 @@ include { TAMA_MERGE } from '../modules/tama_merge.nf'
 workflow MERGE_LONG_READ_MODELS {
     take:
     beds
-    filelist_builder
 
     main:
     // beds: tuple val(cohort_id), path(list of TAMA BED files)
-    TAMA_MERGE(beds, filelist_builder)
+    TAMA_MERGE(beds)
 
     emit:
     bed = TAMA_MERGE.out.bed

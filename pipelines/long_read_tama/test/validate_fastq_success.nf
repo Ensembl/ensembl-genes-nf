@@ -18,9 +18,5 @@ process MAKE_TINY_FASTQ {
 workflow {
     meta = [id: 'tiny', classification: 'ONT_FASTQ', expected_header_representation: 'ONT']
     MAKE_TINY_FASTQ(meta)
-    VALIDATE_FASTQ(
-        MAKE_TINY_FASTQ.out.reads,
-        file("${baseDir}/../bin/read_input_classification.py", checkIfExists: true),
-        file("${baseDir}/../bin/audit_fastq.py", checkIfExists: true)
-    )
+    VALIDATE_FASTQ(MAKE_TINY_FASTQ.out.reads)
 }

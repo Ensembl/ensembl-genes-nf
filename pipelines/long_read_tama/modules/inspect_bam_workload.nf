@@ -5,7 +5,6 @@ process INSPECT_BAM_WORKLOAD {
 
     input:
     tuple val(meta), path(bam), path(bai)
-    path inspector
 
     output:
     tuple val(meta), path(bam), path(bai), path('contig_workload.tsv'), emit: workload
@@ -13,7 +12,7 @@ process INSPECT_BAM_WORKLOAD {
 
     script:
     """
-    ./${inspector} '${bam}' '${bai}' contig_workload.tsv ${params.shard_contig_reads}
+    inspect_bam_workload.py '${bam}' '${bai}' contig_workload.tsv ${params.shard_contig_reads}
     printf '"%s":\\n    samtools: runtime\\n' '${task.process}' > versions.yml
     """
 

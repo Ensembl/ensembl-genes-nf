@@ -5,7 +5,6 @@ process VALIDATE_LONG_READ_MANIFEST {
 
     input:
     path manifest
-    path parser
 
     output:
     path 'normalised_manifest.tsv', emit: manifest
@@ -14,7 +13,7 @@ process VALIDATE_LONG_READ_MANIFEST {
 
     script:
     """
-    python3 ${parser} ${manifest} normalised_manifest.tsv manifest_validation.tsv
+    normalise_manifest.py ${manifest} normalised_manifest.tsv manifest_validation.tsv
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python3 --version 2>&1 | awk '{print \$2}')

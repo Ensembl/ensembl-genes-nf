@@ -5,8 +5,6 @@ process RESOLVE_LONG_READ_METADATA {
 
     input:
     path manifest
-    path resolver
-    path accession_extractor
     val cache_dir
 
     output:
@@ -18,8 +16,8 @@ process RESOLVE_LONG_READ_METADATA {
     """
     mkdir -p metadata_cache
     mkdir -p ${cache_dir}
-    ./${accession_extractor} ${manifest} accessions.txt
-    python3 ${resolver} accessions.txt ${cache_dir} metadata.json
+    extract_manifest_accessions.py ${manifest} accessions.txt
+    resolve_metadata.py accessions.txt ${cache_dir} metadata.json
     printf '"%s":\\n    python: runtime\\n' '${task.process}' > versions.yml
     """
 

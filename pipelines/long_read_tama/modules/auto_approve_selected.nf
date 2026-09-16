@@ -5,7 +5,6 @@ process AUTO_APPROVE_SELECTED_LONG_READS {
 
     input:
     path classification_report
-    path approver
 
     output:
     path 'auto_approved_run_manifest.tsv', emit: manifest
@@ -14,7 +13,7 @@ process AUTO_APPROVE_SELECTED_LONG_READS {
 
     script:
     """
-    python3 ${approver} ${classification_report} auto_approved_run_manifest.tsv automatic_selection_audit.tsv
+    auto_approve_selected.py ${classification_report} auto_approved_run_manifest.tsv automatic_selection_audit.tsv
     printf '"%s":\\n    python: runtime\\n' '${task.process}' > versions.yml
     """
 

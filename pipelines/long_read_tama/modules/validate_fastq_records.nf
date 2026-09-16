@@ -5,7 +5,6 @@ process VALIDATE_FASTQ {
 
     input:
     tuple val(meta), path(reads)
-    path inspector
 
     output:
     tuple val(meta), path('full_validation.json'), emit: validation
@@ -14,7 +13,7 @@ process VALIDATE_FASTQ {
     script:
     def expected = meta.expected_header_representation ?: 'UNKNOWN'
     """
-    python3 "${inspector}" validate-fastq "${reads}" "${expected}" full_validation.json
+    read_input_classification.py validate-fastq "${reads}" "${expected}" full_validation.json
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python3 --version 2>&1 | awk '{print \$2}')

@@ -5,7 +5,6 @@ process SPLIT_BAM_BY_CONTIG {
 
     input:
     tuple val(meta), path(bam), path(bai), path(workload)
-    path splitter
 
     output:
     tuple val(meta), path('shards'), emit: shards
@@ -14,7 +13,7 @@ process SPLIT_BAM_BY_CONTIG {
 
     script:
     """
-    ./${splitter} '${bam}' '${workload}' '${meta.id}' shards contig_manifest.tsv
+    split_bam_by_contig.py '${bam}' '${workload}' '${meta.id}' shards contig_manifest.tsv
     printf '"%s":\\n    samtools: runtime\\n' '${task.process}' > versions.yml
     """
 

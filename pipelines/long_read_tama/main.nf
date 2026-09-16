@@ -44,14 +44,6 @@ workflow {
     validate_runtime_options(auto_approve_safe, run_diamond_validation)
     log.info(paramsSummaryLog(workflow))
 
-    validator = file("${baseDir}/bin/read_input_classification.py", checkIfExists: true)
-    auditor = file("${baseDir}/bin/audit_fastq.py", checkIfExists: true)
-    downloader = file("${baseDir}/bin/download_fastq.py", checkIfExists: true)
-    acquirer = file("${baseDir}/bin/acquire_bam.py", checkIfExists: true)
-    workload_inspector = file("${baseDir}/bin/inspect_bam_workload.py", checkIfExists: true)
-    contig_splitter = file("${baseDir}/bin/split_bam_by_contig.py", checkIfExists: true)
-    bed_validator = file("${baseDir}/bin/validate_tama_bed.py", checkIfExists: true)
-    merge_filelist_builder = file("${baseDir}/bin/prepare_tama_merge_filelist.py", checkIfExists: true)
     processing = params.approved_manifest || auto_approve_safe || params.taxon_id
 
     if (params.approved_manifest) {
@@ -60,13 +52,6 @@ workflow {
         INVENTORY_LONG_READS(
             params.manifest ? file(params.manifest, checkIfExists: true) : channel.empty(),
             params.taxon_id,
-            file("${baseDir}/bin/discover_long_read_data.py", checkIfExists: true),
-            file("${baseDir}/bin/read_input_classification.py", checkIfExists: true),
-            file("${baseDir}/bin/resolve_metadata.py", checkIfExists: true),
-            file("${baseDir}/bin/extract_manifest_accessions.py", checkIfExists: true),
-            file("${baseDir}/bin/normalise_manifest.py", checkIfExists: true),
-            file("${baseDir}/bin/auto_approve_selected.py", checkIfExists: true),
-            validator,
             params.metadata_json ? file(params.metadata_json, checkIfExists: true) : null,
             params.discovery_cache_dir ?: "${params.outdir}/discovery_cache",
             params.metadata_cache_dir ?: "${params.outdir}/metadata_cache",
@@ -86,33 +71,20 @@ workflow {
     cache = file(params.fastq_cache_dir).toAbsolutePath().toString()
     PREPARE_LONG_READS(
         approved_source,
-        validator,
-        cache,
-        auditor,
-        downloader,
-        acquirer
+        cache
     )
     ALIGN_LONG_READS(PREPARE_LONG_READS.out.reads, reference_fasta)
     COLLAPSE_LONG_READ_MODELS(
         ALIGN_LONG_READS.out.bam,
-        reference_fasta,
-        workload_inspector,
-        contig_splitter,
-        bed_validator,
-        merge_filelist_builder
+        reference_fasta
     )
     merge_input = COLLAPSE_LONG_READ_MODELS.out.beds.map { beds -> tuple(params.cohort_id, beds.sort { left, right -> left.name <=> right.name }) }
-    MERGE_LONG_READ_MODELS(merge_input, merge_filelist_builder)
-    VALIDATE_COMBINED_MODELS(MERGE_LONG_READ_MODELS.out.bed, params.cohort_id, bed_validator)
+    MERGE_LONG_READ_MODELS(merge_input)
+    VALIDATE_COMBINED_MODELS(MERGE_LONG_READ_MODELS.out.bed, params.cohort_id)
     combined_bed = VALIDATE_COMBINED_MODELS.out.bed
 
     if (run_diamond_validation) {
-        RUN_DIAMOND_QC(
-            combined_bed,
-            reference_fasta,
-            file("${baseDir}/bin/longest_atg_orf.py", checkIfExists: true),
-            file("${baseDir}/bin/report_diamond_models.py", checkIfExists: true)
-        )
+        RUN_DIAMOND_QC(combined_bed, reference_fasta)
     }
 
     diamond_versions = run_diamond_validation ? RUN_DIAMOND_QC.out.versions : channel.empty()

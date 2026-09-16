@@ -6,7 +6,6 @@ process REPORT_COMBINED_DIAMOND_MODELS {
     input:
     tuple val(meta), path(orf_manifest), path(diamond_hits)
     path diamond_db
-    path reporter
 
     output:
     tuple val(meta), path('combined_diamond_hits.tsv'), emit: report
@@ -16,7 +15,7 @@ process REPORT_COMBINED_DIAMOND_MODELS {
 
     script:
     """
-    python3 ${reporter} ${orf_manifest} ${diamond_hits} combined_diamond_hits.tsv combined_diamond_summary.tsv \\
+    report_diamond_models.py ${orf_manifest} ${diamond_hits} combined_diamond_hits.tsv combined_diamond_summary.tsv \\
         --classification-type ${params.diamond_classification_type}
     printf 'database_sha256\t%s\n' "\$(sha256sum ${diamond_db} | awk '{print \$1}')" > diamond_database_provenance.tsv
     cat <<-END_VERSIONS > versions.yml
