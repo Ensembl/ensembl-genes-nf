@@ -21,11 +21,10 @@ process ADD_STATIC_METAKEYS {
 
 
     script:
-    def script = "${projectDir}/bin/add_static_metakeys.py"
     def static_json = "${projectDir}/config/static_metakeys.json"
 
     """
-    python ${script} \\
+    add_static_metakeys.py \\
         --db_name ${meta.db_name} \\
         --db_host ${db_host} \\
         --db_port ${db_port} \\

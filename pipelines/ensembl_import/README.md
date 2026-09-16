@@ -9,7 +9,7 @@ CSV for the statistics pipeline.
 
 - Nextflow `26.04.0` or a compatible 26.x release
 - Singularity for normal execution
-- A local installation of `ensembl-genes`
+- A local installation of `ensembl-genes` (feature/refseq_loading_anna)
 - Network access to RefSeq and NCBI for non-stub runs
 - MySQL access to the target server
 

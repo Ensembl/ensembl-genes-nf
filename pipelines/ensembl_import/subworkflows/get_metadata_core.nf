@@ -1,7 +1,5 @@
 include { GET_SAMPLE_GENE } from '../modules/get_sample_gene.nf'
 include { ADD_STATIC_METAKEYS } from '../modules/add_static_metakeys.nf'
-include { GET_METADATA } from '../modules/get_metadata.nf'
-include { LOAD_METADATA } from '../modules/load_metadata.nf'
 include { LOAD_TAXONOMY } from '../modules/load_taxonomy.nf'
 
 workflow GET_METADATA_CORE {

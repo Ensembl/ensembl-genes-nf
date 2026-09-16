@@ -1,5 +1,5 @@
 process LOAD_TAXONOMY {
-    label 'process_low'
+    label 'python'
 
     tag "${meta.id}"
 
@@ -21,10 +21,9 @@ process LOAD_TAXONOMY {
     task.ext.when == null || task.ext.when
 
     script:
-    def script = "${projectDir}/bin/get_taxonomy.py"
 
     """
-    python ${script} \\
+    get_taxonomy.py \\
         --database ${meta.db_name} \\
         --host ${db_host} \\
         --port '${db_port}' \\

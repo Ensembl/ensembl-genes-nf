@@ -10,17 +10,13 @@ process PREPARE_STATS_INPUT {
     path 'versions.yml', emit: versions
 
     script:
-    def speciesParts = meta.species.tokenize(' ')
-    if (speciesParts.size() < 2)
-        throw new IllegalArgumentException("Species must contain a genus and species: ${meta.species}")
-    def speciesToken = "${speciesParts[0].toLowerCase()}_${speciesParts[1].toLowerCase()}"
-    def accessionToken = meta.id.toLowerCase().replace('_', '').replaceFirst(/\./, 'v')
-    def dbName = "${speciesToken}_${accessionToken}_rs_core_114_1"
+    if (!meta.db_name)
+        throw new IllegalArgumentException("Sample metadata is missing db_name for ${meta.id}")
     def publishedGenome = file("${params.outdir}/refseq/${meta.id}/${genome_file.name}").toAbsolutePath().toString()
 
     """
     printf '%s\\n' 'dbname,species_id,genome_file' > statistics_input_${meta.id}.csv
-    printf '%s\\n' "${dbName},1,${publishedGenome}" >> statistics_input_${meta.id}.csv
+    printf '%s\\n' "${meta.db_name},1,${publishedGenome}" >> statistics_input_${meta.id}.csv
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

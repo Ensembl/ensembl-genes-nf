@@ -14,31 +14,33 @@ workflow IMPORT_REFSEQ_TO_CORE {
 
     main:
 
+        samples_with_db_name_ch = samples_ch.map { meta ->
+            def speciesParts = meta.species.tokenize(' ')
+            if (speciesParts.size() < 2)
+                throw new IllegalArgumentException("Species must contain a genus and species: ${meta.species}")
+
+            def speciesToken = "${speciesParts[0].toLowerCase()}_${speciesParts[1].toLowerCase()}"
+            def accessionToken = meta.id
+                .toLowerCase()
+                .replace("_", "")
+                .replaceFirst(/\./, "v")
+            def dbName = "${speciesToken}_${accessionToken}_rs_core_114_1"
+
+            meta + [db_name: dbName]
+        }
+
         db_write_config_ch = db_config_ch.map { db_host, db_port, db_user, db_password, db_read_user ->
             tuple(db_host, db_port, db_user, db_password)
         }
 
-        FETCH_REFSEQ(samples_ch)
+        FETCH_REFSEQ(samples_with_db_name_ch)
 
         LOAD_REFSEQ(
             FETCH_REFSEQ.out.refseq,
             db_write_config_ch
         )
 
-        metadata_input = LOAD_REFSEQ.out.loaded.map { meta, loaded_marker ->
-
-                def speciesParts = meta.species.tokenize(' ')
-                def speciesToken = "${speciesParts[0].toLowerCase()}_${speciesParts[1].toLowerCase()}"
-
-                def accessionToken = meta.id
-                    .toLowerCase()
-                    .replace("_", "")
-                    .replaceFirst(/\./, "v")
-
-                def dbName = "${speciesToken}_${accessionToken}_rs_core_114_1"
-
-                tuple(meta + [db_name: dbName], loaded_marker)
-            }
+        metadata_input = LOAD_REFSEQ.out.loaded
 
         versions_ch = FETCH_REFSEQ.out.versions
             .mix(LOAD_REFSEQ.out.versions)

@@ -20,10 +20,9 @@ process GET_SAMPLE_GENE {
 
     script:
     def args = task.ext.args ?: ''
-    def script = "${projectDir}/bin/get_sample_gene.py"
 
     """
-    python ${script} \\
+    get_sample_gene.py \\
         --db-name ${meta.db_name} \\
         --host ${db_host} \\
         --port ${db_port} \\
