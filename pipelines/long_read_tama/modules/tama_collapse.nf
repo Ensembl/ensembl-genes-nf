@@ -1,6 +1,12 @@
 process TAMA_COLLAPSE {
     tag "${meta.id}${shard ? ':' + shard : ''}:${resource_class}:${mapped_reads} reads"
     label 'process_high_memory'
+    // TAMA can fail on a single problematic contig (for example an internal
+    // IndexError in the legacy 1.0.3 implementation). Do not terminate the
+    // accession/cohort workflow because of that shard; the failed task remains
+    // visible in the trace and report.
+    errorStrategy 'ignore'
+    maxRetries 0
     memory { resource_class == 'very_large' ? params.tama_memory_very_large : (resource_class == 'large' ? params.tama_memory_large : params.tama_memory_small) }
     conda 'bioconda::gs-tama=1.0.3'
     container "${params.tama_container ?: (workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
