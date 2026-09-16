@@ -188,8 +188,8 @@
     },
     "getrpf_container": {
       "type": "string",
-      "default": "ghcr.io/jackcurragh/get-rpf:0.4.0",
-      "description": "Container image for EXTRACT_RPFS (needs getRPF >= 0.4.0 for getrpf_method 'structure')"
+      "default": "ghcr.io/jackcurragh/get-rpf:0.4.1",
+      "description": "Container image for getRPF extraction and length policy gating (needs getRPF >= 0.4.1 for recovery audit mode)"
     },
     "adapter_detection_method": {
       "type": "string",

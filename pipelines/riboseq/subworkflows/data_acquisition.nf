@@ -188,11 +188,25 @@ workflow DATA_ACQUISITION {
         collapsed_reads = LOCATE.out.collapsed_reads
     }
 
-    // Combine existing collapsed reads with newly processed ones
+    // Combine generations without allowing a reused output directory to pick
+    // an arbitrary file. A duplicate sample is valid only when the lineage
+    // keys agree; otherwise fail closed before downstream alignment.
     all_collapsed_reads = collapsed_reads
         .mix(newly_collapsed_reads)
+        .map { meta, collapsed_file -> tuple(meta.id, meta, collapsed_file) }
         .groupTuple()
-        .map { meta, files -> tuple(meta, files[0]) }  // Take the first file if there are duplicates
+        .map { id, metas, files ->
+            def lineage = metas.collect { meta ->
+                meta.lineage_id ?: meta.run_id ?: meta.id
+            }.unique()
+            if (lineage.size() != 1) {
+                error "Duplicate or conflicting collapsed reads for ${id}; refusing arbitrary file selection (lineage=${lineage})"
+            }
+            // The channel order is existing generation, then newly processed
+            // generation. Matching lineage permits an explicit newest-wins
+            // choice; conflicting lineage still fails closed.
+            tuple(metas[-1], files[-1])
+        }
 
     emit:
     samples = all_collapsed_reads
