@@ -37,3 +37,16 @@ def test_workflow_exposes_required_boundaries():
         assert f"process {name}" in subworkflows or f"process {name}" in "\n".join(
             path.read_text() for path in (PIPELINE / "modules").glob("*.nf")
         )
+
+
+def test_entrypoint_uses_schema_and_keeps_optional_outputs_guarded():
+    main = (PIPELINE / "main.nf").read_text()
+    align = (PIPELINE / "subworkflows" / "align_long_reads.nf").read_text()
+    schema = (PIPELINE / "nextflow_schema.json").read_text()
+
+    assert "validateParameters()" in main
+    assert "INVENTORY_LONG_READS" in main
+    assert '"$schema": "https://json-schema.org/draft/2020-12/schema"' in schema
+    assert "build_versions = channel.empty()" in align
+    assert "BUILD_MINIMAP2_INDEX.out.versions" not in align.split("emit:", 1)[1]
+    assert "COLLECT_LONG_READ_SOFTWARE_VERSIONS" in main

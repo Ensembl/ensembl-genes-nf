@@ -54,5 +54,10 @@ workflow PREPARE_LONG_READS {
     reads = VALIDATE_FASTQ.out.reads
     reports = VALIDATE_FASTQ.out.report
     molecule_audit = VALIDATE_FASTQ.out.molecule_audit
-    versions = VALIDATE_FASTQ.out.versions.mix(RUN_PBCCS.out.versions).mix(BAM_TO_FASTQ.out.versions)
+    versions = VALIDATE_APPROVED_LONG_READ_MANIFEST.out.versions
+        .mix(FASTQ_DL.out.versions)
+        .mix(ACQUIRE_LONG_READ_BAM.out.versions)
+        .mix(RUN_PBCCS.out.versions)
+        .mix(BAM_TO_FASTQ.out.versions)
+        .mix(VALIDATE_FASTQ.out.versions)
 }

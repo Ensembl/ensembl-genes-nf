@@ -26,7 +26,10 @@ workflow COLLAPSE_LONG_READ_MODELS {
             .map { accession, beds -> tuple(accession, beds.sort { left, right -> left.name <=> right.name }) }
         TAMA_MERGE_ACCESSION(accession_beds)
         final_beds = TAMA_MERGE_ACCESSION.out.bed.collect()
-        version_ch = TAMA_COLLAPSE.out.versions.mix(VALIDATE_TAMA_OUTPUT.out.versions).mix(TAMA_MERGE_ACCESSION.out.versions)
+        version_ch = SPLIT_BAM_BY_CONTIG.out.versions
+            .mix(TAMA_COLLAPSE.out.versions)
+            .mix(VALIDATE_TAMA_OUTPUT.out.versions)
+            .mix(TAMA_MERGE_ACCESSION.out.versions)
     } else {
         whole_bams = bam.map { meta, bam_file, _bai -> tuple(meta, 'whole', bam_file) }
         TAMA_COLLAPSE(whole_bams, reference)

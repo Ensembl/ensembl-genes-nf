@@ -18,5 +18,5 @@ workflow VALIDATE_COMBINED_MODELS {
     bed = CANONICALISE_COMBINED_MODELS.out.bed
     checksum = CANONICALISE_COMBINED_MODELS.out.checksum
     validation = VALIDATE_LONG_READ_MODELS.out.report
-    versions = CANONICALISE_COMBINED_MODELS.out.versions
+    versions = CANONICALISE_COMBINED_MODELS.out.versions.mix(VALIDATE_LONG_READ_MODELS.out.versions)
 }
