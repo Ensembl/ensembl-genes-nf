@@ -1,27 +1,28 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Ensembl/ensembl-genes-nf/long_read_tama",
   "title": "Long-read TAMA transcript model pipeline",
   "type": "object",
   "properties": {
-    "manifest": {"type": "string", "description": "Historical candidate manifest used for inventory/classification"},
+    "manifest": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Historical candidate manifest used for inventory/classification"},
     "taxon_id": {"type": ["string", "null"], "description": "NCBI taxonomy ID for automatic long-read discovery"},
-    "tree": {"type": "boolean", "default": false, "description": "Include subordinate taxa"},
-    "discovery_probe": {"type": "boolean", "default": true},
-    "target_sample_count": {"type": "integer", "default": 8},
-    "soft_download_budget": {"type": "number", "default": 250.0, "description": "Soft proposed-panel download budget in GB; unique biology may exceed it with a warning"},
-    "soft_raw_subread_budget": {"type": "integer", "default": 1, "description": "Soft count of difficult raw-subread candidates in the proposed panel"},
+    "tree": {"enum": [true, false, "true", "false"], "default": false, "description": "Include subordinate taxa"},
+    "discovery_probe": {"enum": [true, false, "true", "false"], "default": true},
+    "target_sample_count": {"type": "integer", "minimum": 1, "default": 8},
+    "soft_download_budget": {"type": "number", "minimum": 0, "default": 250.0, "description": "Soft proposed-panel download budget in GB; unique biology may exceed it with a warning"},
+    "soft_raw_subread_budget": {"type": "integer", "minimum": 0, "default": 1, "description": "Soft count of difficult raw-subread candidates in the proposed panel"},
     "discovery_cache_dir": {"type": ["string", "null"]},
-    "approved_manifest": {"type": "string", "description": "Reviewer-approved classification-bearing TSV for production processing"},
-    "auto_approve_safe": {"type": "boolean", "default": false, "description": "Automatically process READY_FOR_REVIEW rows from --manifest and quarantine the rest"},
-    "metadata_json": {"type": "string", "description": "Optional captured ENA/SRA metadata JSON; omitted to resolve metadata automatically"},
-    "metadata_cache_dir": {"type": "string", "description": "Optional persistent cache for ENA metadata responses"},
-    "fastq_cache_dir": {"type": "string", "description": "Persistent shared cache for checksum-validated FASTQ files"},
-    "reference_fasta": {"type": "string", "description": "Reference FASTA used by minimap2 and TAMA"},
-    "reference_fai": {"type": "string", "description": "Optional FASTA index to validate alongside the reference"},
-    "minimap_index": {"type": "string", "description": "Existing minimap2 .mmi; omit to build it"},
+    "approved_manifest": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Reviewer-approved classification-bearing TSV for production processing"},
+    "auto_approve_safe": {"enum": [true, false, "true", "false"], "default": false, "description": "Automatically process READY_FOR_REVIEW rows from --manifest and quarantine the rest"},
+    "metadata_json": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Optional captured ENA/SRA metadata JSON; omitted to resolve metadata automatically"},
+    "metadata_cache_dir": {"type": ["string", "null"], "description": "Optional persistent cache for ENA metadata responses"},
+    "fastq_cache_dir": {"type": ["string", "null"], "description": "Persistent shared cache for checksum-validated FASTQ files"},
+    "reference_fasta": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Reference FASTA used by minimap2 and TAMA"},
+    "reference_fai": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Optional FASTA index to validate alongside the reference"},
+    "minimap_index": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Existing minimap2 .mmi; omit to build it"},
     "cohort_id": {"type": "string", "default": "bos_indicus_long_read"},
     "outdir": {"type": "string", "default": "./long_read_tama_results"},
+    "tracedir": {"type": "string", "description": "Directory for Nextflow execution reports and trace files"},
     "minimap2_preset": {"type": "string", "default": "splice:hq"},
     "secondary_mode": {"type": "string", "enum": ["no", "yes"], "default": "no"},
     "samtools_sort_memory": {"type": "string", "default": "2G"},
@@ -34,9 +35,9 @@
     "tama_end_mode": {"type": "string", "enum": ["common_ends", "longest_ends"], "default": "common_ends"},
     "tama_run_mode": {"type": "string", "enum": ["low_mem", "original"], "default": "low_mem"},
     "shard_mode": {"type": "string", "enum": ["none", "contig"], "default": "none"}
-    ,"run_diamond_validation": {"type": "boolean", "default": false, "description": "Generate longest-ATG ORFs and validate them with Diamond"}
-    ,"diamond_reference_db": {"type": ["string", "null"], "description": "Existing Diamond database for combined-model validation"}
-    ,"diamond_reference_proteins": {"type": ["string", "null"], "description": "Reference protein FASTA used to build a Diamond database"}
+    ,"run_diamond_validation": {"enum": [true, false, "true", "false"], "default": false, "description": "Generate longest-ATG ORFs and validate them with Diamond"}
+    ,"diamond_reference_db": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Existing Diamond database for combined-model validation"}
+    ,"diamond_reference_proteins": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Reference protein FASTA used to build a Diamond database"}
     ,"diamond_classification_type": {"type": "string", "enum": ["long_read", "standard", "standard_old", "gifts"], "default": "long_read", "description": "Legacy coverage/identity classification rule set"}
     ,"ensembl_genes_container": {"type": "string", "default": "dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-genes", "description": "Container providing the transcriptomic data selector"}
     ,"transcriptomic_data_command": {"type": "string", "default": "python3 -m ensembl.genes.transcriptomic_data.get_transcriptomic_data", "description": "Command used inside the Ensembl genes container to retrieve long-read candidates"}
@@ -45,6 +46,36 @@
     {"required": ["taxon_id"]},
     {"required": ["manifest"]},
     {"required": ["approved_manifest", "fastq_cache_dir"]}
+  ],
+  "allOf": [
+    {
+      "if": {"required": ["approved_manifest"]},
+      "then": {"required": ["reference_fasta", "fastq_cache_dir"]}
+    },
+    {
+      "if": {
+        "required": ["auto_approve_safe"],
+        "properties": {"auto_approve_safe": {"enum": [true, "true"]}}
+      },
+      "then": {
+        "anyOf": [
+          {"required": ["manifest", "reference_fasta", "fastq_cache_dir"]},
+          {"required": ["taxon_id", "reference_fasta", "fastq_cache_dir"]}
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": ["run_diamond_validation"],
+        "properties": {"run_diamond_validation": {"enum": [true, "true"]}}
+      },
+      "then": {
+        "anyOf": [
+          {"required": ["diamond_reference_db"]},
+          {"required": ["diamond_reference_proteins"]}
+        ]
+      }
+    }
   ],
   "required": []
 }

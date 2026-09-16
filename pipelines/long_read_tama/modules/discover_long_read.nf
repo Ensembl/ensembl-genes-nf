@@ -15,8 +15,8 @@ process DISCOVER_LONG_READ_DATA {
     path 'versions.yml', emit: versions
 
     script:
-    def tree = params.tree ? '--tree' : ''
-    def probe = params.discovery_probe ? '' : '--no-probe'
+    def tree = params.tree in [true, 'true'] ? '--tree' : ''
+    def probe = params.discovery_probe in [true, 'true'] ? '' : '--no-probe'
     """
     mkdir -p discovery
     ${params.transcriptomic_data_command} -t ${taxon_id} -f discovery/transcriptomic_candidates.tsv -r long ${tree}

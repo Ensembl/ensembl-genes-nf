@@ -33,8 +33,14 @@ workflow RUN_DIAMOND_QC {
         .map { _id, meta, manifest, _hits_meta, hits -> tuple(meta, manifest, hits) }
     REPORT_COMBINED_DIAMOND_MODELS(report_input, diamond_db, reporter)
 
+    version_ch = PREDICT_LONGEST_ATG_ORFS.out.versions
+        .mix(DIAMOND_BLASTP.out.versions)
+        .mix(REPORT_COMBINED_DIAMOND_MODELS.out.versions)
+    if (!params.diamond_reference_db)
+        version_ch = PREP_DIAMOND_DB.out.versions.mix(version_ch)
+
     emit:
     report = REPORT_COMBINED_DIAMOND_MODELS.out.report
     summary = REPORT_COMBINED_DIAMOND_MODELS.out.summary
-    versions = PREDICT_LONGEST_ATG_ORFS.out.versions.mix(REPORT_COMBINED_DIAMOND_MODELS.out.versions)
+    versions = version_ch
 }
