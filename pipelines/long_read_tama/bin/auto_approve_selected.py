@@ -47,8 +47,6 @@ def main():
             audit_rows.append({"run_accession": accession, "classification": classification,
                                "status": "APPROVED", "decision": "PROCESS",
                                "detail": "READY_FOR_REVIEW and compatible classification"})
-    if not rows:
-        raise SystemExit("automatic selection produced no safely runnable runs")
     with open(output, "w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=FIELDS, delimiter="\t")
         writer.writeheader()
@@ -57,6 +55,8 @@ def main():
         writer = csv.DictWriter(handle, fieldnames=["run_accession", "classification", "status", "decision", "detail"], delimiter="\t")
         writer.writeheader()
         writer.writerows(audit_rows)
+    if not rows:
+        raise SystemExit("automatic selection produced no safely runnable runs; see automatic_selection_audit.tsv")
 
 
 if __name__ == "__main__":

@@ -159,3 +159,21 @@ def test_auto_approve_safe_filters_quarantined_rows(tmp_path):
     assert "SRR1" in output.read_text()
     assert "SRR2" not in output.read_text()
     assert "SRR2\tCONFLICT\tQUARANTINED\tQUARANTINE" in audit.read_text()
+
+
+def test_auto_approve_safe_reports_empty_selection(tmp_path):
+    report_dir = tmp_path / "classification_report"
+    report_dir.mkdir()
+    (report_dir / "run_classification.tsv").write_text(
+        "run_accession\tclassification\tstatus\treason_codes\n"
+        "SRR2\tCONFLICT\tQUARANTINED\tPLATFORM_CONFLICT\n"
+    )
+    output = tmp_path / "approved.tsv"
+    audit = tmp_path / "audit.tsv"
+    result = subprocess.run(
+        ["python3", str(Path(__file__).parents[1] / "bin" / "auto_approve_selected.py"),
+         str(report_dir), str(output), str(audit)], capture_output=True, text=True
+    )
+    assert result.returncode != 0
+    assert "no safely runnable runs" in result.stderr
+    assert "SRR2\tCONFLICT\tQUARANTINED\tQUARANTINE" in audit.read_text()
