@@ -13,16 +13,16 @@ def test_runtime_policy_is_bounded_and_ignores_exhausted_resource_kills():
     assert "shell         = ['/bin/bash', '-euo', 'pipefail']" in root
     assert "enabled = true" in root
     assert "task.exitStatus in [137, 140, 143]" in root
-    assert "task.exitStatus in [137, 140, 143]" in pipeline
+    assert "task.attempt <= params.tama_max_retries ? 'retry' : 'ignore'" in pipeline
     assert "? 'retry' : 'terminate'" in root
-    assert "? 'retry' : (task.exitStatus in [137, 140, 143] ? 'ignore' : 'terminate')" in pipeline
+    assert "task.attempt <= params.tama_max_retries ? 'retry' : 'ignore'" in pipeline
     assert "shard_mode = 'contig'" in pipeline
     assert '"default": "contig"' in (PIPELINE / "nextflow_schema.json").read_text()
-    assert "? 'ignore' : 'terminate'" in pipeline
+    assert "withName: '.*'" in pipeline
     assert "withName: 'TAMA_COLLAPSE'" in pipeline
-    assert "maxRetries = 3" in pipeline
+    assert "maxRetries = params.tama_max_retries" in pipeline
     assert "params.tama_memory_small" in pipeline
-    assert "task.exitStatus in [137, 140, 143]" in pipeline
+    assert "errorStrategy = { task.attempt <= params.tama_max_retries ? 'retry' : 'ignore' }" in pipeline
 
 
 def test_all_pipeline_helpers_are_executable():
