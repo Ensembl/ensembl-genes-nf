@@ -35,6 +35,15 @@ def test_probe_mixed_headers(tmp_path):
     assert result["records_sampled"] == 2
 
 
+def test_fastq_stats_matches_validation_contract(tmp_path):
+    fastq = write_fastq(tmp_path, ["read-1", "read-2"])
+    output = tmp_path / "stats.tsv"
+    mod.write_fastq_stats(fastq, output)
+    assert output.read_text().splitlines()[-1].split("\t") == [
+        "reads.fastq.gz", "FASTQ", "DNA", "2", "8", "4", "4.0", "4"
+    ]
+
+
 def test_subread_bam_conflict_is_quarantined():
     artifacts = mod.expand_artifacts("SRR1", "ENA", "https://example.org/a.subreads.bam", "d41d8cd98f00b204e9800998ecf8427e")
     result = mod.classify(declared_platform="PACBIO_SMRT", ena_platform="PACBIO_SMRT", sra_platform="ONT", artifacts=artifacts, probe={"header_representation": "ONT", "ont_uuid_count": 2})

@@ -200,6 +200,32 @@ def validate_fastq(path_or_uri: str, expected: str = "UNKNOWN") -> dict:
     return {"records": records, "representation": observed, "distinct_ids": len(read_ids), "distinct_molecules": len(molecule_ids)}
 
 
+def write_fastq_stats(path_or_uri: str, output: str) -> None:
+    """Write the small tabular FASTQ summary consumed by the pipeline."""
+    import gzip
+
+    opener = gzip.open if str(path_or_uri).lower().endswith(".gz") else open
+    records = 0
+    total_length = 0
+    minimum = None
+    maximum = 0
+    sequence_alphabet = set()
+    with opener(path_or_uri, "rt") as handle:
+        for _header, sequence, _quality in _records(handle):
+            length = len(sequence)
+            records += 1
+            total_length += length
+            minimum = length if minimum is None else min(minimum, length)
+            maximum = max(maximum, length)
+            sequence_alphabet.update(sequence.upper())
+    if not records:
+        raise ValueError("FASTQ contains no complete records")
+    sequence_type = "DNA" if sequence_alphabet <= set("ACGTNRYKMSWBDHV") else "UNKNOWN"
+    with open(output, "w") as handle:
+        handle.write("file\tformat\ttype\tnum_seqs\tsum_len\tmin_len\tavg_len\tmax_len\n")
+        handle.write(f"{Path(path_or_uri).name}\tFASTQ\t{sequence_type}\t{records}\t{total_length}\t{minimum}\t{total_length / records:.1f}\t{maximum}\n")
+
+
 def expand_artifacts(run: str, source: str, uris: str, md5s: str, formats: str = "") -> list[dict]:
     uri_list = [x for x in uris.split(";") if x]
     md5_list = [x for x in md5s.split(";") if x]
@@ -320,6 +346,7 @@ def _cli() -> None:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("probe"); p.add_argument("fastq"); p.add_argument("output")
+    s = sub.add_parser("stats"); s.add_argument("fastq"); s.add_argument("output")
     f = sub.add_parser("validate-fastq"); f.add_argument("fastq"); f.add_argument("expected"); f.add_argument("output")
     v = sub.add_parser("validate-approved"); v.add_argument("manifest")
     b = sub.add_parser("build-approved"); b.add_argument("classification_tsv"); b.add_argument("report_file"); b.add_argument("output")
@@ -328,6 +355,8 @@ def _cli() -> None:
     args = parser.parse_args()
     if args.command == "probe":
         Path(args.output).write_text(json.dumps(probe_fastq(args.fastq), indent=2) + "\n")
+    elif args.command == "stats":
+        write_fastq_stats(args.fastq, args.output)
     elif args.command == "validate-fastq":
         result = validate_fastq(args.fastq, args.expected)
         Path(args.output).write_text(json.dumps(result, indent=2) + "\n")
