@@ -1,13 +1,14 @@
 process TAMA_COLLAPSE {
-    tag "${meta.id}${shard ? ':' + shard : ''}"
+    tag "${meta.id}${shard ? ':' + shard : ''}:${resource_class}:${mapped_reads} reads"
     label 'process_high_memory'
+    memory { resource_class == 'very_large' ? params.tama_memory_very_large : (resource_class == 'large' ? params.tama_memory_large : params.tama_memory_small) }
     conda 'bioconda::gs-tama=1.0.3'
     container "${params.tama_container ?: (workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/gs-tama:1.0.3--hdfd78af_0' :
         'quay.io/biocontainers/gs-tama:1.0.3--hdfd78af_0')}"
 
     input:
-    tuple val(meta), val(shard), path(bam)
+    tuple val(meta), val(shard), val(resource_class), val(mapped_reads), path(bam), path(bai)
     path reference
 
     output:

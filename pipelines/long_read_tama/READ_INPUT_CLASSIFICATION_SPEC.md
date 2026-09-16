@@ -244,7 +244,10 @@ Suggested boundaries (names may differ, but preserve the contracts):
 6. **Canonical FASTQ validation:** replace the current gzip-only preparation with a validator that confirms complete records, ID uniqueness, expected header representation, and one-per-molecule expectations. For PacBio CCS, report duplicate movie/ZMW IDs as an error. For ONT, report duplicate read IDs as an error. Emit a `molecule_audit.tsv` consumed by neither TAMA nor minimap2 but published with the run's reports.
 7. **Alignment branch:** carry `classification`, `proposed_action`, and `minimap2_preset` in the Nextflow `meta` map into `MINIMAP2_ALIGN`, then `SAMTOOLS_SORT_INDEX` and `ALIGNMENT_QC`. The QC module must record the effective classification and preset in `alignment_stats.tsv`. No raw subread file can satisfy the canonical FASTQ input contract.
 
-Keep the existing per-accession TAMA Collapse boundaries. Do not change `shard_mode`, TAMA parameters, secondary-alignment behaviour, or merge policy as part of this data-integrity change.
+Keep the existing per-accession TAMA Collapse boundaries. The production default
+is `shard_mode=contig`; `shard_mode=none` remains an explicit opt-out for small
+inputs. Do not change TAMA parameters, secondary-alignment behaviour, or merge
+policy as part of a data-integrity change.
 
 ## Implementation milestones
 
