@@ -22,6 +22,15 @@ Read `docs/template/MODULES.md`, `modules/reference_example.nf`, and the closest
 - Use descriptive channel names. Apply `join`, `groupTuple`, `collect`, `branch`, or `ifEmpty` only after checking the expected cardinality and metadata keys.
 - Expose useful result and version channels; avoid hiding outputs required by later workflow stages.
 - Keep process resource settings and tool arguments in configuration, not hardcoded in the subworkflow.
+- When a subworkflow conditionally invokes a process, initialize its result and
+  version channels with `channel.empty()` and assign the process outputs only in
+  the invocation branch. Never put an unconditional `OPTIONAL_PROCESS.out.*`
+  reference in `emit:`.
+- State singleton-versus-stream cardinality at boundaries. Shared references,
+  indexes, and databases must be reusable value/broadcast inputs; per-sample
+  reads and alignments remain queue streams.
+- If a subworkflow has multiple mode branches, expose one stable public contract
+  and aggregate all branch-specific versions, reports, and audits into it.
 
 ## Verification
 

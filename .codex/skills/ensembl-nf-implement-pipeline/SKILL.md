@@ -16,6 +16,32 @@ Inspect the target pipeline and its nearest working analogue before editing. Tre
 - Keep reusable modules configurable through `task.ext` and pipeline configuration. Put a pipeline-only parameter, resource override, or profile in that pipeline's `nextflow.config`; do not modify root configuration for a one-pipeline need.
 - Add or update user-facing parameters in the pipeline schema/configuration together when those artifacts are used. Validate required inputs early when practical, before work is launched.
 
+## Design gates before editing
+
+- Read the target pipeline's recent history with `git log` and identify every
+  execution mode, optional resource, and phase boundary before changing code.
+  In the long-read TAMA history, `c4a9ed3` and `82127af` added modes to
+  `main.nf`, while `2a6fd19` moved processes behind subworkflows without
+  removing the entry-point state machine. Treat that sequence as a warning:
+  shortening `main.nf` is not sufficient if phase boundaries and mode contracts
+  remain implicit.
+- Keep `main.nf` as a composition boundary: process modules belong behind named
+  subworkflows. A terminal software-version aggregation process may remain a
+  direct entry-point call when that matches an existing repository precedent.
+- Treat `nextflow_schema.json` as an executable contract. The entry workflow
+  must call `validateParameters()`, use the nf-schema-supported JSON Schema
+  dialect, describe inherited reporting parameters, and express types, enums,
+  file existence, and conditional requirements where possible. Keep only
+  genuinely cross-field/runtime rules in a small custom validator.
+- For each conditional process or optional database/index, design an explicit
+  mode matrix. Initialize absent outputs and versions with `channel.empty()`;
+  never reference an output from a process that may not be invoked. Make
+  singleton files value/broadcast channels before pairing them with sample
+  streams.
+- Separate inventory/approval from production processing with named workflows
+  and explicit emitted contracts. Do not make `return` the only indication that
+  a phase stopped.
+
 ## Work deliberately
 
 1. Read the affected `main.nf`, `nextflow.config`, direct modules/subworkflows, and the relevant sections of `docs/NEXTFLOW_REQUIREMENTS.md`, `docs/template/MODULES.md`, `docs/template/PATTERNS.md`, and `docs/template/CONFIGURATION.md`.
@@ -35,6 +61,11 @@ nextflow run pipelines/<pipeline>/main.nf -stub-run -profile test --outdir /tmp/
 ```
 
 Use the pipeline's established test command when it exists. If an external tool, image, reference, or test input prevents execution, report the exact command, blocker, and the unverified surface; never claim a real run passed from a parse-only check.
+
+For every new or changed optional mode, run a stub/configuration matrix that
+covers the option supplied and omitted, plus the inventory-only path when one
+exists. Include at least one intentionally invalid parameter combination and
+verify that nf-schema rejects it before any process is submitted.
 
 ## Production safety gates
 
