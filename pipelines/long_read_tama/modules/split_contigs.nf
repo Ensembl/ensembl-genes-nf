@@ -5,6 +5,7 @@ process SPLIT_BAM_BY_CONTIG {
 
     input:
     tuple val(meta), path(bam), path(bai), path(workload)
+    path splitter
 
     output:
     tuple val(meta), path('shards'), emit: shards
@@ -13,14 +14,7 @@ process SPLIT_BAM_BY_CONTIG {
 
     script:
     """
-    mkdir -p shards
-    tail -n +2 '${workload}' | while IFS=$'\\t' read -r contig length mapped eligible resource_class; do
-        safe=\$(printf '%s' "\$contig" | tr -c 'A-Za-z0-9._-' '_')
-        samtools view -b -o "shards/${meta.id}.\${safe}.bam" ${bam} "\$contig"
-        samtools index "shards/${meta.id}.\${safe}.bam"
-        printf '%s\\t%s\\t%s\\t%s\\t%s\\n' "\$contig" "\$length" "\$mapped" "\$resource_class" "\$(basename "shards/${meta.id}.\${safe}.bam")" >> contig_manifest.tsv
-    done
-    test -s contig_manifest.tsv || { echo 'No contig shards were materialised' >&2; exit 1; }
+    ./${splitter} '${bam}' '${workload}' '${meta.id}' shards contig_manifest.tsv
     printf '"%s":\\n    samtools: runtime\\n' '${task.process}' > versions.yml
     """
 

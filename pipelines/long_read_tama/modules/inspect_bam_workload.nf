@@ -5,6 +5,7 @@ process INSPECT_BAM_WORKLOAD {
 
     input:
     tuple val(meta), path(bam), path(bai)
+    path inspector
 
     output:
     tuple val(meta), path(bam), path(bai), path('contig_workload.tsv'), emit: workload
@@ -12,12 +13,7 @@ process INSPECT_BAM_WORKLOAD {
 
     script:
     """
-    test -r '${bam}' || { echo 'BAM is not readable' >&2; exit 1; }
-    test -r '${bai}' || { echo 'BAM index is not readable' >&2; exit 1; }
-    samtools quickcheck -v '${bam}'
-    samtools idxstats '${bam}' | awk 'BEGIN {OFS="\\t"; print "contig","reference_bases","mapped_reads","eligible","resource_class"} \\
-        \$1 != "*" && \$2 > 0 {class=(\$3 >= ${params.shard_contig_reads * 5} ? "very_large" : (\$3 >= ${params.shard_contig_reads} ? "large" : "small")); print \$1,\$2,\$3,"true",class}' > contig_workload.tsv
-    test -s contig_workload.tsv || { echo 'BAM has no eligible reference contigs' >&2; exit 1; }
+    ./${inspector} '${bam}' '${bai}' contig_workload.tsv ${params.shard_contig_reads}
     printf '"%s":\\n    samtools: runtime\\n' '${task.process}' > versions.yml
     """
 

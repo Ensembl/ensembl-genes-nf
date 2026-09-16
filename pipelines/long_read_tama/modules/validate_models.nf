@@ -5,6 +5,7 @@ process VALIDATE_LONG_READ_MODELS {
 
     input:
     path bed
+    path validator
 
     output:
     path 'model_validation.tsv', emit: report
@@ -12,9 +13,8 @@ process VALIDATE_LONG_READ_MODELS {
 
     script:
     """
-    test -s "${bed}" || { echo "Combined TAMA BED is missing or empty" >&2; exit 1; }
-    awk 'NF != 12 {bad++} END {if (bad) {print "Invalid BED12 model rows: " bad > "/dev/stderr"; exit 1} print "models\\t" NR > "model_validation.tsv"}' "${bed}"
-    printf '"%s":\\n    validator: awk\\n' '${task.process}' > versions.yml
+    ./${validator} ${bed} model_validation.tsv
+    printf '"%s":\\n    validator: python\\n' '${task.process}' > versions.yml
     """
 
     stub:
