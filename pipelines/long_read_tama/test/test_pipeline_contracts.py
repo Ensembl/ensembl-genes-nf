@@ -66,12 +66,15 @@ def test_tama_soft_failures_have_explicit_status_and_diagnostics():
 def test_tmerge_is_an_explicit_optional_merge_backend():
     config = (PIPELINE / "nextflow.config").read_text()
     schema = (PIPELINE / "nextflow_schema.json").read_text()
-    merge = (PIPELINE / "modules" / "tama_merge.nf").read_text()
+    tama = (PIPELINE / "modules" / "tama_merge.nf").read_text()
+    tmerge = (PIPELINE / "modules" / "tmerge.nf").read_text()
     assert "merge_tool = 'tama'" in config
     assert '"merge_tool"' in schema and '"tama", "tmerge"' in schema
-    assert "params.merge_tool == 'tmerge'" in merge
-    assert "community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552" in merge
-    assert "bed12_to_gtf.py" in merge and "gtf_to_bed12.py" in merge
+    assert "process TAMA_MERGE" in tama
+    assert "params.merge_tool" not in tama
+    assert "process TMERGE" in tmerge
+    assert "community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552" in tmerge
+    assert "bed12_to_gtf.py" in tmerge and "gtf_to_bed12.py" in tmerge
 
 
 def test_entrypoint_uses_schema_and_keeps_optional_outputs_guarded():
