@@ -12,7 +12,7 @@ process INSPECT_BAM_WORKLOAD {
 
     script:
     """
-    inspect_bam_workload.py '${bam}' '${bai}' contig_workload.tsv ${params.shard_contig_reads}
+    inspect_bam_workload.sh '${bam}' '${bai}' contig_workload.tsv ${params.shard_contig_reads}
     printf '"%s":\\n    samtools: runtime\\n' '${task.process}' > versions.yml
     """
 
