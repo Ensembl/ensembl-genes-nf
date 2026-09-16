@@ -145,6 +145,15 @@ def test_versioned_candidate_manifest_preserves_declared_platform(tmp_path):
     assert "\tONT\t" in output.read_text()
 
 
+def test_versioned_candidate_csv_is_accepted(tmp_path):
+    source = tmp_path / "candidate.csv"
+    source.write_text("run_accession,tissue,description,url,md5,platform,filename\n"
+                      "SRR1,liver,desc,https://example.org/a.fastq.gz,d41d8cd98f00b204e9800998ecf8427e,ONT,a.fastq.gz\n")
+    output, report = tmp_path / "normalised.tsv", tmp_path / "report.tsv"
+    subprocess.run(["python3", str(Path(__file__).parents[1] / "bin" / "normalise_manifest.py"), str(source), str(output), str(report)], check=True)
+    assert "SRR1\tliver\ta.fastq.gz\thttps://example.org/a.fastq.gz" in output.read_text()
+
+
 def test_approved_gate_rejects_conflict():
     row = {"status": "APPROVED", "review_decision": "APPROVE", "classification": "CONFLICT", "proposed_action": "QUARANTINE", "run_accession": "SRR1", "selected_artifact_md5": "d41d8cd98f00b204e9800998ecf8427e", "selected_artifact_uri": "https://example.org/a.fastq.gz", "selected_artifact_basename": "a.fastq.gz", "minimap2_preset": "splice"}
     try:

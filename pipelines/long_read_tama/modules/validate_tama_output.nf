@@ -5,6 +5,7 @@ process VALIDATE_TAMA_OUTPUT {
 
     input:
     tuple val(meta), val(shard), path(bed)
+    path validator
 
     output:
     tuple val(meta), val(shard), path('validated_tama.bed'), emit: bed
@@ -13,9 +14,7 @@ process VALIDATE_TAMA_OUTPUT {
 
     script:
     """
-    test -s "${bed}" || { echo "TAMA BED is missing or empty for ${meta.id}:${shard}" >&2; exit 1; }
-    awk 'NF != 12 {bad++} END {if (bad) {print "Invalid TAMA BED12 rows: " bad > "/dev/stderr"; exit 1} print "run\\tshard\\tmodels\\n${meta.id}\\t${shard}\\t" NR > "tama_validation.tsv"}' "${bed}"
-    cp -p "${bed}" validated_tama.bed
+    ./${validator} ${bed} tama_validation.tsv --validated-output validated_tama.bed --run '${meta.id}' --shard '${shard}'
     printf '"%s":\n    tama_output_validation: pipeline\n' '${task.process}' > versions.yml
     """
 

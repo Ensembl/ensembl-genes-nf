@@ -70,9 +70,13 @@ def main(source, destination, report):
     errors = []
     source_lines = Path(source).read_text().splitlines()
     first_data = next((line for line in source_lines if line.strip() and not line.lstrip().startswith("#")), "")
-    if "\t" in first_data and "run_accession" in first_data:
+    # Accept the versioned tabular contract in either TSV or conventional CSV
+    # form.  The workflow continues to emit TSV internally, so this is an
+    # input convenience rather than a second downstream channel contract.
+    if "run_accession" in first_data and ("\t" in first_data or "," in first_data):
+        delimiter = "\t" if "\t" in first_data else ","
         with Path(source).open(newline="") as handle:
-            tab_rows = csv.DictReader(handle, delimiter="\t")
+            tab_rows = csv.DictReader(handle, delimiter=delimiter)
             required = {"run_accession", "tissue", "description", "url", "md5", "platform"}
             if not required.issubset(tab_rows.fieldnames or set()):
                 errors.append("versioned TSV manifest is missing required fields")

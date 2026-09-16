@@ -10,6 +10,7 @@ workflow VALIDATE_FASTQ {
     take:
     reads
     validator
+    auditor
 
     main:
     STATS_FASTQ(reads, validator)
@@ -17,7 +18,7 @@ workflow VALIDATE_FASTQ {
     VALIDATE_FASTQ_RECORDS(reads, validator)
 
     audit_input = PROBE_FASTQ.out.probe.join(VALIDATE_FASTQ_RECORDS.out.validation, by: 0)
-    AUDIT_FASTQ(audit_input)
+    AUDIT_FASTQ(audit_input, auditor)
 
     stage_input = reads.join(VALIDATE_FASTQ_RECORDS.out.validation, by: 0)
     STAGE_VALIDATED_FASTQ(stage_input)

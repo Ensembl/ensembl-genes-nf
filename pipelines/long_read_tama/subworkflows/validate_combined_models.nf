@@ -7,12 +7,13 @@ workflow VALIDATE_COMBINED_MODELS {
     take:
     merged_bed
     cohort_id
+    validator
 
     main:
     // merged_bed: path merged TAMA BED
     canonical_input = merged_bed.map { bed -> tuple([id: cohort_id], bed) }
     CANONICALISE_COMBINED_MODELS(canonical_input)
-    VALIDATE_LONG_READ_MODELS(CANONICALISE_COMBINED_MODELS.out.bed.map { _meta, bed -> bed })
+    VALIDATE_LONG_READ_MODELS(CANONICALISE_COMBINED_MODELS.out.bed.map { _meta, bed -> bed }, validator)
 
     emit:
     bed = CANONICALISE_COMBINED_MODELS.out.bed

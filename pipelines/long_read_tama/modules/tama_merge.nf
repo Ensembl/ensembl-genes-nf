@@ -8,6 +8,7 @@ process TAMA_MERGE {
 
     input:
     tuple val(cohort_id), path(beds)
+    path filelist_builder
 
     output:
     path '*_merged.bed', emit: bed
@@ -19,11 +20,7 @@ process TAMA_MERGE {
 
     script:
     """
-    test -n "${beds}" || { echo "No TAMA BED inputs available for ${cohort_id}" >&2; exit 1; }
-    : > merge_filelist.tsv
-    for bed in ${beds}; do
-        printf '%s\\t%s\\n' "\$(basename "\$bed" .bed)" "\$bed" >> merge_filelist.tsv
-    done
+    ./${filelist_builder} merge_filelist.tsv ${beds}
     tama_merge.py -f merge_filelist.tsv -p ${cohort_id}.merged -e ${params.tama_end_mode} -d merge_dup
     mv ${cohort_id}.merged.bed ${cohort_id}_merged.bed
     cat <<-END_VERSIONS > versions.yml

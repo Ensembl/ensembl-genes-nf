@@ -8,6 +8,7 @@ process DISCOVER_LONG_READ_DATA {
     path discoverer
     path classifier
     path resolver
+    path candidates
     val cache_dir
 
     output:
@@ -19,7 +20,7 @@ process DISCOVER_LONG_READ_DATA {
     def probe = params.discovery_probe in [true, 'true'] ? '' : '--no-probe'
     """
     mkdir -p discovery
-    ${params.transcriptomic_data_command} -t ${taxon_id} -f discovery/transcriptomic_candidates.tsv -r long ${tree}
+    cp ${candidates} discovery/transcriptomic_candidates.tsv
     python3 ${discoverer} ${taxon_id} discovery --cache-dir ${cache_dir} --candidate-file discovery/transcriptomic_candidates.tsv --target ${params.target_sample_count} --soft-download-budget ${params.soft_download_budget} --soft-raw-subread-budget ${params.soft_raw_subread_budget} ${tree} ${probe}
     printf '"%s":\\n    python: runtime\\n' '${task.process}' > versions.yml
     """

@@ -6,6 +6,7 @@ process VALIDATE_APPROVED_LONG_READ_MANIFEST {
     input:
     path manifest
     path validator
+    path preparer
 
     output:
     path 'validated_approved_run_manifest.tsv', emit: manifest
@@ -15,9 +16,7 @@ process VALIDATE_APPROVED_LONG_READ_MANIFEST {
     script:
     """
     python3 ${validator} validate-approved ${manifest}
-    test \$(awk 'NR > 1 && NF > 0 {n++} END {print n+0}' ${manifest}) -gt 0 || { echo "Approved manifest is empty: ${manifest}" >&2; exit 1; }
-    cp ${manifest} validated_approved_run_manifest.tsv
-    printf 'status\\tdetail\\nok\\tapproved manifest validated\\n' > approved_manifest_validation.tsv
+    ./${preparer} ${manifest} validated_approved_run_manifest.tsv approved_manifest_validation.tsv
     printf '"%s":\\n    python: runtime\\n' '${task.process}' > versions.yml
     """
 
