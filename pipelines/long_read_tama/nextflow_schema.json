@@ -34,6 +34,8 @@
     "tama_cap_mode": {"type": "string", "enum": ["no_cap", "capped"], "default": "no_cap"},
     "tama_end_mode": {"type": "string", "enum": ["common_ends", "longest_ends"], "default": "common_ends"},
     "tama_run_mode": {"type": "string", "enum": ["low_mem", "original"], "default": "low_mem"},
+    "merge_tool": {"type": "string", "enum": ["tama", "tmerge"], "default": "tama", "description": "Backend used to merge per-accession collapsed models; tmerge uses the pinned public Wave container"},
+    "tmerge_args": {"type": "string", "default": "", "description": "Additional arguments passed to tmerge"},
     "shard_mode": {"type": "string", "enum": ["none", "contig"], "default": "contig", "description": "Split each sorted BAM by reference contig before TAMA; use none only for deliberately small inputs"},
     "shard_contig_reads": {"type": "integer", "minimum": 0, "default": 1000000, "description": "Mapped-read heuristic used to classify large contigs"},
     "tama_memory_small": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "128.GB", "description": "Initial TAMA allocation"},

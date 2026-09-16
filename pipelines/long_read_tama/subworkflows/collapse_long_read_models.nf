@@ -17,7 +17,7 @@ workflow COLLAPSE_LONG_READ_MODELS {
     inspected_bam = INSPECT_BAM_WORKLOAD.out.workload
     if (params.shard_mode == 'contig') {
         SPLIT_BAM_BY_CONTIG(inspected_bam)
-        contig_bams = SPLIT_BAM_BY_CONTIG.out.shards.combine(SPLIT_BAM_BY_CONTIG.out.manifest).flatMap { meta, shard_dir, manifest ->
+        contig_bams = SPLIT_BAM_BY_CONTIG.out.shards.flatMap { meta, shard_dir, manifest ->
             manifest.readLines().drop(1).findAll { it.trim() }.collect { line ->
                 def fields = line.split('\\t', -1)
                 def contig = fields[0]
@@ -58,6 +58,8 @@ workflow COLLAPSE_LONG_READ_MODELS {
     collapse_reports = INSPECT_BAM_WORKLOAD.out.workload
         .map { _meta, _bam, _bai, workload -> workload }
         .mix(TAMA_COLLAPSE.out.read)
+        .mix(TAMA_COLLAPSE.out.status)
+        .mix(TAMA_COLLAPSE.out.stderr)
         .mix(VALIDATE_TAMA_OUTPUT.out.report)
     versions = version_ch
 }
