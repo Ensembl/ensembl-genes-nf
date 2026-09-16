@@ -42,7 +42,7 @@ values = [
     validation.get('malformed_count', probe.get('malformed_count', 0)),
     validation.get('status', 'PROBE_ONLY'),
 ]
-Path('molecule_audit.tsv').write_text('\t'.join(fields) + '\n' + '\t'.join(map(str, values)) + '\n')
+Path('molecule_audit.tsv').write_text('\\t'.join(fields) + '\\n' + '\\t'.join(map(str, values)) + '\\n')
 PY
     cp -p "${reads}" reads.fastq.gz
     cat <<-END_VERSIONS > versions.yml
