@@ -5,7 +5,7 @@ include { FASTQ_DL } from '../modules/fastq_dl.nf'
 include { ACQUIRE_LONG_READ_BAM } from '../modules/acquire_bam.nf'
 include { RUN_PBCCS } from '../modules/run_pbccs.nf'
 include { BAM_TO_FASTQ } from '../modules/bam_to_fastq.nf'
-include { VALIDATE_FASTQ } from '../modules/validate_fastq.nf'
+include { VALIDATE_FASTQ } from './validate_fastq.nf'
 
 workflow PREPARE_LONG_READS {
     take:

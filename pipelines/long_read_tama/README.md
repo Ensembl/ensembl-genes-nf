@@ -110,11 +110,17 @@ manifest checksum, and checked against the manifest filename before an atomic
 rename into the cache. A valid cached file is reused on later runs; an invalid
 cached file fails rather than being silently overwritten.
 
-By default, TAMA Collapse runs once per accession. Set `--shard_mode contig`
-when memory profiling shows that an accession is too large: the sorted BAM is
-partitioned by reference contig, TAMA Collapse runs per contig, and those beds
-are merged per accession before the cohort merge. Arbitrary read sharding and
-genomic windows are intentionally unsupported.
+By default, sorted BAMs are partitioned by reference contig before TAMA
+Collapse. TAMA runs per contig, and those beds are merged per accession before
+the cohort merge. Use `--shard_mode none` only for deliberately small inputs.
+Arbitrary read sharding and genomic windows are intentionally unsupported.
+
+TAMA allocations use configurable workload tiers. The defaults are
+`128.GB`, `256.GB`, and `512.GB`, with `--tama_max_retries 3`. Exit statuses
+137, 140, and 143 advance through the tiers and are ignored after the retry
+budget is exhausted; validation, malformed-input, and other tool failures
+still terminate. `--shard_contig_reads` is an operational mapped-read
+heuristic, not a biological or guaranteed memory boundary.
 
 Example:
 

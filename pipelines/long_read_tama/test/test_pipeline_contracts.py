@@ -6,7 +6,7 @@ PIPELINE = Path(__file__).parents[1]
 ROOT_CONFIG = PIPELINE.parents[1] / "nextflow.config"
 
 
-def test_runtime_policy_is_fail_fast_and_reported():
+def test_runtime_policy_is_bounded_and_ignores_exhausted_resource_kills():
     root = ROOT_CONFIG.read_text()
     pipeline = (PIPELINE / "nextflow.config").read_text()
     assert "nextflowVersion = '!>=26.04.6'" in root
@@ -15,11 +15,13 @@ def test_runtime_policy_is_fail_fast_and_reported():
     assert "task.exitStatus in [137, 140, 143]" in root
     assert "task.exitStatus in [137, 140, 143]" in pipeline
     assert "? 'retry' : 'terminate'" in root
-    assert "? 'retry' : 'terminate'" in pipeline
-    assert "errorStrategy 'ignore'" not in pipeline
+    assert "? 'retry' : (task.exitStatus in [137, 140, 143] ? 'ignore' : 'terminate')" in pipeline
+    assert "shard_mode = 'contig'" in pipeline
+    assert '"default": "contig"' in (PIPELINE / "nextflow_schema.json").read_text()
+    assert "? 'ignore' : 'terminate'" in pipeline
     assert "withName: 'TAMA_COLLAPSE'" in pipeline
     assert "maxRetries = 3" in pipeline
-    assert "128.GB * task.attempt" in pipeline
+    assert "params.tama_memory_small" in pipeline
     assert "task.exitStatus in [137, 140, 143]" in pipeline
 
 

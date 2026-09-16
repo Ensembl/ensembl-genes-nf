@@ -1,6 +1,6 @@
 nextflow.enable.dsl = 2
 
-include { VALIDATE_FASTQ } from '../modules/validate_fastq.nf'
+include { VALIDATE_FASTQ } from '../subworkflows/validate_fastq.nf'
 
 workflow {
     invalid = channel.of(tuple(
