@@ -35,3 +35,15 @@ nextflow run pipelines/<pipeline>/main.nf -stub-run -profile test --outdir /tmp/
 ```
 
 Use the pipeline's established test command when it exists. If an external tool, image, reference, or test input prevents execution, report the exact command, blocker, and the unverified surface; never claim a real run passed from a parse-only check.
+
+## Production safety gates
+
+For maintained production pipelines:
+
+- Require the documented minimum Nextflow version; this repository currently requires 26.04.6 or newer.
+- Enable timeline, report, and trace outputs for production runs; DAG output is optional.
+- Use `set -euo pipefail` or an equivalent global `process.shell` for every real process script.
+- Never ignore failures in required production paths. Retry only acquisition or infrastructure-sensitive work; terminate on validation, alignment, TAMA, and model-QC failures.
+- Put diagnostic messages before assertions for required inputs and outputs.
+- Make helper-script invocation reproducible by either resolving an executable from a configured pipeline path or intentionally staging it as a declared input.
+- A stub run proves wiring only; completion also requires focused failure tests and any requested real container/HPC execution.

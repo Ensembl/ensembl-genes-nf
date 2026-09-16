@@ -106,6 +106,28 @@ def test_duplicate_molecules_fail_full_validation(tmp_path):
     assert False, "duplicate CCS molecule IDs must fail"
 
 
+def test_invalid_gzip_fails_full_validation(tmp_path):
+    path = tmp_path / "corrupt.fastq.gz"
+    path.write_bytes(b"not gzip")
+    try:
+        mod.validate_fastq(path, "ONT")
+    except (OSError, EOFError):
+        return
+    assert False, "corrupt gzip must fail validation"
+
+
+def test_incomplete_fastq_fails_full_validation(tmp_path):
+    path = tmp_path / "incomplete.fastq.gz"
+    with gzip.open(path, "wt") as handle:
+        handle.write("@read-1\nACGT\n+\n")
+    try:
+        mod.validate_fastq(path, "ONT")
+    except ValueError as error:
+        assert "truncated" in str(error) or "complete" in str(error)
+        return
+    assert False, "incomplete FASTQ must fail validation"
+
+
 def test_versioned_candidate_manifest_preserves_declared_platform(tmp_path):
     source = tmp_path / "candidate.tsv"
     source.write_text("run_accession\ttissue\tdescription\turl\tmd5\tplatform\nSRR1\tliver\tdesc\thttps://example.org/a.fastq.gz\td41d8cd98f00b204e9800998ecf8427e\tONT\n")

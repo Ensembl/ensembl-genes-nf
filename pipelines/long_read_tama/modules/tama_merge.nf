@@ -19,6 +19,7 @@ process TAMA_MERGE {
 
     script:
     """
+    test -n "${beds}" || { echo "No TAMA BED inputs available for ${cohort_id}" >&2; exit 1; }
     : > merge_filelist.tsv
     for bed in ${beds}; do
         printf '%s\\t%s\\n' "\$(basename "\$bed" .bed)" "\$bed" >> merge_filelist.tsv

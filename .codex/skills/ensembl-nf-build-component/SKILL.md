@@ -26,3 +26,16 @@ Read `docs/template/MODULES.md`, `modules/reference_example.nf`, and the closest
 ## Verification
 
 Parse the owning pipeline and exercise the smallest stub-mode workflow that reaches the component when a stub path exists. Inspect output tuple names and generated version reports when they are part of the component. Keep fixes scoped: do not reformat unrelated modules or replace a working local convention with an abstract template.
+
+## Failure and reproducibility gates
+
+For maintained production components, also verify:
+
+- The process has one primary tool or one inseparable helper responsibility; split independent acquisition, validation, conversion, alignment, sorting, and QC concerns.
+- Required inputs and declared outputs have explicit user-facing failure messages before checks.
+- Real scripts run with `-euo pipefail`, and a pipe is tested for an upstream failure that a downstream tool could mask.
+- `errorStrategy 'ignore'` is absent from required stages; retries are limited to named acquisition/infrastructure processes.
+- Stub output names and tuple arity exactly match the real contract.
+- Reports, checksums, audits, and versions are declared outputs, not incidental work-directory files.
+- Structured data is parsed structurally rather than with fragile regular-expression `sed` extraction.
+- At least one generated `.command.sh` is inspected for quoting, escaping, shell options, and helper-script staging.

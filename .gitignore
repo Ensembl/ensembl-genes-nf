@@ -1,6 +1,10 @@
 .nextflow*
 work/
 
+# Local pipeline validation outputs and cached QC containers
+.codex_tmp_qc_*/
+long_read_tama_results/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

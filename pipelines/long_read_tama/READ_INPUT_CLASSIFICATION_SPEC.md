@@ -242,7 +242,7 @@ Suggested boundaries (names may differ, but preserve the contracts):
    - In both cases, record input/output read counts, distinct movie/ZMW counts when parseable, tool version, CCS arguments, and a checksum for the canonical FASTQ.
    - First validate the exact CCS tool version, necessary `.pbi`/other sidecars, and command options on a small approved PacBio subread BAM. Do not choose CCS thresholds or command flags from file names alone.
 6. **Canonical FASTQ validation:** replace the current gzip-only preparation with a validator that confirms complete records, ID uniqueness, expected header representation, and one-per-molecule expectations. For PacBio CCS, report duplicate movie/ZMW IDs as an error. For ONT, report duplicate read IDs as an error. Emit a `molecule_audit.tsv` consumed by neither TAMA nor minimap2 but published with the run's reports.
-7. **Alignment branch:** carry `classification`, `proposed_action`, and `minimap2_preset` in the Nextflow `meta` map into `MINIMAP2_TO_SORTED_BAM`. The module must record the effective classification and preset in `alignment_stats.tsv`. No raw subread file can satisfy its input contract.
+7. **Alignment branch:** carry `classification`, `proposed_action`, and `minimap2_preset` in the Nextflow `meta` map into `MINIMAP2_ALIGN`, then `SAMTOOLS_SORT_INDEX` and `ALIGNMENT_QC`. The QC module must record the effective classification and preset in `alignment_stats.tsv`. No raw subread file can satisfy the canonical FASTQ input contract.
 
 Keep the existing per-accession TAMA Collapse boundaries. Do not change `shard_mode`, TAMA parameters, secondary-alignment behaviour, or merge policy as part of this data-integrity change.
 

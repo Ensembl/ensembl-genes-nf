@@ -9,6 +9,7 @@ process SPLIT_BAM_BY_CONTIG {
     output:
     tuple val(meta), path('shards'), emit: shards
     path 'contig_manifest.tsv', emit: manifest
+    path 'versions.yml', emit: versions
 
     script:
     """
@@ -20,6 +21,7 @@ process SPLIT_BAM_BY_CONTIG {
         samtools index "shards/${meta.id}.\${safe}.bam"
         printf '%s\\t%s\\n' "\$contig" "shards/${meta.id}.\${safe}.bam" >> contig_manifest.tsv
     done < contigs.txt
+    printf '"%s":\\n    samtools: runtime\\n' '${task.process}' > versions.yml
     """
 
     stub:
@@ -27,5 +29,6 @@ process SPLIT_BAM_BY_CONTIG {
     mkdir -p shards
     touch shards/${meta.id}.stub.bam shards/${meta.id}.stub.bam.bai
     printf 'stub\\tshards/${meta.id}.stub.bam\\n' > contig_manifest.tsv
+    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
     """
 }
