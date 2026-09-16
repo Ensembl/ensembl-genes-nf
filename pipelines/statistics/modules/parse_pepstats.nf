@@ -1,5 +1,5 @@
 process PARSE_PEPSTATS {
-    label 'process_light'
+    label 'python'
 
     tag "${meta.dbname}:pepstats-parse"
 
@@ -10,10 +10,8 @@ process PARSE_PEPSTATS {
     path "versions.yml", emit: versions
 
     script:
-    def pepstats_script = "${projectDir}/bin/pepstats_parser.py"
-
     """
-    python ${pepstats_script} \\
+    pepstats_parser.py \\
         --pepstats_file ${pepstats_file} \\
         --db_host ${params.host} \\
         --db_port ${params.port} \\

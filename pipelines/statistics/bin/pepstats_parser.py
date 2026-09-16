@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from __future__ import annotations
 
 import argparse
@@ -146,6 +148,53 @@ def get_translation_ids(conn, stable_ids: list[str]) -> dict[str, int]:
         cur.execute(sql, stable_ids)
         return {stable_id: translation_id for stable_id, translation_id in cur.fetchall()}
 
+def validate_pepstats_results(results: dict[str, dict[str, str]]) -> None:
+    """Validate parsed pepstats results before modifying the core database."""
+    if not results:
+        raise ValueError("No pepstats results were parsed")
+
+    expected_codes = set(PEPSTATS_CODES)
+
+    for translation_id, metrics in results.items():
+        missing_codes = expected_codes - metrics.keys()
+        if missing_codes:
+            raise ValueError(
+                f"Missing pepstats values for {translation_id}: "
+                f"{', '.join(sorted(missing_codes))}"
+            )
+
+        try:
+            num_residues = int(metrics["NumResidues"])
+            molecular_weight = float(metrics["MolecularWeight"])
+            avg_res_weight = float(metrics["AvgResWeight"])
+            float(metrics["Charge"])
+            iso_point = float(metrics["IsoPoint"])
+        except ValueError as exc:
+            raise ValueError(
+                f"Invalid numeric pepstats value for {translation_id}"
+            ) from exc
+
+        if num_residues <= 0:
+            raise ValueError(
+                f"Invalid NumResidues for {translation_id}: {num_residues}"
+            )
+
+        if molecular_weight <= 0:
+            raise ValueError(
+                f"Invalid MolecularWeight for {translation_id}: {molecular_weight}"
+            )
+
+        if avg_res_weight <= 0:
+            raise ValueError(
+                f"Invalid AvgResWeight for {translation_id}: {avg_res_weight}"
+            )
+
+        if not 0 <= iso_point <= 14:
+            raise ValueError(
+                f"Invalid IsoPoint for {translation_id}: {iso_point}"
+            )
+        
+    logger.info("Validated pepstats results for %d translations", len(results))
 
 def apply_pepstats_to_core(
     conn,
@@ -243,6 +292,8 @@ def main():
     logger.info(f"Using predefined set {PEPSTATS_CODES}")
 
     parsed_pepstats = parse_pepstats_file(args.pepstats_file)
+    validate_pepstats_results(parsed_pepstats)
+    
     conn = pymysql.connect(
         host=args.db_host,
         port=args.db_port,
