@@ -13,7 +13,7 @@ process SPLIT_BAM_BY_CONTIG {
 
     script:
     """
-    split_bam_by_contig.py '${bam}' '${workload}' '${meta.id}' shards contig_manifest.tsv
+    split_bam_by_contig.sh '${bam}' '${workload}' '${meta.id}' shards contig_manifest.tsv
     printf '"%s":\\n    samtools: runtime\\n' '${task.process}' > versions.yml
     """
 
