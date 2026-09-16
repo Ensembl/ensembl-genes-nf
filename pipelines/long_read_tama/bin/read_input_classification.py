@@ -17,6 +17,8 @@ import shutil
 import urllib.parse
 import urllib.request
 import io
+import sqlite3
+import tempfile
 from collections import Counter
 from pathlib import Path
 from typing import Iterable, TextIO
@@ -172,24 +174,36 @@ def validate_fastq(path_or_uri: str, expected: str = "UNKNOWN") -> dict:
     path_or_uri = str(path_or_uri)
     import gzip
     handle = gzip.open(path_or_uri, "rt") if path_or_uri.lower().endswith(".gz") else open(path_or_uri)
-    read_ids: set[str] = set()
-    molecule_ids: set[str] = set()
     duplicates = 0
     records = 0
+    distinct_ids = 0
+    distinct_molecules = 0
     representations = set()
-    try:
-        for header, _seq, _qual in _records(handle):
-            token = first_token(header)
-            representation, molecule = header_signature(token, header)
-            if token in read_ids: duplicates += 1
-            read_ids.add(token)
-            if molecule:
-                if molecule in molecule_ids: duplicates += 1
-                molecule_ids.add(molecule)
-            representations.add(representation)
-            records += 1
-    finally:
-        handle.close()
+    # Do not retain millions of Python strings for a complete validation.
+    # SQLite keeps the duplicate indexes on disk and bounds validator RSS.
+    with tempfile.TemporaryDirectory(prefix="fastq-validation-") as temp_dir:
+        database = sqlite3.connect(Path(temp_dir) / "ids.sqlite")
+        database.execute("PRAGMA journal_mode=OFF")
+        database.execute("PRAGMA synchronous=OFF")
+        database.execute("CREATE TABLE read_ids (id TEXT PRIMARY KEY)")
+        database.execute("CREATE TABLE molecule_ids (id TEXT PRIMARY KEY)")
+        try:
+            for header, _seq, _qual in _records(handle):
+                token = first_token(header)
+                representation, molecule = header_signature(token, header)
+                if database.execute("INSERT OR IGNORE INTO read_ids VALUES (?)", (token,)).rowcount == 0:
+                    duplicates += 1
+                else:
+                    distinct_ids += 1
+                if molecule and database.execute("INSERT OR IGNORE INTO molecule_ids VALUES (?)", (molecule,)).rowcount == 0:
+                    duplicates += 1
+                elif molecule:
+                    distinct_molecules += 1
+                representations.add(representation)
+                records += 1
+        finally:
+            handle.close()
+            database.close()
     observed = next(iter(representations)) if len(representations) == 1 else ("MIXED" if representations else "UNKNOWN")
     if records == 0: raise ValueError("FASTQ contains no complete records")
     # NCBI can rename a submitted CCS FASTQ and replace its molecule headers
@@ -197,7 +211,8 @@ def validate_fastq(path_or_uri: str, expected: str = "UNKNOWN") -> dict:
     # UNKNOWN headers acceptable for this explicitly approved representation.
     if expected not in ("UNKNOWN", "NOT_APPLICABLE", "PACBIO_CCS_ORIGINAL", "PACBIO_PROCESSED") and observed != expected: raise ValueError(f"expected {expected}, observed {observed}")
     if duplicates: raise ValueError(f"duplicate read or molecule IDs: {duplicates}")
-    return {"records": records, "representation": observed, "distinct_ids": len(read_ids), "distinct_molecules": len(molecule_ids)}
+    return {"records": records, "representation": observed,
+            "distinct_ids": distinct_ids, "distinct_molecules": distinct_molecules}
 
 
 def write_fastq_stats(path_or_uri: str, output: str) -> None:
