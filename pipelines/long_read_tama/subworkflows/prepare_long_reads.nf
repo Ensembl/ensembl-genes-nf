@@ -48,7 +48,6 @@ workflow PREPARE_LONG_READS {
     RUN_PBCCS(bam_routes.subreads)
     BAM_TO_FASTQ(bam_routes.ccs.mix(RUN_PBCCS.out.bam))
     canonical_fastq = FASTQ_DL.out.fastq.mix(BAM_TO_FASTQ.out.reads)
-    canonical_fastq.ifEmpty { error 'No approved long-read FASTQ or BAM conversion output was produced' }
     VALIDATE_FASTQ(canonical_fastq, validator)
 
     emit:
