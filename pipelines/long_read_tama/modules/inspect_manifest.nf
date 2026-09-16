@@ -10,11 +10,13 @@ process INSPECT_LONG_READ_MANIFEST {
 
     output:
     path 'classification_report', emit: reports
+    path 'versions.yml', emit: versions
 
     script:
     """
     mkdir -p classification_report
     python3 ${inspector} inspect ${manifest} ${metadata} classification_report
+    printf '"%s":\\n    python: runtime\\n' '${task.process}' > versions.yml
     """
 
     stub:
@@ -26,5 +28,6 @@ process INSPECT_LONG_READ_MANIFEST {
     printf 'run_accession\\trecords_sampled\\tdistinct_sampled_molecules\\tstatus\\nSRR000001\\t0\\t0\\tPROBE_ONLY\\n' > classification_report/molecule_audit.tsv
     printf 'classification\\tconfidence\\truns\\nUNKNOWN\\tINSUFFICIENT\\t1\\n' > classification_report/classification_summary.tsv
     printf 'reason_code\\truns\\nSTUB\\t1\\n' > classification_report/reason_code_summary.tsv
+    printf '"%s":\\n    python: stub\\n' '${task.process}' > versions.yml
     """
 }

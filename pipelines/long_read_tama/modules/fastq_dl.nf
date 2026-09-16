@@ -25,9 +25,9 @@ process FASTQ_DL {
     trap 'rmdir "\${cache_lock}" 2>/dev/null || true' EXIT
 
     if [ -f "\${cache_file}" ]; then
-        gzip -t "\${cache_file}"
+        gzip -t "\${cache_file}" || { echo "Cached FASTQ is not valid gzip: \${cache_file}" >&2; exit 1; }
         actual=\$(md5sum "\${cache_file}" | awk '{print \$1}')
-        test "\${actual}" = "${expected_md5}"
+        test "\${actual}" = "${expected_md5}" || { echo "Cached FASTQ checksum mismatch for ${run}: expected ${expected_md5}, observed \${actual}" >&2; exit 1; }
     else
         mkdir -p acquisition
         if [ -n "${source_uri}" ]; then
@@ -43,10 +43,10 @@ process FASTQ_DL {
             echo "Expected one long-read FASTQ for ${run}, found \${#files[@]}" >&2
             exit 1
         fi
-        gzip -t "\${files[0]}"
-        test "\$(basename "\${files[0]}")" = "${expected_filename}"
+        gzip -t "\${files[0]}" || { echo "Downloaded FASTQ is not valid gzip for ${run}" >&2; exit 1; }
+        test "\$(basename "\${files[0]}")" = "${expected_filename}" || { echo "Downloaded FASTQ filename mismatch for ${run}" >&2; exit 1; }
         actual=\$(md5sum "\${files[0]}" | awk '{print \$1}')
-        test "\${actual}" = "${expected_md5}"
+        test "\${actual}" = "${expected_md5}" || { echo "Downloaded FASTQ checksum mismatch for ${run}: expected ${expected_md5}, observed \${actual}" >&2; exit 1; }
         mv "\${files[0]}" "\${cache_file}"
     fi
     # Keep a task-local output for Nextflow while the cache remains persistent.

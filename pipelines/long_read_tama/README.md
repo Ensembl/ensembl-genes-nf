@@ -1,5 +1,28 @@
 # Long-read TAMA transcript models
 
+## Runtime and module boundaries
+
+Production runs require Nextflow 26.04.6 or newer and write timeline, report,
+and trace files under `pipeline_info`. Required stages terminate the run on
+failure; retries are limited to network/cache acquisition.
+
+The workflow is composed from these named subworkflows:
+
+- `PREPARE_LONG_READS`: approved-manifest validation, acquisition, CCS/BAM
+  conversion, and canonical FASTQ validation.
+- `ALIGN_LONG_READS`: minimap2 alignment, samtools sorting/indexing, and
+  alignment QC.
+- `COLLAPSE_LONG_READ_MODELS` and `MERGE_LONG_READ_MODELS`: TAMA model
+  generation and deterministic merge inputs.
+- `VALIDATE_COMBINED_MODELS`: canonical naming/checksum and BED12 validation.
+- `RUN_DIAMOND_QC`: optional transcript, ORF, Diamond, and model-keyed report
+  generation.
+
+The public sample contracts are `tuple val(meta), path(reads.fastq.gz)` for
+canonical reads and `tuple val(meta), path(sorted.bam), path(sorted.bam.bai)`
+for alignments. Helper scripts are staged as declared inputs so their exact
+contents are visible in the task work directory.
+
 This pipeline processes one complete ENA accession per alignment job, streams
 minimap2 SAM output directly into `samtools sort`, collapses each accession
 with TAMA, and merges models for an annotation cohort. SAM is never declared

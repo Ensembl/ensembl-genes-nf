@@ -33,3 +33,16 @@ cd pipelines/riboseq && ./test_unique_reads.sh
 ```
 
 Use an isolated temporary output directory for ad-hoc runs. State exactly which layers passed and which were not attempted, including missing binaries, containers, references, or input data. A syntax/configuration check is not an execution result.
+
+## Required production-path audit
+
+Before handoff, explicitly audit the changed pipeline for:
+
+- Nextflow minimum version >= 26.04.6 and enabled timeline/report/trace outputs.
+- No `errorStrategy 'ignore'` in required production processes; retries restricted to acquisition or infrastructure-sensitive tasks.
+- `-euo pipefail` in generated real scripts, with a generated `.command.sh` inspected for shell correctness.
+- Explicit failure messages for corrupt gzip, malformed FASTQ, checksum mismatch, missing sidecars, empty approved manifests, empty TAMA inputs/outputs, and invalid model rows when applicable.
+- Public channel shapes traced producer-to-consumer, including preserved `meta` fields and file arity.
+- Focused failure tests for every changed validation/tool boundary, plus a real container/Slurm run when acceptance criteria require it.
+
+Do not report a pipeline as complete if only lint, config parsing, or stub execution has passed.
