@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 PIPELINE="${ROOT}/pipelines/long_read_tama"
 EXAMPLE_DIR="${1:-${ROOT}/test/local_example/run}"
 PORT="${PORT:-8765}"
+MODE="${MODE:-real}"
 mkdir -p "${EXAMPLE_DIR}"
 
 python3 "${PIPELINE}/test/local_example/create_inputs.py" "${EXAMPLE_DIR}" --url "http://127.0.0.1:${PORT}"
@@ -28,7 +29,12 @@ python3 "${PIPELINE}/bin/read_input_classification.py" inspect \
     "${EXAMPLE_DIR}/metadata.json" \
     "${EXAMPLE_DIR}/inventory-only/classification_report"
 
-nextflow run pipelines/long_read_tama/main.nf -stub-run -profile stub \
+if [[ "${MODE}" == "stub" ]]; then
+    nextflow_args=("-stub-run" "-profile" "stub")
+else
+    nextflow_args=("-profile" "local_real")
+fi
+nextflow run pipelines/long_read_tama/main.nf "${nextflow_args[@]}" \
     --approved_manifest "${EXAMPLE_DIR}/approved_manifest.tsv" \
     --fastq_cache_dir "${EXAMPLE_DIR}/fastq-cache" \
     --reference_fasta "${EXAMPLE_DIR}/genome.fa" \
@@ -36,7 +42,7 @@ nextflow run pipelines/long_read_tama/main.nf -stub-run -profile stub \
     --outdir "${EXAMPLE_DIR}/sharded" \
     -work-dir "${EXAMPLE_DIR}/work-sharded"
 
-nextflow run pipelines/long_read_tama/main.nf -stub-run -profile stub \
+nextflow run pipelines/long_read_tama/main.nf "${nextflow_args[@]}" \
     --approved_manifest "${EXAMPLE_DIR}/approved_manifest.tsv" \
     --fastq_cache_dir "${EXAMPLE_DIR}/fastq-cache-none" \
     --reference_fasta "${EXAMPLE_DIR}/genome.fa" \

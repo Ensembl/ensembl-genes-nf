@@ -24,5 +24,6 @@ normal acquisition/checksum path to be tested without an archive download.
 
 If `minimap2` and `samtools` are installed, the script also performs a real
 alignment and invokes the workload inspector and contig splitter, producing
-indexed BAMs under `real-sharding/shards/`. The Nextflow runs remain stub runs,
-so TAMA itself is not required on the local machine.
+indexed BAMs under `real-sharding/shards/`. The Nextflow runs use the real
+container-backed processes by default. Set `MODE=stub` only for a wiring-only
+fallback when Singularity/container execution is unavailable.
