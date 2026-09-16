@@ -71,6 +71,10 @@ def write_sql(
     decisions: list[Decision],
     path: str | Path,
     config: StableIdEventConfig,
+    *,
+    old_db_name: Optional[str] = None,
+    old_assembly: Optional[str] = None,
+    new_assembly: Optional[str] = None,
 ) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -286,6 +290,37 @@ def write_sql(
             event_rows,
             config.batch_size,
         )
+
+        if (
+            old_db_name is not None
+            and old_assembly is not None
+            and new_assembly is not None
+        ):
+            write_values_insert(
+                handle,
+                "mapping_session",
+                [
+                    "mapping_session_id",
+                    "old_db_name",
+                    "new_db_name",
+                    "old_release",
+                    "new_release",
+                    "old_assembly",
+                    "new_assembly",
+                    "created",
+                ],
+                [[
+                    str(config.mapping_session_id),
+                    sql_string(old_db_name),
+                    sql_string(config.db_name),
+                    sql_string("114"),
+                    sql_string("114"),
+                    sql_string(old_assembly),
+                    sql_string(new_assembly),
+                    "NOW()",
+                ]],
+                config.batch_size,
+            )
 
         handle.write("COMMIT;\n")
 

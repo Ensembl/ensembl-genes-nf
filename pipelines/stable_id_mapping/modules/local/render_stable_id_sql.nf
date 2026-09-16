@@ -18,7 +18,8 @@ process RENDER_STABLE_ID_SQL {
               path(locus_comparison),
               path(decisions_tsv),
               path(score_evidence_tsv),
-              path(decisions_json)
+              path(decisions_json),
+              path(species_inputs_json)
 
     output:
         tuple val(db_name),
@@ -35,22 +36,24 @@ process RENDER_STABLE_ID_SQL {
     script:
 		def translation_flag = params.include_translations ? '' : '--no-translations'
 		def replace_flag = params.replace_events_for_session ? '--replace-events-for-session' : ''
-		
+
 		"""
 		python3 ${projectDir}/bin/render_stable_id_sql.py \
 		    --decisions-tsv ${decisions_tsv} \
 		    --output-sql ${db_name}.incomplete.sql \
 		    --db-name ${db_name} \
 		    --mapping-session-id ${mapping_session_id} \
+            --species-inputs-json ${species_inputs_json} \
 		    --batch-size ${params.batch_size} \
 		    ${translation_flag} \
 		    ${replace_flag}
-		
+
 		python3 ${projectDir}/bin/render_stable_id_sql.py \
 		    --decisions-tsv ${decisions_tsv} \
 		    --output-sql ${db_name}.incomplete.dry_run.sql \
 		    --db-name ${db_name} \
 		    --mapping-session-id ${mapping_session_id} \
+            --species-inputs-json ${species_inputs_json} \
 		    --batch-size ${params.batch_size} \
 		    --dry-run \
 		    ${translation_flag} \

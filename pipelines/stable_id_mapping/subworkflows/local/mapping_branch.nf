@@ -11,6 +11,7 @@ include { DRY_RUN_SQL } from '../../modules/local/dry_run_sql.nf'
 workflow MAPPING_BRANCH {
 	take:
 	mapping_ch
+	mapping_metadata_ch
 
 	main:
 	rules_config_ch = Channel.value(
@@ -33,8 +34,11 @@ workflow MAPPING_BRANCH {
 		rules_config_ch
 	)
 
+	render_inputs_ch = STABLE_ID_DECISIONS.out.decisions
+        .join(mapping_metadata_ch, by: 0)
+
 	RENDER_STABLE_ID_SQL(
-		STABLE_ID_DECISIONS.out.decisions
+		render_inputs_ch
 	)
 
 	APPEND_REGISTRY_RECORD(

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 from pathlib import Path
 
 from stable_id_mapping.config import StableIdEventConfig, default_backup_prefix
@@ -16,6 +17,7 @@ from stable_id_mapping.outputs import write_sql
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--decisions-tsv", type=Path, required=True)
+    parser.add_argument("--species-inputs-json", type=Path, required=True)
     parser.add_argument("--output-sql", type=Path, required=True)
     parser.add_argument("--db-name")
     parser.add_argument("--mapping-session-id", type=int, required=True)
@@ -53,6 +55,23 @@ def read_decisions(path: Path) -> list[Decision]:
 def main() -> None:
     args = parse_args()
 
+    with args.species_inputs_json.open(encoding="utf-8") as handle:
+        species_inputs = json.load(handle)
+        
+    species_name = "_".join(species_inputs["binomial_name"].lower().split())
+
+    reference_chain = species_inputs["reference_chain"]
+    reference_version = species_inputs["reference_version"]
+    target_chain = species_inputs["target_chain"]
+    target_version = species_inputs["target_version"]
+
+    old_db_name = (
+        f"{species_name}_{reference_chain.lower().replace('_', '')}"
+        f"v{reference_version}_core_114_1"
+    )
+    old_assembly = f"{reference_chain}.{reference_version}"
+    new_assembly = f"{target_chain}.{target_version}"
+
     decisions = read_decisions(args.decisions_tsv)
     dummy_range = parse_id_range("DUMMY:1-1")
 
@@ -74,8 +93,14 @@ def main() -> None:
         replace_events_for_session=args.replace_events_for_session,
     )
 
-    write_sql(decisions, args.output_sql, config)
-
+    write_sql(
+        decisions,
+        args.output_sql,
+        config,
+        old_db_name=old_db_name,
+        old_assembly=old_assembly,
+        new_assembly=new_assembly,
+    )
 
 if __name__ == "__main__":
     main()

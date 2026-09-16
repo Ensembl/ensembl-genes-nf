@@ -100,7 +100,7 @@ workflow RESOLVE_AND_ROUTE {
     RESOLVE_SPECIES_INPUTS(species_ch)
 
     resolved_routes = RESOLVE_SPECIES_INPUTS.out.inputs_json
-        .map { json_file ->
+        .map { db_name, json_file ->
             def data = new groovy.json.JsonSlurper().parse(json_file)
 
             if (data.effective_mode == 'no_action') {
@@ -145,5 +145,6 @@ workflow RESOLVE_AND_ROUTE {
 
     emit:
     mapping = mapping_ch
+    mapping_metadata = RESOLVE_SPECIES_INPUTS.out.inputs_json
     reassignment = reassignment_ch
 }

@@ -11,7 +11,8 @@ workflow {
     RESOLVE_AND_ROUTE()
 
     MAPPING_BRANCH(
-        RESOLVE_AND_ROUTE.out.mapping
+        RESOLVE_AND_ROUTE.out.mapping,
+        RESOLVE_AND_ROUTE.out.mapping_metadata
     )
 
     REASSIGNMENT_BRANCH(

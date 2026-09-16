@@ -18,8 +18,9 @@ process RESOLVE_SPECIES_INPUTS {
           val(ref_gff)
 
     output:
-    path "${db_name}.species_inputs.json",
-         emit: inputs_json
+    tuple val(db_name),
+          path("${db_name}.species_inputs.json"),
+          emit: inputs_json
 
     script:
     """
