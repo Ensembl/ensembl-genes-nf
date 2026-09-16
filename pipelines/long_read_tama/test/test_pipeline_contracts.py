@@ -12,8 +12,10 @@ def test_runtime_policy_is_fail_fast_and_reported():
     assert "nextflowVersion = '!>=26.04.6'" in root
     assert "shell         = ['/bin/bash', '-euo', 'pipefail']" in root
     assert "enabled = true" in root
-    assert "errorStrategy = 'terminate'" in root
-    assert "errorStrategy = 'terminate'" in pipeline
+    assert "task.exitStatus in [137, 140, 143]" in root
+    assert "task.exitStatus in [137, 140, 143]" in pipeline
+    assert "? 'retry' : 'terminate'" in root
+    assert "? 'retry' : 'terminate'" in pipeline
     assert "errorStrategy 'ignore'" not in pipeline
     assert "withName: 'TAMA_COLLAPSE'" in pipeline
     assert "maxRetries = 3" in pipeline
