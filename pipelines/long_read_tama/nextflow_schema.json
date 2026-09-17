@@ -21,6 +21,7 @@
     "reference_fai": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Optional FASTA index to validate alongside the reference"},
     "minimap_index": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Existing minimap2 .mmi; omit to build it"},
     "cohort_id": {"type": "string", "default": "bos_indicus_long_read"},
+    "model_backend": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "all"], "default": "tama", "description": "Model builder run on the split minimap2 BAMs; all runs every backend and keeps TAMA as the canonical downstream result"},
     "outdir": {"type": "string", "default": "./long_read_tama_results"},
     "tracedir": {"type": "string", "description": "Directory for Nextflow execution reports and trace files"},
     "minimap2_preset": {"type": "string", "default": "splice:hq"},

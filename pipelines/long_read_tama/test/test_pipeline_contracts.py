@@ -63,6 +63,9 @@ def test_tama_soft_failures_have_explicit_status_and_diagnostics():
     assert "run_tama_collapse.sh" in tama
     assert "TAMA_FAILED" in runner
     assert "exit 0" in runner
+    assert "|| return $?" in runner
+    assert "IndexError: list index out of range" in runner
+    assert "samtools view -bh -F 2308" in runner
 
 
 def test_production_failures_are_non_terminal():
@@ -85,6 +88,20 @@ def test_tmerge_is_an_explicit_optional_merge_backend():
     assert "process TMERGE" in tmerge
     assert "community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552" in tmerge
     assert "bed12_to_gtf.py" in tmerge and "gtf_to_bed12.py" in tmerge
+
+
+def test_model_backends_run_from_split_bams():
+    config = (PIPELINE / "nextflow.config").read_text()
+    schema = (PIPELINE / "nextflow_schema.json").read_text()
+    collapse = (PIPELINE / "subworkflows" / "collapse_long_read_models.nf").read_text()
+    assert "model_backend = 'tama'" in config
+    assert '"model_backend"' in schema
+    for backend in ("tama", "stringtie2", "stringtie3", "tmerge", "all"):
+        assert backend in schema
+    assert "STRINGTIE2_COLLAPSE(contig_bams)" in collapse
+    assert "STRINGTIE3_COLLAPSE(contig_bams)" in collapse
+    assert "TMERGE_COLLAPSE(contig_bams)" in collapse
+    assert "path(bam), path(bai)" in (PIPELINE / "modules" / "tmerge_collapse.nf").read_text()
 
 
 def test_entrypoint_uses_schema_and_keeps_optional_outputs_guarded():

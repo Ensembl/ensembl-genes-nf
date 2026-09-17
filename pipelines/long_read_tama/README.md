@@ -20,6 +20,15 @@ The workflow is composed from these named subworkflows:
 - `RUN_DIAMOND_QC`: optional transcript, ORF, Diamond, and model-keyed report
   generation.
 
+Model construction is selected with `--model_backend tama|stringtie2|stringtie3|tmerge|all`.
+All backend processes receive the same split minimap2 BAM shards. `tama` keeps
+the existing TAMA Collapse path. `stringtie2` and `stringtie3` run StringTie
+long-read assembly directly on the shards. `tmerge` first converts each shard
+back to read-level exon GTF and then invokes tmerge; it does not consume
+already-collapsed TAMA BED files. `all` runs all four paths in parallel and
+keeps TAMA as the canonical downstream result while publishing the comparison
+models under `backend_models`.
+
 The public sample contracts are `tuple val(meta), path(reads.fastq.gz)` for
 canonical reads and `tuple val(meta), path(sorted.bam), path(sorted.bam.bai)`
 for alignments. Helper scripts are staged as declared inputs so their exact
@@ -120,14 +129,22 @@ Arbitrary read sharding and genomic windows are intentionally unsupported.
 Known per-shard TAMA failures are recorded in `tama_status.tsv` and do not
 produce a BED for that shard; successful shards continue to the accession and
 cohort merges. TAMA exit statuses are captured by the shard adapter and are
-non-terminal. The default merge backend is TAMA. An experimental `tmerge` backend
-can be selected with `--merge_tool tmerge`; it runs as a separate `TMERGE`
-process using the pinned public
-`community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552` image. `tmerge`
-consumes a coordinate-sorted exon GTF, so the pipeline converts collapsed BED12
-models to GTF and converts its output back to BED12. In contig-sharded mode the
-selected backend is also used for the per-accession regrouping step before the
-cohort merge. It is not a drop-in replacement for TAMA's collapse algorithm.
+non-terminal. The separate `--merge_tool` option controls the legacy
+post-collapse accession/cohort merge stage; it is not the model-construction
+backend selector. For a direct backend comparison, use `--model_backend`.
+
+The TAMA adapter has a targeted recovery for the known TAMA 1.0.3 empty-locus
+crash (`IndexError: list index out of range`). It retries only that signature
+after filtering the shard to primary mapped alignments (`samtools -F 2308`),
+records the retry in `tama_collapse.stderr`, and still records a non-zero
+status if recovery fails. This is a compatibility workaround, not a biological
+equivalence guarantee: supplementary/secondary evidence is removed on retry
+and recovered model counts should be reviewed.
+
+`tmerge` consumes read-level exon GTF records. The `model_backend=tmerge` path
+therefore converts each split minimap2 BAM directly to read-level GTF before
+calling tmerge; it does not convert already-collapsed TAMA BED12 models. It is
+not a drop-in replacement for TAMA's collapse algorithm.
 
 TAMA allocations use configurable workload tiers. The defaults are
 `128.GB`, `256.GB`, and `512.GB`. The TAMA adapter records exit statuses such
