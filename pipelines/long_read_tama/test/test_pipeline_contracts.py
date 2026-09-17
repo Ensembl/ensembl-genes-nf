@@ -57,10 +57,20 @@ def test_contig_manifest_stays_keyed_to_its_shard_directory():
 
 def test_tama_soft_failures_have_explicit_status_and_diagnostics():
     tama = (PIPELINE / "modules" / "tama_collapse.nf").read_text()
+    runner = (PIPELINE / "bin" / "run_tama_collapse.sh").read_text()
     assert "path('tama_status.tsv'), emit: status" in tama
     assert "path('tama_collapse.stderr'), emit: stderr" in tama
-    assert "TAMA_FAILED" in tama
-    assert "rm -f" in tama and "${prefix}_collapsed.bed" in tama
+    assert "run_tama_collapse.sh" in tama
+    assert "TAMA_FAILED" in runner
+    assert "exit 0" in runner
+
+
+def test_production_failures_are_non_terminal():
+    config = (PIPELINE / "nextflow.config").read_text()
+    assert "withName: '.*'" in config
+    assert "withName: 'TAMA_COLLAPSE'" in config
+    assert "errorStrategy = 'ignore'" in config
+    assert "? 'retry' : 'terminate'" not in config
 
 
 def test_tmerge_is_an_explicit_optional_merge_backend():
