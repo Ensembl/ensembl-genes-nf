@@ -5,6 +5,7 @@ include { INSPECT_BAM_WORKLOAD } from '../modules/inspect_bam_workload.nf'
 include { TAMA_COLLAPSE } from '../modules/tama_collapse.nf'
 include { STRINGTIE2_COLLAPSE } from '../modules/stringtie2_collapse.nf'
 include { STRINGTIE3_COLLAPSE } from '../modules/stringtie3_collapse.nf'
+include { BAM_TO_ALIGNMENT_GTF } from '../modules/bam_to_alignment_gtf.nf'
 include { TMERGE_COLLAPSE } from '../modules/tmerge_collapse.nf'
 include { TAMA_MERGE as TAMA_MERGE_ACCESSION } from '../modules/tama_merge.nf'
 include { TMERGE as TMERGE_ACCESSION } from '../modules/tmerge.nf'
@@ -47,7 +48,9 @@ workflow COLLAPSE_LONG_READ_MODELS {
             STRINGTIE3_COLLAPSE(contig_bams)
         }
         if (run_tmerge) {
-            TMERGE_COLLAPSE(contig_bams)
+            BAM_TO_ALIGNMENT_GTF(contig_bams)
+            tmerge_gtf = BAM_TO_ALIGNMENT_GTF.out.gtf.map { meta, shard, reads_gtf -> tuple(meta, shard, reads_gtf) }
+            TMERGE_COLLAPSE(tmerge_gtf)
         }
 
         // In comparison mode TAMA remains the canonical downstream model set;
@@ -72,7 +75,7 @@ workflow COLLAPSE_LONG_READ_MODELS {
         }
         if (run_stringtie2) { version_ch = version_ch.mix(STRINGTIE2_COLLAPSE.out.versions) }
         if (run_stringtie3) { version_ch = version_ch.mix(STRINGTIE3_COLLAPSE.out.versions) }
-        if (run_tmerge) { version_ch = version_ch.mix(TMERGE_COLLAPSE.out.versions) }
+        if (run_tmerge) { version_ch = version_ch.mix(BAM_TO_ALIGNMENT_GTF.out.versions).mix(TMERGE_COLLAPSE.out.versions) }
         version_ch = version_ch.mix(params.merge_tool == 'tmerge' && run_tama ? TMERGE_ACCESSION.out.versions : TAMA_MERGE_ACCESSION.out.versions)
     } else {
         whole_bams = inspected_bam.map { meta, bam_file, bai, workload ->
@@ -87,7 +90,11 @@ workflow COLLAPSE_LONG_READ_MODELS {
         if (run_tama) { TAMA_COLLAPSE(whole_bams, reference); VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed) }
         if (run_stringtie2) { STRINGTIE2_COLLAPSE(whole_bams) }
         if (run_stringtie3) { STRINGTIE3_COLLAPSE(whole_bams) }
-        if (run_tmerge) { TMERGE_COLLAPSE(whole_bams) }
+        if (run_tmerge) {
+            BAM_TO_ALIGNMENT_GTF(whole_bams)
+            tmerge_gtf = BAM_TO_ALIGNMENT_GTF.out.gtf.map { meta, shard, reads_gtf -> tuple(meta, shard, reads_gtf) }
+            TMERGE_COLLAPSE(tmerge_gtf)
+        }
         selected_beds = run_tama ? VALIDATE_TAMA_OUTPUT.out.bed :
             (run_stringtie2 ? STRINGTIE2_COLLAPSE.out.bed :
             (run_stringtie3 ? STRINGTIE3_COLLAPSE.out.bed : TMERGE_COLLAPSE.out.bed))
@@ -96,7 +103,7 @@ workflow COLLAPSE_LONG_READ_MODELS {
         if (run_tama) { version_ch = version_ch.mix(TAMA_COLLAPSE.out.versions).mix(VALIDATE_TAMA_OUTPUT.out.versions) }
         if (run_stringtie2) { version_ch = version_ch.mix(STRINGTIE2_COLLAPSE.out.versions) }
         if (run_stringtie3) { version_ch = version_ch.mix(STRINGTIE3_COLLAPSE.out.versions) }
-        if (run_tmerge) { version_ch = version_ch.mix(TMERGE_COLLAPSE.out.versions) }
+        if (run_tmerge) { version_ch = version_ch.mix(BAM_TO_ALIGNMENT_GTF.out.versions).mix(TMERGE_COLLAPSE.out.versions) }
     }
 
     collapse_reports = INSPECT_BAM_WORKLOAD.out.workload.map { _meta, _bam, _bai, workload -> workload }
