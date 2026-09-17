@@ -1,7 +1,7 @@
 process BAM_TO_ALIGNMENT_GTF {
     tag "${meta.id}:${shard}:alignment-gtf"
     label 'process_high_memory'
-    // BAM conversion needs samtools; keep it out of the pip-tmerge image.
+    // BAM conversion uses samtools and awk; keep it out of the pip-tmerge image.
     container 'https://depot.galaxyproject.org/singularity/samtools:1.20--h50ea8bc_1'
 
     input:
@@ -14,7 +14,7 @@ process BAM_TO_ALIGNMENT_GTF {
     script:
     def prefix = "${meta.id}.${shard}.tmerge"
     """
-    bam_to_alignment_gtf.py '${bam}' ${prefix}.reads.gtf
+    bam_to_alignment_gtf.sh '${bam}' ${prefix}.reads.gtf
     test -s ${prefix}.reads.gtf || { echo 'BAM-to-GTF conversion produced no alignments' >&2; exit 1; }
     printf '"%s":\\n    samtools: runtime\\n' '${task.process}' > versions.yml
     """

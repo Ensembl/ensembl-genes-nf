@@ -1,6 +1,7 @@
 process ACQUIRE_LONG_READ_BAM {
     tag "${meta.id}:${meta.classification}"
     label 'process_high_memory'
+    container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
     tuple val(meta), val(expected_md5), val(expected_filename), val(source_uri), val(sidecar_uris), val(sidecar_md5s)

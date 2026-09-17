@@ -28,6 +28,7 @@ def test_runtime_policy_is_bounded_and_ignores_exhausted_resource_kills():
 def test_all_pipeline_helpers_are_executable():
     helpers = (PIPELINE / "bin").glob("*.py")
     assert all(os.access(path, os.X_OK) for path in helpers)
+    assert os.access(PIPELINE / "bin" / "bam_to_alignment_gtf.sh", os.X_OK)
 
 
 def test_workflow_exposes_required_boundaries():
@@ -45,6 +46,14 @@ def test_workflow_exposes_required_boundaries():
         assert f"process {name}" in subworkflows or f"process {name}" in "\n".join(
             path.read_text() for path in (PIPELINE / "modules").glob("*.nf")
         )
+
+    alignment = (PIPELINE / "modules" / "minimap2_align.nf").read_text()
+    align_workflow = (PIPELINE / "subworkflows" / "align_long_reads.nf").read_text()
+    assert "docker://niemasd/minimap2_samtools:2.28_1.20" in alignment
+    assert "| samtools sort" in alignment
+    assert "alignment.sam" not in alignment
+    assert "MINIMAP2_ALIGN.out.bam" in align_workflow
+    assert "SAMTOOLS_SORT_INDEX(MINIMAP2_ALIGN.out.sam)" not in align_workflow
 
 
 def test_contig_manifest_stays_keyed_to_its_shard_directory():
@@ -108,7 +117,7 @@ def test_model_backends_run_from_split_bams():
     assert "path(bam), path(bai)" in bam_to_gtf
     assert "process BAM_TO_ALIGNMENT_GTF" in bam_to_gtf
     assert "depot.galaxyproject.org/singularity/samtools:1.20--h50ea8bc_1" in bam_to_gtf
-    assert "bam_to_alignment_gtf.py" in bam_to_gtf
+    assert "bam_to_alignment_gtf.sh" in bam_to_gtf
     assert "path(reads_gtf)" in tmerge
     assert "bam_to_alignment_gtf.py" not in tmerge
     assert "depot.galaxyproject.org/singularity/stringtie:2.2.3--h43eeafb_0" in stringtie2

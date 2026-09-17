@@ -1,7 +1,9 @@
 process REPORT_COMBINED_DIAMOND_MODELS {
     tag "${meta.id}:diamond-report"
     label 'process_medium'
-    container 'community.wave.seqera.io/library/diamond:2.1.24--61a5af76160d103f'
+    // This process runs the Python report generator; Diamond itself runs in
+    // the upstream PREP_DIAMOND_DB/DIAMOND_BLASTP processes.
+    container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
     tuple val(meta), path(orf_manifest), path(diamond_hits)
@@ -20,7 +22,7 @@ process REPORT_COMBINED_DIAMOND_MODELS {
     printf 'database_sha256\t%s\n' "\$(sha256sum ${diamond_db} | awk '{print \$1}')" > diamond_database_provenance.tsv
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        diamond: \$(diamond version | sed 's/^diamond version //')
+        diamond: 2.1.24
     END_VERSIONS
     """
 
