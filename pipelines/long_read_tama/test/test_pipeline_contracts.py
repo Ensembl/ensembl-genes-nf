@@ -120,6 +120,11 @@ def test_model_backends_run_from_split_bams():
     assert "process BAM_TO_ALIGNMENT_GTF" in bam_to_gtf
     assert "depot.galaxyproject.org/singularity/samtools:1.20--h50ea8bc_1" in bam_to_gtf
     assert "bam_to_alignment_gtf.sh" in bam_to_gtf
+    converter = (PIPELINE / "bin" / "bam_to_alignment_gtf.sh").read_text()
+    assert 'gene_id \\\"' in converter
+    assert 'gene_id \\\"" read_id' in converter
+    assert 'transcript_id \\\"" read_id' in converter
+    assert converter.index('gene_id \\\"" read_id') < converter.index('transcript_id \\\"" read_id')
     assert "path(reads_gtf)" in tmerge
     assert "bam_to_alignment_gtf.py" not in tmerge
     assert "--input ${reads_gtf} --output ${prefix}.gtf" in tmerge
