@@ -69,7 +69,7 @@ nextflow run main.nf \
 	--ensadmin_password XXX
 ```
 
-The FASTA and GFF for each assembly are a pair: provide both reference files or neither, and both target files or neither.
+For mapping, the FASTA and GFF for each assembly are pairs: provide both reference files or neither, and both target files or neither. For reassignment, only a target GFF3 is needed.
 
 ### Samplesheet
 
@@ -114,7 +114,7 @@ The resolver uses the database assembly accession and registry information to ch
 
 ### `map`
 
-Force stable-ID mapping. *An earlier live assembly version must existi*. If it does not, the run fails rather than falling back to reassignment.
+Force stable-ID mapping. *An earlier live assembly version must exist*. If it does not, the run fails rather than falling back to reassignment.
 
 If `mapping_session_id` is not supplied, the resolver inserts a new `stable_id_mapping` event in `gb_assembly_metadata.annotation_events` and uses its ID. A fresh, non-resumed run can therefore create a new mapping session.
 
@@ -122,7 +122,9 @@ If `mapping_session_id` is not supplied, the resolver inserts a new `stable_id_m
 
 Generate SQL for a complete registry-based reassignment of gene, transcript, translation and exon stable IDs. The reassignment is ordered by each feature table's internal primary key and assigns version `1`.
 
-This route does not require reference or target FASTA/GFF files and does not create a mapping session. If the database already conforms, the generator produces a no-op result rather than changing IDs unnecessarily.
+This route does not require a reference assembly or target FASTA. It resolves and stages only the target GFF3, which is needed to produce the rewritten target annotation. A target GFF3 override may be supplied; target FASTA and reference-file overrides are not used for reassignment.
+
+If the database already conforms, the generator produces a no-op result rather than changing IDs unnecessarily.
 
 ## Input discovery
 
@@ -169,7 +171,7 @@ For ease of access to the results, `--output_dir` is highly recomended. For use 
 |---|---|---|---|
 | `--mode` | `auto` | Routing | Global mode: `auto`, `map` or `reassign`. A samplesheet row can override it. |
 | `--target_fasta` | `null` | Mapping, single database | Target FASTA override. Requires `--target_gff`. |
-| `--target_gff` | `null` | Mapping, single database | Target GFF3 override. Requires `--target_fasta`. |
+| `--target_gff` | `null` | Mapping or reassignment, single database | Target GFF3 override. Mapping requires `--target_fasta`; reassignment uses this file alone. |
 | `--ref_fasta` | `null` | Mapping, single database | Reference FASTA override. Requires `--ref_gff`. |
 | `--ref_gff` | `null` | Mapping, single database | Reference GFF3 override. Requires `--ref_fasta`. |
 | `--mapping_session_id` | `null` | Mapping, single database | Reuse an existing mapping session. If omitted, a new session is created. |
@@ -182,7 +184,7 @@ For ease of access to the results, `--output_dir` is highly recomended. For use 
 | `--replace_events_for_session` | `false` | Mapping SQL | Make the rendered SQL replace existing `stable_id_event` rows for the selected session. It does not replace the `annotation_events` mapping-session row. |
 | `--batch_size` | `500` | Mapping and reassignment SQL | Number of rows grouped into generated SQL insert batches. It does not change mapping decisions. |
 | `--lifton_threads` | `8` | Currently inactive | Defined in the configuration but not consumed by the active modular workflow. LiftOn currently uses `task.cpus`: 8 in the `slurm` profile and normally 1 without it. Change it on the nextflow.config if need be. |
-| `--dry_run_sql` | `false` | Currently inactive | Defined for an older unused module. The active mapping branch always renders executable and dry-run SQL and runs the dry-run SQL. The reassignment branch generates both files but does not execute them. |
+| `--dry_run_sql` | `false` | Currently inactive | Defined for an older unused module. The active mapping and reassignment branches always generate and execute rollback dry-run SQL. |
 
 Boolean parameters can be changed explicitly, for example:
 
@@ -230,22 +232,25 @@ Duplicate stable IDs across gene, transcript, translation and exon tables are tr
 2. **LiftOn projection:** project the reference annotation onto the target assembly and record reference genes that could not be projected.
 3. **Structural matching:** compare projected transcripts with nearby target transcripts. Combine transcript evidence into candidate gene pairs and produce a gene-locus comparison table.
 4. **Stable-ID decisions:** attempt structural matching first. If no available structural match is accepted, use coordinate overlap as a fallback. A target feature can be assigned to only one reference feature.
-5. **Render SQL:** generate executable SQL and a rollback dry-run version.
-6. **Append registry record:** with the sql files in place, append a query to update the initial insert into `annot_events` with the coverage (% of reference that has been mapped to the target, specifically) to both track and mark the event as completed.
-7. **Audit:** produce a readable summary plus detailed tables for missing, coordinate-only and new genes.
-8. **Database dry run:** execute the rollback SQL through `gb1-w` and save its output.
+5. **Rewrite target GFF3:** apply the final stable-ID and version decisions to a copy of the staged target GFF3.
+6. **Render SQL:** generate executable SQL and a rollback dry-run version.
+7. **Append registry record:** with the sql files in place, append a query to update the initial insert into `annot_events` with the coverage (% of reference that has been mapped to the target, specifically) to both track and mark the event as completed.
+8. **Audit:** produce a readable summary plus detailed tables for missing, coordinate-only and new genes.
+9. **Database dry run:** execute the rollback SQL through `gb1-w` and save its output.
 
 Mapped genes, transcripts and translations retain their reference stable ID. Unmatched target features receive new IDs from the registry allocation. In the current implementation, target exons receive new assignments rather than participating in retention mapping.
 
 ### Reassignment branch
 
-The pipeline checks the complete gene, transcript, translation and exon populations against the registry format and range. When reassignment is required, it generates:
+The reassignment branch stages the target GFF3, checks the complete gene, transcript, translation and exon populations against the registry format and range, and generates:
 
 - executable reassignment SQL;
-- rollback dry-run SQL (executed for review); and
-- a JSON summary.
+- rollback dry-run SQL, executed for review;
+- a JSON summary;
+- an old-to-new stable-ID map TSV; and
+- a rewritten copy of the target GFF3 with final stable IDs and versions.
 
-The generated reassignment SQL should be reviewed, and the dry-run SQL should be executed and checked before applying the executable SQL.
+The generated reassignment SQL should be reviewed, and the dry-run output should be checked before applying the executable SQL.
 
 ## Outputs
 
@@ -253,14 +258,15 @@ Outputs are published below `results/<db_name>/` by default.
 
 | Directory | Main contents |
 |---|---|
-| `inputs/` | Decompressed, consistently named reference and target FASTA/GFF files. Also a JSON with the options used in the run. |
+| `inputs/` | Decompressed, consistently named reference and target FASTA/GFF files for mapping; reassignment publishes the staged target GFF3. Also contains the resolved-run options JSON. |
+| `gff3/` | Rewritten plain-text target GFF3 with the final stable IDs and versions. |
 | `lifton/` | Projected reference GFF3, missing-gene report and LiftOn projection JSON. |
 | `matching/` | Transcript pairs, gene pairs, gene-locus comparison and structural-matching JSON. |
 | `decisions/` | Stable-ID decisions TSV/JSON and score-evidence TSV. |
 | `sql/` | Executable mapping SQL and rollback dry-run SQL. Plus intermediate files. |
 | `audit/` | Text audit and detailed missing, coordinate-only and new gene TSV tables. |
 | `dry_run_sql/` | Output captured when the mapping dry-run SQL is executed. |
-| `reassignment/` | Executable reassignment SQL, rollback dry-run SQL and reassignment JSON. Present only for the reassignment route. |
+| `reassignment/` | Executable reassignment SQL, rollback dry-run SQL, JSON summary and old-to-new ID-map TSV. Present only for the reassignment route. |
 
 The mapping branch copies staged FASTA and GFF files into `inputs/`; these can be large.
 
@@ -335,6 +341,48 @@ The text report prints only a limited number of examples. The complete rows are 
 - `<db_name>.new_genes.tsv` — target genes receiving new IDs, their annotation classes and whether they were candidates for old genes.
 
 Use these TSV files for investigation and filtering rather than increasing `audit_limit` excessively.
+
+## Validating rewritten GFF3 outputs
+
+The pipeline publishes a rewritten target GFF3 in:
+
+```text
+results/<db_name>/gff3/<db_name>.stable_ids.gff3
+```
+
+Two manual validation tools are available in bin/. They are intentionally not run as part of every pipeline execution.
+
+### GFF3 rewrite validation
+
+`validate_rewritten_gff3.py` confirms that the original and rewritten GFF3 files are identical except for expected stable-ID and version updates. It also checks that rewritten Parent values still refer to rewritten feature IDs.
+
+For reassignment:
+
+```bash
+python3 bin/validate_rewritten_gff3.py \
+    --original-gff results/<db_name>/inputs/<db_name>.target.gff3 \
+    --rewritten-gff results/<db_name>/gff3/<db_name>.stable_ids.gff3 \
+    --id-map results/<db_name>/reassignment/<db_name>.stable_id_reassignment.id_map.tsv
+```
+
+For mapping, use the published stable-ID decisions TSV from results/<db_name>/decisions/ as --id-map.
+
+### Core database validation
+
+After applying executable SQL to a disposable copy of the target core database, `validate_gff3_core_db.py` compares the rewritten GFF3 with the resulting database. It checks:
+
+- gene and transcript stable IDs, versions, coordinates, strands and parent relationships; and
+- translation stable IDs, versions and transcript parent relationships.
+
+```bash
+python3 bin/validate_gff3_core_db.py \
+    --gff results/<db_name>/gff3/<db_name>.stable_ids.gff3 \
+    --db-name <copied_core_database_name> \
+    --host <mysql_host> \
+    --port <mysql_port>
+```
+
+The script prompts for the MySQL password. It should be used after substantive stable-ID, GFF-rewrite or SQL-generation changes—not as a routine pipeline step.
 
 ## Safety and review
 
