@@ -137,6 +137,7 @@ workflow RESOLVE_AND_ROUTE {
     reassignment_ch = resolved_routes.reassignment.map { data ->
         tuple(
             data.db_name,
+            file(data.target_gff),
             data.gene_range,
             data.transcript_range,
             data.translation_range

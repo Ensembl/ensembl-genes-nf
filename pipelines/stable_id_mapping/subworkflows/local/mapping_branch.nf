@@ -6,6 +6,7 @@ include { RENDER_STABLE_ID_SQL } from '../../modules/local/render_stable_id_sql.
 include { APPEND_REGISTRY_RECORD } from '../../modules/local/append_registry_record.nf'
 include { AUDIT_RUN } from '../../modules/local/audit_run.nf'
 include { DRY_RUN_SQL } from '../../modules/local/dry_run_sql.nf'
+include { REWRITE_TARGET_GFF3 } from '../../modules/local/rewrite_target_gff3.nf'
 
 
 workflow MAPPING_BRANCH {
@@ -34,6 +35,12 @@ workflow MAPPING_BRANCH {
 		rules_config_ch
 	)
 
+    REWRITE_TARGET_GFF3(
+		STABLE_ID_DECISIONS.out.decisions.map { db_name, ref_gff, target_gff, mapping_session_id, locus_comparison, decisions_tsv, score_evidence_tsv, decisions_json ->
+            tuple(db_name, target_gff, decisions_tsv)
+		}
+	)
+
 	render_inputs_ch = STABLE_ID_DECISIONS.out.decisions
         .join(mapping_metadata_ch, by: 0)
 
@@ -58,4 +65,5 @@ workflow MAPPING_BRANCH {
 	emit:
 	audit = AUDIT_RUN.out.audit
 	dry_run_sql = DRY_RUN_SQL.out.dry_run_sql
+	gff3 = REWRITE_TARGET_GFF3.out.rewritten_gff
 }

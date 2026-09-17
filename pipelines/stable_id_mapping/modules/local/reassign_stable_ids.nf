@@ -3,19 +3,27 @@ process REASSIGN_STABLE_IDS {
 
     publishDir {
         "${params.output_dir}/${db_name}/reassignment"
-    }, mode: 'copy'
+    }, mode: 'copy',
+    saveAs: { name ->
+        name.startsWith("${db_name}.stable_id_reassignment.")
+            ? name
+            : null
+    }
 
     input:
     tuple val(db_name),
+          path(target_gff),
           val(gene_range),
           val(transcript_range),
           val(translation_range)
 
     output:
     tuple val(db_name),
+          path(target_gff, includeInputs: true),
           path("${db_name}.stable_id_reassignment.sql"),
           path("${db_name}.stable_id_reassignment.dry_run.sql"),
           path("${db_name}.stable_id_reassignment.json"),
+          path("${db_name}.stable_id_reassignment.id_map.tsv"),
           emit: reassignment
 
     script:
@@ -28,6 +36,7 @@ process REASSIGN_STABLE_IDS {
         --output-sql ${db_name}.stable_id_reassignment.sql \
         --dry-run-sql ${db_name}.stable_id_reassignment.dry_run.sql \
         --output-json ${db_name}.stable_id_reassignment.json \
+        --output-id-map ${db_name}.stable_id_reassignment.id_map.tsv \
         --batch-size ${params.batch_size}
     """
 }

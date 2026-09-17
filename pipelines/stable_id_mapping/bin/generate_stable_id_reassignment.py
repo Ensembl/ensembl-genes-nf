@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import sys
+import csv
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
@@ -46,6 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-sql", type=Path, required=True)
     parser.add_argument("--dry-run-sql", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)
+    parser.add_argument("--output-id-map", type=Path, required=True)
     parser.add_argument("--batch-size", type=int, default=500)
     parser.add_argument(
         "--backup-prefix",
@@ -122,6 +124,45 @@ def generate_assignments(
         ]
 
     return assignments
+
+
+def write_id_map(
+    path: Path,
+    populations: dict[str, list[dict]],
+    assignments: dict[str, list[tuple[int, str]]],
+    new_version: int | None = None,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    assigned_by_feature_id = {
+        feature_type: dict(rows)
+        for feature_type, rows in assignments.items()
+    }
+
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["old_id", "new_id", "new_version"],
+            delimiter="\t",
+            lineterminator="\n",
+        )
+        writer.writeheader()
+
+        for feature_type in FEATURE_TABLES:
+            for row in populations[feature_type]:
+                writer.writerow(
+                    {
+                        "old_id": row["stable_id"],
+                        "new_id": assigned_by_feature_id[
+                            feature_type
+                        ][row["feature_id"]],
+                        "new_version": (
+                            row["version"]
+                            if new_version is None
+                            else new_version
+                        ),
+                    }
+                )
 
 
 def write_noop_sql(
@@ -321,12 +362,26 @@ def main() -> int:
         write_noop_sql(args.output_sql, args.db_name, dry_run=False)
         write_noop_sql(args.dry_run_sql, args.db_name, dry_run=True)
 
+        identity_assignments = {
+            feature_type: [
+                (row["feature_id"], row["stable_id"])
+                for row in rows
+            ]
+            for feature_type, rows in populations.items()
+        }
+        write_id_map(
+            args.output_id_map,
+            populations,
+            identity_assignments,
+        )
+
         write_summary(
             args.output_json,
             {
                 "db_name": args.db_name,
                 "status": "clean",
                 "features": feature_summaries,
+                "output_id_map": str(args.output_id_map),
             },
         )
 
@@ -360,6 +415,13 @@ def main() -> int:
         )
         return 2
 
+    write_id_map(
+        args.output_id_map,
+        populations,
+        assignments,
+        new_version=1,
+    )
+
     write_reassignment_sql(
         args.output_sql,
         args.db_name,
@@ -390,6 +452,7 @@ def main() -> int:
             },
             "output_sql": str(args.output_sql),
             "dry_run_sql": str(args.dry_run_sql),
+            "output_id_map": str(args.output_id_map),
         },
     )
 

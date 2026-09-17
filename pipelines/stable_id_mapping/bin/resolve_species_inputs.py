@@ -373,6 +373,40 @@ def resolve_pre_release_paths(
     return fasta_matches[0], gff_matches[0]
 
 
+def resolve_target_paths(
+    binomial_name: str,
+    gca_chain: str,
+    gca_version: int,
+) -> tuple[Path, Path]:
+    try:
+        return resolve_ftp_paths(
+            binomial_name,
+            gca_chain,
+            gca_version,
+        )
+    except FileNotFoundError as standard_error:
+        try:
+            target_fasta, target_gff = resolve_pre_release_paths(
+                binomial_name,
+                gca_chain,
+                gca_version,
+            )
+        except FileNotFoundError as pre_release_error:
+            raise FileNotFoundError(
+                "Target files were unavailable in both the standard "
+                "and pre-release locations.\n"
+                f"Standard lookup: {standard_error}\n"
+                f"Pre-release lookup: {pre_release_error}"
+            ) from pre_release_error
+
+        print(
+            "Target files were not found in the standard FTP tree; "
+            f"using pre-release files from {target_fasta.parent}"
+        )
+
+        return target_fasta, target_gff
+
+
 def resolve_species_inputs(
     db_name: str,
     requested_mode: str = "auto",
@@ -453,35 +487,11 @@ def resolve_species_inputs(
             target_fasta = target_fasta_override
             target_gff = target_gff_override
         elif target_fasta_override is None and target_gff_override is None:
-            try:
-                target_fasta, target_gff = resolve_ftp_paths(
-                    binomial_name,
-                    target_chain,
-                    target_version,
-                )
-            except FileNotFoundError as standard_error:
-                try:
-                    (
-                        target_fasta,
-                        target_gff,
-                    ) = resolve_pre_release_paths(
-                        binomial_name,
-                        target_chain,
-                        target_version,
-                    )
-                except FileNotFoundError as pre_release_error:
-                    raise FileNotFoundError(
-                        "Target files were unavailable in both the "
-                        "standard and pre-release locations.\n"
-                        f"Standard lookup: {standard_error}\n"
-                        f"Pre-release lookup: {pre_release_error}"
-                    ) from pre_release_error
-
-                print(
-                    "Target files were not found in the standard FTP "
-                    f"tree; using pre-release files from "
-                    f"{target_fasta.parent}"
-                )
+            target_fasta, target_gff = resolve_target_paths(
+                binomial_name,
+                target_chain,
+                target_version,
+            )
         else:
             raise ValueError(
                 "Provide both target_fasta and target_gff, or neither"
@@ -511,6 +521,31 @@ def resolve_species_inputs(
                 reference_chain,
                 reference_version,
             )
+
+    elif effective_mode == "reassign":
+        reference_chain = None
+        reference_version = None
+        reference_assembly_id = None
+        ref_fasta = None
+        ref_gff = None
+        mapping_session_id = None
+        target_fasta = None
+
+        if target_fasta_override is not None:
+            raise ValueError(
+                "Mode 'reassign' does not use target_fasta; "
+                "provide target_gff only if an override is needed"
+            )
+
+        if target_gff_override is not None:
+            target_gff = target_gff_override
+        else:
+            _unused_target_fasta, target_gff = resolve_target_paths(
+                binomial_name,
+                target_chain,
+                target_version,
+            )
+
     else:
         reference_chain = None
         reference_version = None
