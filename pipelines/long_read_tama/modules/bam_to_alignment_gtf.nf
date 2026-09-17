@@ -22,7 +22,7 @@ process BAM_TO_ALIGNMENT_GTF {
     stub:
     def prefix = "${meta.id}.${shard}.tmerge"
     """
-    printf 'chrStub\\ttmerge\\texon\\t1\\t4\\t.\\t+\\t.\\ttranscript_id "${meta.id}.read.1";\\n' > ${prefix}.reads.gtf
+    printf 'chrStub\\ttmerge\\texon\\t1\\t4\\t.\\t+\\t.\\tgene_id "${meta.id}.read.1"; transcript_id "${meta.id}.read.1";\\n' > ${prefix}.reads.gtf
     printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
     """
 }

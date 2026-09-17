@@ -58,7 +58,7 @@ def main():
         for exon_number, (start, end) in enumerate(
             alignment_exons(int(pos_text), cigar), 1
         ):
-            attrs = f'transcript_id "{transcript_id}"; exon_number "{exon_number}"; read_id "{read_id}";'
+            attrs = f'gene_id "{transcript_id}"; transcript_id "{transcript_id}"; exon_number "{exon_number}"; read_id "{read_id}";'
             records.append((contig, start, end, strand, attrs))
 
     records.sort(key=lambda row: (row[0], row[1], row[2], row[3], row[4]))

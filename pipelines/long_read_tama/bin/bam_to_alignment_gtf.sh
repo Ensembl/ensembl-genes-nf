@@ -12,7 +12,7 @@ samtools view -F 2308 "$bam" \
         BEGIN { OFS = "\t" }
         function emit_exon(contig, exon_start, exon_end, strand, read_id, exon_number, attrs) {
             if (exon_start < exon_end) {
-                attrs = "transcript_id \"" read_id "." seen[read_id] "\"; exon_number \"" exon_number "\"; read_id \"" read_id "\";"
+                attrs = "gene_id \"" read_id "." seen[read_id] "\"; transcript_id \"" read_id "." seen[read_id] "\"; exon_number \"" exon_number "\"; read_id \"" read_id "\";"
                 print contig, "tmerge", "exon", exon_start, exon_end, ".", strand, ".", attrs
             }
         }
