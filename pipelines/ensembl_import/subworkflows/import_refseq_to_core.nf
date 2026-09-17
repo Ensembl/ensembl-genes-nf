@@ -24,7 +24,7 @@ workflow IMPORT_REFSEQ_TO_CORE {
                 .toLowerCase()
                 .replace("_", "")
                 .replaceFirst(/\./, "v")
-            def dbName = "${speciesToken}_${accessionToken}_rs_core_114_1"
+            def dbName = "${speciesToken}_${accessionToken}rs_core_114_1"
 
             meta + [db_name: dbName]
         }
