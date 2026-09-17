@@ -4,6 +4,9 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
+
 os.environ.setdefault("GBS1", "unused")
 os.environ.setdefault("GBP1", "3306")
 
@@ -15,7 +18,8 @@ sys.path.insert(
 import resolve_species_inputs
 from stable_id_mapping.ids import make_allocator, parse_id_range
 
-import pytest
+
+ASSEMBLY_METADATA_DB = "gb_assembly_metadata"
 
 
 class FakeCursor:
@@ -44,14 +48,19 @@ class FakeConnection:
         pass
 
 
-def test_registry_ranges_are_formatted_to_exactly_11_digits(monkeypatch):
+def test_registry_ranges_are_formatted_to_exactly_11_digits(
+    monkeypatch,
+) -> None:
     monkeypatch.setattr(
         resolve_species_inputs,
-        "_connect_ro",
+        "_connect_reg_ro",
         lambda: FakeConnection(),
     )
 
-    ranges = resolve_species_inputs.resolve_stable_id_ranges("GCA_000000001.1")
+    ranges = resolve_species_inputs.resolve_stable_id_ranges(
+        "GCA_000000001.1",
+        ASSEMBLY_METADATA_DB,
+    )
 
     assert ranges == {
         "gene": "ENSXG:00000000123-00000000456",
@@ -61,7 +70,10 @@ def test_registry_ranges_are_formatted_to_exactly_11_digits(monkeypatch):
 
     gene_range = parse_id_range(ranges["gene"])
     assert gene_range.width == 11
-    assert make_allocator(gene_range, set()).allocate() == "ENSXG00000000123"
+    assert make_allocator(gene_range, set()).allocate() == (
+        "ENSXG00000000123"
+    )
+
 
 def mock_common_resolution(monkeypatch) -> None:
     monkeypatch.setattr(
@@ -75,12 +87,12 @@ def mock_common_resolution(monkeypatch) -> None:
     monkeypatch.setattr(
         resolve_species_inputs,
         "resolve_target_assembly",
-        lambda chain, version: (30, 300),
+        lambda chain, version, assembly_metadata_db: (30, 300),
     )
     monkeypatch.setattr(
         resolve_species_inputs,
         "resolve_stable_id_ranges",
-        lambda accession: {
+        lambda accession, assembly_metadata_db: {
             "gene": "ENSXG:00000000100-00000000199",
             "transcript": "ENSXT:00000000100-00000000199",
             "translation": "ENSXP:00000000100-00000000199",
@@ -107,6 +119,15 @@ def test_reassign_does_not_resolve_reference_or_create_session(
     mock_common_resolution(monkeypatch)
     mock_nonconforming_stable_ids(monkeypatch)
 
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_target_paths",
+        lambda *args: (
+            Path("target.fa"),
+            Path("target.gff3"),
+        ),
+    )
+
     def unexpected_call(*args, **kwargs):
         raise AssertionError("mapping-only function was called")
 
@@ -124,6 +145,7 @@ def test_reassign_does_not_resolve_reference_or_create_session(
     result = resolve_species_inputs.resolve_species_inputs(
         "test_core",
         requested_mode="reassign",
+        assembly_metadata_db=ASSEMBLY_METADATA_DB,
     )
 
     assert result.requested_mode == "reassign"
@@ -133,7 +155,7 @@ def test_reassign_does_not_resolve_reference_or_create_session(
     assert result.ref_gff is None
     assert result.mapping_session_id is None
     assert result.target_fasta is None
-    assert result.target_gff is None
+    assert result.target_gff == "target.gff3"
 
 
 def test_auto_without_live_reference_uses_reassign(
@@ -145,7 +167,7 @@ def test_auto_without_live_reference_uses_reassign(
     monkeypatch.setattr(
         resolve_species_inputs,
         "resolve_live_reference",
-        lambda chain, version: None,
+        lambda chain, version, assembly_metadata_db: None,
     )
 
     def unexpected_insert(*args, **kwargs):
@@ -160,14 +182,14 @@ def test_auto_without_live_reference_uses_reassign(
     result = resolve_species_inputs.resolve_species_inputs(
         "test_core",
         requested_mode="auto",
-        target_fasta_override=Path("target.fa"),
         target_gff_override=Path("target.gff3"),
+        assembly_metadata_db=ASSEMBLY_METADATA_DB,
     )
 
     assert result.effective_mode == "reassign"
     assert result.mapping_session_id is None
     assert result.target_fasta is None
-    assert result.target_gff is None
+    assert result.target_gff == "target.gff3"
 
 
 def test_auto_without_live_reference_and_conforming_ids_uses_no_action(
@@ -178,7 +200,7 @@ def test_auto_without_live_reference_and_conforming_ids_uses_no_action(
     monkeypatch.setattr(
         resolve_species_inputs,
         "resolve_live_reference",
-        lambda chain, version: None,
+        lambda chain, version, assembly_metadata_db: None,
     )
     monkeypatch.setattr(
         resolve_species_inputs,
@@ -203,6 +225,7 @@ def test_auto_without_live_reference_and_conforming_ids_uses_no_action(
     result = resolve_species_inputs.resolve_species_inputs(
         "test_core",
         requested_mode="auto",
+        assembly_metadata_db=ASSEMBLY_METADATA_DB,
     )
 
     assert result.effective_mode == "no_action"
@@ -222,7 +245,7 @@ def test_auto_with_live_reference_uses_map_and_creates_session(
     monkeypatch.setattr(
         resolve_species_inputs,
         "resolve_live_reference",
-        lambda chain, version: (
+        lambda chain, version, assembly_metadata_db: (
             "GCA_000000001",
             2,
             20,
@@ -231,7 +254,7 @@ def test_auto_with_live_reference_uses_map_and_creates_session(
     monkeypatch.setattr(
         resolve_species_inputs,
         "insert_mapping_session",
-        lambda genebuild_status_id, reference_assembly_id: 777,
+        lambda *_args: 777
     )
 
     result = resolve_species_inputs.resolve_species_inputs(
@@ -241,6 +264,7 @@ def test_auto_with_live_reference_uses_map_and_creates_session(
         target_gff_override=Path("target.gff3"),
         ref_fasta_override=Path("reference.fa"),
         ref_gff_override=Path("reference.gff3"),
+        assembly_metadata_db=ASSEMBLY_METADATA_DB,
     )
 
     assert result.effective_mode == "map"
@@ -258,7 +282,7 @@ def test_explicit_map_without_live_reference_fails(
     monkeypatch.setattr(
         resolve_species_inputs,
         "resolve_live_reference",
-        lambda chain, version: None,
+        lambda chain, version, assembly_metadata_db: None,
     )
 
     with pytest.raises(
@@ -270,7 +294,9 @@ def test_explicit_map_without_live_reference_fails(
             requested_mode="map",
             target_fasta_override=Path("target.fa"),
             target_gff_override=Path("target.gff3"),
+            assembly_metadata_db=ASSEMBLY_METADATA_DB,
         )
+
 
 def test_resolve_pre_release_paths(
     monkeypatch,
@@ -319,7 +345,7 @@ def test_mapping_falls_back_to_pre_release_for_target_only(
     monkeypatch.setattr(
         resolve_species_inputs,
         "resolve_live_reference",
-        lambda chain, version: (
+        lambda chain, version, assembly_metadata_db: (
             "GCA_000000001",
             2,
             20,
@@ -363,12 +389,13 @@ def test_mapping_falls_back_to_pre_release_for_target_only(
     monkeypatch.setattr(
         resolve_species_inputs,
         "insert_mapping_session",
-        lambda genebuild_status_id, reference_assembly_id: 777,
+        lambda *_args: 777,
     )
 
     result = resolve_species_inputs.resolve_species_inputs(
         "test_core",
         requested_mode="auto",
+        assembly_metadata_db=ASSEMBLY_METADATA_DB,
     )
 
     assert result.target_fasta == "pre-release-target.fa.gz"

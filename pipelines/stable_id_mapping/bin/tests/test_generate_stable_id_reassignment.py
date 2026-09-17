@@ -32,6 +32,7 @@ def make_args(
         output_sql=tmp_path / "reassign.sql",
         dry_run_sql=tmp_path / "dry_run.sql",
         output_json=tmp_path / "summary.json",
+        output_id_map=tmp_path / "id_map.tsv",
         batch_size=500,
         backup_prefix="test_backup",
     )
@@ -102,6 +103,14 @@ def test_all_correct_population_produces_noop(
     )
     assert "UPDATE" not in args.output_sql.read_text()
 
+    assert args.output_id_map.read_text() == (
+        "old_id\tnew_id\tnew_version\n"
+        "ENSXG00000000100\tENSXG00000000100\t1\n"
+        "ENSXT00000000100\tENSXT00000000100\t1\n"
+        "ENSXP00000000100\tENSXP00000000100\t1\n"
+        "ENSXE00000000100\tENSXE00000000100\t1\n"
+    )
+
 
 def test_mixed_population_warns_and_reassigns_everything(
     tmp_path: Path,
@@ -147,6 +156,12 @@ def test_mixed_population_warns_and_reassigns_everything(
     assert "ENSXG00000000100" in sql
     assert "ENSXG00000000101" in sql
     assert "f.version = 1" in sql
+
+    assert args.output_id_map.read_text() == (
+        "old_id\tnew_id\tnew_version\n"
+        "ENSXG00000000100\tENSXG00000000100\t1\n"
+        "ENSXG00000000999\tENSXG00000000101\t1\n"
+    )
 
 
 def test_exhausted_range_fails_with_clear_message(
