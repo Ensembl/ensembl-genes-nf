@@ -1,8 +1,7 @@
 process TMERGE {
     tag "${cohort_id}"
     label 'process_high_memory'
-    // guigolab/tmerge consumes a coordinate-sorted exon GTF and writes GTF
-    // to stdout. This pinned Wave image supplies the tmerge executable.
+    // This Python tmerge image uses explicit --input/--output arguments.
     container 'community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea'
 
     input:
@@ -21,7 +20,7 @@ process TMERGE {
     # tmerge requires exon-only, coordinate-sorted GTF input with a unique
     # transcript_id for every input model.
     bed12_to_gtf.py tmerge_input.gtf ${beds}
-    tmerge ${params.tmerge_args} --tmPrefix ${cohort_id} tmerge_input.gtf > tmerge_output.gtf
+    tmerge ${params.tmerge_args} --input tmerge_input.gtf --output tmerge_output.gtf
     test -s tmerge_output.gtf || { echo 'tmerge produced an empty GTF' >&2; exit 1; }
     gtf_to_bed12.py tmerge_output.gtf ${cohort_id}_merged.bed ${cohort_id}
     test -s ${cohort_id}_merged.bed || { echo 'tmerge BED conversion produced no models' >&2; exit 1; }

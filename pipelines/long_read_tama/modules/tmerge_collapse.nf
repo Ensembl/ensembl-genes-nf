@@ -14,7 +14,7 @@ process TMERGE_COLLAPSE {
     script:
     def prefix = "${meta.id}.${shard}.tmerge"
     """
-    tmerge ${params.tmerge_args} --tmPrefix ${prefix} ${reads_gtf} > ${prefix}.gtf
+    tmerge ${params.tmerge_args} --input ${reads_gtf} --output ${prefix}.gtf
     gtf_to_bed12.py ${prefix}.gtf ${prefix}.bed ${meta.id}
     printf '"%s":\\n    tmerge: runtime\\n' '${task.process}' > versions.yml
     """
