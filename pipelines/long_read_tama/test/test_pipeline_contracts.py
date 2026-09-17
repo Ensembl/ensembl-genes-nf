@@ -97,6 +97,8 @@ def test_tmerge_is_an_explicit_optional_merge_backend():
     assert "process TMERGE" in tmerge
     assert "community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea" in tmerge
     assert "bed12_to_gtf.py" in tmerge and "gtf_to_bed12.py" in tmerge
+    assert "--input tmerge_input.gtf --output tmerge_output.gtf" in tmerge
+    assert "--tmPrefix" not in tmerge
 
 
 def test_model_backends_run_from_split_bams():
@@ -120,6 +122,8 @@ def test_model_backends_run_from_split_bams():
     assert "bam_to_alignment_gtf.sh" in bam_to_gtf
     assert "path(reads_gtf)" in tmerge
     assert "bam_to_alignment_gtf.py" not in tmerge
+    assert "--input ${reads_gtf} --output ${prefix}.gtf" in tmerge
+    assert "--tmPrefix" not in tmerge
     assert "depot.galaxyproject.org/singularity/stringtie:2.2.3--h43eeafb_0" in stringtie2
     assert "community.wave.seqera.io/library/stringtie" not in stringtie2
 
