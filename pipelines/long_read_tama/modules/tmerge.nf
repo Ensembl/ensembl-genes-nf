@@ -3,7 +3,7 @@ process TMERGE {
     label 'process_high_memory'
     // guigolab/tmerge consumes a coordinate-sorted exon GTF and writes GTF
     // to stdout. This pinned Wave image supplies the tmerge executable.
-    container 'community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552'
+    container 'community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea'
 
     input:
     tuple val(cohort_id), path(beds)

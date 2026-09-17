@@ -1,7 +1,7 @@
 process TMERGE_COLLAPSE {
     tag "${meta.id}:${shard}:tmerge"
     label 'process_high_memory'
-    container 'community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552'
+    container 'community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea'
 
     input:
     tuple val(meta), val(shard), path(reads_gtf)
