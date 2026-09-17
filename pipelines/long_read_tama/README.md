@@ -3,8 +3,10 @@
 ## Runtime and module boundaries
 
 Production runs require Nextflow 26.04.6 or newer and write timeline, report,
-and trace files under `pipeline_info`. Required stages terminate the run on
-failure; retries are limited to network/cache acquisition.
+and trace files under `pipeline_info`. Process failures are bounded by the
+configured retry policy and then ignored so independent accessions/shards can
+continue; task traces and stage-specific status/report outputs identify the
+affected inputs.
 
 The workflow is composed from these named subworkflows:
 
@@ -117,8 +119,8 @@ Arbitrary read sharding and genomic windows are intentionally unsupported.
 
 Known per-shard TAMA failures are recorded in `tama_status.tsv` and do not
 produce a BED for that shard; successful shards continue to the accession and
-cohort merges. Missing executables and scheduler/resource kills remain fatal or
-retryable. The default merge backend is TAMA. An experimental `tmerge` backend
+cohort merges. TAMA exit statuses are captured by the shard adapter and are
+non-terminal. The default merge backend is TAMA. An experimental `tmerge` backend
 can be selected with `--merge_tool tmerge`; it runs as a separate `TMERGE`
 process using the pinned public
 `community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552` image. `tmerge`
@@ -128,10 +130,10 @@ selected backend is also used for the per-accession regrouping step before the
 cohort merge. It is not a drop-in replacement for TAMA's collapse algorithm.
 
 TAMA allocations use configurable workload tiers. The defaults are
-`128.GB`, `256.GB`, and `512.GB`, with five bounded retries. Exit statuses
-137, 140, and 143 advance through the tiers and are ignored after the retry
-budget is exhausted; validation, malformed-input, and other tool failures
-still terminate. `--shard_contig_reads` is an operational mapped-read
+`128.GB`, `256.GB`, and `512.GB`. The TAMA adapter records exit statuses such
+as 137, 140, and 143 in `tama_status.tsv`; other
+tool and validation failures are also non-terminal at the process-policy
+boundary and remain visible in the trace/report outputs. `--shard_contig_reads` is an operational mapped-read
 heuristic, not a biological or guaranteed memory boundary.
 
 Example:
