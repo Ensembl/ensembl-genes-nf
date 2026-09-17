@@ -100,10 +100,17 @@ def test_model_backends_run_from_split_bams():
         assert backend in schema
     assert "STRINGTIE2_COLLAPSE(contig_bams)" in collapse
     assert "STRINGTIE3_COLLAPSE(contig_bams)" in collapse
-    assert "TMERGE_COLLAPSE(contig_bams)" in collapse
+    assert "BAM_TO_ALIGNMENT_GTF(contig_bams)" in collapse
+    assert "TMERGE_COLLAPSE(tmerge_gtf)" in collapse
     tmerge = (PIPELINE / "modules" / "tmerge_collapse.nf").read_text()
     stringtie2 = (PIPELINE / "modules" / "stringtie2_collapse.nf").read_text()
-    assert "path(bam), path(bai)" in tmerge
+    bam_to_gtf = (PIPELINE / "modules" / "bam_to_alignment_gtf.nf").read_text()
+    assert "path(bam), path(bai)" in bam_to_gtf
+    assert "process BAM_TO_ALIGNMENT_GTF" in bam_to_gtf
+    assert "depot.galaxyproject.org/singularity/samtools:1.20--h50ea8bc_1" in bam_to_gtf
+    assert "bam_to_alignment_gtf.py" in bam_to_gtf
+    assert "path(reads_gtf)" in tmerge
+    assert "bam_to_alignment_gtf.py" not in tmerge
     assert "depot.galaxyproject.org/singularity/stringtie:2.2.3--h43eeafb_0" in stringtie2
     assert "community.wave.seqera.io/library/stringtie" not in stringtie2
 

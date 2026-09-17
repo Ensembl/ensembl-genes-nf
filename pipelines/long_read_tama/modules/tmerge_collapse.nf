@@ -4,7 +4,7 @@ process TMERGE_COLLAPSE {
     container 'community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552'
 
     input:
-    tuple val(meta), val(shard), val(resource_class), val(mapped_reads), path(bam), path(bai)
+    tuple val(meta), val(shard), path(reads_gtf)
 
     output:
     tuple val(meta), val(shard), path('*.gtf'), emit: gtf
@@ -14,8 +14,7 @@ process TMERGE_COLLAPSE {
     script:
     def prefix = "${meta.id}.${shard}.tmerge"
     """
-    bam_to_alignment_gtf.py ${bam} ${prefix}.reads.gtf
-    tmerge ${params.tmerge_args} --tmPrefix ${prefix} ${prefix}.reads.gtf > ${prefix}.gtf
+    tmerge ${params.tmerge_args} --tmPrefix ${prefix} ${reads_gtf} > ${prefix}.gtf
     gtf_to_bed12.py ${prefix}.gtf ${prefix}.bed ${meta.id}
     printf '"%s":\\n    tmerge: runtime\\n' '${task.process}' > versions.yml
     """
