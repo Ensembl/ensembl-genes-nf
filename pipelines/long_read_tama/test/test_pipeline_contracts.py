@@ -95,7 +95,7 @@ def test_tmerge_is_an_explicit_optional_merge_backend():
     assert "process TAMA_MERGE" in tama
     assert "params.merge_tool" not in tama
     assert "process TMERGE" in tmerge
-    assert "community.wave.seqera.io/library/pip_tmerge:6cf60ff0bf166552" in tmerge
+    assert "community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea" in tmerge
     assert "bed12_to_gtf.py" in tmerge and "gtf_to_bed12.py" in tmerge
 
 
