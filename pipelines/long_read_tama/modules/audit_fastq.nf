@@ -1,6 +1,7 @@
 process AUDIT_FASTQ {
     tag "${meta.id}:${meta.classification}"
     label 'process_light'
+    container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
     tuple val(meta), path(probe), path(validation)
