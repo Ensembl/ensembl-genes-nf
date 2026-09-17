@@ -101,7 +101,11 @@ def test_model_backends_run_from_split_bams():
     assert "STRINGTIE2_COLLAPSE(contig_bams)" in collapse
     assert "STRINGTIE3_COLLAPSE(contig_bams)" in collapse
     assert "TMERGE_COLLAPSE(contig_bams)" in collapse
-    assert "path(bam), path(bai)" in (PIPELINE / "modules" / "tmerge_collapse.nf").read_text()
+    tmerge = (PIPELINE / "modules" / "tmerge_collapse.nf").read_text()
+    stringtie2 = (PIPELINE / "modules" / "stringtie2_collapse.nf").read_text()
+    assert "path(bam), path(bai)" in tmerge
+    assert "depot.galaxyproject.org/singularity/stringtie:2.2.3--h43eeafb_0" in stringtie2
+    assert "community.wave.seqera.io/library/stringtie" not in stringtie2
 
 
 def test_entrypoint_uses_schema_and_keeps_optional_outputs_guarded():

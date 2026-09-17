@@ -2,7 +2,9 @@ process STRINGTIE2_COLLAPSE {
     tag "${meta.id}:${shard}:stringtie2"
     label 'process_high_memory'
     conda 'bioconda::stringtie=2.2.3'
-    container 'community.wave.seqera.io/library/stringtie:2.2.3--77d8df3265c94ba1'
+    // Use the Bioconda/Depot SIF directly: the previously pinned Wave image
+    // resolves to linux/arm64 and cannot be converted on the amd64 HPC.
+    container 'https://depot.galaxyproject.org/singularity/stringtie:2.2.3--h43eeafb_0'
 
     input:
     tuple val(meta), val(shard), val(resource_class), val(mapped_reads), path(bam), path(bai)
