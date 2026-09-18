@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Select and store the sample location metadata for a core database.
 
 This follows the selection rules used by Ensembl's

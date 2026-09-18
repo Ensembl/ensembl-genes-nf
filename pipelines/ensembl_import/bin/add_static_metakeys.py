@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Add predefined metakeys to the core database from a static file."""
 
 import argparse
