@@ -61,3 +61,37 @@ process FETCH_PROTEINS {
     echo "  perl: \$PERL_VERSION" >> versions.yml
     """
 }
+
+process FETCH_PROTEINS_ALL {
+    tag "${meta.dbname}:all-proteins"
+    label 'fetch_file'
+    storeDir "${params.cacheDir}/${meta.gca}/fasta_all"
+    afterScript "sleep ${params.files_latency}"
+    maxForks 20
+
+    input:
+    val meta
+
+    output:
+    tuple val(meta), path("translations_all.fa"), emit: fasta_file_output
+    path "versions.yml", emit: versions_file
+
+    script:
+    """
+    if [[ -f "${meta.protein_file}" ]]; then
+        echo "Using provided protein file: ${meta.protein_file}"
+        cp -L "${meta.protein_file}" translations_all.fa
+    else
+        perl ${params.enscode}/ensembl-analysis/scripts/protein/dump_translations.pl \
+            -host ${params.host} \
+            -port ${params.port} \
+            -dbname ${meta.dbname} \
+            -user ${params.user_r} \
+            -file translations_all.fa \
+            --species_id ${meta.species_id}
+    fi
+    PERL_VERSION=\$(perl --version | grep -oP 'v\\K[0-9.]+' | head -n1)
+    echo '"FETCH_PROTEINS_ALL":' > versions.yml
+    echo "  perl: \$PERL_VERSION" >> versions.yml
+    """
+}
