@@ -6,7 +6,7 @@ process STRIP_GFF_REGIONS {
         tuple val(meta), path(gff3)
 
     output:
-        tuple val(meta), path("${meta.sample ?: meta.id ?: gff3.simpleName}.no_region.gff3"), emit: cleaned_gff
+        tuple val(meta), path("*.no_region.gff3"), emit: cleaned_gff
         path "versions.yml", emit: versions
 
     script:

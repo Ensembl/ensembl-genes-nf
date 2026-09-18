@@ -17,48 +17,90 @@
 import argparse
 import os
 import gzip
+import json
 import sys
 import urllib.request
 import zipfile
 import shutil
-from urllib.error import HTTPError
+import time
+from http.client import IncompleteRead
+from urllib.error import HTTPError, URLError
 
 
-def download_and_extract(url: str, output_dir: str) -> bool:
+def suppressed_current_accession(zip_file: zipfile.ZipFile, requested_accession: str) -> str | None:
+    """Return NCBI's replacement accession for a non-current assembly package."""
+    report_name = "ncbi_dataset/data/assembly_data_report.jsonl"
+    try:
+        report = json.loads(zip_file.read(report_name).decode().splitlines()[0])
+    except (KeyError, IndexError, json.JSONDecodeError, UnicodeDecodeError):
+        return None
+
+    assembly_info = report.get("assemblyInfo", {})
+    current_accession = report.get("currentAccession") or assembly_info.get("currentAccession")
+    if (
+        assembly_info.get("assemblyStatus") in {"suppressed", "previous"}
+        and current_accession
+        and current_accession != requested_accession
+    ):
+        return current_accession
+    return None
+
+
+def download_and_extract(
+    url: str, output_dir: str, requested_accession: str, allow_suppressed: bool = False
+) -> bool | str:
     """Download genome zip from NCBI and extract .fna files to output_dir.
-    Returns True if successful, False otherwise.
+
+    Returns True if successful, False otherwise, or a replacement accession
+    when an explicitly enabled non-current accession has a currentAccession.
     Inputs:
         url: URL to download the genome zip.
         output_dir: Directory to extract .fna files to.
     Returns:
-        True if download and extraction were successful, False otherwise.
+        True if download and extraction succeeded, False otherwise, or the
+        current replacement accession for an allowed non-current assembly.
     """
     zip_path = os.path.join(output_dir, "genome.zip")
 
-    req = urllib.request.Request(url, headers={"Accept": "application/zip"})
-    with urllib.request.urlopen(req) as r, open(zip_path, "wb") as out:
-        out.write(r.read())
-    extracted_roots: set[str] = set()
-    with zipfile.ZipFile(zip_path) as z:
-        fna_files = [f for f in z.namelist() if f.endswith(".fna")]
-        if not fna_files:
-            return False
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(url, headers={"Accept": "application/zip"})
+            with urllib.request.urlopen(req) as r, open(zip_path, "wb") as out:
+                # Stream the archive so a large download does not occupy an
+                # unnecessary second copy of the ZIP in Python memory.
+                shutil.copyfileobj(r, out)
 
-        for f in fna_files:
-            z.extract(f, output_dir)
-            shutil.move(os.path.join(output_dir, f), os.path.join(output_dir, os.path.basename(f)))
-            # Track top-level extracted directory (e.g. ncbi_dataset)
-            # extracted_roots.add(f.split(os.sep)[0])
-            extracted_roots.add(f.split("/")[0])
+            extracted_roots: set[str] = set()
+            with zipfile.ZipFile(zip_path) as z:
+                fna_files = [f for f in z.namelist() if f.endswith(".fna")]
+                if not fna_files:
+                    if allow_suppressed:
+                        replacement = suppressed_current_accession(z, requested_accession)
+                        if replacement:
+                            os.remove(zip_path)
+                            return replacement
+                    return False
 
-        # Cleanup extracted directory trees
-    for root in extracted_roots:
-        path = os.path.join(output_dir, root)
-        if os.path.isdir(path):
-            shutil.rmtree(path)
+                for f in fna_files:
+                    z.extract(f, output_dir)
+                    shutil.move(os.path.join(output_dir, f), os.path.join(output_dir, os.path.basename(f)))
+                    extracted_roots.add(f.split("/")[0])
 
-    os.remove(zip_path)
-    return True
+            for root in extracted_roots:
+                path = os.path.join(output_dir, root)
+                if os.path.isdir(path):
+                    shutil.rmtree(path)
+
+            os.remove(zip_path)
+            return True
+        except (HTTPError, URLError, IncompleteRead, OSError, zipfile.BadZipFile) as exc:
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+            if attempt == 2:
+                print(f"NCBI download failed after retries: {exc}", file=sys.stderr)
+            else:
+                time.sleep(15 * (attempt + 1))
+    return False
 
 
 def ena_assembly_path(ena_base: str, gca: str) -> str:
@@ -103,7 +145,17 @@ def download_from_ena(ena_base: str, gca: str, output_dir: str) -> bool:
 
         print(f"Downloading genome from ENA: {fasta_url}")
 
-        urllib.request.urlretrieve(fasta_url, gz_path)
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(fasta_url) as response, open(gz_path, "wb") as output:
+                    shutil.copyfileobj(response, output)
+                break
+            except (HTTPError, URLError, IncompleteRead, OSError):
+                if os.path.exists(gz_path):
+                    os.remove(gz_path)
+                if attempt == 2:
+                    return False
+                time.sleep(15 * (attempt + 1))
 
         # Unzip
         fasta_path = gz_path[:-3]
@@ -113,7 +165,7 @@ def download_from_ena(ena_base: str, gca: str, output_dir: str) -> bool:
         os.remove(gz_path)
         return True
 
-    except HTTPError:
+    except (HTTPError, URLError, OSError):
         return False
 
 
@@ -123,6 +175,11 @@ def main():
     parser.add_argument("--version", action="version", version="fetch_genome.py 1.0.0")
     parser.add_argument("--gca", required=True)
     parser.add_argument("--output_dir", required=True)
+    parser.add_argument(
+        "--allow-suppressed-accessions",
+        action="store_true",
+        help="Use NCBI's currentAccession for suppressed or previous assemblies",
+    )
     parser.add_argument(
         "--ncbi_base", default="https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession"
     )
@@ -138,9 +195,29 @@ def main():
 
     print(f"Downloading genome for {args.gca} from NCBI")
 
-    if download_and_extract(ncbi_url, args.output_dir):
+    download_result = download_and_extract(
+        ncbi_url, args.output_dir, args.gca, args.allow_suppressed_accessions
+    )
+    if download_result is True:
         print("Genome downloaded from NCBI")
         sys.exit(0)
+
+    if isinstance(download_result, str):
+        replacement_url = (
+            f"{args.ncbi_base}/{download_result}/download"
+            "?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"
+        )
+        print(
+            f"Requested assembly {args.gca} is non-current; "
+            f"using current accession {download_result} for genome BUSCO",
+            file=sys.stderr,
+        )
+        if download_and_extract(replacement_url, args.output_dir, download_result) is True:
+            print(
+                f"Genome downloaded from NCBI using {download_result} "
+                f"(requested {args.gca})"
+            )
+            sys.exit(0)
     print("NCBI genome not found, trying ENA")
 
     if download_from_ena(args.ena_base, args.gca, args.output_dir):

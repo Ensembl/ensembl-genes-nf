@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AGAT annotation QC sample sheet",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "sample": {
+        "type": "string",
+        "pattern": "^\\S+$"
+      },
+      "genome_fasta": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true
+      },
+      "gff3": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true
+      },
+      "protein_fasta": {
+        "type": "string",
+        "format": "file-path",
+        "exists": true
+      }
+    },
+    "required": ["sample", "gff3"],
+    "additionalProperties": false
+  }
+}

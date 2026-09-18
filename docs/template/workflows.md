@@ -4,14 +4,70 @@ How to design and structure workflows and subworkflows in this repository.
 
 ## Workflow Philosophy
 
-**Workflows orchestrate, modules execute.** Workflows and subworkflows should focus on connecting components, not implementing logic.
+**A useful default is: workflows orchestrate and modules execute.** This keeps
+the dataflow easy to follow, but small pipelines may reasonably combine a few
+layers when introducing more files would add noise.
+
+## Keep parameter ownership at the entrypoint
+
+The entrypoint (`main.nf`) is usually the best place to own named pipeline
+parameters. It validates
+the schema, resolves parameter-dependent files and defaults, and translates
+those values into explicit channels or values before calling the workflow
+layer. This is the boundary between the user's configuration and the
+pipeline's dataflow.
+
+For reusable named workflows and subworkflows, it is usually clearer not to
+reach into `params` for inputs. Instead, declare dependencies in `take:` and
+pass them as arguments. For example:
+
+```groovy
+// main.nf
+workflow {
+    validateParameters()
+    samples_ch = channel.fromPath(params.input)
+    ANALYSIS(samples_ch, params.mode, file(params.reference))
+}
+
+// subworkflows/analysis.nf
+workflow ANALYSIS {
+    take:
+    samples_ch
+    mode
+    reference
+
+    main:
+    if (mode == 'combined') {
+        TOOL_A(samples_ch, reference)
+        TOOL_B(samples_ch, reference)
+    }
+}
+```
+
+This reduces coupling between a reusable subworkflow and a particular
+parameter name, schema, or command-line interface. Another pipeline can reuse
+`ANALYSIS` with a different manifest or parameter schema, provided it supplies
+the same explicit inputs. It also makes dependencies visible in the call site,
+which can make testing, documentation, and later changes easier. Direct
+`params` access can still be reasonable for genuinely pipeline-wide settings;
+the important distinction is whether the dependency is intentional and clear.
+
+The intended direction is therefore:
+
+```text
+named parameters → main.nf → workflows → subworkflows → modules
+```
+
+Each layer can narrow configuration into explicit dataflow. Parameters are
+often easiest to manage at the edge, while reusable components generally work
+best with declared inputs.
 
 ### Key Principles
 
-1. **Workflows are coordinators** - They connect modules and manage data flow
-2. **Keep workflows thin** - Business logic belongs in modules, not workflows
-3. **Subworkflows are reusable** - Design for use across multiple pipelines
-4. **Clear hierarchy** - Main workflow → Subworkflows → Modules
+1. **Workflows coordinate** - They connect modules and manage data flow
+2. **Keep responsibilities visible** - Put logic where it is easiest to test and understand
+3. **Make subworkflows reusable when useful** - Reuse is a benefit, not a requirement
+4. **Use a clear hierarchy when the pipeline needs it** - Main workflow → subworkflows → modules
 
 ## Workflow vs Subworkflow
 
@@ -31,7 +87,7 @@ params.outdir = 'results'
 
 workflow {
     // Create input
-    input_ch = Channel.fromPath(params.input)
+    input_ch = channel.fromPath(params.input)
 
     // Orchestrate subworkflows
     SUBWORKFLOW_A(input_ch)
@@ -39,7 +95,7 @@ workflow {
 }
 ```
 
-**Characteristics**:
+**Typical characteristics**:
 - Entry point for `nextflow run`
 - No `take` or `emit` blocks (unnamed workflow)
 - Defines pipeline-level parameters
@@ -69,13 +125,13 @@ workflow PROCESS_SAMPLES {
 }
 ```
 
-**Characteristics**:
+**Typical characteristics**:
 - Named workflow with `take` and `emit` blocks
 - Reusable across multiple pipelines
 - Encapsulates a logical unit of work
 - Clear inputs and outputs
 
-**When to create a subworkflow**:
+**A subworkflow is especially useful when**:
 - Logic is reused across multiple pipelines
 - Grouping related processes makes sense conceptually
 - You want to test a component independently
@@ -249,7 +305,7 @@ workflow {
 
 ### Subworkflow Outputs
 
-**Always emit what downstream needs**:
+**Emit what downstream needs**:
 
 ```groovy
 workflow MY_SUBWORKFLOW {
@@ -267,7 +323,7 @@ workflow MY_SUBWORKFLOW {
     // Intermediate outputs (if needed downstream)
     intermediate = PROCESS_A.out.results
 
-    // Always emit versions for all processes
+    // Emit versions for all processes when version tracking is part of the pipeline contract
     versions = PROCESS_A.out.versions
         .concat(PROCESS_B.out.versions)
 }
@@ -548,7 +604,7 @@ workflow ALIGN {
 **Subworkflow Design**:
 - Clear take/emit blocks with types
 - One logical unit of work per subworkflow
-- Always emit versions
+- Emit versions when they are part of the pipeline's reproducibility contract
 - Design for reusability
 
 **Channel Operations**:

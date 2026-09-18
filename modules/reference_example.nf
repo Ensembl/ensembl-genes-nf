@@ -10,7 +10,7 @@ process EXAMPLE_MODULE {
     
     // Each job should point to an appropriate singularity container. 
     // these can be specified in the module like this or in a config file (Like Annas Json)
-    container "https://depot.galaxyproject.org/singularity/mulled-v2-example:latest"
+    container "docker://ubuntu@sha256:c664f8f86ed5a386b0a340d981b8f81714e21a8b9c73f658c4bea56aa179d54a"
     
     // Dynamic tagging for better process identification in CLI or reports
     tag "${meta.id}"

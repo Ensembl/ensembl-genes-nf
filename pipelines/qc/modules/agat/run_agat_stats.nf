@@ -5,18 +5,18 @@ process AGAT_RUN_STATS {
         pattern: "*_agat_stats.txt"
     container 'docker://quay.io/biocontainers/agat:1.7.0--pl5321hdfd78af_0'
 
+    // AGAT reads feature_levels.yaml from this path. The pipeline owns the
+    // configuration so users do not need to provide a host path.
     containerOptions {
-        feature_levels_yaml ?
-            "-B ${feature_levels_yaml.resolve()}:/usr/local/lib/perl5/site_perl/auto/share/dist/AGAT/feature_levels.yaml:ro" :
-            ""
+        "-B ${file(feature_levels_yaml)}:/usr/local/lib/perl5/site_perl/auto/share/dist/AGAT/feature_levels.yaml:ro"
     }
 
     input:
         tuple val(meta), path(gff3)
-        val  feature_levels_yaml
+        val feature_levels_yaml
 
     output:
-        tuple val(meta), path("${meta.sample ?: meta.id ?: gff3.simpleName}_agat_stats.txt"), emit: stats_txt
+        tuple val(meta), path("*_agat_stats.txt"), emit: stats_txt
         path "versions.yml", emit: versions
 
     when:
