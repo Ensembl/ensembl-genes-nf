@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Fetch taxonomy info for a taxon_id from NCBI and build Ensembl-style
 meta key/value pairs.
