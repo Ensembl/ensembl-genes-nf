@@ -7,7 +7,10 @@ process TAMA_MERGE {
         'quay.io/biocontainers/gs-tama:1.0.3--hdfd78af_0')}"
 
     input:
-    tuple val(cohort_id), path(beds)
+    // Shard validation deliberately emits the same basename for every BED.
+    // Stage each collection member below a numbered directory so a per-accession
+    // merge can accept all shard outputs without Nextflow filename collisions.
+    tuple val(cohort_id), path(beds, stageAs: 'bed??/*')
 
     output:
     path '*_merged.bed', emit: bed
