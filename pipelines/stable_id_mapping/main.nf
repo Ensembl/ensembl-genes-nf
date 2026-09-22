@@ -2,9 +2,9 @@
 
 nextflow.enable.dsl = 2
 
-include { RESOLVE_AND_ROUTE } from './subworkflows/local/resolve_and_route.nf'
-include { MAPPING_BRANCH } from './subworkflows/local/mapping_branch.nf'
-include { REASSIGNMENT_BRANCH } from './subworkflows/local/reassignment_branch.nf'
+include { RESOLVE_AND_ROUTE } from './subworkflows/resolve_and_route.nf'
+include { MAPPING_BRANCH } from './subworkflows/mapping_branch.nf'
+include { REASSIGNMENT_BRANCH } from './subworkflows/reassignment_branch.nf'
 
 
 workflow {
