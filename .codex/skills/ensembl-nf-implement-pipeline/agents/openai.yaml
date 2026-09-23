@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement Ensembl NF Pipeline"
+  short_description: "Build pipelines using this repository design"
+  default_prompt: "Use $ensembl-nf-implement-pipeline to implement this pipeline change."
