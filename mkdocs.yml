@@ -1,12 +1,12 @@
 copyright: Copyright &copy; [2016-<script>document.write(new Date().getFullYear())</script>]
   <a href="https://www.ebi.ac.uk">EMBL-European Bioinformatics Institute</a>
 docs_dir: docs
-site_name: Ensembl Genes Statistics Pipeline
-site_description: Documentation for the Ensembl Genes Statistics Pipeline
+site_name: Ensembl Genes Nf Pipeline
+site_description: Documentation for the Ensembl Genes Nf Pipeline
 site_author: Ensembl Team
 repo_url: https://github.com/Ensembl/ensembl-genes-nf
 repo_name: Ensembl/ensembl-genes-nf
-site_dir: site_statistics
+site_dir: site_ensembl_genes_nf
 
 
 theme:
@@ -74,6 +74,7 @@ nav:
       - BUSCO: pipelines/statistics/workflows/busco.md
       - OMArk: pipelines/statistics/workflows/omark.md
       - Ensembl Stats: pipelines/statistics/workflows/ensembl-stats.md
+      - Pepstats: pipelines/statistics/workflows/pepstats.md
     - Modules:
           - Overview: pipelines/statistics/modules/index.md  
     - Output: pipelines/statistics/output.md

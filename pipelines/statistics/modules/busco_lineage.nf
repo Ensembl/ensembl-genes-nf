@@ -28,9 +28,9 @@ process BUSCO_LINEAGE {
     label 'busco'
     tag "${meta.gca}:busco_${meta.busco_mode}"
 
-    publishDir "${params.outdir}/${meta.gca}", mode: 'copy',
+    publishDir { "${params.outdir}/${meta.gca}" }, mode: 'copy',
         saveAs: { filename -> filename.startsWith("busco_${meta.busco_mode}") ? filename : null }
-    publishDir "${params.outdir}/${meta.gca}", mode: 'copy', pattern: "versions_busco_${meta.busco_mode}.yml"
+    publishDir { "${params.outdir}/${meta.gca}" }, mode: 'copy', pattern: { "versions_busco_${meta.busco_mode}.yml" }
     afterScript "sleep ${params.files_latency}"
     maxForks 10
 
