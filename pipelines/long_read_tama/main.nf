@@ -78,9 +78,8 @@ workflow {
         ALIGN_LONG_READS.out.bam,
         reference_fasta
     )
-    merge_input = COLLAPSE_LONG_READ_MODELS.out.beds.map { beds -> tuple(params.cohort_id, beds.sort { left, right -> left.name <=> right.name }) }
-    MERGE_LONG_READ_MODELS(merge_input)
-    VALIDATE_COMBINED_MODELS(MERGE_LONG_READ_MODELS.out.bed, params.cohort_id)
+    MERGE_LONG_READ_MODELS(COLLAPSE_LONG_READ_MODELS.out.beds)
+    VALIDATE_COMBINED_MODELS(MERGE_LONG_READ_MODELS.out.bed)
     combined_bed = VALIDATE_COMBINED_MODELS.out.bed
 
     if (run_diamond_validation) {

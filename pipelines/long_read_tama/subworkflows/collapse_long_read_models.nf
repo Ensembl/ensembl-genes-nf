@@ -7,9 +7,16 @@ include { STRINGTIE2_COLLAPSE } from '../modules/stringtie2_collapse.nf'
 include { STRINGTIE3_COLLAPSE } from '../modules/stringtie3_collapse.nf'
 include { BAM_TO_ALIGNMENT_GTF } from '../modules/bam_to_alignment_gtf.nf'
 include { TMERGE_COLLAPSE } from '../modules/tmerge_collapse.nf'
-include { TAMA_MERGE as TAMA_MERGE_ACCESSION } from '../modules/tama_merge.nf'
-include { TMERGE as TMERGE_ACCESSION } from '../modules/tmerge.nf'
-include { VALIDATE_TAMA_OUTPUT } from '../modules/validate_tama_output.nf'
+include { VALIDATE_BACKEND_BED } from '../modules/validate_backend_bed.nf'
+
+def backend_skip_keys(backend, explicit_skips, legacy_skips) {
+    def keys = explicit_skips.findAll { value -> value.startsWith("${backend}:") }
+        .collect { value -> value.substring(backend.size() + 1) }.toSet()
+    if (backend == 'tama') {
+        keys.addAll(legacy_skips)
+    }
+    return keys
+}
 
 workflow COLLAPSE_LONG_READ_MODELS {
     take:
@@ -17,21 +24,14 @@ workflow COLLAPSE_LONG_READ_MODELS {
     reference
 
     main:
-    // bam: tuple val(meta), path(sorted.bam), path(sorted.bam.bai)
     INSPECT_BAM_WORKLOAD(bam)
     inspected_bam = INSPECT_BAM_WORKLOAD.out.workload
-    // Allow an operator to omit individually failed TAMA shards while keeping
-    // the rest of the accession in the run. Values are exact `run:shard`
-    // keys, comma-separated on the command line, for example
-    // `--skip_tama_shards SRR123:10,SRR123:MT`.
-    skip_tama_shards = (params.skip_tama_shards ?: '')
-        .split(',')
-        .collect { it.trim() }
-        .findAll { it }
-        .toSet()
+    requested_backends = params.model_backend == 'all' ? ['tama', 'stringtie2', 'stringtie3', 'tmerge'] : [params.model_backend]
+    legacy_skips = (params.skip_tama_shards ?: '').split(',').collect { it.trim() }.findAll { it }.toSet()
+    explicit_skips = (params.skip_model_shards ?: '').split(',').collect { it.trim() }.findAll { it }.toSet()
     if (params.shard_mode == 'contig') {
         SPLIT_BAM_BY_CONTIG(inspected_bam)
-        contig_bams = SPLIT_BAM_BY_CONTIG.out.shards.flatMap { meta, shard_dir, manifest ->
+        shard_bams = SPLIT_BAM_BY_CONTIG.out.shards.flatMap { meta, shard_dir, manifest ->
             manifest.readLines().drop(1).findAll { it.trim() }.collect { line ->
                 def fields = line.split('\\t', -1)
                 def contig = fields[0]
@@ -41,96 +41,50 @@ workflow COLLAPSE_LONG_READ_MODELS {
                 tuple(meta, contig, resource_class, mapped_reads, bam_file, file("${bam_file}.bai"))
             }
         }
-        run_tama = params.model_backend in ['tama', 'all']
-        run_stringtie2 = params.model_backend in ['stringtie2', 'all']
-        run_stringtie3 = params.model_backend in ['stringtie3', 'all']
-        run_tmerge = params.model_backend in ['tmerge', 'all']
-
-        if (run_tama) {
-            tama_contig_bams = contig_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai ->
-                !skip_tama_shards.contains("${meta.id}:${shard}")
-            }
-            TAMA_COLLAPSE(tama_contig_bams, reference)
-            VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed)
-        }
-        if (run_stringtie2) {
-            STRINGTIE2_COLLAPSE(contig_bams)
-        }
-        if (run_stringtie3) {
-            STRINGTIE3_COLLAPSE(contig_bams)
-        }
-        if (run_tmerge) {
-            BAM_TO_ALIGNMENT_GTF(contig_bams)
-            tmerge_gtf = BAM_TO_ALIGNMENT_GTF.out.gtf.map { meta, shard, reads_gtf -> tuple(meta, shard, reads_gtf) }
-            TMERGE_COLLAPSE(tmerge_gtf)
-        }
-
-        // In comparison mode TAMA remains the canonical downstream model set;
-        // the other backend outputs are published independently for review.
-        selected_beds = run_tama ? VALIDATE_TAMA_OUTPUT.out.bed :
-            (run_stringtie2 ? STRINGTIE2_COLLAPSE.out.bed :
-            (run_stringtie3 ? STRINGTIE3_COLLAPSE.out.bed : TMERGE_COLLAPSE.out.bed))
-        accession_beds = selected_beds.map { meta, _shard, bed -> tuple(meta.id, bed) }
-            .groupTuple()
-            .map { accession, beds -> tuple(accession, beds.sort { left, right -> left.name <=> right.name }) }
-        if (params.merge_tool == 'tmerge' && run_tama) {
-            TMERGE_ACCESSION(accession_beds)
-            final_beds = TMERGE_ACCESSION.out.bed.collect()
-        } else {
-            TAMA_MERGE_ACCESSION(accession_beds)
-            final_beds = TAMA_MERGE_ACCESSION.out.bed.collect()
-        }
-        version_ch = INSPECT_BAM_WORKLOAD.out.versions
-            .mix(SPLIT_BAM_BY_CONTIG.out.versions)
-        if (run_tama) {
-            version_ch = version_ch.mix(TAMA_COLLAPSE.out.versions).mix(VALIDATE_TAMA_OUTPUT.out.versions)
-        }
-        if (run_stringtie2) { version_ch = version_ch.mix(STRINGTIE2_COLLAPSE.out.versions) }
-        if (run_stringtie3) { version_ch = version_ch.mix(STRINGTIE3_COLLAPSE.out.versions) }
-        if (run_tmerge) { version_ch = version_ch.mix(BAM_TO_ALIGNMENT_GTF.out.versions).mix(TMERGE_COLLAPSE.out.versions) }
-        version_ch = version_ch.mix(params.merge_tool == 'tmerge' && run_tama ? TMERGE_ACCESSION.out.versions : TAMA_MERGE_ACCESSION.out.versions)
     } else {
-        whole_bams = inspected_bam.map { meta, bam_file, bai, workload ->
+        shard_bams = inspected_bam.map { meta, bam_file, bai, workload ->
             def mapped_reads = workload.readLines().drop(1).findAll { it.trim() }.collect { it.split('\\t', -1)[2].toLong() }.sum()
             def resource_class = mapped_reads >= params.shard_contig_reads ? 'large' : 'small'
             tuple(meta, 'whole', resource_class, mapped_reads, bam_file, bai)
         }
-        run_tama = params.model_backend in ['tama', 'all']
-        run_stringtie2 = params.model_backend in ['stringtie2', 'all']
-        run_stringtie3 = params.model_backend in ['stringtie3', 'all']
-        run_tmerge = params.model_backend in ['tmerge', 'all']
-        if (run_tama) {
-            tama_whole_bams = whole_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai ->
-                !skip_tama_shards.contains("${meta.id}:${shard}")
-            }
-            TAMA_COLLAPSE(tama_whole_bams, reference)
-            VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed)
-        }
-        if (run_stringtie2) { STRINGTIE2_COLLAPSE(whole_bams) }
-        if (run_stringtie3) { STRINGTIE3_COLLAPSE(whole_bams) }
-        if (run_tmerge) {
-            BAM_TO_ALIGNMENT_GTF(whole_bams)
-            tmerge_gtf = BAM_TO_ALIGNMENT_GTF.out.gtf.map { meta, shard, reads_gtf -> tuple(meta, shard, reads_gtf) }
-            TMERGE_COLLAPSE(tmerge_gtf)
-        }
-        selected_beds = run_tama ? VALIDATE_TAMA_OUTPUT.out.bed :
-            (run_stringtie2 ? STRINGTIE2_COLLAPSE.out.bed :
-            (run_stringtie3 ? STRINGTIE3_COLLAPSE.out.bed : TMERGE_COLLAPSE.out.bed))
-        final_beds = selected_beds.map { _meta, _shard, bed -> bed }.collect()
-        version_ch = INSPECT_BAM_WORKLOAD.out.versions
-        if (run_tama) { version_ch = version_ch.mix(TAMA_COLLAPSE.out.versions).mix(VALIDATE_TAMA_OUTPUT.out.versions) }
-        if (run_stringtie2) { version_ch = version_ch.mix(STRINGTIE2_COLLAPSE.out.versions) }
-        if (run_stringtie3) { version_ch = version_ch.mix(STRINGTIE3_COLLAPSE.out.versions) }
-        if (run_tmerge) { version_ch = version_ch.mix(BAM_TO_ALIGNMENT_GTF.out.versions).mix(TMERGE_COLLAPSE.out.versions) }
     }
 
-    collapse_reports = INSPECT_BAM_WORKLOAD.out.workload.map { _meta, _bam, _bai, workload -> workload }
-    if (params.model_backend in ['tama', 'all']) {
-        collapse_reports = collapse_reports.mix(TAMA_COLLAPSE.out.read).mix(TAMA_COLLAPSE.out.status).mix(TAMA_COLLAPSE.out.stderr).mix(VALIDATE_TAMA_OUTPUT.out.report)
+    raw_beds = channel.empty()
+    if (requested_backends.contains('tama')) {
+        tama_bams = shard_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai -> !backend_skip_keys('tama', explicit_skips, legacy_skips).contains("${meta.id}:${shard}") }
+        TAMA_COLLAPSE(tama_bams, reference)
+        raw_beds = raw_beds.mix(TAMA_COLLAPSE.out.bed.map { meta, shard, bed -> tuple('tama', meta, shard, bed) })
     }
+    if (requested_backends.contains('stringtie2')) {
+        stringtie2_bams = shard_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai -> !backend_skip_keys('stringtie2', explicit_skips, legacy_skips).contains("${meta.id}:${shard}") }
+        STRINGTIE2_COLLAPSE(stringtie2_bams)
+        raw_beds = raw_beds.mix(STRINGTIE2_COLLAPSE.out.bed.map { meta, shard, bed -> tuple('stringtie2', meta, shard, bed) })
+    }
+    if (requested_backends.contains('stringtie3')) {
+        stringtie3_bams = shard_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai -> !backend_skip_keys('stringtie3', explicit_skips, legacy_skips).contains("${meta.id}:${shard}") }
+        STRINGTIE3_COLLAPSE(stringtie3_bams)
+        raw_beds = raw_beds.mix(STRINGTIE3_COLLAPSE.out.bed.map { meta, shard, bed -> tuple('stringtie3', meta, shard, bed) })
+    }
+    if (requested_backends.contains('tmerge')) {
+        tmerge_bams = shard_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai -> !backend_skip_keys('tmerge', explicit_skips, legacy_skips).contains("${meta.id}:${shard}") }
+        BAM_TO_ALIGNMENT_GTF(tmerge_bams)
+        tmerge_gtf = BAM_TO_ALIGNMENT_GTF.out.gtf.map { meta, shard, reads_gtf -> tuple(meta, shard, reads_gtf) }
+        TMERGE_COLLAPSE(tmerge_gtf)
+        raw_beds = raw_beds.mix(TMERGE_COLLAPSE.out.bed.map { meta, shard, bed -> tuple('tmerge', meta, shard, bed) })
+    }
+
+    VALIDATE_BACKEND_BED(raw_beds)
+    collapse_reports = INSPECT_BAM_WORKLOAD.out.workload
+    if (requested_backends.contains('tama')) { collapse_reports = collapse_reports.mix(TAMA_COLLAPSE.out.status).mix(TAMA_COLLAPSE.out.stderr) }
+    version_ch = INSPECT_BAM_WORKLOAD.out.versions.mix(SPLIT_BAM_BY_CONTIG.out.versions).mix(VALIDATE_BACKEND_BED.out.versions)
+    if (requested_backends.contains('tama')) { version_ch = version_ch.mix(TAMA_COLLAPSE.out.versions) }
+    if (requested_backends.contains('stringtie2')) { version_ch = version_ch.mix(STRINGTIE2_COLLAPSE.out.versions) }
+    if (requested_backends.contains('stringtie3')) { version_ch = version_ch.mix(STRINGTIE3_COLLAPSE.out.versions) }
+    if (requested_backends.contains('tmerge')) { version_ch = version_ch.mix(BAM_TO_ALIGNMENT_GTF.out.versions).mix(TMERGE_COLLAPSE.out.versions) }
 
     emit:
-    beds = final_beds
+    beds = VALIDATE_BACKEND_BED.out.bed
+    statuses = VALIDATE_BACKEND_BED.out.status
     collapse_reports
     versions = version_ch
 }

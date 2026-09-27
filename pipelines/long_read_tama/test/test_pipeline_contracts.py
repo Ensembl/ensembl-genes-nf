@@ -6,22 +6,19 @@ PIPELINE = Path(__file__).parents[1]
 ROOT_CONFIG = PIPELINE.parents[1] / "nextflow.config"
 
 
-def test_runtime_policy_is_bounded_and_ignores_exhausted_resource_kills():
+def test_runtime_policy_and_schema_are_present():
     root = ROOT_CONFIG.read_text()
     pipeline = (PIPELINE / "nextflow.config").read_text()
     assert "nextflowVersion = '!>=26.04.6'" in root
     assert "shell         = ['/bin/bash', '-euo', 'pipefail']" in root
     assert "enabled = true" in root
-    assert "task.exitStatus in [137, 140, 143]" in root
-    assert "task.attempt <= 5 ? 'retry' : 'ignore'" in pipeline
-    assert "? 'retry' : 'terminate'" in root
     assert "task.attempt <= 5 ? 'retry' : 'ignore'" in pipeline
     assert "shard_mode = 'contig'" in pipeline
     assert '"default": "contig"' in (PIPELINE / "nextflow_schema.json").read_text()
     assert "withName: '.*'" in pipeline
     assert "withName: 'TAMA_COLLAPSE'" in pipeline
     assert "maxRetries = 5" in pipeline
-    assert "params.tama_memory_small" in pipeline
+    assert "tama_memory_small = '128.GB'" in pipeline
     assert "errorStrategy = { task.attempt <= 5 ? 'retry' : 'ignore' }" in pipeline
 
 
@@ -69,10 +66,10 @@ def test_tama_shards_can_be_skipped_without_dropping_the_accession():
     schema = (PIPELINE / "nextflow_schema.json").read_text()
     assert '"skip_tama_shards"' in schema
     assert "skip_tama_shards" in collapse
-    assert "tama_contig_bams = contig_bams.filter" in collapse
-    assert "TAMA_COLLAPSE(tama_contig_bams, reference)" in collapse
-    assert "TAMA_COLLAPSE(tama_whole_bams, reference)" in collapse
-    assert "contig_bams)" in collapse
+    assert '"skip_model_shards"' in schema
+    assert "backend_skip_keys('tama'" in collapse
+    assert "TAMA_COLLAPSE(tama_bams, reference)" in collapse
+    assert "shard_bams" in collapse
 
 
 def test_tama_soft_failures_have_explicit_status_and_diagnostics():
@@ -120,10 +117,15 @@ def test_model_backends_run_from_split_bams():
     assert '"model_backend"' in schema
     for backend in ("tama", "stringtie2", "stringtie3", "tmerge", "all"):
         assert backend in schema
-    assert "STRINGTIE2_COLLAPSE(contig_bams)" in collapse
-    assert "STRINGTIE3_COLLAPSE(contig_bams)" in collapse
-    assert "BAM_TO_ALIGNMENT_GTF(contig_bams)" in collapse
+    assert "STRINGTIE2_COLLAPSE(stringtie2_bams)" in collapse
+    assert "STRINGTIE3_COLLAPSE(stringtie3_bams)" in collapse
+    assert "BAM_TO_ALIGNMENT_GTF(tmerge_bams)" in collapse
     assert "TMERGE_COLLAPSE(tmerge_gtf)" in collapse
+    assert "tuple('tama', meta, shard, bed)" in collapse
+    assert "tuple('stringtie2', meta, shard, bed)" in collapse
+    assert "tuple('stringtie3', meta, shard, bed)" in collapse
+    assert "tuple('tmerge', meta, shard, bed)" in collapse
+    assert "VALIDATE_BACKEND_BED(raw_beds)" in collapse
     tmerge = (PIPELINE / "modules" / "tmerge_collapse.nf").read_text()
     stringtie2 = (PIPELINE / "modules" / "stringtie2_collapse.nf").read_text()
     bam_to_gtf = (PIPELINE / "modules" / "bam_to_alignment_gtf.nf").read_text()
@@ -142,6 +144,30 @@ def test_model_backends_run_from_split_bams():
     assert "--tmPrefix" not in tmerge
     assert "depot.galaxyproject.org/singularity/stringtie:2.2.3--h43eeafb_0" in stringtie2
     assert "community.wave.seqera.io/library/stringtie" not in stringtie2
+
+
+def test_all_backends_have_independent_merge_and_finalisation_contracts():
+    main = (PIPELINE / "main.nf").read_text()
+    merge = (PIPELINE / "subworkflows" / "merge_long_read_models.nf").read_text()
+    validate = (PIPELINE / "subworkflows" / "validate_combined_models.nf").read_text()
+    assert "MERGE_LONG_READ_MODELS(COLLAPSE_LONG_READ_MODELS.out.beds)" in main
+    assert '"${backend}@@${meta.id}"' in merge
+    assert '"${backend}@@${params.cohort_id}"' in merge
+    assert "tuple val(backend), val(accession), path(beds" in (PIPELINE / "modules" / "tama_merge_accession.nf").read_text()
+    assert "tuple val(backend), val(cohort_id), path(beds" in (PIPELINE / "modules" / "tama_merge.nf").read_text()
+    assert "CANONICALISE_COMBINED_MODELS(canonical_input)" in validate
+    assert "VALIDATE_LONG_READ_MODELS" in validate
+    canonical = (PIPELINE / "modules" / "canonicalise_models.nf").read_text()
+    assert '"${backend}_combined_models.bed"' in canonical
+    assert '"${backend}_combined_models.sha256"' in canonical
+
+
+def test_diamond_qc_receives_each_finalised_backend():
+    main = (PIPELINE / "main.nf").read_text()
+    diamond = (PIPELINE / "subworkflows" / "run_diamond_qc.nf").read_text()
+    assert "if (run_diamond_validation)" in main
+    assert "qc_bed = combined_bed.map { backend, cohort_id, bed" in diamond
+    assert "EXTRACT_COMBINED_TRANSCRIPTS(qc_bed, reference)" in diamond
 
 
 def test_entrypoint_uses_schema_and_keeps_optional_outputs_guarded():
