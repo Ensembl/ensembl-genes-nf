@@ -1,7 +1,7 @@
 process MAKE_TRANSCRIPTOME_ANNOTATION {
     tag "${meta.id}"
     label 'process_medium'
-    container 'python:3.12-bookworm'
+    container 'ghcr.io/jackcurragh/translon-python:1.0.0'
     input:
     tuple val(meta), path(bam), path(bai)
     path gtf
