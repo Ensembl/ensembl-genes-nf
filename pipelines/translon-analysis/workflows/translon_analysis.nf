@@ -43,6 +43,8 @@ include { MAKE_PARTITION_MANIFEST } from '../modules/preparation/partition_manif
 include { PREPARE_RIBOCODE_SHARD } from '../modules/preparation/ribocode_shard.nf'
 include { PREPARE_IRIBO_SHARD } from '../modules/preparation/prepare_iribo_shard.nf'
 include { MERGE_IRIBO_SHARDS } from '../modules/preparation/merge_iribo_shards.nf'
+include { MAKE_PRICE_CONTIG_MANIFEST; PREPARE_PRICE_CONTIG } from '../modules/preparation/price_contig.nf'
+include { GEDI_PRICE_SHARDED } from '../modules/callers/gedi_price_sharded.nf'
 
 def tool_selected(selected_tools, name) {
     def tool_groups = [
@@ -312,23 +314,39 @@ workflow TRANSLON_ANALYSIS {
         STANDARDISE_ORFRATER(RUN_ORFRATER.out.raw, 'orfrater', orf_gtf)
     }
     if (tool_selected(selected_tools, 'price')) {
-        price_index_input = fasta
-            .combine(orf_gtf)
-            .map { ref_fasta, ref_gtf -> tuple([id: params.gedi_reference_id ?: 'reference'], ref_fasta, ref_gtf) }
-        GEDI_INDEXGENOME(price_index_input)
-        // PRICE has a hard practical limit in GEDI's cluster index.  Keep
-        // per-sample execution in the normal non-merged mode; only build a
-        // cohort-level PRICE input when the caller was explicitly asked to
-        // operate on merged inputs.
-        price_bam_input = params.merge_inputs
-            ? gn
-                .map { _meta, bam, bai -> tuple('price_cohort', bam, bai) }
-                .groupTuple()
-                .map { cohort, bams, bais -> tuple([id: cohort], bams, bais) }
-            : gn
-                .map { meta, bam, bai -> tuple([id: meta.id], [bam], [bai]) }
-        GEDI_PRICE(price_bam_input, GEDI_INDEXGENOME.out.index)
-        STANDARDISE_PRICE(GEDI_PRICE.out.orfs_tsv, 'price', orf_gtf)
+        if (!params.partition_fai) {
+            log.warn 'PRICE chromosome sharding requires --partition_fai; skipping PRICE while continuing other callers'
+        } else {
+            price_fai = file(params.partition_fai, checkIfExists: true)
+            price_manifest_inputs = gn
+                .map { meta, bam, bai -> tuple(meta, price_fai, bam) }
+            MAKE_PRICE_CONTIG_MANIFEST(price_manifest_inputs)
+            price_contigs = MAKE_PRICE_CONTIG_MANIFEST.out.manifest
+                .map { meta, manifest -> tuple(meta.id, meta, manifest) }
+                .flatMap { id, meta, manifest -> manifest.readLines().findAll { it && !it.startsWith('#') }.collect { line ->
+                    def fields = line.split('\\t')
+                    tuple(id, meta, fields[0])
+                } }
+            price_inputs = gn
+                .map { meta, bam, bai -> tuple(meta.id, meta, bam, bai) }
+                .combine(orf_gtf)
+                .combine(fasta)
+                .combine(price_fai)
+                .join(price_contigs, by: 0)
+                .map { id, meta, bam, bai, gtf_file, fasta_file, fai_file, _id2, _manifest_meta, contig ->
+                    tuple(meta + [shard_id: contig], bam, bai, gtf_file, fasta_file, fai_file, contig)
+                }
+            PREPARE_PRICE_CONTIG(price_inputs)
+            price_index_inputs = PREPARE_PRICE_CONTIG.out.contig
+                .map { meta, bam, bai, gtf_file, fasta_file -> tuple([id: meta.shard_id], fasta_file, gtf_file) }
+            GEDI_INDEXGENOME(price_index_inputs)
+            price_run_inputs = PREPARE_PRICE_CONTIG.out.contig
+                .map { meta, bam, bai, gtf_file, fasta_file -> tuple(meta.shard_id, meta, bam, bai, gtf_file, fasta_file) }
+                .join(GEDI_INDEXGENOME.out.index.map { meta, index -> tuple(meta.id, index) }, by: 0)
+                .map { _id, meta, bam, bai, gtf_file, fasta_file, index -> tuple(meta, meta.shard_id, bam, bai, gtf_file, fasta_file, index) }
+            GEDI_PRICE_SHARDED(price_run_inputs)
+            STANDARDISE_PRICE(GEDI_PRICE_SHARDED.out.orfs_tsv, 'price', orf_gtf)
+        }
     }
     if (run_riborf) {
         RUN_RIBORF(riborf_inputs)
