@@ -15,13 +15,12 @@ process PREPARE_RIBOTIE_DATA {
     """
     set -euo pipefail
     mkdir -p raw
-    cat > raw/ribotie.yml <<-END_CONFIG
-    gtf_path: ${gtf}
-    fa_path: ${fasta}
-    ribo_paths:
-      ${meta.id}: ${bam}
-    h5_path: raw/${meta.id}.h5
-    END_CONFIG
+    printf '%s\\n' \\
+        'gtf_path: ${gtf}' \\
+        'fa_path: ${fasta}' \\
+        'ribo_paths:' \\
+        '  ${meta.id}: ${bam}' \\
+        'h5_path: raw/${meta.id}.h5' > raw/ribotie.yml
     # Parse reference features and mapped reads before the GPU process. This
     # creates the HDF5 data store consumed by RiboTIE's fine-tuning/inference
     # stage and keeps GPU time focused on model execution.
