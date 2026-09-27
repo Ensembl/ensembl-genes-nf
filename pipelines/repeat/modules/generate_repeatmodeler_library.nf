@@ -15,7 +15,7 @@ process GENERATE_REPEATMODELER_LIBRARY {
     label 'repeatmodeler'
     publishDir "${params.outdir}/${meta.gca}/library", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-
+    maxForks 2
     input:
     val(meta)
 

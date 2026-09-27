@@ -64,14 +64,95 @@ def download_ncbi_assembly_report(gca: str, dest_folder: str | Path = ".") -> Pa
 
     return out_path
 
+import shutil
+import time
+import urllib.error
+import urllib.request
+import zipfile
+from pathlib import Path
 
-def download_and_extract(#pylint: disable=too-many-locals
+def download_and_extract(
     url: str,
     output_dir: str | Path,
     max_retries: int = 8,
     timeout: int = 60,
 ) -> bool:
-    """Download a zip file from the given URL and extract .fna files to the output directory.
+    """Download a zip file from the given URL and extract .fna files to the output directory."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    zip_path = output_dir / "genome.zip"
+
+    headers = {
+        "Accept": "application/zip",
+        # NCBI recommends providing a meaningful User-Agent
+        "User-Agent": "GenomeDownloader/1.0 (your_email@example.com)",
+    }
+
+    # Download with retries
+    for attempt in range(max_retries):
+        try:
+            req = urllib.request.Request(url, headers=headers)
+
+            with urllib.request.urlopen(req, timeout=timeout) as r, open(zip_path, "wb") as out:
+                shutil.copyfileobj(r, out)
+
+            break  # success
+
+        except urllib.error.HTTPError as e:
+            if e.code == 429:
+                retry_after = e.headers.get("Retry-After")
+
+                if retry_after is not None:
+                    wait = float(retry_after)
+                else:
+                    # exponential backoff with cap
+                    wait = min(2 ** attempt, 300)
+
+                print(f"Rate limited (429). Waiting {wait:.0f}s before retry...")
+                time.sleep(wait)
+                continue
+
+            raise
+
+        except urllib.error.URLError as e:
+            if attempt == max_retries - 1:
+                raise
+
+            wait = min(2 ** attempt, 60)
+            print(f"Network error ({e}). Retrying in {wait}s...")
+            time.sleep(wait)
+
+    else:
+        return False
+
+    extracted_roots = set()
+
+    with zipfile.ZipFile(zip_path) as z:
+        files_to_extract = [f for f in z.namelist() if f.endswith(".fna")]
+
+        if not files_to_extract:
+            zip_path.unlink(missing_ok=True)
+            return False
+
+        for f in files_to_extract:
+            z.extract(f, output_dir)
+
+            src = output_dir / f
+            dst = output_dir / Path(f).name
+            shutil.move(src, dst)
+
+            extracted_roots.add(Path(f).parts[0])
+
+    for root in extracted_roots:
+        path = output_dir / root
+        if path.is_dir():
+            shutil.rmtree(path)
+
+    zip_path.unlink(missing_ok=True)
+    return True
+def download_and_extract1(url: str, output_dir: str) -> bool:
+    """Download genome zip from NCBI and extract .fna files to output_dir.
     Returns True if successful, False otherwise.
     Inputs:
         url: URL to download the zip file from.

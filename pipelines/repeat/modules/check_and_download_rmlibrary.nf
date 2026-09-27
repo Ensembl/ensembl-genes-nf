@@ -42,15 +42,31 @@ process CHECK_AND_DOWNLOAD_RMLIBRARY {
     script:
     """
     set -e
-    if wget --spider $url 2>/dev/null; then
-        wget -O ${meta.gca}.repeatmodeler.fa $url
-    else
-        echo "File not found: $url" >&2
-        exit 1
-    fi
+
+    if wget \
+        --tries=5 \
+            --timeout=60 \
+                --retry-connrefused \
+                    --waitretry=10 \
+                        -O "${meta.gca}.repeatmodeler.fa" \
+                            "$url"
+                            then
+                                echo "Download OK"
+                                else
+                                        echo "Download failed " >&2
+                                           exit 1
+                                            fi
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         wget: \$(wget --version 2>&1 | head -n 1 | sed 's/GNU Wget //')
     END_VERSIONS
     """
+    /* set -e
+        if wget --spider $url 2>/dev/null; then
+                wget -O ${meta.gca}.repeatmodeler.fa $url
+                    else
+                            echo "File not found: $url" >&2
+                                    exit 1
+                                        fi
+                                        */
 }

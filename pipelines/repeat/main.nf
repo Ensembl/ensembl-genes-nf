@@ -156,6 +156,10 @@ workflow REPEAT_ANNOTATION {
         ch_versions_file = ch_versions_file.mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.versions_file)
         
         // Merge both library sources (generated + downloaded)
+        // Outputs have format: tuple val(meta), path(genome_file), path(library_file)
+        //allLibraries = GENERATE_REPEATMODELER_LIBRARY.out.repeatmodeler_library_out
+        
+        if(params.run_repeatmasker) {
         allLibraries = repeatModelerInput
             .mix(rmlibrary)
             .view { meta,  library -> "Library ready for ${meta.gca}: ${library}" }
@@ -170,6 +174,13 @@ workflow REPEAT_ANNOTATION {
 
             tuple(meta, library)
             }
+        
+        //if(params.run_repeatmasker) {
+        
+        // Stage 4: Run RepeatMasker to identify and mask repeats
+        RUN_REPEATMASKER(allLibraries)
+        
+        ch_versions_file = ch_versions_file.mix(RUN_REPEATMASKER.out.versions_file)
         }
 
         ch_repeat_output = channel.empty()
