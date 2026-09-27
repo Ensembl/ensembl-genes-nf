@@ -12,10 +12,12 @@ workflow RUN_DIAMOND_QC {
     reference
 
     main:
-    // combined_bed: tuple val(backend), val(cohort_id), path(combined_models.bed)
+    // combined_bed: tuple val(backend), val(meta), path(combined_models.bed)
+    // Metadata is already attached by VALIDATE_COMBINED_MODELS; do not wrap
+    // the map again before passing it to the Diamond QC processes.
     if (!params.diamond_reference_db && !params.diamond_reference_proteins)
         error 'Provide --diamond_reference_db or --diamond_reference_proteins when --run_diamond_validation is enabled'
-    qc_bed = combined_bed.map { backend, cohort_id, bed -> tuple([id: cohort_id, backend: backend], bed) }
+    qc_bed = combined_bed.map { _backend, meta, bed -> tuple(meta, bed) }
     EXTRACT_COMBINED_TRANSCRIPTS(qc_bed, reference)
     PREDICT_LONGEST_ATG_ORFS(EXTRACT_COMBINED_TRANSCRIPTS.out.transcripts)
 
