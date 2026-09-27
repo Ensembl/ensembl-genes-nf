@@ -20,6 +20,15 @@ workflow COLLAPSE_LONG_READ_MODELS {
     // bam: tuple val(meta), path(sorted.bam), path(sorted.bam.bai)
     INSPECT_BAM_WORKLOAD(bam)
     inspected_bam = INSPECT_BAM_WORKLOAD.out.workload
+    // Allow an operator to omit individually failed TAMA shards while keeping
+    // the rest of the accession in the run. Values are exact `run:shard`
+    // keys, comma-separated on the command line, for example
+    // `--skip_tama_shards SRR123:10,SRR123:MT`.
+    skip_tama_shards = (params.skip_tama_shards ?: '')
+        .split(',')
+        .collect { it.trim() }
+        .findAll { it }
+        .toSet()
     if (params.shard_mode == 'contig') {
         SPLIT_BAM_BY_CONTIG(inspected_bam)
         contig_bams = SPLIT_BAM_BY_CONTIG.out.shards.flatMap { meta, shard_dir, manifest ->
@@ -38,7 +47,10 @@ workflow COLLAPSE_LONG_READ_MODELS {
         run_tmerge = params.model_backend in ['tmerge', 'all']
 
         if (run_tama) {
-            TAMA_COLLAPSE(contig_bams, reference)
+            tama_contig_bams = contig_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai ->
+                !skip_tama_shards.contains("${meta.id}:${shard}")
+            }
+            TAMA_COLLAPSE(tama_contig_bams, reference)
             VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed)
         }
         if (run_stringtie2) {
@@ -87,7 +99,13 @@ workflow COLLAPSE_LONG_READ_MODELS {
         run_stringtie2 = params.model_backend in ['stringtie2', 'all']
         run_stringtie3 = params.model_backend in ['stringtie3', 'all']
         run_tmerge = params.model_backend in ['tmerge', 'all']
-        if (run_tama) { TAMA_COLLAPSE(whole_bams, reference); VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed) }
+        if (run_tama) {
+            tama_whole_bams = whole_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai ->
+                !skip_tama_shards.contains("${meta.id}:${shard}")
+            }
+            TAMA_COLLAPSE(tama_whole_bams, reference)
+            VALIDATE_TAMA_OUTPUT(TAMA_COLLAPSE.out.bed)
+        }
         if (run_stringtie2) { STRINGTIE2_COLLAPSE(whole_bams) }
         if (run_stringtie3) { STRINGTIE3_COLLAPSE(whole_bams) }
         if (run_tmerge) {

@@ -126,6 +126,12 @@ Collapse. TAMA runs per contig, and those beds are merged per accession before
 the cohort merge. Use `--shard_mode none` only for deliberately small inputs.
 Arbitrary read sharding and genomic windows are intentionally unsupported.
 
+If an individual TAMA shard has been deliberately abandoned, it can be omitted
+without dropping the rest of its accession by passing exact comma-separated
+`run:shard` keys, for example
+`--skip_tama_shards SRR32588732:10,SRR32588732:MT`. The remaining successful
+shards are still included in the accession and cohort merges.
+
 Known per-shard TAMA failures are recorded in `tama_status.tsv` and do not
 produce a BED for that shard; successful shards continue to the accession and
 cohort merges. TAMA exit statuses are captured by the shard adapter and are

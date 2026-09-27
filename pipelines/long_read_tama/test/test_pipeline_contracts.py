@@ -64,6 +64,17 @@ def test_contig_manifest_stays_keyed_to_its_shard_directory():
     assert ".out.shards.combine" not in collapse
 
 
+def test_tama_shards_can_be_skipped_without_dropping_the_accession():
+    collapse = (PIPELINE / "subworkflows" / "collapse_long_read_models.nf").read_text()
+    schema = (PIPELINE / "nextflow_schema.json").read_text()
+    assert '"skip_tama_shards"' in schema
+    assert "skip_tama_shards" in collapse
+    assert "tama_contig_bams = contig_bams.filter" in collapse
+    assert "TAMA_COLLAPSE(tama_contig_bams, reference)" in collapse
+    assert "TAMA_COLLAPSE(tama_whole_bams, reference)" in collapse
+    assert "contig_bams)" in collapse
+
+
 def test_tama_soft_failures_have_explicit_status_and_diagnostics():
     tama = (PIPELINE / "modules" / "tama_collapse.nf").read_text()
     runner = (PIPELINE / "bin" / "run_tama_collapse.sh").read_text()
