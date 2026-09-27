@@ -37,7 +37,7 @@ process PREPARE_PRICE_CONTIG {
     samtools view -bh ${bam} '${contig}' > price.bam
     samtools index price.bam
     samtools faidx ${fasta} '${contig}' > price.fa
-    awk -v c='${contig}' '($0 ~ /^#/ || $1 == c)' ${gtf} > price.gtf
+    awk -v c='${contig}' '(\$0 ~ /^#/ || \$1 == c)' ${gtf} > price.gtf
     test -s price.fa && test -s price.gtf
     """
 
