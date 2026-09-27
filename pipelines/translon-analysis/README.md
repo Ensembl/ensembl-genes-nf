@@ -1,0 +1,207 @@
+# Unified translon analysis
+
+This pipeline consumes published `pipelines/riboseq` alignments, or an explicit
+samplesheet, and runs selected ORF callers. Each caller has a native runner and
+a standardiser. Native outputs are archived separately; standardised TSV and
+BED12 files are used for optional consensus and characterisation.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A["Ribo-seq output tree or samplesheet"] --> B["Input contract"]
+    B --> C["Optional transcriptome/genome BAM merge"]
+    C --> D["Caller runners"]
+    D --> E["Native output archive"]
+    D --> F["Caller standardisers"]
+    F --> G["Optional consensus"]
+    G --> H["Optional characterisation"]
+```
+
+## Quick start
+
+Run directly from a Ribo-seq output directory:
+
+```bash
+nextflow run pipelines/translon-analysis \
+  --riboseq_outdir results/riboseq \
+  --gtf references/annotation.gtf \
+  --fasta references/genome.fa \
+  --tools all \
+  -profile local
+```
+
+For a defined cohort, generate a samplesheet first:
+
+```bash
+python pipelines/translon-analysis/bin/make_samplesheet.py \
+  --riboseq-outdir results/riboseq \
+  --merge-group pancreas \
+  --output results/riboseq_samplesheet.tsv
+
+nextflow run pipelines/translon-analysis \
+  --samplesheet results/riboseq_samplesheet.tsv \
+  --gtf references/annotation.gtf \
+  --fasta references/genome.fa \
+  --tools ribocode,ribotricer,orfquant,price
+```
+
+`--samplesheet` is the better choice for cohorts, custom filenames, pooling,
+and reproducible reruns. `--riboseq_outdir` discovers conventional STAR BAMs
+and adjacent indexes. Override discovery with
+`--transcriptome_bam_glob`, `--genome_bam_glob`, or `--offsets_glob` when
+needed.
+
+## Caller selection
+
+`--tools` accepts individual callers, `all`, or one of these overlapping method
+groups:
+
+- `periodicity`: RiboCode, Ribotricer, Rp-Bp
+- `frame_tests`: RiboCode, Ribo-TISH
+- `learned_models`: ORF-RATER, RibORF, RiboTIE
+- `probabilistic`: Rp-Bp, PRICE
+- `candidate_scoring`: iRibo, ORFquant
+
+The currently wired callers are RiboCode, Ribotricer, ORFquant, Rp-Bp, iRibo,
+ORF-RATER, PRICE, RibORF, Ribo-TISH, and RiboTIE. RiboTaper is not part of
+this workflow.
+
+The usual alignment contracts are:
+
+- transcriptome BAM: RiboCode and Ribotricer;
+- genome BAM, falling back to transcriptome BAM: ORFquant, iRibo, Ribo-TISH,
+  RiboTIE, and PRICE;
+- transcriptome BAM plus derived genePred/BED12/SAM inputs: ORF-RATER and
+  RibORF;
+- FASTQ plus ribosomal and adapter FASTAs: Rp-Bp.
+
+RiboTIE is split into two tasks. `PREPARE_RIBOTIE_DATA` runs on the CPU and
+creates the per-sample HDF5 data store. `RUN_RIBOTIE` is the only GPU task: it
+uses RiboTIE's bundled human pretrained model, fine-tunes it for the sample,
+and generates the native predictions and result tables. No separate model
+training job is required for the default human model. Custom pretraining can
+be passed through `args_ribotie` when a study requires a species-specific
+model.
+
+Caller tasks retry up to three times and then use Nextflow's `ignore` strategy,
+so one failed caller does not terminate the other callers. Missing optional
+inputs (for example Rp-Bp FASTQ resources, an unavailable RiboTIE GPU, or an
+invalid optional external ORF-RATER model) are logged and skip only that
+caller. The required input contract and explicitly requested characterisation
+inputs remain hard validation errors.
+
+In per-sample mode, RibORF consumes the QC-selected offsets from the
+samplesheet. In merged mode, per-sample offsets are deliberately not combined:
+the merged transcriptome BAM is first passed through RiboMetric, and RibORF
+uses the newly calculated pooled offsets. Merged runs therefore require
+`--ribometric_annotation`, pointing to the same RiboMetric annotation used by
+the Ribo-seq run. The pooled RiboMetric report and offset files are published
+under `RiboMetric/`.
+
+### Collapsed-read BAMs
+
+The input BAMs may contain one alignment per unique sequence, with observed
+read multiplicity encoded in the read name as a suffix such as `_x2` or
+`_x15`. The pipeline inflates both transcriptome and genome BAMs immediately
+after the merge/input step so every downstream caller sees one alignment
+record per sequenced read. BAMs without a multiplicity suffix are treated as
+single-copy records; malformed `_x` suffixes fail the inflation process.
+
+ORFquant uses the same offset contract. Its cutoff file is generated from the
+per-sample QC offsets or the merged RiboMetric offsets, rather than from a
+fixed offset string. This keeps ORFquant aligned with the BAM being analysed.
+ORF-RATER trains a dataset-specific model by default from the inflated
+transcriptome BAM, the transcript BED12 models, the reference FASTA, and the
+pooled/per-sample P-site offsets. The trained bundle is written under
+`trained_models/` and then passed directly to ORF-RATER quantification. An
+existing model bundle can still be supplied with `--orfrater_model`; it must
+contain `orfratings.h5`, `metagene.txt`, and `offsets.txt`.
+
+For a BAM-only run, set:
+
+```bash
+--skip_fastq_tools true
+```
+
+This skips Rp-Bp even if it is included by `--tools all`. It does not skip
+RibORF, which uses a SAM representation derived from the transcriptome BAM and
+still requires offsets.
+
+RiboTIE is GPU-only in this workflow. It requires `--ribotie_gpu true` and a
+Nextflow executor/profile that honours the explicit one-GPU SLURM GRES request.
+The process selects the CPU or CUDA image directly from its process definition.
+On SLURM, the task also receives `--partition`, `--gres`, and optional `--qos` values from
+`ribotie_slurm_partition`, `ribotie_slurm_gres`, and `ribotie_slurm_qos`.
+
+ORF-RATER training is split into resumable `MAKE_ORFRATER_TFAMS`,
+`FIND_ORFRATER_ORFS`, `REGRESS_ORFRATER`, and `RATE_ORFRATER` processes. Training
+remains per sample until shard-level model equivalence has been demonstrated.
+
+`bin/make_partition_manifest.py` provides the partitioning foundation. It emits
+transcriptome partitions from BED12 records or genome windows from a FASTA index,
+with annotation load, optional BAM read-load estimates, and configurable padding.
+The manifest is preparatory at this stage; caller-specific BAM/reference sharding
+is opt-in for RiboCode and the iRibo candidate/profile prototype. iRibo keeps
+the complete reference FASTA to preserve absolute GTF coordinates, while
+sharding BAM/annotation inputs; its translatome step remains one global task.
+
+## Merging inputs
+
+Add `merge_group` to the samplesheet. Rows with the same value are pooled when
+`--merge_inputs true` is supplied:
+
+```text
+sample_id  merge_group  transcriptome_bam  transcriptome_bai  genome_bam  genome_bai  ribo_fastq  offsets
+sample_a   pancreas     ...                 ...                ...         ...         ...         ...
+sample_b   pancreas     ...                 ...                ...         ...         ...         ...
+```
+
+Transcriptome and genome BAMs are always merged independently. The merge step
+stages all source BAMs and indexes, writes a source manifest, and passes the
+merged alignment to downstream callers. Without `--merge_inputs true`, each
+sample remains independent. When merging is enabled, RiboMetric is run after
+the transcriptome BAM merge to recalculate offsets for the pooled alignment;
+the source-library offsets are retained as input provenance but are not merged.
+The default generated `merge_group` is the sample ID, so generated sheets do
+not pool samples accidentally.
+
+## Outputs
+
+The output directory uses semantic names:
+
+- `native_outputs/<sample-or-group>/<RUN_PROCESS>/raw/`: the complete native
+  output tree from each caller;
+- `native_outputs/<sample-or-group>/<RUN_PROCESS>/versions.yml`: tool version
+  information for each caller task;
+- `native_outputs/price/<cohort>/`: PRICE's complete cohort-level native
+  output tree;
+- `merged_inputs/<merge_group>/<transcriptome-or-genome>/`: merged BAM, BAI,
+  and `merge_manifest.tsv` when merging is enabled;
+- `RiboMetric/`: pooled RiboMetric reports and offsets for merged runs;
+- `consensus_outputs/`: normalised calls, BED12 intervals, and downstream
+  consensus outputs when `--run_consensus true`;
+- `pipeline_info/`: the Nextflow report, timeline, trace, and DAG.
+
+Native outputs are the archival source of truth. Standardisation preserves
+common fields for comparison, but it is not intended to replace any caller's
+native tables, scores, metadata, models, or auxiliary files.
+
+Consensus compares calls and retains per-tool provenance, coordinates,
+agreement status, and standardised score/p-value fields where available.
+Scores are not assumed to be comparable across callers; caller agreement is
+the primary cross-tool trust criterion.
+
+Consensus and characterisation are optional. Characterisation requires both
+`--run_consensus true` and `--proteome_fasta`.
+
+## Validation and deployment
+
+All caller processes have Nextflow stub implementations for wiring tests. Stub
+runs validate input routing, optional merging, caller selection, native-output
+publication, and standardisation without executing the external tools. They do
+not establish biological correctness or validate real tool versions.
+
+For HPC execution with Apptainer/Singularity, see
+[`docs/hpc-setup.md`](../../docs/hpc-setup.md) and
+[`conf/hpc_apptainer.config`](conf/hpc_apptainer.config).

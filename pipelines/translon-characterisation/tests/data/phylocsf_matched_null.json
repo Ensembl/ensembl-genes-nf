@@ -1,0 +1,1 @@
+{"positive_threshold": 1.0, "provenance": "test matched null", "length_bin": "6-30", "gc_bin": "0.4-0.6", "class": "uORF", "depth_bin": "2-5", "reference": "hg38", "model": "120mammals"}

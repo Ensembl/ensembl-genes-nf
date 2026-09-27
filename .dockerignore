@@ -1,0 +1,16 @@
+.git
+.nextflow
+.work
+work
+results
+conda_cache
+**/*.bam
+**/*.bai
+**/*.fastq
+**/*.fastq.gz
+**/*.fa
+**/*.fasta
+**/*.gtf
+**/*.gff
+**/*.h5
+**/test-data

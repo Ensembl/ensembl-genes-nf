@@ -5,7 +5,7 @@ process REPORT_CONSENSUS {
     
     tag "${meta.id}"
 
-    publishDir "${params.outdir}/consensus_reports/${meta.id}", mode: 'copy'
+    publishDir "${params.outdir}/consensus_reports", mode: 'copy'
 
     input:
     tuple val(meta), path(samplesheet), path(bed_files)
@@ -28,7 +28,7 @@ process REPORT_CONSENSUS {
     
     stub:
     """
-    mkdir -p consensus_results
-    touch consensus_results/${prefix}.txt
+    printf 'tool\tn_features\n' > ${meta.id}.summary.tsv
+    printf 'tool\tchr\tstart_pos\tend_pos\tstrand\n' > ${meta.id}.stub.consensus.tsv
     """
 }

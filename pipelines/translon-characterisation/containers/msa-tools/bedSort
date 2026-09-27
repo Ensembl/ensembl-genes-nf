@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+if [ "$#" -ne 2 ]; then
+    echo "usage: bedSort input output" >&2
+    exit 2
+fi
+input=$1
+output=$2
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+sort -k1,1 -k2,2n "$input" > "$tmp"
+mv "$tmp" "$output"
+trap - EXIT

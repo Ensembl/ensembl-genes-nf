@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Translon Characterisation parameters",
+  "type": "object",
+  "properties": {
+    "intervals": {"type":"string", "format":"file-path", "pattern":"(?i)\\.(bed|bb|bigbed|tsv)(\\.gz)?$", "description":"Trusted BED3-BED12 or headered TSV (0-based half-open), or binary bigBed annotated ORFs."},
+    "gencode_gff3": {"type":"string", "format":"file-path", "description":"Trusted GENCODE GFF3 substrate."},
+    "translation_verdicts": {"type":"string", "format":"file-path", "description":"Trusted TranslonScorer verdict TSV/JSONL."},
+    "proteome_fasta": {"type":"string", "format":"file-path", "description":"GENCODE annotated proteome FASTA."},
+    "expression_table": {"type":"string", "format":"file-path", "description":"Optional transcript-level expression table."},
+    "observed_peptides": {"type":"string", "format":"file-path", "description":"Optional controlled PRIDE/PeptideAtlas/immunopeptidomics evidence."},
+    "outdir": {"type":"string", "format":"directory-path", "default":"./results"},
+    "tracedir": {"type":"string", "format":"directory-path", "description":"Directory for Nextflow execution reports and traces."},
+    "tools_manifest": {"type":"string", "format":"file-path", "description":"Optional pinned tool/model/alignment manifest."},
+    "reference_contract": {"type":"string", "format":"file-path", "description":"Pinned production reference and model contract."},
+    "genome_fasta": {"type":"string", "format":"file-path"},
+    "ucsc_container": {"type":"string", "description":"Pinned Biocontainers image containing bigBedToBed."},
+    "whole_genome_alignment": {"type":"string", "format":"file-path"},
+    "gnomad": {"type":"string", "format":"file-path"},
+    "gnomad_coverage": {"type":"string", "format":"file-path"},
+    "gpn_model": {"type":"string", "format":"file-path"},
+    "gpn_star_primate_model": {"type":"string"},
+    "gpn_star_primate_revision": {"type":"string", "pattern":"^[0-9a-f]{40}$"},
+    "gpn_star_mammal_model": {"type":"string"},
+    "gpn_star_mammal_revision": {"type":"string", "pattern":"^[0-9a-f]{40}$"},
+    "gpn_star_alignment_dataset": {"type":"string"},
+    "gpn_star_alignment_revision": {"type":"string", "pattern":"^[0-9a-f]{40}$"}
+    ,"maf_dir": {"type":"string", "format":"directory-path", "description":"Directory containing chromosome MAF files and mafExtract indexes."}
+    ,"phylocsf_model": {"type":"string", "const":"58mammals", "default":"58mammals"}
+    ,"phylocsf_matched_null": {"type":"string", "format":"file-path", "description":"JSON matched-null distribution (length, GC, class, depth, reference, model) for PhyloCSF interpretation."}
+    ,"phylocsf_container": {"type":"string", "description":"Immutable container image containing PhyloCSF and the selected model."}
+    ,"phylocsf_strategy": {"type":"string", "enum":["mle","fixed","omega"], "default":"mle"}
+    ,"phylocsf_species_map": {"type":"string", "format":"file-path"}
+    ,"alignment_reference": {"type":"string", "default":"hg38"}
+    ,"maf_pattern": {"type":"string", "default":"*.maf"}
+    ,"maf_index_suffix": {"type":"string", "default":".maf.bb"}
+    ,"maf_reference_manifest": {"type":"string", "format":"file-path", "description":"Pinned JSONL chromosome-MAF manifest with source URLs and upstream checksums; indexes are generated and verified locally."}
+    ,"msa_extract_container": {"type":"string", "description":"Immutable image containing Kent mafExtract and Python."}
+    ,"orbl_alignment_set": {"type":"string", "default":"hg38_120mammals"}
+    ,"orbl_container": {"type":"string", "description":"Pinned image URI built from containers/orbl/Dockerfile."}
+    ,"product_clustering_container": {"type":"string", "description":"Immutable image containing MMseqs2 and Foldseek."}
+    ,"product_cluster_min_seq_id": {"type":"number", "default":0.9}
+  },
+  "required": ["intervals", "gencode_gff3", "translation_verdicts", "proteome_fasta", "genome_fasta"]
+}
