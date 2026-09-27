@@ -8,11 +8,10 @@ def main():
     p.add_argument("output")
     p.add_argument("beds", nargs="+")
     a = p.parse_args()
-    if not a.beds:
-        raise SystemExit("No TAMA BED inputs available")
+
     with open(a.output, "w") as handle:
         for bed in sorted(a.beds):
-            handle.write(f"{Path(bed).stem}\t{bed}\n")
+            handle.write("{}\t{}\n".format(Path(bed).stem, bed))
 
 
 if __name__ == "__main__":
