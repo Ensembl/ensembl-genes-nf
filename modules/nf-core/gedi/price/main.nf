@@ -2,7 +2,7 @@ process GEDI_PRICE {
     tag "$meta.id"
     label 'process_medium'
     label 'process_long'
-    errorStrategy 'terminate'
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     publishDir "${params.outdir}/native_outputs", mode: 'copy', saveAs: { filename -> "price/${meta.id}/${filename}" }
 
     conda "${moduleDir}/environment.yml"

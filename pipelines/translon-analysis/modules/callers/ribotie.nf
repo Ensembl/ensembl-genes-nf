@@ -4,29 +4,32 @@ process RUN_RIBOTIE {
     errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
     container params.ribotie_gpu.toString().toBoolean() ? 'ghcr.io/jackcurragh/translon-ribotie-cuda:1.0.0' : 'ghcr.io/jackcurragh/translon-ribotie:1.0.0'
     input:
-    tuple val(meta), path(bam), path(bai)
-    path gtf
-    path fasta
+    tuple val(meta), path(config), path(h5), path(bam), path(gtf), path(fasta)
     output:
     tuple val(meta), path('raw'), emit: raw
     path 'versions.yml', emit: versions, topic: versions
     script:
     def args = task.ext.args ?: params.args_ribotie ?: ''
     """
+    set -euo pipefail
     mkdir -p raw
+    cp ${h5} raw/${meta.id}.h5
+    cp ${bam} raw/riboseq.bam
+    cp ${gtf} raw/reference.gtf
+    cp ${fasta} raw/reference.fa
+    cat > raw/ribotie.yml <<-END_CONFIG
+    gtf_path: raw/reference.gtf
+    fa_path: raw/reference.fa
+    ribo_paths:
+      ${meta.id}: raw/riboseq.bam
+    h5_path: raw/${meta.id}.h5
+    END_CONFIG
     python - <<'PY'
     import torch
     if not torch.cuda.is_available():
         raise SystemExit('RiboTIE requires CUDA, but torch.cuda.is_available() is false')
     print('RiboTIE CUDA device:', torch.cuda.get_device_name(0))
     PY
-    cat > raw/ribotie.yml <<-END_CONFIG
-    gtf_path: ${gtf}
-    fa_path: ${fasta}
-    ribo_paths:
-      ${meta.id}: ${bam}
-    h5_path: raw/${meta.id}.h5
-    END_CONFIG
     ribotie raw/ribotie.yml ${args}
     test -n "\$(find raw -type f \( -name '*.csv' -o -name '*.gtf' \) | head -1)" || { echo 'RiboTIE produced no native result table' >&2; exit 1; }
     printf '"%s":\n    RiboTIE: source-pinned\n' '${task.process}' > versions.yml

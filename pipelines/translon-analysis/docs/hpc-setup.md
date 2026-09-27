@@ -61,10 +61,12 @@ apptainer pull "$NXF_APPTAINER_CACHEDIR/samtools.sif" \
   docker://quay.io/biocontainers/samtools:1.21--h50ea8bc_0
 ```
 
-Build the custom images from the Dockerfiles in `containers/` on a machine
-with Docker/BuildKit, push them to an internal registry, and pull them as SIFs
-on HPC. Apptainer can also build directly from a Dockerfile where site policy
-allows it, but registry-backed immutable tags or digests are preferred.
+Build the custom images from the Dockerfiles in the
+[`JackCurragh/containers`](https://github.com/JackCurragh/containers)
+repository on a machine with Docker/BuildKit. Push the validated images to
+GHCR and pull them as SIFs on HPC. Apptainer can also build directly from a
+Dockerfile where site policy allows it, but registry-backed immutable tags or
+digests are preferred.
 
 The iRibo image includes the compatibility patch and R packages required by
 `GenerateTranslatome.R`. Do not substitute the unmodified upstream image.

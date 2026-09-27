@@ -76,6 +76,21 @@ The usual alignment contracts are:
   RibORF;
 - FASTQ plus ribosomal and adapter FASTAs: Rp-Bp.
 
+RiboTIE is split into two tasks. `PREPARE_RIBOTIE_DATA` runs on the CPU and
+creates the per-sample HDF5 data store. `RUN_RIBOTIE` is the only GPU task: it
+uses RiboTIE's bundled human pretrained model, fine-tunes it for the sample,
+and generates the native predictions and result tables. No separate model
+training job is required for the default human model. Custom pretraining can
+be passed through `args_ribotie` when a study requires a species-specific
+model.
+
+Caller tasks retry up to three times and then use Nextflow's `ignore` strategy,
+so one failed caller does not terminate the other callers. Missing optional
+inputs (for example Rp-Bp FASTQ resources, an unavailable RiboTIE GPU, or an
+invalid optional external ORF-RATER model) are logged and skip only that
+caller. The required input contract and explicitly requested characterisation
+inputs remain hard validation errors.
+
 In per-sample mode, RibORF consumes the QC-selected offsets from the
 samplesheet. In merged mode, per-sample offsets are deliberately not combined:
 the merged transcriptome BAM is first passed through RiboMetric, and RibORF

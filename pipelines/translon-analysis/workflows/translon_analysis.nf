@@ -21,6 +21,7 @@ include { RATE_ORFRATER } from '../modules/callers/orfrater_rate.nf'
 include { RUN_ORFRATER } from '../modules/callers/orfrater_quantify.nf'
 include { RUN_RIBORF } from '../modules/callers/riborf.nf'
 include { RUN_RIBOTISH } from '../modules/callers/ribotish.nf'
+include { PREPARE_RIBOTIE_DATA } from '../modules/callers/ribotie_prepare.nf'
 include { RUN_RIBOTIE } from '../modules/callers/ribotie.nf'
 include { STANDARDISE_CALLER as STANDARDISE_RIBOCODE } from '../modules/standardise/standardise_caller.nf'
 include { STANDARDISE_CALLER as STANDARDISE_RIBOTRICER } from '../modules/standardise/standardise_caller.nf'
@@ -118,6 +119,12 @@ workflow TRANSLON_ANALYSIS {
     selected_tools = params.tools.split(',').collect { tool -> tool.trim().toLowerCase() }.findAll { tool -> tool }
     start_codons = (params.start_codons ?: 'ATG').split(',').collect { codon -> codon.trim().toUpperCase() }.findAll { codon -> codon ==~ /[ACGT]{3}/ }
     if (!start_codons) error 'start_codons must contain at least one three-base DNA codon'
+    run_riborf = tool_selected(selected_tools, 'riborf')
+    run_orfrater = tool_selected(selected_tools, 'orfrater')
+    run_rpbp = tool_selected(selected_tools, 'rpbp') && !params.skip_fastq_tools
+    run_ribotie = tool_selected(selected_tools, 'ribotie')
+    run_iribo = false
+    ribocode_enabled = false
     // The upstream transcriptome BAM is already the native input for
     // Ribotricer, RiboTIE and most learned callers. Prepare legacy models
     // only for callers that require genePred/BED/SAM representations.
@@ -139,14 +146,15 @@ workflow TRANSLON_ANALYSIS {
                 .map { _id, meta, bam, bai, read_lengths, psite_offsets -> tuple(meta, bam, bai, read_lengths, psite_offsets) }
         }
     }
-    if (tool_selected(selected_tools, 'orfrater') || tool_selected(selected_tools, 'riborf')) {
-        if (tool_selected(selected_tools, 'riborf') && !params.samplesheet) {
-            error 'RibORF requires a samplesheet with an offsets column so RiboSeq QC offsets can be converted for offsetCorrect.pl'
+    if (run_orfrater || run_riborf) {
+        if (run_riborf && !params.samplesheet) {
+            log.warn 'RibORF was selected but no samplesheet was supplied; skipping RibORF while continuing other callers'
+            run_riborf = false
         }
         // Do not call ifEmpty here. In merged mode this channel is produced by
         // RiboMetric, so checking it during workflow construction races the
         // upstream process and can falsely report that offsets are missing.
-        caller_offsets = tool_selected(selected_tools, 'riborf') ? offsets : channel.empty()
+        caller_offsets = run_riborf ? offsets : channel.empty()
         PREPARE_CALLER_INPUTS(tx, orf_gtf, caller_offsets)
         transcript_models = PREPARE_CALLER_INPUTS.out.transcript_models
         riborf_inputs = PREPARE_CALLER_INPUTS.out.riborf
@@ -160,8 +168,12 @@ workflow TRANSLON_ANALYSIS {
         ribocode_annotation = MAKE_TRANSCRIPTOME_ANNOTATION.out.annotation
         if ((params.partition_count ?: 1) > 1) {
             if ((params.partition_mode ?: 'transcriptome') != 'transcriptome') {
-                error 'RiboCode sharding currently requires --partition_mode transcriptome'
+                log.warn 'RiboCode sharding requires --partition_mode transcriptome; skipping RiboCode while continuing other callers'
+                ribocode_enabled = false
+            } else {
+                ribocode_enabled = true
             }
+            if (ribocode_enabled) {
             MAKE_PARTITION_MANIFEST(ribocode_annotation.map { meta, bam, _bai, tx_gtf, _tx_fasta -> tuple(meta, tx_gtf, bam) })
             partition_rows = MAKE_PARTITION_MANIFEST.out.manifest
                 .map { meta, manifest -> tuple(meta.id, meta, manifest) }
@@ -176,13 +188,17 @@ workflow TRANSLON_ANALYSIS {
             ribocode_inputs = PREPARE_RIBOCODE_SHARD.out.shard.flatMap { meta, bam, bai, tx_gtf, tx_fasta ->
                 start_codons.collect { codon -> tuple(meta + [codon: codon], bam, bai, tx_gtf, tx_fasta, codon) }
             }
+            }
         } else {
+            ribocode_enabled = true
             ribocode_inputs = ribocode_annotation.flatMap { meta, bam, bai, tx_gtf, tx_fasta ->
                 start_codons.collect { codon -> tuple(meta + [codon: codon, shard_id: 'all'], bam, bai, tx_gtf, tx_fasta, codon) }
             }
         }
-        RUN_RIBOCODE(ribocode_inputs)
-        STANDARDISE_RIBOCODE(RUN_RIBOCODE.out.raw, 'ribocode', orf_gtf)
+        if (ribocode_enabled) {
+            RUN_RIBOCODE(ribocode_inputs)
+            STANDARDISE_RIBOCODE(RUN_RIBOCODE.out.raw, 'ribocode', orf_gtf)
+        }
     }
     if (tool_selected(selected_tools, 'ribotricer')) {
         ribotricer_per_codon = ribotricer_inputs.flatMap { meta, bam, bai, read_lengths, psite_offsets ->
@@ -200,19 +216,26 @@ workflow TRANSLON_ANALYSIS {
         RUN_ORFQUANT(orfquant_alignments, orf_gtf, fasta)
         STANDARDISE_ORFQUANT(RUN_ORFQUANT.out.raw, 'orfquant', orf_gtf)
     }
-    if (tool_selected(selected_tools, 'rpbp') && !params.skip_fastq_tools) {
+    if (run_rpbp) {
         if (!params.ribosomal_fasta || !params.adapter_fasta) {
-            error 'Rp-Bp was selected but --ribosomal_fasta and --adapter_fasta were not provided'
+            log.warn 'Rp-Bp was selected but --ribosomal_fasta and/or --adapter_fasta were not provided; skipping Rp-Bp while continuing other callers'
+            run_rpbp = false
+        } else {
+            PREPARE_RPBP_GENOME(ribo_fastq, orf_gtf, fasta, ribosomal_fasta, adapter_fasta)
+            RUN_RPBP(PREPARE_RPBP_GENOME.out.config)
+            STANDARDISE_RPBP(RUN_RPBP.out.raw, 'rpbp', orf_gtf)
         }
-        PREPARE_RPBP_GENOME(ribo_fastq.ifEmpty { error 'Rp-Bp was selected but no ribo_fastq is present in the samplesheet' }, orf_gtf, fasta, ribosomal_fasta, adapter_fasta)
-        RUN_RPBP(PREPARE_RPBP_GENOME.out.config)
-        STANDARDISE_RPBP(RUN_RPBP.out.raw, 'rpbp', orf_gtf)
     }
-    if (tool_selected(selected_tools, 'iribo')) {
+    run_iribo = tool_selected(selected_tools, 'iribo')
+    if (run_iribo) {
         if ((params.partition_count ?: 1) > 1) {
             if ((params.partition_mode ?: 'genome') != 'genome' || !params.partition_fai) {
-                error 'iRibo sharding requires --partition_mode genome and --partition_fai'
+                log.warn 'iRibo sharding requires --partition_mode genome and --partition_fai; skipping iRibo while continuing other callers'
+                run_iribo = false
+            } else {
+                run_iribo = true
             }
+            if (run_iribo) {
             partition_fai = file(params.partition_fai, checkIfExists: true)
             MAKE_PARTITION_MANIFEST(published_inputs.map { meta, bam, _bai -> tuple(meta, partition_fai, bam) })
             iribo_partition_rows = MAKE_PARTITION_MANIFEST.out.manifest
@@ -233,6 +256,7 @@ workflow TRANSLON_ANALYSIS {
                 .map { _id, metas, profiles, candidates -> tuple(metas[0], profiles, candidates) }
             MERGE_IRIBO_SHARDS(iribo_profiles)
             IRIBO_GENERATE_TRANSLATOME(MERGE_IRIBO_SHARDS.out.merged)
+            }
         } else {
             IRIBO_GET_CANDIDATES(published_inputs
                 .combine(orf_gtf)
@@ -241,9 +265,11 @@ workflow TRANSLON_ANALYSIS {
             IRIBO_GENERATE_PROFILE(IRIBO_GET_CANDIDATES.out.candidates)
             IRIBO_GENERATE_TRANSLATOME(IRIBO_GENERATE_PROFILE.out.profile)
         }
-        STANDARDISE_IRIBO(IRIBO_GENERATE_TRANSLATOME.out.raw, 'iribo', orf_gtf)
+        if (run_iribo) {
+            STANDARDISE_IRIBO(IRIBO_GENERATE_TRANSLATOME.out.raw, 'iribo', orf_gtf)
+        }
     }
-    if (tool_selected(selected_tools, 'orfrater')) {
+    if (run_orfrater) {
         orfrater_inputs = transcript_models
             .map { meta, bam, bai, _genepred, bed12 -> tuple(meta, bam, bai, bed12) }
         if (params.orfrater_model) {
@@ -251,11 +277,13 @@ workflow TRANSLON_ANALYSIS {
             required_orfrater_files = ['orfratings.h5', 'metagene.txt', 'offsets.txt']
             missing_orfrater_files = required_orfrater_files.findAll { name -> !file("${orfrater_model_path}/${name}").exists() }
             if (missing_orfrater_files) {
-                error "ORF-RATER model directory is missing: ${missing_orfrater_files.join(', ')} (${orfrater_model_path})"
+                log.warn "ORF-RATER model directory is missing: ${missing_orfrater_files.join(', ')} (${orfrater_model_path}); skipping ORF-RATER while continuing other callers"
+                run_orfrater = false
+            } else {
+                orfrater_inputs_with_model = orfrater_inputs
+                    .map { meta, bam, bai, bed12 -> tuple(meta, bam, bai, bed12, orfrater_model_path) }
+                RUN_ORFRATER(orfrater_inputs_with_model)
             }
-            orfrater_inputs_with_model = orfrater_inputs
-                .map { meta, bam, bai, bed12 -> tuple(meta, bam, bai, bed12, orfrater_model_path) }
-            RUN_ORFRATER(orfrater_inputs_with_model)
         } else {
             training_inputs = transcript_models
                 .map { meta, bam, bai, _genepred, bed12 -> tuple(meta.id, meta, bam, bai, bed12) }
@@ -302,7 +330,7 @@ workflow TRANSLON_ANALYSIS {
         GEDI_PRICE(price_bam_input, GEDI_INDEXGENOME.out.index)
         STANDARDISE_PRICE(GEDI_PRICE.out.orfs_tsv, 'price', orf_gtf)
     }
-    if (tool_selected(selected_tools, 'riborf')) {
+    if (run_riborf) {
         RUN_RIBORF(riborf_inputs)
         STANDARDISE_RIBORF(RUN_RIBORF.out.raw, 'riborf', orf_gtf)
     }
@@ -310,17 +338,24 @@ workflow TRANSLON_ANALYSIS {
         RUN_RIBOTISH(published_inputs, orf_gtf, fasta)
         STANDARDISE_RIBOTISH(RUN_RIBOTISH.out.raw, 'ribotish', orf_gtf)
     }
-    if (tool_selected(selected_tools, 'ribotie')) {
+    if (run_ribotie) {
         if (!ribotie_gpu_enabled) {
-            error 'RiboTIE requires --ribotie_gpu true and a CUDA-capable container'
+            log.warn 'RiboTIE was selected without --ribotie_gpu true; skipping RiboTIE while continuing other callers'
+            run_ribotie = false
+        } else {
+            ribotie_inputs = tx.ifEmpty(gn)
+                .combine(orf_gtf)
+                .combine(fasta)
+                .map { meta, bam, bai, caller_gtf, caller_fasta -> tuple(meta, bam, bai, caller_gtf, caller_fasta) }
+            PREPARE_RIBOTIE_DATA(ribotie_inputs)
+            RUN_RIBOTIE(PREPARE_RIBOTIE_DATA.out.prepared)
+            STANDARDISE_RIBOTIE(RUN_RIBOTIE.out.raw, 'ribotie', orf_gtf)
         }
-        RUN_RIBOTIE(published_inputs, orf_gtf, fasta)
-        STANDARDISE_RIBOTIE(RUN_RIBOTIE.out.raw, 'ribotie', orf_gtf)
     }
 
     standardized = channel.empty()
     beds = channel.empty()
-    if (tool_selected(selected_tools, 'ribocode')) {
+    if (ribocode_enabled) {
         standardized = standardized.mix(STANDARDISE_RIBOCODE.out.standardized)
         beds = beds.mix(STANDARDISE_RIBOCODE.out.bed12)
     }
@@ -332,15 +367,15 @@ workflow TRANSLON_ANALYSIS {
         standardized = standardized.mix(STANDARDISE_ORFQUANT.out.standardized)
         beds = beds.mix(STANDARDISE_ORFQUANT.out.bed12)
     }
-    if (tool_selected(selected_tools, 'rpbp') && !params.skip_fastq_tools) {
+    if (run_rpbp) {
         standardized = standardized.mix(STANDARDISE_RPBP.out.standardized)
         beds = beds.mix(STANDARDISE_RPBP.out.bed12)
     }
-    if (tool_selected(selected_tools, 'iribo')) {
+    if (run_iribo) {
         standardized = standardized.mix(STANDARDISE_IRIBO.out.standardized)
         beds = beds.mix(STANDARDISE_IRIBO.out.bed12)
     }
-    if (tool_selected(selected_tools, 'orfrater')) {
+    if (run_orfrater) {
         standardized = standardized.mix(STANDARDISE_ORFRATER.out.standardized)
         beds = beds.mix(STANDARDISE_ORFRATER.out.bed12)
     }
@@ -348,7 +383,7 @@ workflow TRANSLON_ANALYSIS {
         standardized = standardized.mix(STANDARDISE_PRICE.out.standardized)
         beds = beds.mix(STANDARDISE_PRICE.out.bed12)
     }
-    if (tool_selected(selected_tools, 'riborf')) {
+    if (run_riborf) {
         standardized = standardized.mix(STANDARDISE_RIBORF.out.standardized)
         beds = beds.mix(STANDARDISE_RIBORF.out.bed12)
     }
@@ -356,7 +391,7 @@ workflow TRANSLON_ANALYSIS {
         standardized = standardized.mix(STANDARDISE_RIBOTISH.out.standardized)
         beds = beds.mix(STANDARDISE_RIBOTISH.out.bed12)
     }
-    if (tool_selected(selected_tools, 'ribotie')) {
+    if (run_ribotie) {
         standardized = standardized.mix(STANDARDISE_RIBOTIE.out.standardized)
         beds = beds.mix(STANDARDISE_RIBOTIE.out.bed12)
     }
