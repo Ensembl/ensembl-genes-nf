@@ -22,8 +22,11 @@ process TAMA_MERGE {
 
     script:
     """
-    prepare_tama_merge_filelist.py merge_filelist.tsv ${beds}
+    prepare_tama_merge_filelist.py merge_filelist.tsv ${beds} \\
+        --seq-type ${params.tama_cap_mode} \\
+        --priority-rank 1,1,1
     tama_merge.py -f merge_filelist.tsv -p ${cohort_id}.merged -e ${params.tama_end_mode} -d merge_dup
+    test -s ${cohort_id}.merged.bed || { echo 'TAMA merge produced an empty BED' >&2; exit 1; }
     mv ${cohort_id}.merged.bed ${cohort_id}_merged.bed
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -35,7 +38,7 @@ process TAMA_MERGE {
     """
     printf 'stub\\t0\\t4\\tmerged.1\\t0\\t+\\t0\\t4\\t0\\t1\\t4,\\t0,\\n' > ${cohort_id}_merged.bed
     touch ${cohort_id}.merged_gene_report.txt ${cohort_id}.merged_merge.txt ${cohort_id}.merged_trans_report.txt
-    printf 'stub\\tstub\\n' > merge_filelist.tsv
+    printf 'stub.bed\\tno_cap\\t1,1,1\\tstub\\n' > merge_filelist.tsv
     printf '"%s":\\n    tama_merge: stub\\n' '${task.process}' > versions.yml
     """
 }
