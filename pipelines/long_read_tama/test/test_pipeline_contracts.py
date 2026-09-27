@@ -166,7 +166,7 @@ def test_diamond_qc_receives_each_finalised_backend():
     main = (PIPELINE / "main.nf").read_text()
     diamond = (PIPELINE / "subworkflows" / "run_diamond_qc.nf").read_text()
     assert "if (run_diamond_validation)" in main
-    assert "qc_bed = combined_bed.map { backend, cohort_id, bed" in diamond
+    assert "qc_bed = combined_bed.map { _backend, meta, bed -> tuple(meta, bed) }" in diamond
     assert "EXTRACT_COMBINED_TRANSCRIPTS(qc_bed, reference)" in diamond
 
 
