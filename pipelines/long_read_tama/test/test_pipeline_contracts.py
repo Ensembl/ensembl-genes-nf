@@ -170,6 +170,15 @@ def test_diamond_qc_receives_each_finalised_backend():
     assert "EXTRACT_COMBINED_TRANSCRIPTS(qc_bed, reference)" in diamond
 
 
+def test_backend_bed_validation_writes_status_without_shell_awk():
+    module = (PIPELINE / "modules" / "validate_backend_bed.nf").read_text()
+    validator = (PIPELINE / "bin" / "validate_tama_bed.py").read_text()
+    assert "--backend '${backend}' --status-output backend_status.tsv" in module
+    assert "awk" not in module
+    assert 'p.add_argument("--status-output")' in validator
+    assert 'Path(a.status_output).write_text' in validator
+
+
 def test_entrypoint_uses_schema_and_keeps_optional_outputs_guarded():
     main = (PIPELINE / "main.nf").read_text()
     align = (PIPELINE / "subworkflows" / "align_long_reads.nf").read_text()

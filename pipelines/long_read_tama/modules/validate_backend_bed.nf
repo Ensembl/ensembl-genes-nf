@@ -14,9 +14,8 @@ process VALIDATE_BACKEND_BED {
     script:
     """
     validate_tama_bed.py ${bed} backend_validation.tsv \\
-        --validated-output validated_models.bed --run '${meta.id}' --shard '${shard}'
-    printf 'backend\\trun_accession\\tshard\\tstatus\\tmodels\\n' > backend_status.tsv
-    awk -v b='${backend}' -v r='${meta.id}' -v s='${shard}' 'NR == 1 { next } NF >= 3 { print b "\\t" r "\\t" s "\\tSUCCESS\\t" $3 }' backend_validation.tsv >> backend_status.tsv
+        --validated-output validated_models.bed --run '${meta.id}' --shard '${shard}' \\
+        --backend '${backend}' --status-output backend_status.tsv
     printf '"%s":\\n    backend_bed_validator: python\\n' '${task.process}' > versions.yml
     """
 
