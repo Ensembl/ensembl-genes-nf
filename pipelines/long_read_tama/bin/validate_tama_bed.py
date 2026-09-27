@@ -11,6 +11,8 @@ def main():
     p.add_argument("--validated-output")
     p.add_argument("--run")
     p.add_argument("--shard")
+    p.add_argument("--backend")
+    p.add_argument("--status-output")
     a = p.parse_args()
     source = Path(a.bed)
     if not source.is_file() or source.stat().st_size == 0:
@@ -25,6 +27,13 @@ def main():
         Path(a.report).write_text(f"models\t{len(rows)}\n")
     else:
         Path(a.report).write_text(f"run\tshard\tmodels\n{a.run}\t{a.shard}\t{len(rows)}\n")
+    if a.status_output:
+        if a.backend is None or a.run is None or a.shard is None:
+            raise SystemExit("--status-output requires --backend, --run, and --shard")
+        Path(a.status_output).write_text(
+            "backend\trun_accession\tshard\tstatus\tmodels\n"
+            f"{a.backend}\t{a.run}\t{a.shard}\tSUCCESS\t{len(rows)}\n"
+        )
 
 
 if __name__ == "__main__":
