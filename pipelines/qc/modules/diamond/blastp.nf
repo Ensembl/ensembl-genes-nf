@@ -13,7 +13,14 @@ process DIAMOND_BLASTP {
         path 'versions.yml', emit: versions
 
     script:
-        def out = "${meta.id}_diamond.tsv"
+        // Use explicit map indexing here.  In the long-read QC path `meta` is
+        // a map containing both cohort and backend; interpolating the map (or
+        // relying on ambiguous property resolution) produces a filename such
+        // as `[id:..., backend:...]_diamond.tsv`, which Diamond parses as
+        // multiple arguments to --out.
+        def sample_id = meta['id'].toString()
+        def backend = meta.containsKey('backend') ? meta['backend'].toString() : 'default'
+        def out = "${sample_id}_${backend}_diamond.tsv"
         """
         if grep -q '^>' ${query_protein}; then
             diamond blastp \
@@ -35,7 +42,9 @@ process DIAMOND_BLASTP {
         """
 
     stub:
-        def out = "${meta.id}_diamond.tsv"
+        def sample_id = meta['id'].toString()
+        def backend = meta.containsKey('backend') ? meta['backend'].toString() : 'default'
+        def out = "${sample_id}_${backend}_diamond.tsv"
         """
         touch ${out}
 
