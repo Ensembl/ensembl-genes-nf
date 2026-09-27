@@ -6,13 +6,12 @@ include { VALIDATE_LONG_READ_MODELS } from '../modules/validate_models.nf'
 workflow VALIDATE_COMBINED_MODELS {
     take:
     merged_bed
-    cohort_id
 
     main:
-    // merged_bed: path merged TAMA BED
-    canonical_input = merged_bed.map { bed -> tuple([id: cohort_id], bed) }
+    // merged_bed: tuple val(backend), val(cohort_id), path(merged_models.bed)
+    canonical_input = merged_bed.map { backend, cohort_id, bed -> tuple(backend, [id: cohort_id, backend: backend], bed) }
     CANONICALISE_COMBINED_MODELS(canonical_input)
-    VALIDATE_LONG_READ_MODELS(CANONICALISE_COMBINED_MODELS.out.bed.map { _meta, bed -> bed })
+    VALIDATE_LONG_READ_MODELS(CANONICALISE_COMBINED_MODELS.out.bed.map { backend, meta, bed -> tuple(backend, meta, bed) })
 
     emit:
     bed = CANONICALISE_COMBINED_MODELS.out.bed

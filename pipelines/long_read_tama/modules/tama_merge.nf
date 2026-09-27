@@ -1,5 +1,5 @@
 process TAMA_MERGE {
-    tag "${cohort_id}"
+    tag "${backend}:${cohort_id}"
     label 'process_high_memory'
     conda 'bioconda::gs-tama=1.0.3'
     container "${params.tama_container ?: (workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
@@ -10,10 +10,10 @@ process TAMA_MERGE {
     // Shard validation deliberately emits the same basename for every BED.
     // Stage each collection member below a numbered directory so a per-accession
     // merge can accept all shard outputs without Nextflow filename collisions.
-    tuple val(cohort_id), path(beds, stageAs: 'bed??/*')
+    tuple val(backend), val(cohort_id), path(beds, stageAs: 'bed??/*')
 
     output:
-    path '*_merged.bed', emit: bed
+    tuple val(backend), val(cohort_id), path("${backend}_${cohort_id}_merged.bed"), emit: bed
     path '*_gene_report.txt', emit: gene_report
     path '*_merge.txt', emit: merge_report
     path '*_trans_report.txt', emit: trans_report
@@ -27,7 +27,7 @@ process TAMA_MERGE {
         --priority-rank 1,1,1
     tama_merge.py -f merge_filelist.tsv -p ${cohort_id}.merged -e ${params.tama_end_mode} -d merge_dup
     test -s ${cohort_id}.merged.bed || { echo 'TAMA merge produced an empty BED' >&2; exit 1; }
-    mv ${cohort_id}.merged.bed ${cohort_id}_merged.bed
+    mv ${cohort_id}.merged.bed ${backend}_${cohort_id}_merged.bed
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         tama_merge: \$(tama_merge.py -v 2>&1 | tail -n1)
@@ -36,7 +36,7 @@ process TAMA_MERGE {
 
     stub:
     """
-    printf 'stub\\t0\\t4\\tmerged.1\\t0\\t+\\t0\\t4\\t0\\t1\\t4,\\t0,\\n' > ${cohort_id}_merged.bed
+    printf 'stub\\t0\\t4\\t${backend}.${cohort_id}.merged.1\\t0\\t+\\t0\\t4\\t0\\t1\\t4,\\t0,\\n' > ${backend}_${cohort_id}_merged.bed
     touch ${cohort_id}.merged_gene_report.txt ${cohort_id}.merged_merge.txt ${cohort_id}.merged_trans_report.txt
     printf 'stub.bed\\tno_cap\\t1,1,1\\tstub\\n' > merge_filelist.tsv
     printf '"%s":\\n    tama_merge: stub\\n' '${task.process}' > versions.yml
