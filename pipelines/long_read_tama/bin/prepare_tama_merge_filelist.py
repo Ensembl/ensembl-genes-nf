@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import argparse
-from pathlib import Path
+import os
 
 
 def main():
@@ -11,7 +11,8 @@ def main():
 
     with open(a.output, "w") as handle:
         for bed in sorted(a.beds):
-            handle.write("{}\t{}\n".format(Path(bed).stem, bed))
+            stem = os.path.splitext(os.path.basename(bed))[0]
+            handle.write("{}\t{}\n".format(stem, bed))
 
 
 if __name__ == "__main__":
