@@ -313,6 +313,7 @@ workflow TRANSLON_ANALYSIS {
         }
         STANDARDISE_ORFRATER(RUN_ORFRATER.out.raw, 'orfrater', orf_gtf)
     }
+    run_price = tool_selected(selected_tools, 'price') && params.partition_fai
     if (tool_selected(selected_tools, 'price')) {
         if (!params.partition_fai) {
             log.warn 'PRICE chromosome sharding requires --partition_fai; skipping PRICE while continuing other callers'
@@ -397,7 +398,7 @@ workflow TRANSLON_ANALYSIS {
         standardized = standardized.mix(STANDARDISE_ORFRATER.out.standardized)
         beds = beds.mix(STANDARDISE_ORFRATER.out.bed12)
     }
-    if (tool_selected(selected_tools, 'price')) {
+    if (run_price) {
         standardized = standardized.mix(STANDARDISE_PRICE.out.standardized)
         beds = beds.mix(STANDARDISE_PRICE.out.bed12)
     }
