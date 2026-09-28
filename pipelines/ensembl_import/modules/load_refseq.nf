@@ -34,7 +34,7 @@ process LOAD_REFSEQ {
             ${fasta} \
             ${asm_report} \
             ${args} \
-            --assembly-acc ${meta.id} \
+            --assembly-accession ${meta.id} \
             --species-name "${meta.species}" \
             --db-host ${db_host} \
             --db-port ${db_port} \

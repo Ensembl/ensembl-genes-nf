@@ -16,9 +16,6 @@ workflow IMPORT_REFSEQ_TO_CORE {
 
         samples_with_db_name_ch = samples_ch.map { meta ->
             def speciesParts = meta.species.tokenize(' ')
-            if (speciesParts.size() < 2)
-                throw new IllegalArgumentException("Species must contain a genus and species: ${meta.species}")
-
             def speciesToken = "${speciesParts[0].toLowerCase()}_${speciesParts[1].toLowerCase()}"
             def accessionToken = meta.id
                 .toLowerCase()
@@ -29,7 +26,7 @@ workflow IMPORT_REFSEQ_TO_CORE {
             meta + [db_name: dbName]
         }
 
-        db_write_config_ch = db_config_ch.map { db_host, db_port, db_user, db_password, db_read_user ->
+        db_write_config_ch = db_config_ch.map { db_host, db_port, db_user, db_password, _db_read_user ->
             tuple(db_host, db_port, db_user, db_password)
         }
 
@@ -40,8 +37,6 @@ workflow IMPORT_REFSEQ_TO_CORE {
             db_write_config_ch
         )
 
-        metadata_input = LOAD_REFSEQ.out.loaded
-
         versions_ch = FETCH_REFSEQ.out.versions
             .mix(LOAD_REFSEQ.out.versions)
 
@@ -49,6 +44,6 @@ workflow IMPORT_REFSEQ_TO_CORE {
     emit:
         loaded_refseq = LOAD_REFSEQ.out.loaded
         genome = LOAD_REFSEQ.out.genome
-        metadata_input
+        metadata_input = LOAD_REFSEQ.out.loaded
         versions = versions_ch
     }

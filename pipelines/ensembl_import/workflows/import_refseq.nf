@@ -30,6 +30,8 @@ workflow IMPORT_REFSEQ {
 
         versions_ch = IMPORT_REFSEQ_TO_CORE.out.versions
             .mix(GET_METADATA_CORE.out.versions)
+            .mix(PREPARE_STATS_INPUT.out.versions)
+            .mix(COMBINE_STATS_INPUT.out.versions)
 
     emit:
         loaded_refseq = IMPORT_REFSEQ_TO_CORE.out.loaded_refseq

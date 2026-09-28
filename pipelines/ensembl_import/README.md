@@ -28,7 +28,8 @@ GCA_900184115.1,Example species
 ```
 
 The `gcf` value must be a RefSeq accession in the form `GCA_#########.#` or
-`GCF_#########.##`. The `species` value must not be empty.
+`GCF_#########.##`. The `species` value must be a binomial name consisting of
+two words.
 
 The row schema is defined in
 [`assets/schema_input.json`](assets/schema_input.json).
@@ -47,7 +48,7 @@ Pass a JSON file with `--server_settings`:
 }
 ```
 
-`db_user` is used for database creation and metadata loading. `db_read_user`
+`db_user` is used for database creation and metadata updates. `db_read_user`
 is used by the taxonomy step to read the taxonomy ID from the core database.
 
 ## Running
@@ -156,9 +157,9 @@ For handover, you want to run all analyses.
   "run_ensembl_beta_metakeys": true,
   "apply_ensembl_beta_metakeys": true,
   "run_pepstats": true,
-  "team": "genebuild"
+  "team": "genebuild",
   "host": "",
-  "port": ,
+  "port": 4532,
   "user": "",
   "user_r": "",
   "password": "",
@@ -169,8 +170,6 @@ For handover, you want to run all analyses.
 Once you have a params file, you can run the statistics pipeline.
 
 ```bash
-cd statistics_input
-
 nextflow run pipelines/statistics/main.nf \
   -params-file /path/to/stats_params.json
 ```

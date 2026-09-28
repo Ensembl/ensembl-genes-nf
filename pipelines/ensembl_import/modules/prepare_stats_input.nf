@@ -10,8 +10,6 @@ process PREPARE_STATS_INPUT {
     path 'versions.yml', emit: versions
 
     script:
-    if (!meta.db_name)
-        throw new IllegalArgumentException("Sample metadata is missing db_name for ${meta.id}")
     def publishedGenome = file("${params.outdir}/refseq/${meta.id}/${genome_file.name}").toAbsolutePath().toString()
 
     """

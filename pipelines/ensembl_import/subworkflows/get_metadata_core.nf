@@ -15,7 +15,7 @@ workflow GET_METADATA_CORE {
 
     main:
 
-        db_write_config_ch = db_config_ch.map { db_host, db_port, db_user, db_password, db_read_user ->
+        db_write_config_ch = db_config_ch.map { db_host, db_port, db_user, db_password, _db_read_user ->
             tuple(db_host, db_port, db_user, db_password)
         }
 
@@ -24,12 +24,16 @@ workflow GET_METADATA_CORE {
             db_write_config_ch
         )
 
-        sample_gene_input = GET_SAMPLE_GENE.out.sample_gene.map { meta, sample_gene_marker ->
+        sample_gene_input = GET_SAMPLE_GENE.out.sample_gene.map { meta, _sample_gene_marker ->
             meta
         }
 
+        static_json_ch = channel.value(
+            file("${projectDir}/config/static_metakeys.json")
+        )
+
         ADD_STATIC_METAKEYS(
-            sample_gene_input,
+            sample_gene_input.combine(static_json_ch),
             db_write_config_ch
         )
 

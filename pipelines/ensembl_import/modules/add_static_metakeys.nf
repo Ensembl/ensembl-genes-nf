@@ -5,7 +5,7 @@ process ADD_STATIC_METAKEYS {
     publishDir { "${params.outdir}/metadata/${meta.id}" }, mode: 'copy', overwrite: true
 
     input:
-    val(meta)
+    tuple val(meta), path(static_json)
 
     tuple val(db_host),
           val(db_port),
@@ -21,8 +21,6 @@ process ADD_STATIC_METAKEYS {
 
 
     script:
-    def static_json = "${projectDir}/config/static_metakeys.json"
-
     """
     add_static_metakeys.py \\
         --db_name ${meta.db_name} \\
