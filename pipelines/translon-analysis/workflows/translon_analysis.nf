@@ -238,22 +238,27 @@ workflow TRANSLON_ANALYSIS {
             if (run_iribo) {
             partition_fai = file(params.partition_fai, checkIfExists: true)
             MAKE_PARTITION_MANIFEST(published_inputs.map { meta, bam, _bai -> tuple(meta, partition_fai, bam) })
-            iribo_partition_rows = MAKE_PARTITION_MANIFEST.out.manifest
+            iribo_partition_manifests = MAKE_PARTITION_MANIFEST.out.manifest
                 .map { meta, manifest -> tuple(meta.id, manifest) }
-                .flatMap { id, manifest -> manifest.splitCsv(header: true, sep: '\t').collect { row ->
-                    tuple(id, row.partition_id as Integer, row.mode.toString(), row.contig.toString(),
-                        row.start as Integer, row.end as Integer, row.padding as Integer,
-                        row.annotation_load as Integer, row.estimated_read_load?.toString() ?: '')
-                } }
             iribo_shard_inputs = published_inputs
                 .map { meta, bam, bai -> tuple(meta.id, meta, bam, bai) }
                 .combine(orf_gtf)
                 .combine(fasta)
-                .join(iribo_partition_rows, by: 0)
-                .map { _id, meta, bam, bai, shard_gtf, shard_fasta, partition_id, mode, contig, start, end, padding, annotation_load, estimated_read_load ->
-                    def partition = [partition_id: partition_id, mode: mode, contig: contig, start: start, end: end,
-                        padding: padding, annotation_load: annotation_load, estimated_read_load: estimated_read_load]
-                    tuple(meta + [shard_id: partition.partition_id.toString()], bam, bai, shard_gtf, shard_fasta, partition)
+                .combine(iribo_partition_manifests, by: 0)
+                .flatMap { _id, meta, bam, bai, shard_gtf, shard_fasta, manifest ->
+                    manifest.splitCsv(header: true, sep: '\t').collect { row ->
+                        def partition = [
+                            partition_id: row.partition_id as Integer,
+                            mode: row.mode.toString(),
+                            contig: row.contig.toString(),
+                            start: row.start as Integer,
+                            end: row.end as Integer,
+                            padding: row.padding as Integer,
+                            annotation_load: row.annotation_load as Integer,
+                            estimated_read_load: row.estimated_read_load?.toString() ?: ''
+                        ]
+                        tuple(meta + [shard_id: partition.partition_id.toString()], bam, bai, shard_gtf, shard_fasta, partition)
+                    }
                 }
             PREPARE_IRIBO_SHARD(iribo_shard_inputs)
             IRIBO_GET_CANDIDATES(PREPARE_IRIBO_SHARD.out.shard.map { meta, bam, bai, shard_gtf, shard_fasta -> tuple(meta, bam, bai, shard_gtf, shard_fasta) })
