@@ -2,9 +2,6 @@
 """Create deterministic transcript or genome partitions with workload estimates."""
 import argparse
 import csv
-import os
-import subprocess
-import tempfile
 
 
 def bed_records(path):
@@ -49,16 +46,13 @@ def fai_records(path):
 def read_count(bam, regions):
     if not bam:
         return ""
-    fd, region_file = tempfile.mkstemp(suffix=".bed")
-    os.close(fd)
-    try:
-        with open(region_file, "w") as handle:
-            for chrom, start, end, _ in regions:
-                handle.write(f"{chrom}\t{start}\t{end}\n")
-        result = subprocess.run(["samtools", "view", "-c", "-L", region_file, bam], check=True, capture_output=True, text=True)
-        return int(result.stdout.strip())
-    finally:
-        os.unlink(region_file)
+    import pysam
+
+    with pysam.AlignmentFile(bam, "rb") as handle:
+        return sum(
+            handle.count(contig=chrom, start=start, end=end)
+            for chrom, start, end, _ in regions
+        )
 
 
 def main():
