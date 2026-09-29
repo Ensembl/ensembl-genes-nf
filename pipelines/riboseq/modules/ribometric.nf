@@ -4,7 +4,7 @@ process RIBOMETRIC {
     publishDir "${params.outdir}/RiboMetric", mode: 'copy'
 
     conda "conda-forge::python=3.10 conda-forge::biopython bioconda::pysam"
-    container "ghcr.io/jackcurragh/ribometric:1.4.3"
+    container "ghcr.io/jackcurragh/ribometric@sha256:0546e7f2320826d607ec8153fe45cdd518f8c9294a699a5f6ccbdb5097cc882b"
 
     input:
     tuple val(meta), path(transcriptome_bam), path(transcriptome_bam_index)
