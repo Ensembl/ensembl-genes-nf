@@ -332,7 +332,7 @@ workflow TRANSLON_ANALYSIS {
                 .map { meta, bam, bai -> tuple(meta.id, meta, bam, bai) }
                 .combine(orf_gtf)
                 .combine(fasta)
-                .combine(price_fai)
+                .combine(channel.value(price_fai))
                 .join(price_contigs, by: 0)
                 .map { id, meta, bam, bai, gtf_file, fasta_file, fai_file, _id2, _manifest_meta, contig ->
                     tuple(meta + [shard_id: contig], bam, bai, gtf_file, fasta_file, fai_file, contig)
