@@ -168,14 +168,11 @@ workflow TRANSLON_ANALYSIS {
     if (tool_selected(selected_tools, 'ribocode')) {
         MAKE_TRANSCRIPTOME_ANNOTATION(tx, orf_gtf, fasta)
         ribocode_annotation = MAKE_TRANSCRIPTOME_ANNOTATION.out.annotation
-        if ((params.partition_count ?: 1) > 1) {
-            if ((params.partition_mode ?: 'transcriptome') != 'transcriptome') {
-                log.warn 'RiboCode sharding requires --partition_mode transcriptome; skipping RiboCode while continuing other callers'
-                ribocode_enabled = false
-            } else {
-                ribocode_enabled = true
-            }
-            if (ribocode_enabled) {
+        if ((params.partition_count ?: 1) > 1 && (params.partition_mode ?: 'transcriptome') == 'transcriptome') {
+            // RiboCode operates in transcriptome space, so shard it only when
+            // transcriptome partitioning is requested. Genome sharding is for
+            // callers such as iRibo and PRICE; RiboCode remains unsharded there.
+            ribocode_enabled = true
             MAKE_PARTITION_MANIFEST(ribocode_annotation.map { meta, bam, _bai, tx_gtf, _tx_fasta -> tuple(meta, tx_gtf, bam) })
             partition_rows = MAKE_PARTITION_MANIFEST.out.manifest
                 .map { meta, manifest -> tuple(meta.id, meta, manifest) }
@@ -190,8 +187,9 @@ workflow TRANSLON_ANALYSIS {
             ribocode_inputs = PREPARE_RIBOCODE_SHARD.out.shard.flatMap { meta, bam, bai, tx_gtf, tx_fasta ->
                 start_codons.collect { codon -> tuple(meta + [codon: codon], bam, bai, tx_gtf, tx_fasta, codon) }
             }
-            }
         } else {
+            // Genome sharding does not apply to RiboCode. Keep this caller
+            // enabled and run one transcriptome-space job per codon.
             ribocode_enabled = true
             ribocode_inputs = ribocode_annotation.flatMap { meta, bam, bai, tx_gtf, tx_fasta ->
                 start_codons.collect { codon -> tuple(meta + [codon: codon, shard_id: 'all'], bam, bai, tx_gtf, tx_fasta, codon) }
