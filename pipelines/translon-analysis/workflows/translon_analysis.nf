@@ -241,24 +241,18 @@ workflow TRANSLON_ANALYSIS {
             iribo_partition_rows = MAKE_PARTITION_MANIFEST.out.manifest
                 .map { meta, manifest -> tuple(meta.id, manifest) }
                 .flatMap { id, manifest -> manifest.splitCsv(header: true, sep: '\t').collect { row ->
-                    tuple(id, groovy.json.JsonOutput.toJson([
-                        partition_id: row.partition_id as Integer,
-                        mode: row.mode.toString(),
-                        contig: row.contig.toString(),
-                        start: row.start as Integer,
-                        end: row.end as Integer,
-                        padding: row.padding as Integer,
-                        annotation_load: row.annotation_load as Integer,
-                        estimated_read_load: row.estimated_read_load?.toString() ?: ''
-                    ]))
+                    tuple(id, row.partition_id as Integer, row.mode.toString(), row.contig.toString(),
+                        row.start as Integer, row.end as Integer, row.padding as Integer,
+                        row.annotation_load as Integer, row.estimated_read_load?.toString() ?: '')
                 } }
             iribo_shard_inputs = published_inputs
                 .map { meta, bam, bai -> tuple(meta.id, meta, bam, bai) }
                 .combine(orf_gtf)
                 .combine(fasta)
                 .join(iribo_partition_rows, by: 0)
-                .map { _id, meta, bam, bai, shard_gtf, shard_fasta, partition_json ->
-                    def partition = new groovy.json.JsonSlurper().parseText(partition_json)
+                .map { _id, meta, bam, bai, shard_gtf, shard_fasta, partition_id, mode, contig, start, end, padding, annotation_load, estimated_read_load ->
+                    def partition = [partition_id: partition_id, mode: mode, contig: contig, start: start, end: end,
+                        padding: padding, annotation_load: annotation_load, estimated_read_load: estimated_read_load]
                     tuple(meta + [shard_id: partition.partition_id.toString()], bam, bai, shard_gtf, shard_fasta, partition)
                 }
             PREPARE_IRIBO_SHARD(iribo_shard_inputs)
