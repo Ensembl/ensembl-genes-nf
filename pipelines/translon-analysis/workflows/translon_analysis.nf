@@ -240,7 +240,18 @@ workflow TRANSLON_ANALYSIS {
             MAKE_PARTITION_MANIFEST(published_inputs.map { meta, bam, _bai -> tuple(meta, partition_fai, bam) })
             iribo_partition_rows = MAKE_PARTITION_MANIFEST.out.manifest
                 .map { meta, manifest -> tuple(meta.id, manifest) }
-                .flatMap { id, manifest -> manifest.splitCsv(header: true, sep: '\t').collect { row -> tuple(id, row) } }
+                .flatMap { id, manifest -> manifest.splitCsv(header: true, sep: '\t').collect { row ->
+                    tuple(id, [
+                        partition_id: row.partition_id as Integer,
+                        mode: row.mode.toString(),
+                        contig: row.contig.toString(),
+                        start: row.start as Integer,
+                        end: row.end as Integer,
+                        padding: row.padding as Integer,
+                        annotation_load: row.annotation_load as Integer,
+                        estimated_read_load: row.estimated_read_load?.toString() ?: ''
+                    ])
+                } }
             iribo_shard_inputs = published_inputs
                 .map { meta, bam, bai -> tuple(meta.id, meta, bam, bai) }
                 .combine(orf_gtf)

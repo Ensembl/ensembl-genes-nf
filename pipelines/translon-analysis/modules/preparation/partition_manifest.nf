@@ -3,7 +3,7 @@ process MAKE_PARTITION_MANIFEST {
     label 'process_low'
     // The manifest estimates BAM load with samtools; use the same pinned
     // samtools image used by BAM preparation rather than a Python-only image.
-    container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
+    container 'ghcr.io/jackcurragh/translon-python:1.0.0'
     input:
     tuple val(meta), path(annotation), path(bam)
     output:
