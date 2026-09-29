@@ -345,7 +345,7 @@ workflow TRANSLON_ANALYSIS {
                 .combine(fasta)
                 .combine(channel.value(price_fai))
                 .join(price_contigs, by: 0)
-                .map { id, meta, bam, bai, gtf_file, fasta_file, fai_file, _id2, _manifest_meta, contig ->
+                .map { id, meta, bam, bai, gtf_file, fasta_file, fai_file, _manifest_meta, contig ->
                     tuple(meta + [shard_id: contig], bam, bai, gtf_file, fasta_file, fai_file, contig)
                 }
             PREPARE_PRICE_CONTIG(price_inputs)
