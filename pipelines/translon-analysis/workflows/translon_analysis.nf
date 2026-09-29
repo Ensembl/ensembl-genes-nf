@@ -237,11 +237,11 @@ workflow TRANSLON_ANALYSIS {
             }
             if (run_iribo) {
             partition_fai = file(params.partition_fai, checkIfExists: true)
-            MAKE_PARTITION_MANIFEST(published_inputs.map { meta, bam, _bai -> tuple(meta, partition_fai, bam) })
+            MAKE_PARTITION_MANIFEST(published_inputs.map { values -> tuple(values[0], partition_fai, values[1]) })
             iribo_partition_manifests = MAKE_PARTITION_MANIFEST.out.manifest
                 .map { meta, manifest -> tuple(meta.id, manifest) }
             iribo_shard_inputs = published_inputs
-                .map { meta, bam, bai -> tuple(meta.id, meta, bam, bai) }
+                .map { values -> tuple(values[0].id, values[0], values[1], values[2]) }
                 .combine(orf_gtf)
                 .combine(fasta)
                 .combine(iribo_partition_manifests, by: 0)
