@@ -17,13 +17,12 @@ process RUN_RIBOTIE {
     cp ${bam} raw/riboseq.bam
     cp ${gtf} raw/reference.gtf
     cp ${fasta} raw/reference.fa
-    cat > raw/ribotie.yml <<-END_CONFIG
-    gtf_path: raw/reference.gtf
-    fa_path: raw/reference.fa
-    ribo_paths:
-      ${meta.id}: raw/riboseq.bam
-    h5_path: raw/${meta.id}.h5
-    END_CONFIG
+    printf '%s\n' \
+        'gtf_path: raw/reference.gtf' \
+        'fa_path: raw/reference.fa' \
+        'ribo_paths:' \
+        '  ${meta.id}: raw/riboseq.bam' \
+        'h5_path: raw/${meta.id}.h5' > raw/ribotie.yml
     python - <<'PY'
     import torch
     if not torch.cuda.is_available():
@@ -31,7 +30,7 @@ process RUN_RIBOTIE {
     print('RiboTIE CUDA device:', torch.cuda.get_device_name(0))
     PY
     ribotie raw/ribotie.yml ${args}
-    test -n "\$(find raw -type f \( -name '*.csv' -o -name '*.gtf' \) | head -1)" || { echo 'RiboTIE produced no native result table' >&2; exit 1; }
+    test -n "\$(find raw -type f -name '*.csv' -o -type f -name '*.gtf' | head -1)" || { echo 'RiboTIE produced no native result table' >&2; exit 1; }
     printf '"%s":\n    RiboTIE: source-pinned\n' '${task.process}' > versions.yml
     """
     stub:

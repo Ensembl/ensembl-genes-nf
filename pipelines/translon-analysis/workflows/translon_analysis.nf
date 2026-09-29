@@ -173,7 +173,7 @@ workflow TRANSLON_ANALYSIS {
             // transcriptome partitioning is requested. Genome sharding is for
             // callers such as iRibo and PRICE; RiboCode remains unsharded there.
             ribocode_enabled = true
-            MAKE_PARTITION_MANIFEST(ribocode_annotation.map { meta, bam, _bai, tx_gtf, _tx_fasta -> tuple(meta, tx_gtf, bam) })
+            MAKE_PARTITION_MANIFEST(ribocode_annotation.map { meta, bam, bai, tx_gtf, _tx_fasta -> tuple(meta, tx_gtf, bam, bai) })
             partition_rows = MAKE_PARTITION_MANIFEST.out.manifest
                 .map { meta, manifest -> tuple(meta.id, meta, manifest) }
                 .flatMap { id, meta, manifest -> manifest.splitCsv(header: true, sep: '\t').collect { row -> tuple(id, meta, row) } }
@@ -237,7 +237,7 @@ workflow TRANSLON_ANALYSIS {
             }
             if (run_iribo) {
             partition_fai = file(params.partition_fai, checkIfExists: true)
-            MAKE_PARTITION_MANIFEST(published_inputs.map { values -> tuple(values[0], partition_fai, values[1]) })
+            MAKE_PARTITION_MANIFEST(published_inputs.map { values -> tuple(values[0], partition_fai, values[1], values[2]) })
             iribo_partition_manifests = MAKE_PARTITION_MANIFEST.out.manifest
                 .map { meta, manifest -> tuple(meta.id, manifest) }
             iribo_shard_inputs = published_inputs

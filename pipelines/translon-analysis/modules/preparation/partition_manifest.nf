@@ -5,7 +5,7 @@ process MAKE_PARTITION_MANIFEST {
     // samtools image used by BAM preparation rather than a Python-only image.
     container 'ghcr.io/jackcurragh/translon-python:1.0.0'
     input:
-    tuple val(meta), path(annotation), path(bam)
+    tuple val(meta), path(annotation), path(bam), path(bai)
     output:
     tuple val(meta), path('partition_manifest.tsv'), emit: manifest
     script:

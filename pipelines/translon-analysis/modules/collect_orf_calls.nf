@@ -3,7 +3,7 @@ process COLLECT_ORF_CALLS {
     publishDir "${params.outdir}/consensus_outputs", mode: 'copy'
 
     input:
-    tuple val(meta), path(standardized_tsvs), path(bed12s)
+    tuple val(meta), path(standardized_tsvs, stageAs: 'standardized_tsv_*'), path(bed12s, stageAs: 'bed12_*')
     path genome_fasta
     val min_caller_agreement
 
