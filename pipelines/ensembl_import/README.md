@@ -1,9 +1,9 @@
 # Ensembl Import Pipeline
 
 This pipeline imports RefSeq assemblies into Ensembl core databases. For each
-assembly it fetches the RefSeq annotation, creates a core database, adds sample
-gene metadata, loads taxonomy information from NCBI, and publishes an input
-CSV for the statistics pipeline.
+assembly it fetches the RefSeq annotation, creates a core database, loads the
+RefSeq RepeatMasker features, adds sample gene metadata, loads taxonomy
+information from NCBI, and publishes an input CSV for the statistics pipeline.
 
 ## Requirements
 
@@ -86,6 +86,10 @@ main.nf
     subworkflows/import_refseq_to_core.nf
       FETCH_REFSEQ
       LOAD_REFSEQ
+    subworkflows/import_repeatmasker.nf
+      DOWNLOAD_REPEATMASKER
+      CONVERT_REPEATMASKER
+      LOAD_REPEATMASKER
     subworkflows/get_metadata_core.nf
       GET_SAMPLE_GENE
       ADD_STATIC_METAKEYS
@@ -98,11 +102,16 @@ Each assembly is processed independently.
 1. `FETCH_REFSEQ` downloads and prepares the RefSeq GFF3, FASTA, and assembly
    report files.
 2. `LOAD_REFSEQ` creates the Ensembl core database with `gff_cli.py`.
-3. `GET_SAMPLE_GENE` selects and inserts sample gene metadata.
-4. `ADD_STATIC_METAKEYS` inserts configured static metadata keys.
-5. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
+3. `DOWNLOAD_REPEATMASKER` downloads the RefSeq RepeatMasker output with
+   `gff-loader refseq download-repeatmasker`.
+4. `CONVERT_REPEATMASKER` converts the downloaded output to GTF using the
+   assembly report.
+5. `LOAD_REPEATMASKER` loads the GTF with analysis name `repeatmasker`.
+6. `GET_SAMPLE_GENE` selects and inserts sample gene metadata.
+7. `ADD_STATIC_METAKEYS` inserts configured static metadata keys.
+8. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
    core database.
-6. `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
+9. `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
 
 ## Outputs
 
@@ -110,6 +119,7 @@ Published files are written below `--outdir`:
 
 ```text
 <outdir>/refseq/<assembly_id>/
+<outdir>/refseq/<assembly_id>/repeatmasker/
 <outdir>/metadata/<assembly_id>/
 ```
 

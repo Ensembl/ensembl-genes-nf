@@ -1,4 +1,5 @@
 include { IMPORT_REFSEQ_TO_CORE } from '../subworkflows/import_refseq_to_core.nf'
+include { IMPORT_REPEATMASKER } from '../subworkflows/import_repeatmasker.nf'
 include { GET_METADATA_CORE } from '../subworkflows/get_metadata_core.nf'
 include { PREPARE_STATS_INPUT } from '../modules/prepare_stats_input.nf'
 include { COMBINE_STATS_INPUT } from '../modules/combine_stats_input.nf'
@@ -18,8 +19,14 @@ workflow IMPORT_REFSEQ {
 
         IMPORT_REFSEQ_TO_CORE(samples_ch, db_config_ch)
 
+        IMPORT_REPEATMASKER(
+            IMPORT_REFSEQ_TO_CORE.out.loaded_refseq,
+            IMPORT_REFSEQ_TO_CORE.out.assembly_report,
+            db_config_ch
+        )
+
         GET_METADATA_CORE(
-            IMPORT_REFSEQ_TO_CORE.out.metadata_input,
+            IMPORT_REPEATMASKER.out.loaded,
             db_config_ch
         )
 
@@ -29,6 +36,7 @@ workflow IMPORT_REFSEQ {
         combined_stats_input = COMBINE_STATS_INPUT(PREPARE_STATS_INPUT.out.csv.collect())
 
         versions_ch = IMPORT_REFSEQ_TO_CORE.out.versions
+            .mix(IMPORT_REPEATMASKER.out.versions)
             .mix(GET_METADATA_CORE.out.versions)
             .mix(PREPARE_STATS_INPUT.out.versions)
             .mix(COMBINE_STATS_INPUT.out.versions)
