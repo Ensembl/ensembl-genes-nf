@@ -31,6 +31,7 @@ include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 include { BUSCO_LINEAGE } from '../modules/busco_lineage.nf'
 include { BUSCO_CORE_METAKEYS } from '../modules/busco_core_metakeys.nf'
+include { BUSCO_ASSEMBLY_DB } from '../modules/busco_assembly_db.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,6 +41,7 @@ In this subworkflow we run BUSCO on either genome or protein mode based on user 
 We first fetch metadata from the core database or from NCBI depending on the input parameters.
 We then select the appropriate BUSCO dataset based on the taxon_id.
 Finally, we run BUSCO in the selected mode(s) and populate the core database with the results.
+Optionally, genome mode results are loaded into the assembly metadata database and genome_busco.status is marked done (--update_registry).
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 */
 workflow RUN_BUSCO {
@@ -139,6 +141,26 @@ workflow RUN_BUSCO {
 
     BUSCO_CORE_METAKEYS(buscoOutput)
     ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS.out.versions_file)
+
+    // Load BUSCO genome results into the assembly metadata database
+    if (params.update_registry) {
+        if (!params.asm_metadata) {
+            error("--asm_metadata (JSON with assembly metadata DB connection params) is required with --update_registry")
+        }
+        // Accept a JSON string (command line) or a map (params file) and normalise to a JSON string
+        def asmMetadata = params.asm_metadata instanceof Map
+            ? groovy.json.JsonOutput.toJson(params.asm_metadata)
+            : params.asm_metadata.toString()
+        try {
+            assert new groovy.json.JsonSlurper().parseText(asmMetadata) instanceof Map
+        }
+        catch (Throwable _e) {
+            error("--asm_metadata must be a JSON object with the assembly metadata DB connection params")
+        }
+        def genomeOutput = buscoOutput.filter { meta, _summary_file -> meta.busco_mode == 'genome' }
+        BUSCO_ASSEMBLY_DB(genomeOutput, asmMetadata)
+        ch_versions_file = ch_versions_file.mix(BUSCO_ASSEMBLY_DB.out.versions_file)
+    }
 
     emit:
     versions = ch_versions_file

@@ -44,6 +44,14 @@
       "type": "boolean",
       "description":"Create JSON file with Busco metakeys and load it into the db"
     },
+    "update_registry": {
+      "type": "boolean",
+      "description":"Load BUSCO genome results into the assembly metadata db (assembly_metrics table) and mark genome_busco.status as done (assembly_events table)"
+    },
+    "asm_metadata": {
+      "type": ["string", "object"],
+      "description":"JSON string (or object in a params file) with assembly metadata db connection params (host, port, user, password, database). Required with --update_registry"
+    },
     "dbname": {
       "type": "string",
       "hidden": true
