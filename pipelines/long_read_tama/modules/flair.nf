@@ -1,7 +1,7 @@
 process FLAIR_JUNCTIONS {
     tag "${meta.id}:flair-junctions"
     label 'process_medium'
-    container "${params.flair_container ?: 'docker://quay.io/biocontainers/flair:3.0.0--pyhdfd78af_0'}"
+    container 'docker://community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'
 
     input:
     tuple val(meta), path(bam), path(bai)
@@ -29,7 +29,7 @@ process FLAIR_JUNCTIONS {
 process FLAIR_TRANSCRIPTOME {
     tag "${meta.id}:flair-transcriptome"
     label 'process_high_memory'
-    container "${params.flair_container ?: 'docker://quay.io/biocontainers/flair:3.0.0--pyhdfd78af_0'}"
+    container 'docker://community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'
 
     input:
     tuple val(meta), path(bam), path(bai), path(junctions)
@@ -70,7 +70,7 @@ process FLAIR_TRANSCRIPTOME {
 process FLAIR_COMBINE {
     tag "${meta.id}:flair-combine"
     label 'process_high_memory'
-    container "${params.flair_container ?: 'docker://quay.io/biocontainers/flair:3.0.0--pyhdfd78af_0'}"
+    container 'docker://community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'
 
     input:
     tuple val(meta), path(archives, stageAs: 'input??.tar.gz')
