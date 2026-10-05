@@ -255,11 +255,13 @@ is not emitted; the audit manifest records that source explicitly.
 ## FLAIR backend
 
 FLAIR is an independent annotation-free transcript-discovery backend. It first
-derives a junction BED from each complete accession BAM using FLAIR's
-`junctions_from_sam`, then runs `flair transcriptome` and combines the native
-accession products with `flair_combine`. No annotation is supplied. Stable
-products include the native BED/GTF/FASTA and read-to-isoform map; the cohort
-BED12 is derived only after FLAIR's native combine stage. Set
+derives a junction BED from each complete accession BAM with the repository's
+CIGAR-aware BAM helper, then runs `flair transcriptome` and combines the native
+accession products with `flair_combine`. The helper retains splice `N`
+operations while accepting the clipping and indel operations produced by
+minimap2. No annotation is supplied. Stable products include the native
+BED/GTF/FASTA and read-to-isoform map; the cohort BED12 is derived only after
+FLAIR's native combine stage. Set
 `--model_backend flair` or include it in `--model_backend all`.
 
 FLAIR and IsoQuant intentionally use complete sorted/indexed BAMs rather than

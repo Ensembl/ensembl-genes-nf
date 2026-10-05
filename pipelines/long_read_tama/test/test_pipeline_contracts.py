@@ -30,6 +30,7 @@ def test_all_pipeline_helpers_are_executable():
     helpers = (PIPELINE / "bin").glob("*.py")
     assert all(os.access(path, os.X_OK) for path in helpers)
     assert os.access(PIPELINE / "bin" / "bam_to_alignment_gtf.sh", os.X_OK)
+    assert os.access(PIPELINE / "bin" / "bam_to_junction_bed.py", os.X_OK)
 
 
 def test_workflow_exposes_required_boundaries():
@@ -271,7 +272,7 @@ def test_flair_and_common_comparison_are_independent_contracts():
     assert "FLAIR_TRANSCRIPTOME(flair_inputs, reference)" in runner
     assert ".join(FLAIR_JUNCTIONS.out.bed" in runner
     assert "process FLAIR_JUNCTIONS" in module
-    assert "junctions_from_sam" in module
+    assert "bam_to_junction_bed.py" in module
     assert "flair transcriptome" in module and "--genome '${reference}'" in module
     assert "--junction_bed '${junctions}'" in module
     assert "flair combine" in module
