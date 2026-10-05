@@ -16,7 +16,7 @@ process TMERGE_NATIVE_MERGE {
     """
     printf '%s\\n' ${gtfs} | LC_ALL=C sort > merge_filelist.tsv
     sha256sum merge_filelist.tsv > merge_filelist.sha256
-    cat $(cat merge_filelist.tsv) > tmerge_native_input.gtf
+    cat \$(cat merge_filelist.tsv) > tmerge_native_input.gtf
     test -s tmerge_native_input.gtf || { echo 'tmerge native merge received no GTF records' >&2; exit 1; }
     tmerge ${params.tmerge_args ?: ''} --input tmerge_native_input.gtf --output ${backend}_${accession}_merged.gtf
     test -s ${backend}_${accession}_merged.gtf || { echo 'tmerge native merge produced an empty GTF' >&2; exit 1; }

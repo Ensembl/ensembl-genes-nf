@@ -17,7 +17,7 @@ process STRINGTIE3_COLLAPSE {
     """
     stringtie -L -p ${task.cpus} -o ${prefix}.gtf ${bam}
     test -s ${prefix}.gtf || { echo 'StringTie3 produced an empty GTF' >&2; exit 1; }
-    model_count=$(grep -o 'transcript_id "[^"]*"' ${prefix}.gtf | sort -u | wc -l | tr -d ' ')
+    model_count=\$(grep -o 'transcript_id "[^"]*"' ${prefix}.gtf | sort -u | wc -l | tr -d ' ')
     printf 'backend\\trun_accession\\tshard\\tstatus\\tmodels\\nstringtie3\\t${meta.id}\\t${shard}\\tSUCCESS\\t%s\\n' "\${model_count}" > ${prefix}.status.tsv
     printf '"%s":\\n    stringtie: 3.0.3\\n' '${task.process}' > versions.yml
     """
