@@ -71,7 +71,6 @@
     ,"isoquant_threads": {"type": ["integer", "null"], "minimum": 1, "default": null}
     ,"isoquant_high_memory": {"enum": [true, false, "true", "false"], "default": false}
     ,"isoquant_genedb_output": {"type": ["string", "null"], "default": null}
-    ,"flair_container": {"type": ["string", "null"], "default": null, "description": "Pinned FLAIR container override"}
     ,"flair_args": {"type": "string", "default": "", "description": "Additional FLAIR transcriptome arguments; pipeline-owned inputs are rejected"}
     ,"flair_threads": {"type": ["integer", "null"], "minimum": 1, "default": null}
     ,"bambu_container": {"type": ["string", "null"], "default": null, "description": "Pinned Bambu container override"}
