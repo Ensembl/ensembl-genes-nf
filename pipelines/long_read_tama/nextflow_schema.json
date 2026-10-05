@@ -21,7 +21,9 @@
     "reference_fai": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Optional FASTA index to validate alongside the reference"},
     "minimap_index": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Existing minimap2 .mmi; omit to build it"},
     "cohort_id": {"type": "string", "default": "bos_indicus_long_read"},
-    "model_backend": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "all"], "default": "tama", "description": "Model builder run on the split minimap2 BAMs; all runs every backend and keeps TAMA as the canonical downstream result"},
+    "model_backend": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "isoquant", "flair", "bambu", "all"], "default": "tama", "description": "Independent candidate-model backend; IsoQuant, FLAIR, and Bambu retain their native complete-BAM workflows"},
+    "backend_merge_mode": {"type": "string", "enum": ["native", "legacy_common"], "default": "native", "description": "Merge semantics: native preserves each backend's native format and topology; legacy_common is an explicit compatibility path using merge_tool"},
+    "backend_failure_policy": {"type": "string", "enum": ["fail_fast", "continue"], "default": "fail_fast", "description": "Exploration policy for backend process failures; continue preserves results from other backends and records failures in the execution trace"},
     "outdir": {"type": "string", "default": "./long_read_tama_results"},
     "tracedir": {"type": "string", "description": "Directory for Nextflow execution reports and trace files"},
     "minimap2_preset": {"type": "string", "default": "splice:hq"},
@@ -35,7 +37,11 @@
     "tama_cap_mode": {"type": "string", "enum": ["no_cap", "capped"], "default": "no_cap"},
     "tama_end_mode": {"type": "string", "enum": ["common_ends", "longest_ends"], "default": "common_ends"},
     "tama_run_mode": {"type": "string", "enum": ["low_mem", "original"], "default": "low_mem"},
-    "merge_tool": {"type": "string", "enum": ["tama", "tmerge"], "default": "tama", "description": "Backend used to merge per-accession collapsed models; tmerge uses the pinned public Wave container"},
+    "merge_tool": {"type": "string", "enum": ["tama", "tmerge"], "default": "tama", "description": "Deprecated legacy_common-only merge selector; native mode rejects non-default values and selects the backend's native merge workflow"},
+    "stringtie2_merge_args": {"type": "string", "default": "", "description": "Additional arguments for StringTie2 --merge; recorded in native provenance"},
+    "stringtie3_merge_args": {"type": "string", "default": "", "description": "Additional arguments for StringTie3 --merge; recorded in native provenance"},
+    "stringtie_merge_scope": {"type": "string", "enum": ["run_then_cohort"], "default": "run_then_cohort", "description": "StringTie native merge topology; only run_then_cohort is currently supported"},
+    "publish_native_intermediates": {"enum": [true, false, "true", "false"], "default": false, "description": "Publish native run and merge intermediates under the backend-namespaced output tree"},
     "tmerge_args": {"type": "string", "default": "", "description": "Additional arguments passed to tmerge"},
     "shard_mode": {"type": "string", "enum": ["none", "contig"], "default": "contig", "description": "Split each sorted BAM by reference contig before TAMA; use none only for deliberately small inputs"},
     "shard_contig_reads": {"type": "integer", "minimum": 0, "default": 1000000, "description": "Mapped-read heuristic used to classify large contigs"},
@@ -50,6 +56,30 @@
     ,"diamond_classification_type": {"type": "string", "enum": ["long_read", "standard", "standard_old", "gifts"], "default": "long_read", "description": "Legacy coverage/identity classification rule set"}
     ,"ensembl_genes_container": {"type": "string", "default": "dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-genes", "description": "Container providing the transcriptomic data selector"}
     ,"transcriptomic_data_command": {"type": "string", "default": "python3 -m ensembl.genes.transcriptomic_data.get_transcriptomic_data", "description": "Command used inside the Ensembl genes container to retrieve long-read candidates"}
+    ,"isoquant_mode": {"type": "string", "enum": ["annotation_free", "reference_guided"], "default": "annotation_free", "description": "IsoQuant mode; annotation_free is the primary initial-annotation mode"}
+    ,"isoquant_scope": {"type": "string", "enum": ["accession", "cohort", "both"], "default": "cohort"}
+    ,"isoquant_data_type": {"type": "string", "enum": ["pacbio_ccs", "nanopore", "assembly"], "default": "pacbio_ccs", "description": "Explicit IsoQuant input data type; never inferred from filenames"}
+    ,"isoquant_genedb": {"type": ["string", "null"], "format": "file-path", "exists": true, "default": null, "description": "GTF/GFF or gffutils database for reference_guided IsoQuant"}
+    ,"isoquant_complete_genedb": {"enum": [true, false, "true", "false"], "default": false}
+    ,"isoquant_analysis": {"type": "array", "items": {"type": "string", "enum": ["transcript_discovery", "quantification"]}, "minItems": 1, "default": ["transcript_discovery"]}
+    ,"isoquant_large_output": {"type": "array", "items": {"type": "string", "enum": ["read_info", "read2transcripts", "read_assignments", "corrected_bed"]}, "minItems": 1, "default": ["read_info", "read2transcripts"]}
+    ,"isoquant_read_group": {"type": "array", "items": {"type": "string"}, "minItems": 1, "default": ["none"]}
+    ,"isoquant_report_novel_unspliced": {"enum": [true, false, "true", "false"], "default": false}
+    ,"isoquant_check_canonical": {"enum": [true, false, "true", "false"], "default": false}
+    ,"isoquant_numba_disable_jit": {"enum": [true, false, "true", "false"], "default": false, "description": "Set NUMBA_DISABLE_JIT=1 for IsoQuant containers whose Numba cache cannot locate read-only package sources; benchmark before production use"}
+    ,"isoquant_args": {"type": "string", "default": "", "description": "Additional IsoQuant arguments; pipeline-owned input, mode, output, and analysis flags are rejected"}
+    ,"isoquant_threads": {"type": ["integer", "null"], "minimum": 1, "default": null}
+    ,"isoquant_high_memory": {"enum": [true, false, "true", "false"], "default": false}
+    ,"isoquant_genedb_output": {"type": ["string", "null"], "default": null}
+    ,"flair_container": {"type": ["string", "null"], "default": null, "description": "Pinned FLAIR container override"}
+    ,"flair_args": {"type": "string", "default": "", "description": "Additional FLAIR transcriptome arguments; pipeline-owned inputs are rejected"}
+    ,"flair_threads": {"type": ["integer", "null"], "minimum": 1, "default": null}
+    ,"bambu_container": {"type": ["string", "null"], "default": null, "description": "Pinned Bambu container override"}
+    ,"bambu_scope": {"type": "string", "enum": ["accession", "cohort", "both"], "default": "cohort", "description": "Bambu execution scope"}
+    ,"bambu_install_biocmanager": {"enum": [true, false, "true", "false"], "default": true, "description": "Install the small BiocManager bootstrap into the task-local R library when the pinned Bambu image omits it"}
+    ,"bambu_track_reads": {"enum": [true, false, "true", "false"], "default": true, "description": "Retain Bambu read-to-transcript assignments in the native RDS; disable only for a lower-memory structural-only benchmark"}
+    ,"bambu_quantify": {"enum": [true, false, "true", "false"], "default": true, "description": "Run Bambu quantification so native read-to-transcript assignments are available; set false for discovery-only mode"}
+    ,"bambu_r_lib": {"type": ["string", "null"], "default": null, "description": "Optional shared R library containing Bambu runtime dependencies such as BiocManager"}
   },
   "anyOf": [
     {"required": ["taxon_id"]},
@@ -84,6 +114,18 @@
           {"required": ["diamond_reference_proteins"]}
         ]
       }
+    },
+    {
+      "if": {"required": ["model_backend"], "properties": {"model_backend": {"enum": ["isoquant", "all"]}}},
+      "then": {"required": ["reference_fasta", "isoquant_mode", "isoquant_scope", "isoquant_data_type"]}
+    },
+    {
+      "if": {"required": ["isoquant_mode"], "properties": {"isoquant_mode": {"const": "annotation_free"}}},
+      "then": {"properties": {"isoquant_genedb": {"type": "null"}}}
+    },
+    {
+      "if": {"required": ["isoquant_mode"], "properties": {"isoquant_mode": {"const": "reference_guided"}}},
+      "then": {"required": ["isoquant_genedb"]}
     }
   ],
   "required": []

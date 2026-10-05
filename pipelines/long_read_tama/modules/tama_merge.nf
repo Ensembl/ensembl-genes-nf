@@ -10,14 +10,15 @@ process TAMA_MERGE {
     // Shard validation deliberately emits the same basename for every BED.
     // Stage each collection member below a numbered directory so a per-accession
     // merge can accept all shard outputs without Nextflow filename collisions.
-    tuple val(backend), val(cohort_id), path(beds, stageAs: 'bed??/*')
+    tuple val(meta), val(backend), val(cohort_id), path(beds, stageAs: 'bed??/*')
 
     output:
-    tuple val(backend), val(cohort_id), path("${backend}_${cohort_id}_merged.bed"), emit: bed
+    tuple val(meta), val(backend), val(cohort_id), path("${backend}_${cohort_id}_merged.bed"), emit: bed
     path '*_gene_report.txt', emit: gene_report
     path '*_merge.txt', emit: merge_report
     path '*_trans_report.txt', emit: trans_report
     path 'merge_filelist.tsv', emit: filelist
+    path 'merge_filelist.sha256', emit: filelist_checksum
     path 'versions.yml', emit: versions
 
     script:
@@ -25,6 +26,7 @@ process TAMA_MERGE {
     prepare_tama_merge_filelist.py merge_filelist.tsv ${beds} \\
         --seq-type ${params.tama_cap_mode} \\
         --priority-rank 1,1,1
+    sha256sum merge_filelist.tsv > merge_filelist.sha256
     tama_merge.py -f merge_filelist.tsv -p ${cohort_id}.merged -e ${params.tama_end_mode} -d merge_dup
     test -s ${cohort_id}.merged.bed || { echo 'TAMA merge produced an empty BED' >&2; exit 1; }
     mv ${cohort_id}.merged.bed ${backend}_${cohort_id}_merged.bed
@@ -39,6 +41,7 @@ process TAMA_MERGE {
     printf 'stub\\t0\\t4\\t${backend}.${cohort_id}.merged.1\\t0\\t+\\t0\\t4\\t0\\t1\\t4,\\t0,\\n' > ${backend}_${cohort_id}_merged.bed
     touch ${cohort_id}.merged_gene_report.txt ${cohort_id}.merged_merge.txt ${cohort_id}.merged_trans_report.txt
     printf 'stub.bed\\tno_cap\\t1,1,1\\tstub\\n' > merge_filelist.tsv
+    sha256sum merge_filelist.tsv > merge_filelist.sha256
     printf '"%s":\\n    tama_merge: stub\\n' '${task.process}' > versions.yml
     """
 }

@@ -21,7 +21,10 @@ def main():
         if len(fields) < 4:
             continue
         contig, length, mapped = fields[0], int(fields[1]), int(fields[2])
-        if contig == "*" or length <= 0:
+        # Do not materialise empty contigs.  They cannot produce candidate
+        # transcript models and would otherwise create one failing/empty task
+        # per reference scaffold for every enabled backend.
+        if contig == "*" or length <= 0 or mapped <= 0:
             continue
         resource = "very_large" if mapped >= a.threshold * 5 else "large" if mapped >= a.threshold else "small"
         lines.append(f"{contig}\t{length}\t{mapped}\ttrue\t{resource}")

@@ -4,11 +4,11 @@ process VALIDATE_BACKEND_BED {
     container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
-    tuple val(backend), val(meta), val(shard), path(bed)
+    tuple val(meta), val(backend), val(shard), path(bed)
 
     output:
-    tuple val(backend), val(meta), val(shard), path('validated_models.bed'), emit: bed
-    tuple val(backend), val(meta), val(shard), path('backend_status.tsv'), emit: status
+    tuple val(meta), val(backend), val(shard), path('validated_models.bed'), emit: bed
+    tuple val(meta), val(backend), val(shard), path('backend_status.tsv'), emit: status
     path 'versions.yml', emit: versions
 
     script:

@@ -4,10 +4,10 @@ process TMERGE_MERGE_ACCESSION {
     container 'community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea'
 
     input:
-    tuple val(backend), val(accession), path(beds, stageAs: 'bed??/*')
+    tuple val(meta), val(backend), val(accession), path(beds, stageAs: 'bed??/*')
 
     output:
-    tuple val(backend), val(accession), path("${backend}_${accession}_merged.bed"), emit: bed
+    tuple val(meta), val(backend), val(accession), path("${backend}_${accession}_merged.bed"), emit: bed
     path 'merge_filelist.tsv', emit: filelist
     path 'accession_merge_report.tsv', emit: report
     path 'versions.yml', emit: versions

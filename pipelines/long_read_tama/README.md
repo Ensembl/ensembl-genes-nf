@@ -3,10 +3,9 @@
 ## Runtime and module boundaries
 
 Production runs require Nextflow 26.04.6 or newer and write timeline, report,
-and trace files under `pipeline_info`. Process failures are bounded by the
-configured retry policy and then ignored so independent accessions/shards can
-continue; task traces and stage-specific status/report outputs identify the
-affected inputs.
+and trace files under `pipeline_info`. Acquisition and explicitly soft-failed
+TAMA shard tasks may continue with status records; required native merge and
+validation tasks terminate on failure.
 
 The workflow is composed from these named subworkflows:
 
@@ -14,20 +13,33 @@ The workflow is composed from these named subworkflows:
   conversion, and canonical FASTQ validation.
 - `ALIGN_LONG_READS`: minimap2 alignment, samtools sorting/indexing, and
   alignment QC.
-- `COLLAPSE_LONG_READ_MODELS` and `MERGE_LONG_READ_MODELS`: TAMA model
-  generation and deterministic merge inputs.
+- `COLLAPSE_LONG_READ_MODELS` and `MERGE_LONG_READ_MODELS`: backend-native
+  model generation and deterministic native/legacy merge inputs.
 - `VALIDATE_COMBINED_MODELS`: canonical naming/checksum and BED12 validation.
 - `RUN_DIAMOND_QC`: optional transcript, ORF, Diamond, and model-keyed report
   generation.
 
-Model construction is selected with `--model_backend tama|stringtie2|stringtie3|tmerge|all`.
-All backend processes receive the same split minimap2 BAM shards. `tama` keeps
-the existing TAMA Collapse path. `stringtie2` and `stringtie3` run StringTie
-long-read assembly directly on the shards. `tmerge` first converts each shard
-back to read-level exon GTF and then invokes tmerge; it does not consume
-already-collapsed TAMA BED files. `all` runs all four paths in parallel and
-keeps TAMA as the canonical downstream result while publishing the comparison
-models under `backend_models`.
+Model construction is selected with `--model_backend tama|stringtie2|stringtie3|tmerge|isoquant|flair|bambu|all`.
+Merge semantics are selected independently with
+`--backend_merge_mode native|legacy_common` (default: `native`). In native mode,
+all backend processes receive the same split minimap2 BAM shards and retain
+their native representation through per-accession and cohort merges:
+TAMA uses BED12, StringTie2/3 use GTF, and tmerge uses native GTF. BED12 is
+created only afterward for shared structural comparison. `all` produces
+independent final model sets; it does not make TAMA canonical. See
+`LONG_READ_BACKEND_EVALUATION.md` for the common benchmark contract and
+measurements needed before selecting a backend for future Ensembl work.
+
+`--merge_tool` is deprecated and applies only to the explicit `legacy_common`
+compatibility mode. StringTie merge arguments are configured with
+`--stringtie2_merge_args` and `--stringtie3_merge_args`; only the
+`run_then_cohort` topology is currently supported.
+
+Native run and cohort products emit backend-labelled model manifests, model
+counts, SHA256 checksums, sorted merge file lists, and merge-file-list
+checksums under `reports/native` when publishing is enabled. Set
+`--publish_native_intermediates true` to publish native intermediate files as
+well as the final comparison products.
 
 The public sample contracts are `tuple val(meta), path(reads.fastq.gz)` for
 canonical reads and `tuple val(meta), path(sorted.bam), path(sorted.bam.bai)`
@@ -135,9 +147,10 @@ shards are still included in the accession and cohort merges.
 Known per-shard TAMA failures are recorded in `tama_status.tsv` and do not
 produce a BED for that shard; successful shards continue to the accession and
 cohort merges. TAMA exit statuses are captured by the shard adapter and are
-non-terminal. The separate `--merge_tool` option controls the legacy
-post-collapse accession/cohort merge stage; it is not the model-construction
-backend selector. For a direct backend comparison, use `--model_backend`.
+non-terminal. The separate `--merge_tool` option controls only the legacy
+common post-collapse accession/cohort merge stage; it is not the
+model-construction backend selector. For a direct native backend comparison,
+use `--model_backend all --backend_merge_mode native`.
 
 The TAMA adapter has a targeted recovery for the known TAMA 1.0.3 empty-locus
 crash (`IndexError: list index out of range`). It retries only that signature
@@ -209,10 +222,116 @@ using a site-local mirror or validated replacement image. The `splice:hq` /
 secondary-alignment choice must still be benchmarked on
 `SRR29278220_subreads.fastq` before rollout.
 
+## IsoQuant backend
+
+IsoQuant is an independent backend over the complete sorted/indexed BAMs. It
+does not consume contig shards and its native GTF, read evidence, counts, and
+audit manifest are kept separate from TAMA/StringTie/tmerge merging. The
+default IsoQuant mode is annotation-free cohort discovery:
+
+```bash
+nextflow run pipelines/long_read_tama/main.nf -profile slurm \
+  --approved_manifest approved_run_manifest.tsv \
+  --fastq_cache_dir /shared/long-read-fastq-cache \
+  --reference_fasta genome.fa \
+  --model_backend isoquant \
+  --isoquant_data_type pacbio_ccs \
+  --isoquant_scope cohort
+```
+
+Use `--isoquant_scope accession` or `both` for per-accession evidence. The
+reference-guided mode requires `--isoquant_genedb`; annotation-free mode
+rejects that parameter. The pinned BioContainers image is IsoQuant 4.0.0 and
+the process uses the upstream-supported `isoquant --reference --bam
+--data_type --analysis --large_output` command shape.
+Under the local Apptainer runtime, the workflow redirects IsoQuant's `HOME`
+to a writable task-local directory when the image home is read-only. The
+optional `--isoquant_numba_disable_jit true` flag is retained only as a
+diagnostic fallback and is not the normal performance setting.
+In annotation-free mode, IsoQuant's native `transcript_model_reads.tsv.gz` is
+used as the stable read-evidence fallback when a separate `read_info.tsv.gz`
+is not emitted; the audit manifest records that source explicitly.
+
+## FLAIR backend
+
+FLAIR is an independent annotation-free transcript-discovery backend. It first
+derives a junction BED from each complete accession BAM using FLAIR's
+`junctions_from_sam`, then runs `flair transcriptome` and combines the native
+accession products with `flair_combine`. No annotation is supplied. Stable
+products include the native BED/GTF/FASTA and read-to-isoform map; the cohort
+BED12 is derived only after FLAIR's native combine stage. Set
+`--model_backend flair` or include it in `--model_backend all`.
+
+FLAIR and IsoQuant intentionally use complete sorted/indexed BAMs rather than
+contig shards. They must be compared with the same BAMs and explicit library
+technology as the other backends, but should not be treated as having TAMA or
+StringTie merge semantics.
+
+## Bambu backend
+
+Bambu is included as an additional annotation-free complete-BAM discovery
+backend. It runs with `annotations=NULL` and `NDR=1`; quantification and
+read-tracking are enabled by default so the candidate models retain native
+read evidence. Set `--model_backend bambu` or include it in
+`--model_backend all`; use `--bambu_scope both` for accession and cohort
+outputs. The pinned Bioconda image omits `BiocManager`, so the default
+`--bambu_install_biocmanager true` bootstraps that small dependency into the
+task-local R library. On an executor without outbound package access, provide
+a site-built `--bambu_container` that already contains BiocManager and set
+the bootstrap flag to false. Alternatively, install the dependency once in a
+shared library and pass its path with `--bambu_r_lib`, then set
+`--bambu_install_biocmanager false`.
+Read-to-transcript assignments are retained by default with
+`--bambu_track_reads true`; disable this only for a deliberately
+structural-only, lower-memory comparison. Use `--bambu_quantify false` for
+discovery-only output, in which case read assignments are not expected.
+
+## Weekend comparison run
+
+For an ONT cohort, the primary exploration run is:
+
+```bash
+nextflow run pipelines/long_read_tama/main.nf -profile slurm \
+  -with-trace -with-report -with-timeline \
+  --approved_manifest approved_run_manifest.tsv \
+  --fastq_cache_dir /shared/long-read-fastq-cache \
+  --reference_fasta genome.fa \
+  --model_backend all \
+  --backend_merge_mode native \
+  --backend_failure_policy continue \
+  --isoquant_data_type nanopore \
+  --isoquant_scope both \
+  --bambu_scope both \
+  --outdir /shared/long-read-results/all-native
+```
+
+For PacBio CCS, change only `--isoquant_data_type` to `pacbio_ccs` and ensure
+the approved manifest classifies the reads accordingly. The primary cohort
+and accession candidate sets are published under backend-specific directories;
+native tool products and evidence are retained alongside them. The
+backend-neutral structural summaries are published as
+`reports/comparison/candidate_model_comparison_cohort.tsv/.json` and
+`candidate_model_comparison_accession.tsv/.json`, with corresponding
+`candidate_model_manifest_*.tsv` files. `backend_failure_policy=continue`
+allows remaining methods to finish if an optional backend fails; the failure
+remains visible in the trace and must be included in the Monday review.
+Summarise computational cost after the run with:
+
+```bash
+python3 pipelines/long_read_tama/bin/summarise_backend_resources.py \
+  /shared/long-read-results/all-native/pipeline_info/execution_trace.txt \
+  /shared/long-read-results/all-native/reports/comparison/backend_resources.tsv \
+  /shared/long-read-results/all-native/reports/comparison/backend_resources.json
+```
+
+Do not compare an ONT run with the default IsoQuant `pacbio_ccs` setting. The
+technology is intentionally explicit so that a filename or accession label
+cannot silently change the model-building behaviour.
+
 ## Combined-model Diamond validation
 
-The optional combined-model validation path starts only after the cohort-wide
-TAMA merge:
+The optional combined-model validation path starts after each backend's
+cohort-wide native merge:
 
 ```text
 combined_models.bed -> combined_transcripts.fa -> combined_transcripts.faa -> Diamond
