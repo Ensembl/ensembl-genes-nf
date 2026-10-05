@@ -14,9 +14,8 @@ process FLAIR_JUNCTIONS {
     """
     test -s '${bam}' || { echo 'FLAIR junction extraction received an empty BAM' >&2; exit 1; }
     test -s '${bam}.bai' || { echo 'FLAIR junction extraction received no BAM index' >&2; exit 1; }
-    junctions_from_sam -s '${bam}' -n flair_junctions -c 0
-    test -s flair_junctions_junctions.bed || { echo 'No splice junctions were found in the BAM' >&2; exit 1; }
-    mv flair_junctions_junctions.bed flair_junctions.bed
+    bam_to_junction_bed.py '${bam}' flair_junctions.bed
+    test -s flair_junctions.bed || { echo 'No splice junctions were found in the BAM' >&2; exit 1; }
     printf '"%s":\n    flair_junctions: \$(flair --version 2>&1 | tail -n1 || true)\n' '${task.process}' > versions.yml
     """
 
