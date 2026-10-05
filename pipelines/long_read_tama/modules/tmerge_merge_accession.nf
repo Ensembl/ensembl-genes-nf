@@ -20,7 +20,7 @@ process TMERGE_MERGE_ACCESSION {
     gtf_to_bed12.py tmerge_output.gtf ${backend}_${accession}_merged.bed ${accession}
     test -s ${backend}_${accession}_merged.bed || { echo 'tmerge accession conversion produced no models' >&2; exit 1; }
     printf 'tmerge_input.gtf\\n' > merge_filelist.tsv
-    printf 'backend\\taccession\\tstatus\\tinputs\\n${backend}\\t${accession}\\tSUCCESS\\t%s\\n' "$(find . -path './bed??/*' -name '*.bed' | wc -l | tr -d ' ')" > accession_merge_report.tsv
+    printf 'backend\\taccession\\tstatus\\tinputs\\n${backend}\\t${accession}\\tSUCCESS\\t%s\\n' "\$(find . -path './bed??/*' -name '*.bed' | wc -l | tr -d ' ')" > accession_merge_report.tsv
     printf '"%s":\\n    tmerge: \$(tmerge --version 2>&1 | tail -n1 || true)\\n' '${task.process}' > versions.yml
     """
 

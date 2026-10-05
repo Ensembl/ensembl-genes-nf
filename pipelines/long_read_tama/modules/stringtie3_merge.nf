@@ -18,7 +18,7 @@ process STRINGTIE3_MERGE {
     printf '%s\\n' ${gtfs} | LC_ALL=C sort > merge_filelist.tsv
     sha256sum merge_filelist.tsv > merge_filelist.sha256
     stringtie --merge -p ${task.cpus} ${args} -o ${backend}_${accession}_merged.gtf \\
-        $(cat merge_filelist.tsv)
+        \$(cat merge_filelist.tsv)
     test -s ${backend}_${accession}_merged.gtf || { echo 'StringTie3 merge produced an empty GTF' >&2; exit 1; }
     printf '"%s":\\n    stringtie: 3.0.3\\n' '${task.process}' > versions.yml
     """
