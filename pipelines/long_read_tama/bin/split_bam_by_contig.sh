@@ -4,6 +4,7 @@ bam=$1; workload=$2; accession=$3; shard_dir=$4; manifest=$5
 mkdir -p "$shard_dir"
 printf 'contig\treference_bases\tmapped_reads\tresource_class\tpath\n' > "$manifest"
 tail -n +2 "$workload" | while IFS=$(printf '\t') read -r contig length mapped eligible resource_class; do
+    [[ "${mapped:-0}" -gt 0 ]] || continue
     safe=$(printf '%s' "$contig" | tr -c 'A-Za-z0-9._-' '_')
     shard="$shard_dir/$accession.$safe.bam"
     samtools view -b -o "$shard" "$bam" "$contig"

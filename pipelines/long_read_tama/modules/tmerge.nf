@@ -5,10 +5,10 @@ process TMERGE {
     container 'community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea'
 
     input:
-    tuple val(backend), val(cohort_id), path(beds)
+    tuple val(meta), val(backend), val(cohort_id), path(beds)
 
     output:
-    tuple val(backend), val(cohort_id), path("${backend}_${cohort_id}_merged.bed"), emit: bed
+    tuple val(meta), val(backend), val(cohort_id), path("${backend}_${cohort_id}_merged.bed"), emit: bed
     path '*_gene_report.txt', emit: gene_report
     path '*_merge.txt', emit: merge_report
     path '*_trans_report.txt', emit: trans_report

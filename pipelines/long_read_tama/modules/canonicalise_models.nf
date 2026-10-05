@@ -4,10 +4,10 @@ process CANONICALISE_COMBINED_MODELS {
     container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
-    tuple val(backend), val(meta), path(tama_bed)
+    tuple val(meta), val(backend), path(tama_bed)
 
     output:
-    tuple val(backend), val(meta), path("${backend}_combined_models.bed"), emit: bed
+    tuple val(meta), val(backend), path("${backend}_combined_models.bed"), emit: bed
     path "${backend}_combined_models.sha256", emit: checksum
     path "${backend}_bed12_normalisation.tsv", emit: normalisation
     path 'versions.yml', emit: versions

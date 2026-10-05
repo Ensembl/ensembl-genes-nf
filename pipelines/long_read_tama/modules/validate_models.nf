@@ -4,10 +4,10 @@ process VALIDATE_LONG_READ_MODELS {
     container 'https://depot.galaxyproject.org/singularity/python:3.11'
 
     input:
-    tuple val(backend), val(meta), path(model_bed)
+    tuple val(meta), val(backend), path(model_bed)
 
     output:
-    tuple val(backend), val(meta), path('model_validation.tsv'), emit: report
+    tuple val(meta), val(backend), path('model_validation.tsv'), emit: report
     path 'versions.yml', emit: versions
 
     script:

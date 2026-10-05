@@ -8,10 +8,10 @@ workflow VALIDATE_COMBINED_MODELS {
     merged_bed
 
     main:
-    // merged_bed: tuple val(backend), val(cohort_id), path(merged_models.bed)
-    canonical_input = merged_bed.map { backend, cohort_id, bed -> tuple(backend, [id: cohort_id, backend: backend], bed) }
+    // merged_bed: tuple val(meta), val(backend), val(cohort_id), path(merged_models.bed)
+    canonical_input = merged_bed.map { meta, backend, _cohort_id, bed -> tuple(meta, backend, bed) }
     CANONICALISE_COMBINED_MODELS(canonical_input)
-    VALIDATE_LONG_READ_MODELS(CANONICALISE_COMBINED_MODELS.out.bed.map { backend, meta, bed -> tuple(backend, meta, bed) })
+    VALIDATE_LONG_READ_MODELS(CANONICALISE_COMBINED_MODELS.out.bed)
 
     emit:
     bed = CANONICALISE_COMBINED_MODELS.out.bed

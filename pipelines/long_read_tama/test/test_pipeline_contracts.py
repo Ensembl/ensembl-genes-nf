@@ -15,6 +15,10 @@ def test_runtime_policy_and_schema_are_present():
     assert "task.attempt <= 5 ? 'retry' : 'ignore'" in pipeline
     assert "shard_mode = 'contig'" in pipeline
     assert '"default": "contig"' in (PIPELINE / "nextflow_schema.json").read_text()
+    assert "backend_merge_mode = 'native'" in pipeline
+    assert '"backend_merge_mode"' in (PIPELINE / "nextflow_schema.json").read_text()
+    assert "backend_failure_policy = 'fail_fast'" in pipeline
+    assert '"backend_failure_policy"' in (PIPELINE / "nextflow_schema.json").read_text()
     assert "withName: '.*'" in pipeline
     assert "withName: 'TAMA_COLLAPSE'" in pipeline
     assert "maxRetries = 5" in pipeline
@@ -85,11 +89,13 @@ def test_tama_soft_failures_have_explicit_status_and_diagnostics():
     assert "samtools view -bh -F 2308" in runner
 
 
-def test_production_failures_are_non_terminal():
+def test_native_backend_failures_are_terminal_but_legacy_tama_can_be_soft():
     config = (PIPELINE / "nextflow.config").read_text()
     assert "withName: '.*'" in config
     assert "withName: 'TAMA_COLLAPSE'" in config
-    assert "errorStrategy = 'ignore'" in config
+    assert "params.backend_merge_mode == 'native' ? 'terminate' : 'ignore'" in config
+    assert "STRINGTIE2_COLLAPSE|STRINGTIE3_COLLAPSE|TMERGE_COLLAPSE" in config
+    assert "errorStrategy = 'terminate'" in config
     assert "? 'retry' : 'terminate'" not in config
 
 
@@ -121,11 +127,11 @@ def test_model_backends_run_from_split_bams():
     assert "STRINGTIE3_COLLAPSE(stringtie3_bams)" in collapse
     assert "BAM_TO_ALIGNMENT_GTF(tmerge_bams)" in collapse
     assert "TMERGE_COLLAPSE(tmerge_gtf)" in collapse
-    assert "tuple('tama', meta, shard, bed)" in collapse
-    assert "tuple('stringtie2', meta, shard, bed)" in collapse
-    assert "tuple('stringtie3', meta, shard, bed)" in collapse
-    assert "tuple('tmerge', meta, shard, bed)" in collapse
-    assert "VALIDATE_BACKEND_BED(raw_beds)" in collapse
+    assert "tuple(meta, 'tama', shard, bed, 'bed12')" in collapse
+    assert "tuple(meta, 'stringtie2', shard, gtf, 'gtf')" in collapse
+    assert "tuple(meta, 'stringtie3', shard, gtf, 'gtf')" in collapse
+    assert "tuple(meta, 'tmerge', shard, gtf, 'gtf')" in collapse
+    assert "native_models" in collapse
     tmerge = (PIPELINE / "modules" / "tmerge_collapse.nf").read_text()
     stringtie2 = (PIPELINE / "modules" / "stringtie2_collapse.nf").read_text()
     bam_to_gtf = (PIPELINE / "modules" / "bam_to_alignment_gtf.nf").read_text()
@@ -150,11 +156,16 @@ def test_all_backends_have_independent_merge_and_finalisation_contracts():
     main = (PIPELINE / "main.nf").read_text()
     merge = (PIPELINE / "subworkflows" / "merge_long_read_models.nf").read_text()
     validate = (PIPELINE / "subworkflows" / "validate_combined_models.nf").read_text()
-    assert "MERGE_LONG_READ_MODELS(COLLAPSE_LONG_READ_MODELS.out.beds)" in main
+    assert "MERGE_LONG_READ_MODELS(COLLAPSE_LONG_READ_MODELS.out.native_models)" in main
     assert '"${backend}@@${meta.id}"' in merge
     assert '"${backend}@@${params.cohort_id}"' in merge
-    assert "tuple val(backend), val(accession), path(beds" in (PIPELINE / "modules" / "tama_merge_accession.nf").read_text()
-    assert "tuple val(backend), val(cohort_id), path(beds" in (PIPELINE / "modules" / "tama_merge.nf").read_text()
+    assert "STRINGTIE2_MERGE" in merge and "STRINGTIE3_MERGE" in merge
+    assert "TMERGE_NATIVE_MERGE" in merge
+    assert "AUDIT_NATIVE_MODELS" in merge
+    assert "AUDIT_NATIVE_COHORT_MODELS" in merge
+    assert "backend_merge_mode" in merge
+    assert "tuple val(meta), val(backend), val(accession), path(beds" in (PIPELINE / "modules" / "tama_merge_accession.nf").read_text()
+    assert "tuple val(meta), val(backend), val(cohort_id), path(beds" in (PIPELINE / "modules" / "tama_merge.nf").read_text()
     assert "CANONICALISE_COMBINED_MODELS(canonical_input)" in validate
     assert "VALIDATE_LONG_READ_MODELS" in validate
     canonical = (PIPELINE / "modules" / "canonicalise_models.nf").read_text()
@@ -166,8 +177,41 @@ def test_diamond_qc_receives_each_finalised_backend():
     main = (PIPELINE / "main.nf").read_text()
     diamond = (PIPELINE / "subworkflows" / "run_diamond_qc.nf").read_text()
     assert "if (run_diamond_validation)" in main
-    assert "qc_bed = combined_bed.map { _backend, meta, bed -> tuple(meta, bed) }" in diamond
+    assert "qc_bed = combined_bed.map { _meta, _backend, bed -> tuple(_meta, bed) }" in diamond
     assert "EXTRACT_COMBINED_TRANSCRIPTS(qc_bed, reference)" in diamond
+
+
+def test_native_backends_preserve_native_formats_until_merge():
+    collapse = (PIPELINE / "subworkflows" / "collapse_long_read_models.nf").read_text()
+    for module_name in ("stringtie2_collapse.nf", "stringtie3_collapse.nf", "tmerge_collapse.nf"):
+        module = (PIPELINE / "modules" / module_name).read_text()
+        assert "emit: gtf" in module
+        assert "gtf_to_bed12.py" not in module
+        assert "path('*.bed')" not in module
+    merge = (PIPELINE / "subworkflows" / "merge_long_read_models.nf").read_text()
+    assert "GTF_TO_BED12" in merge
+    assert "bed12_to_gtf.py" not in merge
+    assert "native_models" in collapse
+
+
+def test_native_merge_processes_have_backend_specific_containers():
+    expected = {
+        "stringtie2_merge.nf": "stringtie:2.2.3--h43eeafb_0",
+        "stringtie3_merge.nf": "stringtie:3.0.3--h29c0135_0",
+        "tmerge_native_merge.nf": "community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned",
+    }
+    for module_name, image in expected.items():
+        assert image in (PIPELINE / "modules" / module_name).read_text()
+
+
+def test_native_audit_records_counts_and_checksums():
+    module = (PIPELINE / "modules" / "audit_native_models.nf").read_text()
+    helper = (PIPELINE / "bin" / "audit_native_models.py").read_text()
+    assert "native_model_manifest.tsv" in module
+    assert "native_model_stats.tsv" in module
+    assert "native_model.sha256" in module
+    assert "hashlib.sha256" in helper
+    assert "model_count" in helper
 
 
 def test_backend_bed_validation_writes_status_without_shell_awk():
@@ -190,3 +234,68 @@ def test_entrypoint_uses_schema_and_keeps_optional_outputs_guarded():
     assert "build_versions = channel.empty()" in align
     assert "BUILD_MINIMAP2_INDEX.out.versions" not in align.split("emit:", 1)[1]
     assert "COLLECT_LONG_READ_SOFTWARE_VERSIONS" in main
+
+
+def test_isoquant_is_an_independent_complete_bam_backend():
+    main = (PIPELINE / "main.nf").read_text()
+    config = (PIPELINE / "nextflow.config").read_text()
+    schema = (PIPELINE / "nextflow_schema.json").read_text()
+    runner = (PIPELINE / "subworkflows" / "run_isoquant.nf").read_text()
+    module = (PIPELINE / "modules" / "isoquant.nf").read_text()
+    assert "model_backend.*isoquant" in schema or '"isoquant", "all"' in schema
+    assert "RUN_ISOQUANT(ALIGN_LONG_READS.out.bam, reference_fasta)" in main
+    assert "ISOQUANT_ANNOTATION_FREE" in runner and "ISOQUANT_REFERENCE_GUIDED" in runner
+    assert ".groupTuple()" in runner and "isoquant_scope" in runner
+    assert "--reference" in module and "--bam" in module
+    assert "--genedb" in module and "mode == 'annotation_free'" not in module
+    assert "docker://quay.io/biocontainers/isoquant:4.0.0--pyh106432d_0" in module
+    assert "isoquant_args cannot override" in main
+    assert "isoquant_mode = 'annotation_free'" in config
+    assert "isoquant_large_output = ['read_info', 'read2transcripts']" in config
+    assert "${params.outdir}/isoquant/products" in config
+    assert "${params.outdir}/isoquant/reports" in config
+    assert "ISOQUANT_TO_BED12" in runner
+    assert "isoquant_bed" in main
+
+
+def test_flair_and_common_comparison_are_independent_contracts():
+    main = (PIPELINE / "main.nf").read_text()
+    runner = (PIPELINE / "subworkflows" / "run_flair.nf").read_text()
+    module = (PIPELINE / "modules" / "flair.nf").read_text()
+    comparison = (PIPELINE / "modules" / "compare_candidate_models.nf").read_text()
+    helper = (PIPELINE / "bin" / "compare_candidate_models.py").read_text()
+    schema = (PIPELINE / "nextflow_schema.json").read_text()
+    assert '"flair", "bambu", "all"' in schema
+    assert "RUN_FLAIR(ALIGN_LONG_READS.out.bam, reference_fasta)" in main
+    assert "FLAIR_JUNCTIONS(aligned_bams)" in runner
+    assert "FLAIR_TRANSCRIPTOME(flair_inputs, reference)" in runner
+    assert ".join(FLAIR_JUNCTIONS.out.bed" in runner
+    assert "process FLAIR_JUNCTIONS" in module
+    assert "junctions_from_sam" in module
+    assert "flair transcriptome" in module and "--genome '${reference}'" in module
+    assert "--junction_bed '${junctions}'" in module
+    assert "flair combine" in module
+    assert "--noaligntoannot" in module and "flair combine" in module
+    assert "COMPARE_CANDIDATE_MODELS(comparison_input)" in main
+    assert "COMPARE_ACCESSION_CANDIDATE_MODELS(accession_comparison_input)" in main
+    assert "VALIDATE_ACCESSION_MODELS(accession_candidates)" in main
+    assert "unique_intron_chain_count" in helper
+    assert "candidate_model_manifest" in comparison
+    assert "path(model_beds)" in comparison
+
+
+def test_bambu_is_an_independent_annotation_free_complete_bam_backend():
+    main = (PIPELINE / "main.nf").read_text()
+    config = (PIPELINE / "nextflow.config").read_text()
+    schema = (PIPELINE / "nextflow_schema.json").read_text()
+    runner = (PIPELINE / "subworkflows" / "run_bambu.nf").read_text()
+    module = (PIPELINE / "modules" / "bambu.nf").read_text()
+    assert '"bambu", "all"' in schema
+    assert "RUN_BAMBU(ALIGN_LONG_READS.out.bam, reference_fasta)" in main
+    assert "BAMBU_DISCOVERY" in runner and ".groupTuple()" in runner
+    assert "annotations=NULL" in module
+    assert "quant=${params.bambu_quantify ? 'TRUE' : 'FALSE'}" in module and "NDR=1" in module
+    assert "trackReads" in module
+    assert "bambu_read_assignments.tsv" in module
+    assert "bambu_container = null" in config
+    assert "bambu_install_biocmanager" in config
