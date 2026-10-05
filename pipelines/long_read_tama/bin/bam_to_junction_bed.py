@@ -22,10 +22,6 @@ def junctions_from_cigar(reference_start, cigartuples):
     return junctions
 
 
-def normalise_contig(contig):
-    return contig if contig.startswith("chr") else f"chr{contig}"
-
-
 def extract_junctions(bam_path):
     """Return junction support keyed by contig, coordinates, and strand."""
     import pysam
@@ -36,7 +32,10 @@ def extract_junctions(bam_path):
             if read.is_unmapped or read.reference_name is None:
                 continue
             strand = "-" if read.is_reverse else "+"
-            contig = normalise_contig(read.reference_name)
+            # BED chromosome names must match the BAM header exactly. FLAIR's
+            # bundled junctions_from_sam helper adds "chr", but these inputs
+            # use Ensembl-style contigs such as "1" and "MT".
+            contig = read.reference_name
             for start, end in junctions_from_cigar(
                 read.reference_start, read.cigartuples
             ):
