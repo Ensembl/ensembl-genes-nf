@@ -225,6 +225,24 @@ def locate_supplement(assembly_dir: Path, accession: str, excluded: set[Path]) -
     return candidates[0]
 
 
+def mitochondrial_accession(source: Path) -> Optional[str]:
+    """Return the versioned accession for an unlisted mitochondrial record."""
+    opener = gzip.open if source.name.endswith(".gz") else open
+    try:
+        with opener(source, "rt", errors="replace") as handle:
+            lines = [handle.readline() for _ in range(80)]
+    except OSError:
+        return None
+    description = " ".join(line.strip() for line in lines if line)
+    if not re.search(r"\bmitochondr(?:ion|ial)\b|\borganelle\b", description, re.IGNORECASE):
+        return None
+    version = re.search(r"^VERSION\s+(\S+)", description, re.MULTILINE)
+    if version:
+        return version.group(1)
+    accession = re.search(r"^ACCESSION\s+(\S+)", description, re.MULTILINE)
+    return accession.group(1) if accession else None
+
+
 def supplement_to_fasta(source: Path, output, accession: str) -> None:
     """Append a FASTA or a simple GenBank flatfile record to output."""
     opener = gzip.open if source.name.endswith(".gz") else open
@@ -256,7 +274,13 @@ def supplement_to_fasta(source: Path, output, accession: str) -> None:
 
 
 def build_reference_supplement(assembly_dir: Path, fasta: Path, report: Path, output: Path) -> list[str]:
-    """Find report-listed non-nuclear records absent from the genomic FASTA."""
+    """Find non-nuclear records absent from the genomic FASTA.
+
+    Assembly reports do not consistently list mitochondrial records.  When an
+    assembly directory contains an explicitly labelled mitochondrial GenBank
+    record, include it even if the report omits it.  Missing optional records
+    are otherwise ignored.
+    """
     genomic_names = set()
     with fasta.open() as handle:
         for line in handle:
@@ -280,6 +304,17 @@ def build_reference_supplement(assembly_dir: Path, fasta: Path, report: Path, ou
             )
         selected.append((accession, source))
         excluded.add(source)
+
+    # Some NCBI assembly reports omit the mitochondrial record even though the
+    # corresponding GenBank file is supplied beside the assembly.
+    for source in sorted(assembly_dir.iterdir()):
+        if not source.is_file() or source.resolve() in excluded or source.name.endswith(".fai"):
+            continue
+        accession = mitochondrial_accession(source)
+        if not accession or accession in genomic_names or any(accession == item[0] for item in selected):
+            continue
+        selected.append((accession, source))
+        excluded.add(source.resolve())
 
     with output.open("w") as handle:
         for accession, source in selected:
