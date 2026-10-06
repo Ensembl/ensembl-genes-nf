@@ -36,7 +36,7 @@ python3 --version 2>&1 | awk '{print "ENA_EXPAND_FILE_MANIFEST:\\n  python: \"" 
 
     stub:
     """
-    touch expanded_files.tsv
+    printf '%s\n' 'analysis_id	project_alias	assembly	release	study	umbrella_study	analysis_alias	title	description	assembly_accession	reference_fasta	assembly_report	reference_supplement	last_geneset_update	partial_release_label	species	taxon_id	ref_seqs	analysis_links	analysis_attributes	analysis_type	omit_run_refs_in_test	file_path	file_type	remote_name	run_accession	sample_accession	experiment_accession' > expanded_files.tsv
     printf 'ENA_EXPAND_FILE_MANIFEST:\n  python: "stub"\n' > versions.yml
     """
 }
