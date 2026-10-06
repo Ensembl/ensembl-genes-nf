@@ -4,7 +4,9 @@ process COMPARE_CANDIDATE_MODELS {
     publishDir "${params.outdir}/reports/comparison", mode: 'copy'
 
     input:
-    tuple val(meta), path(model_beds), val(stage)
+    // Each backend emits the same canonical BED basename. Stage the collection
+    // below numbered directories so Nextflow does not reject filename collisions.
+    tuple val(meta), path(model_beds, stageAs: 'bed??/*'), val(stage)
 
     output:
     path 'candidate_model_comparison_*.tsv', emit: summary
@@ -16,7 +18,7 @@ process COMPARE_CANDIDATE_MODELS {
     def json = "candidate_model_comparison_${stage}.json"
     def manifest = "candidate_model_manifest_${stage}.tsv"
     """
-    compare_candidate_models.py ${summary} ${json} ${model_beds.join(' ')} \\
+    compare_candidate_models.py ${summary} ${json} bed??/* \\
         --manifest ${manifest} --stage '${stage}'
     """
 
