@@ -233,7 +233,7 @@ def mitochondrial_accession(source: Path) -> Optional[str]:
             lines = [handle.readline() for _ in range(80)]
     except OSError:
         return None
-    description = " ".join(line.strip() for line in lines if line)
+    description = "".join(lines)
     if not re.search(r"\bmitochondr(?:ion|ial)\b|\borganelle\b", description, re.IGNORECASE):
         return None
     version = re.search(r"^VERSION\s+(\S+)", description, re.MULTILINE)
