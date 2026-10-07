@@ -13,7 +13,10 @@ def main():
     lines = [line for line in Path(a.manifest).read_text().splitlines() if line.strip()]
     if len(lines) <= 1:
         raise SystemExit(f"Approved manifest is empty: {a.manifest}")
-    shutil.copyfile(a.manifest, a.validated_output)
+    source = Path(a.manifest).resolve()
+    target = Path(a.validated_output).resolve()
+    if source != target:
+        shutil.copyfile(source, target)
     Path(a.report).write_text("status\tdetail\nok\tapproved manifest validated\n")
 
 

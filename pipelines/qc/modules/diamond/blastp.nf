@@ -1,5 +1,5 @@
 process DIAMOND_BLASTP {
-    tag { meta.id }
+    tag { "${meta.id}:${meta.backend ?: 'default'}:${meta.scope ?: 'cohort'}" }
     label 'process_high'
     container 'community.wave.seqera.io/library/diamond:2.1.24--61a5af76160d103f'
     publishDir "${params.outdir}/qc/diamond", mode: 'copy', overwrite: true
@@ -20,7 +20,8 @@ process DIAMOND_BLASTP {
         // multiple arguments to --out.
         def sample_id = meta['id'].toString()
         def backend = meta.containsKey('backend') ? meta['backend'].toString() : 'default'
-        def out = "${sample_id}_${backend}_diamond.tsv"
+        def scope = meta.containsKey('scope') ? meta['scope'].toString() : 'cohort'
+        def out = "${sample_id}_${scope}_${backend}_diamond.tsv"
         """
         if grep -q '^>' ${query_protein}; then
             diamond blastp \
@@ -44,7 +45,8 @@ process DIAMOND_BLASTP {
     stub:
         def sample_id = meta['id'].toString()
         def backend = meta.containsKey('backend') ? meta['backend'].toString() : 'default'
-        def out = "${sample_id}_${backend}_diamond.tsv"
+        def scope = meta.containsKey('scope') ? meta['scope'].toString() : 'cohort'
+        def out = "${sample_id}_${scope}_${backend}_diamond.tsv"
         """
         touch ${out}
 
