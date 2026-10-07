@@ -500,8 +500,8 @@ def main() -> int:
             ("ensembl_partial_release", release_label),
             ("last_geneset_update", args.last_geneset_update),
             ("species", species),
-            ("source_runs_count", str(len(file_rows))),
-            ("alignment_files_count", str(len(file_rows))),
+            ("submission_source_runs_count", str(len(file_rows))),
+            ("submission_alignment_files_count", str(len(file_rows))),
             ("source_metadata_origin", "rnaseq_csv"),
         ]
     )
