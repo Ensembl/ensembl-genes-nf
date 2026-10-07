@@ -1,0 +1,3 @@
+entity_id	entity_type	gca_accession	assembly_release	bam	gtf	track_types	bai	sj_out_tab
+same_id	run	GCA_000000001.1	test-release	test.bam	test.gtf	coverage	test.bam.bai	
+same_id	sample	GCA_000000001.1	test-release	test.bam	test.gtf	coverage	test.bam.bai	

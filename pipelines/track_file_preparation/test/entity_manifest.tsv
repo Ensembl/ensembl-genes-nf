@@ -1,0 +1,4 @@
+entity_id	entity_type	gca_accession	assembly_release	bam	gtf	track_types	bai	sj_out_tab	source_entity_ids	run_accession	sample_id
+run_1	run	GCA_000000001.1	test-release	test.bam	test.gtf	all	test.bam.bai	test.sj.out.tab		run_1	
+sample_1	sample	GCA_000000001.1	test-release	test.bam	test.gtf	coverage	test.bam.bai		run_1		sample_1
+merged_1	merged	GCA_000000001.1	test-release	test.bam	test.gtf	gene_model	test.bam.bai		run_1,sample_1		_

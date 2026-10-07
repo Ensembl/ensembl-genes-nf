@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Track-file preparation pipeline parameters",
+  "type": "object",
+  "properties": {
+    "input_manifest": {"type": "string", "exists": true, "description": "Authoritative entity TSV manifest"},
+    "manifest_base_dir": {"type": ["string", "null"], "description": "Base directory for relative manifest paths"},
+    "chrom_sizes": {"type": "string", "exists": true, "description": "Assembly chrom.sizes file"},
+    "assembly_release": {"type": "string", "minLength": 1},
+    "outdir": {"type": "string", "default": "./results"},
+    "tracedir": {"type": ["string", "null"], "description": "Directory for execution reports"},
+    "track_types": {"type": "string", "enum": ["all", "coverage", "gene_model", "splice_junction"]},
+    "derive_junctions": {"type": ["boolean", "string"], "enum": [true, false, "true", "false"], "default": false},
+    "coverage_bin_size": {"type": "integer", "minimum": 1, "default": 25},
+    "coverage_normalization": {"type": "string", "enum": ["CPM", "BPM", "RPKM", "RPGC", "None"], "default": "CPM"},
+    "max_entity_retries": {"type": "integer", "minimum": 0, "maximum": 5, "default": 2},
+    "publish_failed_entities": {"type": "boolean", "default": true}
+  },
+  "required": ["input_manifest", "chrom_sizes", "assembly_release"]
+}
