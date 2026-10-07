@@ -27,7 +27,7 @@ workflow RUN_DIAMOND_ANNOTATIONS {
 
     gtf_inputs = rows
         .filter { _meta, _backend, _scope, format, _annotation -> format in ['gtf', 'gff', 'gff3'] }
-        .map { meta, backend, _scope, _format, annotation -> tuple(meta, backend, annotation) }
+        .map { meta, backend, scope, _format, annotation -> tuple(meta, backend, scope, annotation) }
     bed_inputs = rows
         .filter { _meta, _backend, _scope, format, _annotation -> format == 'bed12' }
         .map { meta, backend, _scope, _format, annotation -> tuple(meta, backend, annotation) }
