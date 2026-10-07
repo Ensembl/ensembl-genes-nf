@@ -20,3 +20,9 @@ The manifest must contain the required columns from
 `TRACK_FILE_PREPARATION_SPEC.md`. Relative paths are resolved against the
 manifest directory or `--manifest_base_dir`. Output records retain the
 original entity ID while filenames use a collision-checked sanitized ID.
+
+For BAM-dependent tracks, the pipeline uses a manifest-supplied BAM index or
+an adjacent `.bai`/`.csi` when available. If neither exists, it creates a
+coordinate-sorted BAM `.bai` with `samtools index` before running coverage or
+BAM-derived junction extraction. Index creation is a declared workflow stage,
+not a prerequisite that the manifest producer must perform.
