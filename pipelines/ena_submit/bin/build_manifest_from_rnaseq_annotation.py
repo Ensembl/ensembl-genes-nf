@@ -255,9 +255,12 @@ def supplement_to_fasta(source: Path, output, accession: str) -> None:
             return
         if not first.startswith("LOCUS"):
             raise RuntimeError(f"Unsupported supplement format for {accession}: {source}")
+        description = ""
         in_origin = False
         sequence = []
         for line in handle:
+            if line.startswith("DEFINITION"):
+                description = line[len("DEFINITION"):].strip()
             if line.startswith("ORIGIN"):
                 in_origin = True
                 continue
@@ -268,7 +271,7 @@ def supplement_to_fasta(source: Path, output, accession: str) -> None:
         sequence = "".join(sequence).upper()
         if not sequence:
             raise RuntimeError(f"No sequence found in GenBank supplement {source}")
-        output.write(f">{accession}\n")
+        output.write(f">{accession}{(' ' + description) if description else ''}\n")
         for start in range(0, len(sequence), 80):
             output.write(sequence[start:start + 80] + "\n")
 
