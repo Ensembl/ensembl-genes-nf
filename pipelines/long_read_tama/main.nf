@@ -13,10 +13,11 @@ include { COLLAPSE_LONG_READ_MODELS } from './subworkflows/collapse_long_read_mo
 include { MERGE_LONG_READ_MODELS } from './subworkflows/merge_long_read_models.nf'
 include { VALIDATE_COMBINED_MODELS; VALIDATE_COMBINED_MODELS as VALIDATE_ACCESSION_MODELS } from './subworkflows/validate_combined_models.nf'
 include { RUN_DIAMOND_QC } from './subworkflows/run_diamond_qc.nf'
+include { RUN_DIAMOND_ANNOTATIONS } from './subworkflows/run_diamond_annotations.nf'
 include { COLLECT_LONG_READ_SOFTWARE_VERSIONS } from './modules/collect_software_versions.nf'
 include { COMPARE_CANDIDATE_MODELS; COMPARE_CANDIDATE_MODELS as COMPARE_ACCESSION_CANDIDATE_MODELS } from './modules/compare_candidate_models.nf'
 
-def validate_runtime_options(auto_approve_safe, run_diamond_validation) {
+def validate_runtime_options(auto_approve_safe, run_diamond_validation, annotation_only) {
     if (!(params.model_backend in ['tama', 'stringtie2', 'stringtie3', 'tmerge', 'isoquant', 'flair', 'bambu', 'all']))
         error '--model_backend must be tama, stringtie2, stringtie3, tmerge, isoquant, flair, bambu, or all'
     if (!(params.backend_merge_mode in ['native', 'legacy_common']))
@@ -27,8 +28,14 @@ def validate_runtime_options(auto_approve_safe, run_diamond_validation) {
         error '--merge_tool is legacy-only; use --backend_merge_mode legacy_common when selecting tmerge'
     if (params.stringtie_merge_scope != 'run_then_cohort')
         error '--stringtie_merge_scope currently supports only run_then_cohort'
-    if (!params.manifest && !params.approved_manifest && !params.taxon_id)
+    if (!annotation_only && !params.manifest && !params.approved_manifest && !params.taxon_id)
         error 'Provide --taxon_id for discovery, --manifest for inventory, or --approved_manifest for production processing'
+    if (annotation_only && (params.manifest || params.approved_manifest || params.taxon_id))
+        error '--diamond_annotation_manifest cannot be combined with --manifest, --approved_manifest, or --taxon_id'
+    if (annotation_only && !params.reference_fasta)
+        error 'Provide --reference_fasta with --diamond_annotation_manifest'
+    if (annotation_only && !run_diamond_validation)
+        error '--run_diamond_validation must be enabled with --diamond_annotation_manifest'
     if (params.manifest && params.approved_manifest)
         error '--manifest and --approved_manifest cannot be combined'
     if (params.taxon_id && (params.manifest || params.approved_manifest))
@@ -78,8 +85,17 @@ workflow {
     validateParameters()
     auto_approve_safe = boolean_param(params.auto_approve_safe)
     run_diamond_validation = boolean_param(params.run_diamond_validation)
-    validate_runtime_options(auto_approve_safe, run_diamond_validation)
+    annotation_only = params.diamond_annotation_manifest != null
+    validate_runtime_options(auto_approve_safe, run_diamond_validation, annotation_only)
     log.info(paramsSummaryLog(workflow))
+
+    if (annotation_only) {
+        RUN_DIAMOND_ANNOTATIONS(
+            channel.value(file(params.diamond_annotation_manifest, checkIfExists: true)),
+            file(params.reference_fasta, checkIfExists: true)
+        )
+        return
+    }
 
     processing = params.approved_manifest || auto_approve_safe || params.taxon_id
 
@@ -129,7 +145,9 @@ workflow {
     flair_versions = channel.empty()
     flair_reports = channel.empty()
     if (flair_enabled) {
-        RUN_FLAIR(ALIGN_LONG_READS.out.bam, reference_fasta)
+        flair_skips = (params.skip_flair_accessions ?: '').split(',').collect { value -> value.trim() }.findAll { value -> value }.toSet()
+        flair_bams = ALIGN_LONG_READS.out.bam.filter { meta, _bam, _bai -> !flair_skips.contains(meta.id) }
+        RUN_FLAIR(flair_bams, reference_fasta)
         flair_bed = RUN_FLAIR.out.bed
         flair_accession_bed = RUN_FLAIR.out.accession_bed
         flair_versions = RUN_FLAIR.out.versions

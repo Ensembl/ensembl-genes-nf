@@ -17,7 +17,9 @@ workflow RUN_DIAMOND_QC {
     // the map again before passing it to the Diamond QC processes.
     if (!params.diamond_reference_db && !params.diamond_reference_proteins)
         error 'Provide --diamond_reference_db or --diamond_reference_proteins when --run_diamond_validation is enabled'
-    qc_bed = combined_bed.map { _meta, _backend, bed -> tuple(_meta, bed) }
+    qc_bed = combined_bed.map { meta, backend, bed ->
+        tuple(meta + [backend: backend, scope: meta.scope ?: 'cohort'], bed)
+    }
     EXTRACT_COMBINED_TRANSCRIPTS(qc_bed, reference)
     PREDICT_LONGEST_ATG_ORFS(EXTRACT_COMBINED_TRANSCRIPTS.out.transcripts)
 
@@ -29,9 +31,9 @@ workflow RUN_DIAMOND_QC {
     }
     diamond_hits = DIAMOND_BLASTP(PREDICT_LONGEST_ATG_ORFS.out.peptides, diamond_db)
     report_input = PREDICT_LONGEST_ATG_ORFS.out.manifest
-        .map { meta, manifest -> tuple(meta.id, meta, manifest) }
-        .join(diamond_hits.hits.map { meta, hits -> tuple(meta.id, meta, hits) })
-        .map { _id, meta, manifest, _hits_meta, hits -> tuple(meta, manifest, hits) }
+        .map { meta, manifest -> tuple("${meta.id}::${meta.scope ?: 'cohort'}::${meta.backend ?: 'default'}", meta, manifest) }
+        .join(diamond_hits.hits.map { meta, hits -> tuple("${meta.id}::${meta.scope ?: 'cohort'}::${meta.backend ?: 'default'}", meta, hits) })
+        .map { _key, meta, manifest, _hits_meta, hits -> tuple(meta, manifest, hits) }
     REPORT_COMBINED_DIAMOND_MODELS(report_input, diamond_db)
 
     version_ch = PREDICT_LONGEST_ATG_ORFS.out.versions
@@ -43,5 +45,6 @@ workflow RUN_DIAMOND_QC {
     emit:
     report = REPORT_COMBINED_DIAMOND_MODELS.out.report
     summary = REPORT_COMBINED_DIAMOND_MODELS.out.summary
+    provenance = REPORT_COMBINED_DIAMOND_MODELS.out.provenance
     versions = version_ch
 }

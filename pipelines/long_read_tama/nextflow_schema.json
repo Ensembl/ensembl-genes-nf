@@ -47,10 +47,12 @@
     "shard_contig_reads": {"type": "integer", "minimum": 0, "default": 1000000, "description": "Mapped-read heuristic used to classify large contigs"},
     "skip_tama_shards": {"type": "string", "default": "", "description": "Backward-compatible comma-separated exact run:shard keys to omit from TAMA Collapse"},
     "skip_model_shards": {"type": "string", "default": "", "description": "Comma-separated backend:run:shard keys to omit from model construction"},
+    "skip_flair_accessions": {"type": "string", "default": "", "description": "Comma-separated accession IDs to omit from FLAIR transcriptome processing"},
     "tama_memory_small": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "128.GB", "description": "Initial TAMA allocation"},
     "tama_memory_large": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "256.GB", "description": "Second TAMA allocation after a resource kill"},
     "tama_memory_very_large": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "512.GB", "description": "Final TAMA allocation after resource retries"},
     "run_diamond_validation": {"enum": [true, false, "true", "false"], "default": false, "description": "Generate longest-ATG ORFs and validate them with Diamond"}
+    ,"diamond_annotation_manifest": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Annotation-only DIAMOND manifest with id, backend, scope, annotation, and optional format columns; bypasses read acquisition, alignment, and model construction"}
     ,"diamond_reference_db": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Existing Diamond database for combined-model validation"}
     ,"diamond_reference_proteins": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Reference protein FASTA used to build a Diamond database"}
     ,"diamond_classification_type": {"type": "string", "enum": ["long_read", "standard", "standard_old", "gifts"], "default": "long_read", "description": "Legacy coverage/identity classification rule set"}
@@ -83,7 +85,8 @@
   "anyOf": [
     {"required": ["taxon_id"]},
     {"required": ["manifest"]},
-    {"required": ["approved_manifest", "fastq_cache_dir"]}
+    {"required": ["approved_manifest", "fastq_cache_dir"]},
+    {"required": ["diamond_annotation_manifest"]}
   ],
   "allOf": [
     {
@@ -101,6 +104,10 @@
           {"required": ["taxon_id", "reference_fasta", "fastq_cache_dir"]}
         ]
       }
+    },
+    {
+      "if": {"required": ["diamond_annotation_manifest"]},
+      "then": {"required": ["reference_fasta", "run_diamond_validation"]}
     },
     {
       "if": {
