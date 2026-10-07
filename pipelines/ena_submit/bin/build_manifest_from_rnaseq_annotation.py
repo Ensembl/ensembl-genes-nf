@@ -400,6 +400,12 @@ def main() -> int:
         help="Pattern under output/ with {run} and {ext} placeholders.",
     )
     parser.add_argument("--output-subdir", default="output")
+    parser.add_argument(
+        "--run-accession",
+        action="append",
+        default=[],
+        help="Restrict the manifest to this source run accession; may be repeated.",
+    )
     parser.add_argument("--outdir", required=True)
     parser.add_argument("--analysis-alias", help="Stable ENA analysis alias.")
     parser.add_argument("--title", help="Analysis title.")
@@ -429,6 +435,12 @@ def main() -> int:
     runs = read_run_metadata(runs_csv)
     if not runs:
         raise RuntimeError(f"No runs found in {runs_csv}")
+    if args.run_accession:
+        requested_runs = list(dict.fromkeys(args.run_accession))
+        missing_runs = [run for run in requested_runs if run not in runs]
+        if missing_runs:
+            raise RuntimeError(f"Requested run accession(s) not found in {runs_csv}: {', '.join(missing_runs)}")
+        runs = OrderedDict((run, runs[run]) for run in requested_runs)
 
     release_label = partial_release_label(args.assembly_accession, args.last_geneset_update)
     analysis_alias = args.analysis_alias or slug(
