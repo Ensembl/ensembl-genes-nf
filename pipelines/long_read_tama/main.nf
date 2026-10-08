@@ -24,6 +24,8 @@ def validate_runtime_options(auto_approve_safe, run_diamond_validation, annotati
         error "--backend_merge_mode must be native or legacy_common"
     if (!(params.backend_failure_policy in ['fail_fast', 'continue']))
         error "--backend_failure_policy must be fail_fast or continue"
+    if (!(params.diamond_scope in ['cohort', 'accession', 'both']))
+        error '--diamond_scope must be cohort, accession, or both'
     if (params.backend_merge_mode == 'native' && params.merge_tool != 'tama')
         error '--merge_tool is legacy-only; use --backend_merge_mode legacy_common when selecting tmerge'
     if (params.stringtie_merge_scope != 'run_then_cohort')
@@ -198,11 +200,19 @@ workflow {
         .map { beds -> tuple([id: 'accessions', scope: 'accession'], beds, 'accession') }
     COMPARE_ACCESSION_CANDIDATE_MODELS(accession_comparison_input)
 
+    diamond_versions = channel.empty()
     if (run_diamond_validation) {
-        RUN_DIAMOND_QC(combined_bed, reference_fasta)
+        cohort_diamond_inputs = combined_bed.map { meta, backend, bed ->
+            tuple(meta + [scope: 'cohort'], backend, bed)
+        }
+        accession_diamond_inputs = accession_bed.map { meta, backend, bed ->
+            tuple(meta + [scope: 'accession'], backend, bed)
+        }
+        diamond_inputs = params.diamond_scope == 'cohort' ? cohort_diamond_inputs :
+            params.diamond_scope == 'accession' ? accession_diamond_inputs : cohort_diamond_inputs.mix(accession_diamond_inputs)
+        RUN_DIAMOND_QC(diamond_inputs, reference_fasta)
+        diamond_versions = RUN_DIAMOND_QC.out.versions
     }
-
-    diamond_versions = run_diamond_validation ? RUN_DIAMOND_QC.out.versions : channel.empty()
     all_versions = channel.empty()
         .mix(inventory_versions)
         .mix(PREPARE_LONG_READS.out.versions)
