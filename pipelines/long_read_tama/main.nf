@@ -195,9 +195,11 @@ workflow {
         .map { beds -> tuple([id: params.cohort_id, scope: 'cohort'], beds, 'cohort') }
     COMPARE_CANDIDATE_MODELS(comparison_input)
     accession_comparison_input = accession_bed
-        .map { _meta, _backend, bed -> bed }
-        .collect()
-        .map { beds -> tuple([id: 'accessions', scope: 'accession'], beds, 'accession') }
+        // Accession BEDs share canonical backend filenames, so compare one
+        // accession at a time and retain its identity in the task/report.
+        .map { meta, _backend, bed -> tuple(meta.id, bed) }
+        .groupTuple()
+        .map { accession, beds -> tuple([id: accession, scope: 'accession'], beds, 'accession') }
     COMPARE_ACCESSION_CANDIDATE_MODELS(accession_comparison_input)
 
     diamond_versions = channel.empty()

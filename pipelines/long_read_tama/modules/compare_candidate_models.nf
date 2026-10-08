@@ -9,23 +9,27 @@ process COMPARE_CANDIDATE_MODELS {
     tuple val(meta), path(model_beds, stageAs: 'bed??/*'), val(stage)
 
     output:
-    path 'candidate_model_comparison_*.tsv', emit: summary
-    path 'candidate_model_comparison_*.json', emit: json
-    path 'candidate_model_manifest_*.tsv', emit: manifest
+    path "candidate_model_comparison_${stage}*.tsv", emit: summary
+    path "candidate_model_comparison_${stage}*.json", emit: json
+    path "candidate_model_manifest_${stage}*.tsv", emit: manifest
 
     script:
-    def summary = "candidate_model_comparison_${stage}.tsv"
-    def json = "candidate_model_comparison_${stage}.json"
-    def manifest = "candidate_model_manifest_${stage}.tsv"
+    // Accession comparisons run once per accession; include the id in those
+    // filenames so published reports cannot overwrite one another.
+    def report_suffix = stage == 'accession' ? "_${meta.id}" : ''
+    def summary = "candidate_model_comparison_${stage}${report_suffix}.tsv"
+    def json = "candidate_model_comparison_${stage}${report_suffix}.json"
+    def manifest = "candidate_model_manifest_${stage}${report_suffix}.tsv"
     """
     compare_candidate_models.py ${summary} ${json} bed??/* \\
         --manifest ${manifest} --stage '${stage}'
     """
 
     stub:
-    def summary = "candidate_model_comparison_${stage}.tsv"
-    def json = "candidate_model_comparison_${stage}.json"
-    def manifest = "candidate_model_manifest_${stage}.tsv"
+    def report_suffix = stage == 'accession' ? "_${meta.id}" : ''
+    def summary = "candidate_model_comparison_${stage}${report_suffix}.tsv"
+    def json = "candidate_model_comparison_${stage}${report_suffix}.json"
+    def manifest = "candidate_model_manifest_${stage}${report_suffix}.tsv"
     """
     printf 'backend\tmodel_count\ncomparison_stub\t0\n' > ${summary}
     printf '{\"backends\": [], \"pairwise\": []}\n' > ${json}

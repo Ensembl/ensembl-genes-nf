@@ -312,9 +312,10 @@ the approved manifest classifies the reads accordingly. The primary cohort
 and accession candidate sets are published under backend-specific directories;
 native tool products and evidence are retained alongside them. The
 backend-neutral structural summaries are published as
-`reports/comparison/candidate_model_comparison_cohort.tsv/.json` and
-`candidate_model_comparison_accession.tsv/.json`, with corresponding
-`candidate_model_manifest_*.tsv` files. `backend_failure_policy=continue`
+`reports/comparison/candidate_model_comparison_cohort.tsv/.json`. Accession
+summaries are run independently per accession and published as
+`candidate_model_comparison_accession_<accession>.tsv/.json`, with matching
+`candidate_model_manifest_accession_<accession>.tsv` files. `backend_failure_policy=continue`
 allows remaining methods to finish if an optional backend fails; the failure
 remains visible in the trace and must be included in the Monday review.
 Summarise computational cost after the run with:

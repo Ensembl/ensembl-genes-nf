@@ -279,9 +279,12 @@ def test_flair_and_common_comparison_are_independent_contracts():
     assert "--noaligntoannot" in module and "flair combine" in module
     assert "COMPARE_CANDIDATE_MODELS(comparison_input)" in main
     assert "COMPARE_ACCESSION_CANDIDATE_MODELS(accession_comparison_input)" in main
+    assert ".map { meta, _backend, bed -> tuple(meta.id, bed) }" in main
+    assert ".groupTuple()" in main
     assert "VALIDATE_ACCESSION_MODELS(accession_candidates)" in main
     assert "unique_intron_chain_count" in helper
     assert "candidate_model_manifest" in comparison
+    assert "report_suffix = stage == 'accession'" in comparison
     assert "path(model_beds)" in comparison
 
 
