@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Ensembl/ensembl-genes-nf/dev/pipelines/ena_submit/nextflow_schema.json",
+  "title": "ENA submission pipeline parameters",
+  "description": "Build and submit annotation alignment evidence to ENA Webin.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["manifest", "webin_user", "mode", "outdir"],
+  "properties": {
+    "manifest": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "description": "Annotation-level TSV manifest containing a files_tsv column."
+    },
+    "webin_user": {
+      "type": "string",
+      "minLength": 1,
+      "description": "ENA Webin username; keep the password in Nextflow secrets."
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["test", "prod"],
+      "default": "test",
+      "description": "ENA endpoint to use."
+    },
+    "outdir": {
+      "type": "string",
+      "default": "./results",
+      "description": "Output directory."
+    },
+    "tracedir": {
+      "type": "string",
+      "default": "./results/pipeline_info",
+      "description": "Directory for execution reports and trace files."
+    },
+    "upload_parallelism": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 2,
+      "description": "Maximum number of concurrent FTP uploads."
+    },
+    "remote_dir": { "type": "string", "default": "" },
+    "umbrella_study": { "type": "string", "default": "" },
+    "project_description": { "type": ["string", "null"], "default": null },
+    "webin_ftp_host": { "type": "string", "default": "webin2.ebi.ac.uk" },
+    "webin_base": { "type": ["string", "null"], "default": null },
+    "hold_until": { "type": ["string", "null"], "default": null },
+    "convert_to_cram": { "type": ["boolean", "string"], "default": false },
+    "reheader_bams": { "type": ["boolean", "string"], "default": true },
+    "reference_fasta": { "type": ["string", "null"], "default": null },
+    "reference_assembly_report": { "type": ["string", "null"], "default": null },
+    "poll_interval": { "type": "integer", "minimum": 1, "default": 20 },
+    "poll_max_attempts": { "type": "integer", "minimum": 1, "default": 30 }
+  }
+}

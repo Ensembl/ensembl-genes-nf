@@ -4,9 +4,7 @@ process ENA_CONVERT_TO_CRAM {
     container 'quay.io/biocontainers/samtools:1.21--h50ea8bc_0'
 
     input:
-    tuple val(meta), val(row), val(file_meta), path(file)
-    path reference_fasta
-    path reference_fai
+    tuple val(meta), val(row), val(file_meta), path(file), path(reference_fasta), path(reference_fai)
 
     output:
     tuple val(meta), val(row), val(file_meta), path('converted.cram'), emit: converted

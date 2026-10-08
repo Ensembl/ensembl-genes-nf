@@ -1,0 +1,3 @@
+file_path	file_type	remote_name	run_accession	sample_accession	experiment_accession
+pipelines/ena_submit/examples/aln1.bam	bam	aln1.bam	SRR000001	ERS000001	
+pipelines/ena_submit/examples/aln2.cram	cram	aln2.cram	ERR000002	ERS000002	

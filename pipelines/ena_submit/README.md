@@ -8,6 +8,20 @@ For a complete first-time walkthrough, including TEST/PROD setup, credential
 handling, manifest validation, output inspection, and troubleshooting, see
 [WALKTHROUGH.md](WALKTHROUGH.md).
 
+The checked-in example is an annotation-level manifest. From the repository
+root, it can be used for a wiring-only test with:
+
+```bash
+nextflow run pipelines/ena_submit/main.nf \
+  -c pipelines/ena_submit/nextflow.config \
+  -profile test \
+  -stub-run \
+  --manifest pipelines/ena_submit/examples/manifest.tsv \
+  --webin_user test-user \
+  --reheader_bams false \
+  --outdir /tmp/ena-submit-stub
+```
+
 ## Step 1: Build The Annotation Manifest
 
 For an Ensembl genebuild RNA-seq directory like:
@@ -91,9 +105,18 @@ unset ENA_WEBIN_PASSWORD
 The secret name must be exactly `ENA_WEBIN_PASSWORD`. The username is passed as
 `--webin_user`; do not pass a password using `--webin_password`.
 
-Stub runs do not require the secret because they do not execute network commands.
-All real TEST and PROD runs still require `ENA_WEBIN_PASSWORD` in the Nextflow
-secrets store.
+Real TEST and PROD runs require `ENA_WEBIN_PASSWORD` in the Nextflow secrets
+store. Nextflow also checks declared secrets while constructing stub tasks, so
+the wiring-only command above needs an isolated placeholder secret when run
+locally or in CI:
+
+```bash
+export NXF_HOME="$(mktemp -d)"
+nextflow secrets set ENA_WEBIN_PASSWORD stub-password
+```
+
+Use the same temporary `NXF_HOME` for the subsequent `nextflow run` command;
+never use a production password for a stub run.
 
 Run the Nextflow workflow with the generated annotation manifest:
 
@@ -181,6 +204,7 @@ elements. Tissue labels or other descriptive values in the source CSV are ignore
 - `${outdir}/ena_submission/projects/`: generated child project XML.
 - `${outdir}/ena_submission/xml/`: generated analysis XML.
 - `${outdir}/ena_submission/accessions.tsv`: Webin polling results.
+- `${outdir}/pipeline_info/`: execution timeline, report, trace, and software versions.
 - Nextflow work directory: upload logs and task details.
 
 ## Current Production Decisions

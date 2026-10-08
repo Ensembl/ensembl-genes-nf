@@ -35,8 +35,25 @@ python3 --version 2>&1 | awk '{print "ENA_EXPAND_FILE_MANIFEST:\\n  python: \"" 
 """
 
     stub:
+    def stubDefaultFileType = row.file_type ?: ''
+    def stubHdr = row.keySet().join('\t')
+    def stubVals = row.values().collect { value -> (value ?: '').toString().replace('\t', ' ').replace('\n', ' ') }.join('\t')
     """
-    printf '%s\n' 'analysis_id	project_alias	assembly	release	study	umbrella_study	analysis_alias	title	description	assembly_accession	reference_fasta	assembly_report	reference_supplement	last_geneset_update	partial_release_label	species	taxon_id	ref_seqs	analysis_links	analysis_attributes	analysis_type	omit_run_refs_in_test	file_path	file_type	remote_name	run_accession	sample_accession	experiment_accession' > expanded_files.tsv
+    set -euo pipefail
+    cat > analysis.tsv <<'EOF'
+${stubHdr}
+${stubVals}
+EOF
+    python3 ${expander_script} \
+      --files-tsv "${files_manifest}" \
+      --analysis-tsv analysis.tsv \
+      --analysis-id "${meta.id}" \
+      --project-alias "${meta.project_alias}" \
+      --assembly "${meta.assembly}" \
+      --release "${meta.release}" \
+      --default-file-type "${stubDefaultFileType}" \
+      --skip-file-check \
+      --out expanded_files.tsv
     printf 'ENA_EXPAND_FILE_MANIFEST:\n  python: "stub"\n' > versions.yml
     """
 }

@@ -58,6 +58,11 @@ def main() -> int:
     parser.add_argument("--assembly", required=True)
     parser.add_argument("--release", required=True)
     parser.add_argument("--default-file-type", default="")
+    parser.add_argument(
+        "--skip-file-check",
+        action="store_true",
+        help="Skip alignment existence checks for wiring-only stub tests.",
+    )
     parser.add_argument("--out", default="expanded_files.tsv")
     args = parser.parse_args()
 
@@ -75,7 +80,7 @@ def main() -> int:
         file_path = (row.get("file_path") or "").strip()
         if not file_path:
             raise RuntimeError(f"{args.files_tsv}:{idx}: missing file_path")
-        if not os.path.exists(file_path):
+        if not args.skip_file_check and not os.path.exists(file_path):
             raise RuntimeError(f"{args.files_tsv}:{idx}: missing alignment file: {file_path}")
 
         file_type = (row.get("file_type") or args.default_file_type or "").strip().lower()

@@ -17,6 +17,7 @@ include { ENA_EXTRACT_BAM_HEADER } from '../modules/extract_bam_header.nf'
 include { ENA_BUILD_BAM_HEADER } from '../modules/build_bam_header.nf'
 include { ENA_INDEX_BAM } from '../modules/index_bam.nf'
 include { ENA_INDEX_CRAM } from '../modules/index_cram.nf'
+include { COLLECT_SOFTWARE_VERSIONS } from '../modules/collect_software_versions.nf'
 
 // Parse an annotation-level manifest and dispatch one ENA analysis per file.
 workflow ENA_SUBMIT_WORKFLOW {
@@ -125,8 +126,7 @@ workflow ENA_SUBMIT_WORKFLOW {
             tuple(meta, row, file_meta, file(file_row.file_path))
         }
 
-    def prepared_reference_fasta = null
-    def prepared_reference_fai = null
+    def prepared_references = null
     def reheader_bams = params.reheader_bams?.toString()?.toLowerCase() in ['1', 'true', 'yes']
     if (reheader_bams) {
         def header_script = file("${projectDir}/bin/build_reheader_header.py")
@@ -156,9 +156,7 @@ workflow ENA_SUBMIT_WORKFLOW {
             .distinct()
         ENA_PREPARE_REFERENCE(reference_inputs)
         ENA_INDEX_REFERENCE(ENA_PREPARE_REFERENCE.out.prepared)
-        def prepared_references = ENA_INDEX_REFERENCE.out.indexed
-        prepared_reference_fasta = prepared_references.map { reference_key, fasta, fai, report, names -> fasta }
-        prepared_reference_fai = prepared_references.map { reference_key, fasta, fai, report, names -> fai }
+        prepared_references = ENA_INDEX_REFERENCE.out.indexed
         def prepared_bams = bam_inputs
             .join(prepared_references, by: 0)
             .map { reference_key, meta, row, file_meta, bam, fasta, report, supplement, prepared_fasta, reference_fai, prepared_report, reference_names ->
@@ -190,7 +188,7 @@ workflow ENA_SUBMIT_WORKFLOW {
     if (convert_to_cram) {
         def reference = params.reference_fasta ? file(params.reference_fasta) : null
         def reference_fai = params.reference_fasta ? file("${params.reference_fasta}.fai") : null
-        if (!prepared_reference_fasta) {
+        if (!reheader_bams) {
             assert reference : "--reference_fasta is required with --convert_to_cram true when --reheader_bams is false"
             assert reference.exists() : "Reference FASTA not found: ${params.reference_fasta}"
             assert reference_fai.exists() : "Reference FASTA index not found: ${params.reference_fasta}.fai"
@@ -202,9 +200,25 @@ workflow ENA_SUBMIT_WORKFLOW {
         def non_bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
             (file_meta.file_type ?: '').toString().toLowerCase() != 'bam'
         }
-        def cram_reference = prepared_reference_fasta ?: Channel.value(reference)
-        def cram_reference_fai = prepared_reference_fai ?: Channel.value(reference_fai)
-        ENA_CONVERT_TO_CRAM(bam_inputs, cram_reference, cram_reference_fai)
+        def cram_inputs
+        if (reheader_bams) {
+            // Match each reheadered BAM with its reference by reference key.
+            // Positional pairing of queue channels would lose all but the
+            // first BAM when several BAMs share one reference.
+            cram_inputs = ENA_INDEX_BAM.out.indexed
+                .map { reference_key, meta, row, file_meta, bam, bai ->
+                    tuple(reference_key, meta, row, file_meta, bam)
+                }
+                .join(prepared_references, by: 0)
+                .map { reference_key, meta, row, file_meta, bam, prepared_fasta, prepared_fai, report, names ->
+                    tuple(meta, row, file_meta, bam, prepared_fasta, prepared_fai)
+                }
+        } else {
+            cram_inputs = bam_inputs.map { meta, row, file_meta, bam ->
+                tuple(meta, row, file_meta, bam, reference, reference_fai)
+            }
+        }
+        ENA_CONVERT_TO_CRAM(cram_inputs)
         ENA_INDEX_CRAM(ENA_CONVERT_TO_CRAM.out.converted)
         def converted_inputs = ENA_INDEX_CRAM.out.indexed.flatMap { meta, row, file_meta, cram, crai ->
             def cram_name = (file_meta.remote_name ?: cram.getName()).replaceFirst(/\.bam$/, '.cram')
@@ -260,6 +274,32 @@ workflow ENA_SUBMIT_WORKFLOW {
         )
 
     ENA_POLL_ANALYSIS.out.accessions.view { f -> "Accessions written to: ${f}" }
+
+    def all_versions = channel.empty()
+        .mix(ENA_GENERATE_PROJECT_XML.out.versions)
+        .mix(ENA_SUBMIT_PROJECT.out.versions)
+        .mix(ENA_POLL_PROJECT.out.versions)
+        .mix(ENA_EXPAND_FILE_MANIFEST.out.versions)
+        .mix(ENA_COMPUTE_MD5.out.versions)
+        .mix(ENA_FTP_UPLOAD.out.versions)
+        .mix(ENA_GENERATE_XML.out.versions)
+        .mix(ENA_SUBMIT_ANALYSIS.out.versions)
+        .mix(ENA_POLL_ANALYSIS.out.versions)
+    if (reheader_bams) {
+        all_versions = all_versions
+            .mix(ENA_PREPARE_REFERENCE.out.versions)
+            .mix(ENA_INDEX_REFERENCE.out.versions)
+            .mix(ENA_EXTRACT_BAM_HEADER.out.versions)
+            .mix(ENA_BUILD_BAM_HEADER.out.versions)
+            .mix(ENA_REHEADER_BAM.out.versions)
+            .mix(ENA_INDEX_BAM.out.versions)
+    }
+    if (convert_to_cram) {
+        all_versions = all_versions
+            .mix(ENA_CONVERT_TO_CRAM.out.versions)
+            .mix(ENA_INDEX_CRAM.out.versions)
+    }
+    COLLECT_SOFTWARE_VERSIONS(all_versions.collect())
 
     emit:
     accessions = ENA_POLL_ANALYSIS.out.accessions
