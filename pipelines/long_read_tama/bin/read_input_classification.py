@@ -206,10 +206,10 @@ def validate_fastq(path_or_uri: str, expected: str = "UNKNOWN") -> dict:
             database.close()
     observed = next(iter(representations)) if len(representations) == 1 else ("MIXED" if representations else "UNKNOWN")
     if records == 0: raise ValueError("FASTQ contains no complete records")
-    # NCBI can rename a submitted CCS FASTQ and replace its molecule headers
-    # while retaining the consensus sequences. Original-format metadata makes
-    # UNKNOWN headers acceptable for this explicitly approved representation.
-    if expected not in ("UNKNOWN", "NOT_APPLICABLE", "PACBIO_CCS_ORIGINAL", "PACBIO_PROCESSED") and observed != expected: raise ValueError(f"expected {expected}, observed {observed}")
+    # Archive services can rename ONT/CCS read IDs while retaining valid
+    # sequences. Original-format metadata or the approved ONT archive-renamed
+    # classification makes UNKNOWN headers acceptable for those representations.
+    if expected not in ("UNKNOWN", "NOT_APPLICABLE", "ONT", "PACBIO_CCS_ORIGINAL", "PACBIO_PROCESSED") and observed != expected: raise ValueError(f"expected {expected}, observed {observed}")
     if duplicates: raise ValueError(f"duplicate read or molecule IDs: {duplicates}")
     return {"records": records, "representation": observed,
             "distinct_ids": distinct_ids, "distinct_molecules": distinct_molecules}

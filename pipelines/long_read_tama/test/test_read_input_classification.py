@@ -112,6 +112,13 @@ def test_original_ccs_fastq_accepts_archive_rewritten_headers(tmp_path):
     assert result["records"] == 2
 
 
+def test_ont_fastq_accepts_archive_renamed_headers(tmp_path):
+    path = write_fastq(tmp_path, ["SRR33046256.1", "SRR33046256.2"])
+    result = mod.validate_fastq(path, "ONT")
+    assert result["representation"] == "UNKNOWN"
+    assert result["records"] == 2
+
+
 def test_ncbi_original_processed_flnc_fastq_is_directly_usable():
     result = mod.classify(declared_platform="PACBIO_SMRT", ena_platform="PACBIO_SMRT", sra_platform="PACBIO",
                           artifacts=[{"artifact_role": "FASTQ", "source": "NCBI_ORIGINAL",
