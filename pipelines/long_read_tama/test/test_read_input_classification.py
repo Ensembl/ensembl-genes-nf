@@ -66,6 +66,31 @@ def test_archive_subread_fastq_without_molecule_headers_is_quarantined():
     assert result["confidence"] == "PROBABLE"
 
 
+def test_ont_metadata_accepts_archive_renamed_fastq_headers():
+    result = mod.classify(
+        declared_platform="OXFORD_NANOPORE", ena_platform="OXFORD_NANOPORE",
+        sra_platform="unavailable", library_strategy="RNA-Seq",
+        library_source="TRANSCRIPTOMIC", library_selection="cDNA",
+        artifacts=[{"artifact_role": "FASTQ", "basename": "SRR33046253_1.fastq.gz"}],
+        probe={"header_representation": "UNKNOWN"},
+    )
+    assert result["classification"] == "ONT_FASTQ"
+    assert result["proposed_action"] == "ALIGN_ONT"
+    assert result["confidence"] == "PROBABLE"
+    assert result["status"] == "READY_FOR_REVIEW"
+    assert "ONT_METADATA_WITH_ARCHIVE_RENAMED_HEADERS" in result["reason_codes"]
+
+
+def test_pacbio_metadata_does_not_get_admitted_by_archive_renamed_headers():
+    result = mod.classify(
+        declared_platform="OXFORD_NANOPORE", ena_platform="OXFORD_NANOPORE",
+        sra_platform="PACBIO", artifacts=[{"artifact_role": "FASTQ", "basename": "reads.fastq.gz"}],
+        probe={"header_representation": "UNKNOWN"},
+    )
+    assert result["classification"] == "UNKNOWN"
+    assert result["status"] == "QUARANTINED"
+
+
 def test_ncbi_original_ccs_overrides_ena_subread_name():
     artifacts = [
         {"artifact_role": "FASTQ", "source": "ENA_FASTQ", "basename": "SRR26395028_subreads.fastq.gz"},

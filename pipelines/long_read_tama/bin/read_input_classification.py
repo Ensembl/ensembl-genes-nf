@@ -323,6 +323,13 @@ def classify(*, declared_platform: str, ena_platform: str, sra_platform: str,
     elif pacbio_declared and fastq_artifacts and fastq_subread_hint and header == "UNKNOWN":
         reasons.append("ARCHIVE_FASTQ_HEADERS_LACK_MOLECULE_GROUPING")
         classification, action, confidence = "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE", "QUARANTINE", "PROBABLE"
+    elif ont_declared and not pacbio_declared and fastq_artifacts and header == "UNKNOWN":
+        # ENA/SRA-derived FASTQs may have archive-renamed IDs such as
+        # SRR33046253.1 rather than the original ONT UUID/runid/ch header.
+        # Explicit ONT metadata plus a valid FASTQ is sufficient to admit the
+        # row as a probable ONT input when no PacBio-specific evidence exists.
+        reasons.append("ONT_METADATA_WITH_ARCHIVE_RENAMED_HEADERS")
+        classification, action, confidence = "ONT_FASTQ", "ALIGN_ONT", "PROBABLE"
     elif header == "ONT": classification, action, confidence = "ONT_FASTQ", "ALIGN_ONT", "PROBABLE"
     else: classification, action, confidence = "UNKNOWN", "QUARANTINE", "INSUFFICIENT"
     if not reasons: reasons.append("NO_SUPPORTED_ARTIFACT")
