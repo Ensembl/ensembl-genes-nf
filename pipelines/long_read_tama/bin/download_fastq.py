@@ -24,6 +24,22 @@ def validate_gzip(path):
             pass
 
 
+def install_cache_file(fetched, cache):
+    """Install a fetched file when work and cache directories differ."""
+    partial = Path(str(cache) + ".partial")
+    try:
+        # The task work directory and shared cache may be different mounts;
+        # os.replace(fetched, cache) is therefore not portable across HPC
+        # filesystems. Copy into the cache filesystem, then rename there.
+        shutil.copy2(fetched, partial)
+        os.replace(partial, cache)
+    finally:
+        if partial.exists():
+            partial.unlink()
+        if Path(fetched).exists():
+            Path(fetched).unlink()
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("run"); p.add_argument("expected_md5"); p.add_argument("filename")
@@ -58,7 +74,7 @@ def main():
             if fetched.name != a.filename: raise SystemExit(f"Downloaded FASTQ filename mismatch for {a.run}")
             actual = checksum(fetched)
             if actual != a.expected_md5: raise SystemExit(f"Downloaded FASTQ checksum mismatch for {a.run}: expected {a.expected_md5}, observed {actual}")
-            os.replace(fetched, cache)
+            install_cache_file(fetched, cache)
         out = Path(a.output_dir); out.mkdir(exist_ok=True)
         shutil.copy2(cache, out / a.filename)
         Path(a.output_checksum).write_text("run_accession\texpected_md5\tactual_md5\tfilename\n" + f"{a.run}\t{a.expected_md5}\t{checksum(cache)}\t{a.filename}\n")
