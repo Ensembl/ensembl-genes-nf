@@ -52,6 +52,7 @@
     "tama_memory_large": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "256.GB", "description": "Second TAMA allocation after a resource kill"},
     "tama_memory_very_large": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "512.GB", "description": "Final TAMA allocation after resource retries"},
     "run_diamond_validation": {"enum": [true, false, "true", "false"], "default": false, "description": "Generate longest-ATG ORFs and validate them with Diamond"}
+    ,"diamond_scope": {"type": "string", "enum": ["cohort", "accession", "both"], "default": "cohort", "description": "Diamond QC scope for integrated runs: cohort models, accession models, or both"}
     ,"diamond_annotation_manifest": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Annotation-only DIAMOND manifest with id, backend, scope, annotation, and optional format columns; bypasses read acquisition, alignment, and model construction"}
     ,"diamond_reference_db": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Existing Diamond database for combined-model validation"}
     ,"diamond_reference_proteins": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Reference protein FASTA used to build a Diamond database"}
