@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verify Ensembl NF Change"
+  short_description: "Review and test Nextflow changes safely"
+  default_prompt: "Use $ensembl-nf-verify-change to validate this repository change."

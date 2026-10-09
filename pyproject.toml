@@ -14,15 +14,14 @@
 
 [project]
 name = "ensembl-genes-nf"
-description = "Ensembl Gene Statistics pipeline"
+description = "Ensembl Gene Nextflow pipelines"
 requires-python = ">= 3.8"
 version = "0.1"
 readme = "README.md"
 authors = [
     {name = "Ensembl", email = "dev@ensembl.org"},
 ]
-license = "Apache-2.0"
-license-files = ["LICENSE", "NOTICE"]
+license = {text = "Apache License 2.0"}
 keywords = ["ensembl", 
 "annotation", 
 "genetics",
@@ -33,12 +32,13 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-# dependencies = []
+
 
 [project.optional-dependencies]
 dev = [
@@ -51,9 +51,17 @@ dev = [
     "pytest",
     "Sphinx",
 ]
-doc = [
-    "mock",
-    "Sphinx",
+
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-gen-files",
+    "mkdocstrings[python]",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
+    "mkdocs-coverage",
+    "mkdocs-minify-plugin",
+    "mkdocs-git-revision-date-localized-plugin",
 ]
 
 [project.urls]
@@ -63,6 +71,10 @@ repository = "https://github.com/Ensembl/ensembl-genes-nf"
 [project.scripts]
 #run_fastqc = "ensembl.genes.metadata.qc.run_fastqc:main"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [ 
@@ -70,6 +82,8 @@ requires = [
     "setuptools-scm",
     "wheel"
 ]
+[tool.setuptools.packages.find]
+where = ["src/python"]
 
 [tool.black]
 line-length = 110
@@ -88,6 +102,7 @@ disable = [
 ]
 
 [tool.mypy]
+mypy_path = "src"
 explicit_package_bases = true
 ignore_missing_imports = true
 show_error_codes = true

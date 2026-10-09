@@ -1,0 +1,31 @@
+process MOVE_TO_FTP {
+    label 'process_low'
+
+    tag "${meta.id}"
+
+    errorStrategy { task.attempt <= 3 ? 'retry' : 'ignore' }
+    maxRetries 3
+
+    // SLURM options for datamover partition
+    clusterOptions '--partition=datamover'
+
+    input:
+    tuple val(meta), path(files)        // Meta map with file info + files to transfer
+    val ftp_destination                 // FTP destination path
+
+    when:
+    task.ext.when == null || task.ext.when
+
+    script:
+    def args = task.ext.args ?: ''
+    def prefix = task.ext.prefix ?: "${meta.id}"
+
+    """
+    # Get full path to files in work directory
+    FULL_PATH=\$(readlink -f ${files})
+
+    # Switch to genebuild user and copy files using full path
+    become genebuild cp ${args} \$FULL_PATH ${ftp_destination}
+
+    """
+}

@@ -1,5 +1,0 @@
-pathlib
-typing
-pymysql
-requests
-xmltodict
