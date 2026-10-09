@@ -18,6 +18,7 @@ process LOAD_REFSEQ {
     output:
     tuple val(meta), path("${meta.id}.load_refseq.done"), emit: loaded
     tuple val(meta), path(fasta), emit: genome
+    tuple val(meta), path(asm_report), emit: assembly_report
     path "versions.yml", emit: versions
 
     when:
