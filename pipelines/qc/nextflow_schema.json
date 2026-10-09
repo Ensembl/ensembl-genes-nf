@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Annotation QC pipeline parameters",
+  "description": "Run one or more QC analyses from a mode-specific annotation manifest.",
+  "type": "object",
+  "properties": {
+    "input_csv": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "pattern": "^\\S+\\.csv$",
+      "description": "Mode-specific CSV annotation manifest; see the pipeline README."
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["agat", "interproscan", "diamond", "combined"],
+      "description": "QC analysis to run. combined runs all available analyses."
+    },
+    "database": {
+      "type": "string",
+      "enum": [
+        "TIGRFAM", "SFLD", "SUPERFAMILY", "PANTHER", "Gene3D", "Hamap",
+        "ProSiteProfiles", "Coils", "SMART", "CDD", "PRINTS", "PIRSR",
+        "ProSitePatterns", "AntiFam", "Pfam", "MobiDBLite", "PIRSF"
+      ],
+      "default": "Pfam",
+      "description": "InterProScan application database."
+    },
+    "data_file_path": {
+      "type": "string",
+      "format": "directory-path",
+      "exists": true,
+      "description": "Local InterProScan data directory."
+    },
+    "diamond_reference_proteins": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "description": "Reference protein FASTA used to build the Diamond database."
+    },
+    "diamond_reference_db": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "description": "Existing Diamond database file. When supplied, the reference protein FASTA is not used."
+    },
+    "outdir": {
+      "type": "string",
+      "default": "./results",
+      "description": "Output directory."
+    },
+    "tracedir": {
+      "type": "string",
+      "description": "Directory for Nextflow execution reports and trace files."
+    }
+  },
+  "required": ["input_csv", "mode"],
+  "allOf": [
+    {
+      "if": {
+        "properties": {"mode": {"enum": ["interproscan", "combined"]}},
+        "required": ["mode"]
+      },
+      "then": {"required": ["data_file_path"]}
+    },
+    {
+      "if": {
+        "properties": {"mode": {"enum": ["diamond", "combined"]}},
+        "required": ["mode"]
+      },
+      "then": {
+        "oneOf": [
+          {"required": ["diamond_reference_db"]},
+          {"required": ["diamond_reference_proteins"]}
+        ]
+      }
+    }
+  ]
+}

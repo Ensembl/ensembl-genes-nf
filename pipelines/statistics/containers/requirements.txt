@@ -1,0 +1,6 @@
+pathlib
+typing
+pymysql
+requests
+xmltodict
+pandas
