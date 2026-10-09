@@ -13,6 +13,7 @@ workflow QC {
         data_file_path
         diamond_reference_proteins
         diamond_reference_db
+        registry_config_ch
 
     main:
         // Each row supplies the shared annotation inputs. A precomputed protein
@@ -36,7 +37,8 @@ workflow QC {
         if (mode in ['agat', 'combined']) {
             AGAT_METRICS(
                 gff_ch,
-                feature_levels_yaml
+                feature_levels_yaml,
+                registry_config_ch
             )
         }
 

@@ -28,6 +28,13 @@ workflow {
         params.database,
         params.data_file_path,
         params.diamond_reference_proteins,
-        params.diamond_reference_db
+        params.diamond_reference_db,
+        channel.value(tuple(
+            params.registry_host,
+            params.registry_port,
+            params.registry_user,
+            params.registry_password,
+            params.registry_db
+        ))
     )
 }

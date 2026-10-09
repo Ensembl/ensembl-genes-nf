@@ -44,6 +44,33 @@
       "exists": true,
       "description": "Existing Diamond database file. When supplied, the reference protein FASTA is not used."
     },
+    "add_metrics_to_registry": {
+      "type": "boolean",
+      "default": false,
+      "description": "Write final AGAT metrics to the assembly registry."
+    },
+    "registry_host": {
+      "type": "string",
+      "description": "Registry MySQL host. Required when registry loading is enabled."
+    },
+    "registry_port": {
+      "type": "integer",
+      "default": 4527,
+      "description": "Registry MySQL port."
+    },
+    "registry_user": {
+      "type": "string",
+      "description": "Registry MySQL user. Required when registry loading is enabled."
+    },
+    "registry_password": {
+      "type": "string",
+      "description": "Registry MySQL password. Required when registry loading is enabled."
+    },
+    "registry_db": {
+      "type": "string",
+      "default": "gb_assembly_metadata",
+      "description": "Registry MySQL database name."
+    },
     "outdir": {
       "type": "string",
       "default": "./results",
@@ -73,6 +100,15 @@
           {"required": ["diamond_reference_db"]},
           {"required": ["diamond_reference_proteins"]}
         ]
+      }
+    },
+    {
+      "if": {
+        "properties": {"add_metrics_to_registry": {"const": true}},
+        "required": ["add_metrics_to_registry"]
+      },
+      "then": {
+        "required": ["registry_host", "registry_user", "registry_password"]
       }
     }
   ]

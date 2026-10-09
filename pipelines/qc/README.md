@@ -12,6 +12,7 @@ validation, or all three.
 - A QC parser container exposing `annotation-qc parse-agat` and
   `annotation-qc parse-interpro` when using AGAT or InterProScan
 - The pipeline supplies its Ensembl AGAT feature definitions internally
+- PyMySQL in the QC parser container when registry loading is enabled
 - Registry credentials configured outside the pipeline if the GitLab registry
   requires authentication
 
@@ -74,6 +75,12 @@ the fallback source for `diamond makedb`.
 | `--diamond_reference_db` | Diamond modes | Existing prebuilt Diamond database; takes precedence over the FASTA |
 | `--diamond_reference_proteins` | Diamond modes | Reference protein FASTA used to build a database when no prebuilt database is supplied |
 | `--database` | no | InterProScan database, default `Pfam` |
+| `--add_metrics_to_registry` | no | Write final AGAT metrics to `new_metrics` |
+| `--registry_host` | with registry loading | Registry MySQL host |
+| `--registry_port` | no | Registry MySQL port, default `4527` |
+| `--registry_user` | with registry loading | Registry MySQL user |
+| `--registry_password` | with registry loading | Registry MySQL password |
+| `--registry_db` | no | Registry database, default `gb_assembly_metadata` |
 | `--outdir` | no | Output directory, default `./results` |
 
 ## Running
@@ -98,6 +105,24 @@ params.data_file_path = '/nfs/production/flicek/ensembl/shared_data/interproscan
 
 Pass that file with `-c`. The parameter schema requires the value for
 `interproscan` and `combined` modes and validates that the directory exists.
+
+To write AGAT's final parsed `*_agat_stats_genebuild.csv` files to the registry,
+enable the opt-in branch and provide write credentials through a private params
+file:
+
+```json
+{
+  "add_metrics_to_registry": true,
+  "registry_host": "mysql-ens-genebuild-prod-1",
+  "registry_port": 4527,
+  "registry_user": "registry_writer",
+  "registry_password": "secret"
+}
+```
+
+The module resolves the assembly and latest `live` genebuild status from the GCA in
+the sample name, replaces the metric names present in the parsed file, and
+commits the update transactionally.
 
 Do not put registry usernames, passwords, or tokens in the sample sheet or
 committed Nextflow configuration. Configure Apptainer or Singularity

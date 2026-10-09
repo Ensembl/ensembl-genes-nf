@@ -1,6 +1,7 @@
 include { AGAT_RUN_STATS } from '../../modules/agat/run_agat_stats.nf'
 include { STRIP_GFF_REGIONS } from '../../modules/agat/strip_gff_regions.nf'
 include { AGAT_PARSE } from '../../modules/agat/parse_agat.nf'
+include { ADD_METRICS_TO_REGISTRY } from '../../modules/add_metrics_to_registry.nf'
 
 workflow AGAT_METRICS {
     take:
@@ -8,6 +9,8 @@ workflow AGAT_METRICS {
         gff3_ch
         // Ensembl-owned AGAT feature definitions used by the statistics step.
         feature_levels_yaml
+        // Value channel: registry host, port, user, password, database.
+        registry_config_ch
 
     main:
         stripped_gff = STRIP_GFF_REGIONS(gff3_ch)
@@ -18,9 +21,17 @@ workflow AGAT_METRICS {
         genebuild = AGAT_PARSE(
             agat_txt.stats_txt
         )
+        registry = ADD_METRICS_TO_REGISTRY(
+            genebuild.genebuild_csv,
+            registry_config_ch
+        )
 
     emit:
         stats_txt = agat_txt.stats_txt
         genebuild_csv = genebuild.genebuild_csv
-        versions = stripped_gff.versions.mix(agat_txt.versions).mix(genebuild.versions)
+        registry_loaded = registry.loaded
+        versions = stripped_gff.versions
+            .mix(agat_txt.versions)
+            .mix(genebuild.versions)
+            .mix(registry.versions)
 }
