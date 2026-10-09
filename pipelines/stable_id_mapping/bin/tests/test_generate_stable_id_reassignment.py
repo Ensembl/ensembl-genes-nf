@@ -101,7 +101,9 @@ def test_all_correct_population_produces_noop(
     assert "No stable-ID reassignment is required" in (
         args.output_sql.read_text()
     )
-    assert "UPDATE" not in args.output_sql.read_text()
+    noop_sql = args.output_sql.read_text()
+    assert "UPDATE gene" not in noop_sql
+    assert "stable_id_mapper_sample_gene_validation" in noop_sql
 
     assert args.output_id_map.read_text() == (
         "old_id\tnew_id\tnew_version\n"
