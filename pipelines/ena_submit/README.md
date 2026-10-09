@@ -2,14 +2,55 @@
 
 This pipeline submits processed RNA-seq alignments to ENA as annotation evidence.
 
-The current production model is one ENA Project (Study) per annotation/assembly partial release and one ENA `ANALYSIS` per BAM/CRAM alignment file. ENA does not accept multiple BAM/CRAM files in a single `ANALYSIS`; the annotation-level manifest is expanded into one analysis per file during the workflow.
+## What this pipeline does
+
+An Ensembl genebuild produces many alignment files, but ENA submission is
+organised around ENA projects, samples, runs, and analyses. This pipeline is
+the translation layer between those two models. It takes one annotation-level
+manifest plus a file-level manifest, validates and prepares the alignments,
+then creates and submits the ENA metadata and files in a repeatable way.
+
+The current production model is:
+
+```text
+one assembly + partial release
+  └── one ENA Project/Study
+        └── one ENA ANALYSIS per BAM/CRAM alignment file
+```
+
+ENA does not accept multiple BAM/CRAM files in one `ANALYSIS`. The workflow
+therefore expands the annotation-level manifest into one analysis per file,
+while retaining the shared project metadata and source run/sample links.
+
+## Why the workflow is split into these stages
+
+1. **Build the manifest** from the RNA-seq annotation directory. This records
+   which alignments exist and the metadata needed to describe them.
+2. **Prepare the reference** once. A FASTA index and, when required, reference
+   supplements are shared by all alignment tasks.
+3. **Validate and reheader alignments** so BAM/CRAM sequence names and lengths
+   agree with the INSDC reference used for the submission.
+4. **Convert and index when requested.** BAM inputs can be converted to CRAM;
+   the submitted checksums and indexes are calculated from the final files.
+5. **Generate ENA XML and upload files.** Project and analysis XML are created
+   from the manifests, while alignment files are uploaded to the Webin dropbox.
+6. **Poll for accessions and publish run information.** The final output links
+   submitted analyses to ENA accessions and retains pipeline reports for audit.
+
+This separation keeps metadata decisions independent from file preparation and
+makes the expensive alignment work reusable across retries. TEST submissions
+exercise the same metadata and upload path against ENA's test service before a
+production submission is attempted.
 
 For a complete first-time walkthrough, including TEST/PROD setup, credential
 handling, manifest validation, output inspection, and troubleshooting, see
 [WALKTHROUGH.md](WALKTHROUGH.md).
 
+## Quick start
+
 The checked-in example is an annotation-level manifest. From the repository
-root, it can be used for a wiring-only test with:
+root, use it for a wiring-only test. This runs the pipeline in stub mode and
+does not contact ENA:
 
 ```bash
 nextflow run pipelines/ena_submit/main.nf \
@@ -21,6 +62,27 @@ nextflow run pipelines/ena_submit/main.nf \
   --reheader_bams false \
   --outdir /tmp/ena-submit-stub
 ```
+
+For a real TEST or PROD submission, first store `ENA_WEBIN_PASSWORD` in the
+Nextflow secrets store, then use a generated manifest:
+
+```bash
+read -rsp 'ENA Webin password: ' ENA_WEBIN_PASSWORD
+printf '\n'
+nextflow secrets set ENA_WEBIN_PASSWORD "$ENA_WEBIN_PASSWORD"
+unset ENA_WEBIN_PASSWORD
+
+nextflow run pipelines/ena_submit/main.nf \
+  -c pipelines/ena_submit/nextflow.config \
+  --manifest /path/to/ena_manifest/manifest.tsv \
+  --mode test \
+  --webin_user "$WEBIN_USER" \
+  --outdir /path/to/ena_submit_results
+```
+
+Use `--mode prod` only after the TEST submission has been inspected and the
+resulting metadata has been accepted. Never put a password on the command
+line; the full credential setup is in [WALKTHROUGH.md](WALKTHROUGH.md).
 
 ## Step 1: Build The Annotation Manifest
 
@@ -198,6 +260,22 @@ Existing non-BAM inputs are passed through unchanged.
 
 Only values matching ENA sample accession formats are emitted as `SAMPLE_REF`
 elements. Tissue labels or other descriptive values in the source CSV are ignored.
+
+## Parameters
+
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `--manifest` | yes | Annotation-level manifest produced by the builder or supplied directly |
+| `--webin_user` | yes | ENA Webin username; the password is read from Nextflow secrets |
+| `--mode` | no | `test` by default; use `prod` for the production endpoint |
+| `--outdir` | no | Published output directory, default `./results` |
+| `--reheader_bams` | no | Validate/reheader BAM inputs against the INSDC reference, default `true` |
+| `--convert_to_cram` | no | Convert BAM inputs to CRAM before upload, default `false` |
+| `--reference_fasta` | conditional | Required for CRAM conversion unless discovered from the manifest |
+| `--upload_parallelism` | no | Maximum number of concurrent uploads |
+
+The complete parameter list and types are defined in
+[`nextflow_schema.json`](nextflow_schema.json).
 
 ## Outputs
 
