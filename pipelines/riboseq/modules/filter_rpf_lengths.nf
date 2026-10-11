@@ -3,8 +3,7 @@ process FILTER_RPF_LENGTHS {
     label 'process_light'
 
     conda "conda-forge::python=3.10"
-    // Keep the policy gate on the exact same getRPF image as extraction.
-    container "${params.getrpf_container}"
+    container "ghcr.io/jackcurragh/get-rpf:0.5.0"
 
     input:
     tuple val(meta), path(trimmed_collapsed_fasta)

@@ -3,7 +3,7 @@ process EXTRACT_RPFS {
     label 'process_high'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
-    container "${params.getrpf_container}"
+    container "ghcr.io/jackcurragh/get-rpf:0.5.0"
 
     input:
     tuple val(meta), path(input_file)
@@ -58,7 +58,7 @@ process EXTRACT_RPFS {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        getRPF: 0.4.0
+        getRPF: 0.5.0
     END_VERSIONS
     """
 }
