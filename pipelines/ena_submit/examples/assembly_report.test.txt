@@ -1,0 +1,2 @@
+# Sequence-Name	Sequence-Role	Assigned-Molecule	Assigned-Molecule-Location/Type	GenBank-Accn	Relationship	RefSeq-Accn	Assembly-Unit	Sequence-Length	UCSC-style-name
+Chromosome	assembled-molecule	Chromosome	chromosome	U00096.3	na	na	Primary Assembly	4641652	na

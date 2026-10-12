@@ -66,6 +66,8 @@ plugins:
       enable_creation_date: true    
 
 nav:
+  - ENA Alignment Evidence Submission:
+    - Overview: pipelines/ena_submit/overview.md
   - Statistics Pipeline:
     - Overview: pipelines/statistics/index.md
     - Parameters: pipelines/statistics/parameters.md
@@ -79,4 +81,3 @@ nav:
           - Overview: pipelines/statistics/modules/index.md  
     - Output: pipelines/statistics/output.md
     - Troubleshooting: pipelines/statistics/troubleshooting.md
-
