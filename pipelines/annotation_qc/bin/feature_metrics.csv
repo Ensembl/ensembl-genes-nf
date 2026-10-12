@@ -1,0 +1,59 @@
+metrics_name,metrics_value
+Exon count,2135291
+Transcripts with exon records,162529
+Coding transcripts with CDS records,145576
+Phase source,CDS phase column
+CDS records with usable phase,1955372
+CDS phase 3n,986613 (50.46%)
+CDS phase 3n+1,408395 (20.89%)
+CDS phase 3n+2,560364 (28.66%)
+CDS records without usable phase,0
+Exon length mean (bp),239.45
+Exon length median (bp),131.00
+Exon length min (bp),1.00
+Exon length max (bp),19916.00
+Exon length 1-9 bp,6133 (0.29%)
+Exon length 10-24 bp,28731 (1.35%)
+Exon length 25-49 bp,90783 (4.25%)
+Exon length 50-99 bp,518731 (24.29%)
+Exon length 100-199 bp,1008100 (47.21%)
+Exon length 200-499 bp,300855 (14.09%)
+Exon length 500-999 bp,95519 (4.47%)
+Exon length >=1000 bp,86439 (4.05%)
+Intron length mean (bp),1890.30
+Intron length median (bp),426.00
+Intron length min (bp),1.00
+Intron length max (bp),582285.00
+Intron length 1-19 bp,70 (0.00%)
+Intron length 20-99 bp,347908 (17.64%)
+Intron length 100-499 bp,695252 (35.24%)
+Intron length 500-999 bp,312980 (15.87%)
+Intron length 1000-4999 bp,474710 (24.06%)
+Intron length 5000-9999 bp,72382 (3.67%)
+Intron length 10000-49999 bp,62805 (3.18%)
+Intron length >=50000 bp,6655 (0.34%)
+Coding transcripts with 5' UTR,107342 (73.74%)
+5' UTR length per transcript mean (bp),554.20
+5' UTR length per transcript median (bp),357.00
+5' UTR length per transcript min (bp),1.00
+5' UTR length per transcript max (bp),17647.00
+5' UTR exon count per transcript mean,1.79
+5' UTR exon count per transcript median,1.00
+5' UTR exon count per transcript min,1.00
+5' UTR exon count per transcript max,78.00
+Coding transcripts with 3' UTR,118587 (81.46%)
+3' UTR length per transcript mean (bp),1028.69
+3' UTR length per transcript median (bp),689.00
+3' UTR length per transcript min (bp),1.00
+3' UTR length per transcript max (bp),19997.00
+3' UTR exon count per transcript mean,1.35
+3' UTR exon count per transcript median,1.00
+3' UTR exon count per transcript min,1.00
+3' UTR exon count per transcript max,48.00
+Coding transcripts with both UTRs,93963 (64.55%)
+Coding transcripts with neither UTR,13610 (9.35%)
+Frame-consistent coding transcripts,145552 (99.98%)
+Frame-inconsistent coding transcripts,24 (0.02%)
+Flagged records written,1063
+Short intron threshold (bp),< 20
+Short exon threshold (bp),< 3
