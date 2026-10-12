@@ -29,6 +29,11 @@
       "default": "./results",
       "description": "Output directory."
     },
+    "create_project": {
+      "type": ["boolean", "string"],
+      "default": true,
+      "description": "Create and submit a child project. Set false when every manifest row references an existing study; string booleans are accepted for Nextflow CLI compatibility."
+    },
     "tracedir": {
       "type": "string",
       "default": "./results/pipeline_info",
@@ -42,6 +47,8 @@
     },
     "remote_dir": { "type": "string", "default": "" },
     "umbrella_study": { "type": "string", "default": "" },
+    "umbrella_title": { "type": "string", "minLength": 20, "default": "" },
+    "umbrella_description": { "type": "string", "minLength": 20, "default": "" },
     "project_description": { "type": ["string", "null"], "default": null },
     "webin_ftp_host": { "type": "string", "default": "webin2.ebi.ac.uk" },
     "webin_base": { "type": ["string", "null"], "default": null },

@@ -24,8 +24,12 @@ def unique(values):
     return out
 
 
+def normalise_attribute_key(key):
+    return key[5:] if key.startswith('attr_') else key
+
+
 def looks_like_sample_accession(value):
-    return bool(re.match(r'^(SAMEA|SAMD|ERS|SRS|DRS)\d+$', (value or '').strip(), flags=re.IGNORECASE))
+    return bool(re.match(r'^(SAMEA|SAMD|SAMN|ERS|SRS|DRS)\d+$', (value or '').strip(), flags=re.IGNORECASE))
 
 
 def read_md5(path):
@@ -66,14 +70,16 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
     if study:
         # Treat as accession only if it matches an INSDC study/project accession pattern
         # e.g., PRJEB12345, PRJNA12345, ERP123456, SRP123456, DRP123456
-        if re.match(r'^(PRJ[EDNA][A-Z]*\d+|ER[PS]\d+|SRP\d+|DRP\d+)$', study, flags=re.IGNORECASE):
+        if re.match(r'^(PRJ[A-Z]+\d+|ERP\d+|SRP\d+|DRP\d+)$', study, flags=re.IGNORECASE):
             mk_text(analysis, 'STUDY_REF', accession=study)
         else:
             mk_text(analysis, 'STUDY_REF', refname=study)
 
     samples = split_values(row.get('sample_accession'))
+    samples.extend(split_values(row.get('sample_accessions')))
     for file_row in files:
         samples.extend(split_values(file_row.get('sample_accession')))
+        samples.extend(split_values(file_row.get('sample_accessions')))
     for s in unique(samples):
         if looks_like_sample_accession(s):
             mk_text(analysis, 'SAMPLE_REF', accession=s)
@@ -99,15 +105,15 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
         except FileNotFoundError:
             print(f"WARNING: run_list_path not found: {run_list_path}", file=sys.stderr)
 
-    if not row.get('__omit_run_refs__'):
-        for r in unique(runs):
-            mk_text(analysis, 'RUN_REF', accession=r)
-
     exps = split_values(row.get('experiment_accessions'))
     for file_row in files:
         exps.extend(split_values(file_row.get('experiment_accession') or file_row.get('experiment_accessions')))
+    # SRA.analysis.xsd requires EXPERIMENT_REF before RUN_REF.
     for e in unique(exps):
         mk_text(analysis, 'EXPERIMENT_REF', accession=e)
+    if not row.get('__omit_run_refs__'):
+        for r in unique(runs):
+            mk_text(analysis, 'RUN_REF', accession=r)
 
     # ANALYSIS_TYPE followed by FILES
     atype = mk_text(analysis, 'ANALYSIS_TYPE')
@@ -167,13 +173,23 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
             if '=' in part:
                 k, v = [x.strip() for x in part.split('=', 1)]
                 if k and v:
-                    attrs.append((k, v))
+                    attrs.append((normalise_attribute_key(k), v))
     # Also accept any columns named attr_* as attributes
     for k, v in row.items():
         if k.startswith('attr_') and (v or '').strip():
-            tag = k[len('attr_'):].strip()
+            tag = normalise_attribute_key(k).strip()
             if tag:
                 attrs.append((tag, v.strip()))
+
+    # These values are resolved from ENA or declared by the manifest and are
+    # useful as searchable analysis-level metadata, while the authoritative
+    # biological taxonomy remains on the referenced SAMPLE records.
+    for key in ('scientific_name', 'species', 'taxon_id', 'aggregation_scope', 'metadata_source',
+                'platform', 'source_fastq_count', 'alignment_software', 'alignment_software_version',
+                'bam_sort_order', 'bam_pg_programs'):
+        value = (row.get(key) or '').strip()
+        if value and not any(existing == key for existing, _ in attrs):
+            attrs.append((key, value))
 
     if attrs:
         attrs_el = mk_text(analysis, 'ANALYSIS_ATTRIBUTES')
@@ -188,19 +204,20 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
 def build_submission_xml(hold_until=None):
     sub = ET.Element('SUBMISSION')
     acts = mk_text(sub, 'ACTIONS')
+    mk_text(acts, 'ACTION')
+    act = acts[-1]
+    mk_text(act, 'ADD')
     if hold_until:
         mk_text(acts, 'ACTION')
         act = acts[-1]
         mk_text(act, 'HOLD', HoldUntilDate=hold_until)
-    mk_text(acts, 'ACTION')
-    act = acts[-1]
-    mk_text(act, 'ADD')
     return ET.ElementTree(sub)
 
 
 def build_webin_submission_xml(analysis_tree, submission_tree):
-    root = ET.Element('WEBIN_SUBMISSION')
-    root.append(submission_tree.getroot())
+    root = ET.Element('WEBIN')
+    submission_set = mk_text(root, 'SUBMISSION_SET')
+    submission_set.append(submission_tree.getroot())
     root.append(analysis_tree.getroot())
     return ET.ElementTree(root)
 

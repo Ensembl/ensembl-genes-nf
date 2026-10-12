@@ -23,6 +23,8 @@ python3 ${generator} \
   --name "${meta.name}" \
   --title "${meta.title}" \
   --description "${meta.description}" \
+  --scientific-name "${meta.scientific_name ?: ''}" \
+  --taxon-id "${meta.taxon_id ?: ''}" \
   \${hold_until_arg} \
   --outdir .
 printf 'ENA_GENERATE_PROJECT_XML:\n  python: "%s"\n' "\$(python3 --version 2>&1 | awk '{print \$2}')" > versions.yml

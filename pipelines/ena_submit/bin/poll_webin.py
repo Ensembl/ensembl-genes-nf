@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse, base64, json, os, sys, time, urllib.request, urllib.error, re
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 
@@ -38,8 +39,28 @@ def parse_queue_json(path: Path):
 
 
 def extract_accession(receipt_xml: str) -> str:
-    m = re.search(r'accession="([^"]+)"', receipt_xml)
-    return m.group(1) if m else ""
+    """Return the submitted object accession, not the ERA submission accession."""
+    try:
+        root = ET.fromstring(receipt_xml)
+        for tag in ("ANALYSIS", "PROJECT", "SAMPLE", "EXPERIMENT", "RUN"):
+            element = root.find(f".//{tag}[@accession]")
+            if element is not None:
+                return element.attrib["accession"]
+    except ET.ParseError:
+        pass
+    for tag in ("ANALYSIS", "PROJECT", "SAMPLE", "EXPERIMENT", "RUN"):
+        match = re.search(rf'<{tag}\b[^>]*\baccession="([^"]+)"', receipt_xml)
+        if match:
+            return match.group(1)
+    return ""
+
+
+def receipt_failed(receipt_xml: str) -> bool:
+    try:
+        root = ET.fromstring(receipt_xml)
+        return root.attrib.get("success", "").lower() == "false"
+    except ET.ParseError:
+        return 'success="false"' in receipt_xml.lower()
 
 
 def looks_idempotent_exists(text: str) -> bool:
@@ -106,7 +127,7 @@ def main():
                 out.write(f"{analysis_id}\t{submission_id}\t\tTIMEOUT\n")
                 continue
 
-            if 'success="false"' in receipt:
+            if receipt_failed(receipt):
                 if looks_idempotent_exists(receipt):
                     acc = extract_accession(receipt)
                     print(f"EXISTS: {submission_id or '?'} (alias already registered){' -> ' + acc if acc else ''}", file=sys.stderr)

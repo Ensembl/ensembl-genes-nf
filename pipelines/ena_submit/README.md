@@ -18,6 +18,16 @@ one assembly + partial release
         └── one ENA ANALYSIS per BAM/CRAM alignment file
 ```
 
+Before project and analysis XML is generated, source run metadata is resolved
+from the ENA Portal API. This supplies the authoritative BioSample, sample,
+experiment, study, scientific-name, and taxon relationships. The resolved
+file-level metadata is published under `ena_submission/metadata/` for audit.
+
+Aggregates use explicit source relationships: all represented source runs are
+retained, and unique BioSamples are included when they can be represented
+accurately. The workflow never creates a synthetic BioSample for a computational
+aggregate. See [ENA_METADATA_SPEC.md](ENA_METADATA_SPEC.md) for the contract.
+
 ENA does not accept multiple BAM/CRAM files in one `ANALYSIS`. The workflow
 therefore expands the annotation-level manifest into one analysis per file,
 while retaining the shared project metadata and source run/sample links.
@@ -196,6 +206,17 @@ nextflow run pipelines/ena_submit/main.nf \
 
 Use `--mode prod` for production endpoints after Webin test validation.
 
+When adding a child project to an existing ENA umbrella study, provide the
+umbrella accession plus its existing title and description. The workflow then
+submits a project-level `MODIFY` request containing the verified child project
+accessions:
+
+```bash
+--umbrella_study PRJEB000000 \\
+--umbrella_title "Ensembl alignment evidence umbrella study" \\
+--umbrella_description "Umbrella study grouping Ensembl alignment evidence projects."
+```
+
 ### Optional BAM-to-CRAM conversion
 
 To convert BAM inputs to CRAM before MD5 calculation and upload, enable conversion
@@ -223,7 +244,7 @@ Existing non-BAM inputs are passed through unchanged.
 - `files_tsv`: Path to the file-level manifest.
 - `study`: Existing child study accession/alias. Leave blank to use the generated project alias.
 - `project_alias`: Child project alias, usually `prj_<assembly_accession>_Ensembl_<YYYY_MM>`.
-- `umbrella_study`: Umbrella study accession/alias. Recorded as analysis metadata for now.
+- `umbrella_study`: Existing umbrella project accession. With `--create_project true`, the workflow updates it with the newly verified child project accessions.
 - `analysis_alias`: Stable ENA analysis alias.
 - `title`: Human-readable analysis title.
 - `description`: Human-readable description.
@@ -241,13 +262,20 @@ Existing non-BAM inputs are passed through unchanged.
 - `analysis_type`: `REFERENCE_ALIGNMENT`.
 - `omit_run_refs_in_test`: `false` by default, so generated TEST analyses retain their source `RUN_REF` links. Set it to `true` when testing with runs that are absent from ENA TEST.
 
+The run-manifest builder writes this nested `manifest.tsv` plus one `files/*.tsv`
+per analysis. This is the format consumed by the workflow; the older flat
+run-list layout is no longer sufficient.
+
 `files.tsv` has one row per alignment file:
 
 - `file_path`: Local BAM/CRAM path.
 - `file_type`: `bam` or `cram`.
 - `remote_name`: Filename to use in the Webin drop-box.
 - `run_accession`: Source ENA/SRA/DRA run accession.
+- `run_accessions`: Comma-separated source runs represented by one aggregate file.
 - `sample_accession`: Source sample accession from the RNA-seq CSV.
+- `sample_accessions`: Optional source samples for an aggregate; these are
+  re-resolved from ENA before submission.
 - `experiment_accession`: Optional experiment accession.
 - `platform`: Sequencing platform from the RNA-seq CSV.
 - `source_fastq_count`: Number of source FASTQ records for the run.
@@ -260,6 +288,9 @@ Existing non-BAM inputs are passed through unchanged.
 
 Only values matching ENA sample accession formats are emitted as `SAMPLE_REF`
 elements. Tissue labels or other descriptive values in the source CSV are ignored.
+Aggregated alignments do not receive synthetic BioSamples: the resolver emits
+all represented source samples when ENA provides them and retains the complete
+run list and resolved metadata as provenance.
 
 ## Parameters
 
@@ -269,6 +300,7 @@ elements. Tissue labels or other descriptive values in the source CSV are ignore
 | `--webin_user` | yes | ENA Webin username; the password is read from Nextflow secrets |
 | `--mode` | no | `test` by default; use `prod` for the production endpoint |
 | `--outdir` | no | Published output directory, default `./results` |
+| `--create_project` | no | Create a child project (`true`) or reuse the study in each manifest row (`false`). |
 | `--reheader_bams` | no | Validate/reheader BAM inputs against the INSDC reference, default `true` |
 | `--convert_to_cram` | no | Convert BAM inputs to CRAM before upload, default `false` |
 | `--reference_fasta` | conditional | Required for CRAM conversion unless discovered from the manifest |
@@ -280,6 +312,7 @@ The complete parameter list and types are defined in
 ## Outputs
 
 - `${outdir}/ena_submission/projects/`: generated child project XML.
+- `${outdir}/ena_submission/metadata/`: ENA-resolved source relationships and summaries.
 - `${outdir}/ena_submission/xml/`: generated analysis XML.
 - `${outdir}/ena_submission/accessions.tsv`: Webin polling results.
 - `${outdir}/pipeline_info/`: execution timeline, report, trace, and software versions.
@@ -293,13 +326,17 @@ Locked in:
 - Include all source `RUN_REF` entries in production.
 - Support BAM and CRAM input files.
 - Derive partial release identity from assembly accession plus `last_geneset_update`.
-- Use RNA-seq flat files as run/sample metadata source for now.
+- Resolve RNA-seq source relationships from the ENA Portal API, retaining the
+  local RNA-seq metadata as an auditable input.
+- Support explicit creation of a child project or reuse of an existing study
+  with `--create_project`.
+- Support project-level umbrella updates using verified child accessions.
 - Accept registry/core metadata later through CLI-compatible fields.
 
 Pending:
 
-- Final umbrella study accession/alias.
-- Whether child project-to-umbrella linkage should be represented in ENA XML or handled externally.
 - Whether production submissions should use BAMs as-is or CRAMs.
-- Whether `SAMD...` sample accessions validate as `SAMPLE_REF` in Webin, or need mapping to ENA sample accessions.
+- Confirm service-level acceptance of cross-archive `SAMD...`/`SAMN...`
+  identifiers as direct `SAMPLE_REF` values with representative Webin TEST
+  submissions.
 - Which registry fields will replace CLI arguments for assembly/annotation metadata.

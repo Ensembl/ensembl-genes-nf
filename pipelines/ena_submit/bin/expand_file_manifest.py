@@ -34,8 +34,23 @@ OUT_COLUMNS = [
     "file_type",
     "remote_name",
     "run_accession",
+    "run_accessions",
     "sample_accession",
+    "sample_accessions",
+    "biosample_accessions",
     "experiment_accession",
+    "experiment_accessions",
+    "scientific_name",
+    "metadata_source",
+    "aggregation_scope",
+    "platform",
+    "source_fastq_count",
+    "source_fastq_urls",
+    "source_fastq_md5s",
+    "bam_sort_order",
+    "bam_pg_programs",
+    "alignment_software",
+    "alignment_software_version",
 ]
 
 
@@ -122,10 +137,25 @@ def main() -> int:
                 "file_type": file_type,
                 "remote_name": remote_name,
                 "run_accession": run_accession,
+                "run_accessions": (row.get("run_accessions") or run_accession).strip(),
                 "sample_accession": (row.get("sample_accession") or "").strip(),
+                "sample_accessions": (row.get("sample_accessions") or row.get("sample_accession") or "").strip(),
+                "biosample_accessions": (row.get("biosample_accessions") or "").strip(),
                 "experiment_accession": (
                     row.get("experiment_accession") or row.get("experiment_accessions") or ""
                 ).strip(),
+                "experiment_accessions": (row.get("experiment_accessions") or row.get("experiment_accession") or "").strip(),
+                "scientific_name": (row.get("scientific_name") or "").strip(),
+                "metadata_source": (row.get("metadata_source") or "").strip(),
+                "aggregation_scope": (row.get("aggregation_scope") or "").strip(),
+                "platform": (row.get("platform") or "").strip(),
+                "source_fastq_count": (row.get("source_fastq_count") or "").strip(),
+                "source_fastq_urls": (row.get("source_fastq_urls") or "").strip(),
+                "source_fastq_md5s": (row.get("source_fastq_md5s") or "").strip(),
+                "bam_sort_order": (row.get("bam_sort_order") or "").strip(),
+                "bam_pg_programs": (row.get("bam_pg_programs") or "").strip(),
+                "alignment_software": (row.get("alignment_software") or "").strip(),
+                "alignment_software_version": (row.get("alignment_software_version") or "").strip(),
             }
         )
 

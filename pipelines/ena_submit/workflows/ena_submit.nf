@@ -8,6 +8,10 @@ include { ENA_SUBMIT_WEBIN as ENA_SUBMIT_ANALYSIS } from '../modules/submit_webi
 include { ENA_POLL_WEBIN as ENA_POLL_PROJECT } from '../modules/poll_webin.nf'
 include { ENA_POLL_WEBIN as ENA_POLL_ANALYSIS } from '../modules/poll_webin.nf'
 include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
+include { ENA_GENERATE_UMBRELLA_XML } from '../modules/generate_umbrella_xml.nf'
+include { ENA_SUBMIT_WEBIN as ENA_SUBMIT_UMBRELLA } from '../modules/submit_webin.nf'
+include { ENA_POLL_WEBIN as ENA_POLL_UMBRELLA } from '../modules/poll_webin.nf'
+include { ENA_RESOLVE_METADATA } from '../modules/resolve_metadata.nf'
 include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
 include { ENA_CONVERT_TO_CRAM } from '../modules/convert_to_cram.nf'
 include { ENA_REHEADER_BAM } from '../modules/reheader_bam.nf'
@@ -31,6 +35,7 @@ workflow ENA_SUBMIT_WORKFLOW {
     }
     assert params.mode in ['test', 'prod'] : "--mode must be 'test' or 'prod'"
     assert params.outdir :        "--outdir is required"
+    def create_project = params.create_project?.toString()?.toLowerCase() in ['1', 'true', 'yes']
 
     def ch_webin_user     = Channel.value(webin_user)
     // Base endpoint derived from mode unless overridden
@@ -45,8 +50,11 @@ workflow ENA_SUBMIT_WORKFLOW {
           if (!row.last_geneset_update && !row.partial_release_label) { throw new RuntimeException("Manifest row missing last_geneset_update/partial_release_label") }
           def release = row.partial_release_label ?: "${row.assembly_accession}-Ensembl-${row.last_geneset_update}"
           def prj_alias = row.project_alias ?: ("prj_${release}").replaceAll('[^A-Za-z0-9._-]', '_')
-          // Use derived child project alias as a refname (not accession) unless an existing study is provided.
-          if (!row.study) { row.study = prj_alias }
+          if (!create_project && !row.study) {
+              throw new RuntimeException("Manifest row must provide study when --create_project is false")
+          }
+          // Use derived child project alias as a refname only for a new project.
+          if (create_project && !row.study) { row.study = prj_alias }
           if (params.umbrella_study && !row.umbrella_study) { row.umbrella_study = params.umbrella_study }
           if (row.umbrella_study && !(row.analysis_attributes ?: '').contains('attr_umbrella_study=')) {
               row.analysis_attributes = [row.analysis_attributes, "attr_umbrella_study=${row.umbrella_study}"].findAll { it }.join('; ')
@@ -57,32 +65,76 @@ workflow ENA_SUBMIT_WORKFLOW {
       }
       .set { analyses }
 
-    // Single approach: derive unique Projects from manifest (assembly + release), always
-    def ch_proj_rows = analyses
-        .map { meta, row ->
-            def alias = meta.project_alias
-            def title = "Annotation evidence project for ${meta.assembly}, ${meta.release}"
-            def description = params.project_description ?: "Annotation evidence project for ${meta.assembly}, ${meta.release}"
-            // Key by alias, carry a single meta map
-            tuple(alias, [ alias: alias, name: alias, title: title, description: description, hold_until: params.hold_until ?: '' ])
-        }
-        .groupTuple()
-        .map { alias, metas -> metas[0] } // one meta per alias
+    def ch_metadata_resolver = Channel.value(file("${projectDir}/bin/resolve_ena_metadata.py"))
+    def analyses_with_files = analyses.map { meta, row -> tuple(meta, row, file(row.files_tsv)) }
+    ENA_RESOLVE_METADATA(analyses_with_files, ch_metadata_resolver)
 
-    ENA_GENERATE_PROJECT_XML(ch_proj_rows)
-    ENA_SUBMIT_PROJECT(ENA_GENERATE_PROJECT_XML.out.xml, ch_webin_base, ch_webin_user)
-    def ch_proj_files = ENA_SUBMIT_PROJECT.out.queued.map { meta, f -> f }
+    def ch_project_gate
+    if (create_project) {
+        // Build projects only after source metadata has been resolved.
+        def resolved_project_summaries = ENA_RESOLVE_METADATA.out.resolved
+            .map { meta, row, resolved_files, summary -> summary }
+            .splitCsv(header:true, sep:'\t')
+        def ch_proj_rows = resolved_project_summaries
+            .map { summary ->
+                def alias = summary.project_alias
+                def title = "Annotation evidence project for ${summary.assembly_accession}, ${summary.release}"
+                def description = params.project_description ?: "Annotation evidence project for ${summary.assembly_accession}, ${summary.release}; processed RNA-seq alignment evidence with ENA-resolved source metadata."
+                tuple(alias, [ alias: alias, name: alias, title: title, description: description,
+                               scientific_name: summary.scientific_name, taxon_id: summary.taxon_id,
+                               hold_until: params.hold_until ?: '' ])
+            }
+            .groupTuple()
+            .map { alias, metas ->
+                def taxa = metas.collect { it.taxon_id }.findAll { it }.unique()
+                def names = metas.collect { it.scientific_name }.findAll { it }.unique()
+                if (taxa.size() > 1 || names.size() > 1) {
+                    throw new RuntimeException("Project ${alias} contains conflicting source taxonomy: taxon_id=${taxa}, scientific_name=${names}")
+                }
+                metas[0]
+            }
 
-    ENA_POLL_PROJECT(
-        ch_proj_files.collect(),
-        ch_webin_user,
-        Channel.value(params.poll_interval    ?: 20),
-        Channel.value(params.poll_max_attempts ?: 30)
+        ENA_GENERATE_PROJECT_XML(ch_proj_rows)
+        ENA_SUBMIT_PROJECT(ENA_GENERATE_PROJECT_XML.out.xml, ch_webin_base, ch_webin_user)
+        def ch_proj_files = ENA_SUBMIT_PROJECT.out.queued.map { meta, f -> f }
+
+        ENA_POLL_PROJECT(
+            ch_proj_files.collect(),
+            ch_webin_user,
+            Channel.value(params.poll_interval    ?: 20),
+            Channel.value(params.poll_max_attempts ?: 30)
+            )
+        ch_project_gate = ENA_POLL_PROJECT.out.accessions
+    } else {
+        ch_project_gate = Channel.value('existing-study')
+    }
+
+    if (params.umbrella_study) {
+        assert create_project : "--umbrella_study currently requires --create_project true so new child accessions can be verified"
+        assert params.umbrella_title : "--umbrella_title is required with --umbrella_study"
+        assert params.umbrella_description : "--umbrella_description is required with --umbrella_study"
+        def umbrella_meta = [id: 'umbrella_update', alias: params.umbrella_study]
+        def umbrella_inputs = ENA_POLL_PROJECT.out.accessions
+            .map { accession_file -> tuple(umbrella_meta, accession_file) }
+        ENA_GENERATE_UMBRELLA_XML(
+            umbrella_inputs,
+            Channel.value(params.umbrella_study),
+            Channel.value(params.umbrella_title),
+            Channel.value(params.umbrella_description)
         )
+        ENA_SUBMIT_UMBRELLA(ENA_GENERATE_UMBRELLA_XML.out.xml, ch_webin_base, ch_webin_user)
+        ENA_POLL_UMBRELLA(
+            ENA_SUBMIT_UMBRELLA.out.queued.map { meta, f -> f }.collect(),
+            ch_webin_user,
+            Channel.value(params.poll_interval ?: 20),
+            Channel.value(params.poll_max_attempts ?: 30)
+        )
+    }
 
     def ch_expander_script = Channel.value(file("${projectDir}/bin/expand_file_manifest.py"))
-    def analyses_with_files = analyses.map { meta, row -> tuple(meta, row, file(row.files_tsv)) }
-    ENA_EXPAND_FILE_MANIFEST(analyses_with_files, ch_expander_script)
+    def resolved_files_inputs = ENA_RESOLVE_METADATA.out.resolved
+        .map { meta, row, resolved_files, summary -> tuple(meta, row, resolved_files) }
+    ENA_EXPAND_FILE_MANIFEST(resolved_files_inputs, ch_expander_script)
 
     def file_inputs = ENA_EXPAND_FILE_MANIFEST.out.expanded
         .map { meta, row, expanded_tsv -> expanded_tsv }
@@ -106,8 +158,19 @@ workflow ENA_SUBMIT_WORKFLOW {
                 reference_supplement: file_row.reference_supplement,
                 last_geneset_update: file_row.last_geneset_update,
                 partial_release_label: file_row.partial_release_label,
-                species: file_row.species,
+                species: file_row.species ?: file_row.scientific_name?.replaceAll(' ', '_'),
                 taxon_id: file_row.taxon_id,
+                scientific_name: file_row.scientific_name,
+                aggregation_scope: file_row.aggregation_scope,
+                metadata_source: file_row.metadata_source,
+                platform: file_row.platform,
+                source_fastq_count: file_row.source_fastq_count,
+                source_fastq_urls: file_row.source_fastq_urls,
+                source_fastq_md5s: file_row.source_fastq_md5s,
+                bam_sort_order: file_row.bam_sort_order,
+                bam_pg_programs: file_row.bam_pg_programs,
+                alignment_software: file_row.alignment_software,
+                alignment_software_version: file_row.alignment_software_version,
                 ref_seqs: file_row.ref_seqs,
                 analysis_links: file_row.analysis_links,
                 analysis_attributes: file_row.analysis_attributes,
@@ -119,8 +182,12 @@ workflow ENA_SUBMIT_WORKFLOW {
                 file_type: file_row.file_type,
                 remote_name: file_row.remote_name,
                 run_accession: file_row.run_accession,
+                run_accessions: file_row.run_accessions,
                 sample_accession: file_row.sample_accession,
+                sample_accessions: file_row.sample_accessions,
+                biosample_accessions: file_row.biosample_accessions,
                 experiment_accession: file_row.experiment_accession,
+                experiment_accessions: file_row.experiment_accessions,
                 is_index: false,
             ]
             tuple(meta, row, file_meta, file(file_row.file_path))
@@ -246,7 +313,7 @@ workflow ENA_SUBMIT_WORKFLOW {
         )
 
     def uploaded_after_projects = ENA_FTP_UPLOAD.out.uploaded
-        .combine(ENA_POLL_PROJECT.out.accessions)
+        .combine(ch_project_gate)
         .map { meta, row, file_meta, f, md5, accessions -> tuple(meta.id, meta, row, file_meta, f, md5) }
         .groupTuple(by: 0)
         .map { id, metas, rows, file_metas, files, md5_list -> tuple(metas[0], rows[0], file_metas, files, md5_list) }
@@ -276,9 +343,14 @@ workflow ENA_SUBMIT_WORKFLOW {
     ENA_POLL_ANALYSIS.out.accessions.view { f -> "Accessions written to: ${f}" }
 
     def all_versions = channel.empty()
-        .mix(ENA_GENERATE_PROJECT_XML.out.versions)
-        .mix(ENA_SUBMIT_PROJECT.out.versions)
-        .mix(ENA_POLL_PROJECT.out.versions)
+    if (create_project) {
+        all_versions = all_versions
+            .mix(ENA_GENERATE_PROJECT_XML.out.versions)
+            .mix(ENA_SUBMIT_PROJECT.out.versions)
+            .mix(ENA_POLL_PROJECT.out.versions)
+    }
+    all_versions = all_versions
+        .mix(ENA_RESOLVE_METADATA.out.versions)
         .mix(ENA_EXPAND_FILE_MANIFEST.out.versions)
         .mix(ENA_COMPUTE_MD5.out.versions)
         .mix(ENA_FTP_UPLOAD.out.versions)
@@ -298,6 +370,12 @@ workflow ENA_SUBMIT_WORKFLOW {
         all_versions = all_versions
             .mix(ENA_CONVERT_TO_CRAM.out.versions)
             .mix(ENA_INDEX_CRAM.out.versions)
+    }
+    if (params.umbrella_study) {
+        all_versions = all_versions
+            .mix(ENA_GENERATE_UMBRELLA_XML.out.versions)
+            .mix(ENA_SUBMIT_UMBRELLA.out.versions)
+            .mix(ENA_POLL_UMBRELLA.out.versions)
     }
     COLLECT_SOFTWARE_VERSIONS(all_versions.collect())
 

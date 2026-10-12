@@ -108,10 +108,21 @@ def main():
                 }
 
     manifest_path = os.path.join(args.outdir, 'manifest.tsv')
+    files_dir = os.path.join(args.outdir, 'files')
+    os.makedirs(files_dir, exist_ok=True)
+    manifest_cols = [
+        'files_tsv', 'study', 'project_alias', 'umbrella_study', 'analysis_alias',
+        'title', 'description', 'assembly_accession', 'last_geneset_update',
+        'partial_release_label', 'species', 'taxon_id', 'analysis_links',
+        'analysis_attributes', 'analysis_type', 'omit_run_refs_in_test',
+    ]
+    file_cols = [
+        'file_path', 'file_type', 'remote_name', 'run_accession', 'run_accessions',
+        'sample_accession', 'sample_accessions', 'experiment_accession',
+    ]
     with open(manifest_path, 'w', newline='') as mf:
-        cols = ['file_path','file_type','study','analysis_alias','title','description','run_list_path','assembly_accession','sample_accession','analysis_links','analysis_attributes','remote_name','analysis_type','omit_run_refs_in_test']
-        w = csv.DictWriter(mf, fieldnames=cols, delimiter='\t')
-        w.writeheader()
+        manifest_writer = csv.DictWriter(mf, fieldnames=manifest_cols, delimiter='\t')
+        manifest_writer.writeheader()
 
         for key, rows in groups.items():
             # Common derived values
@@ -119,6 +130,7 @@ def main():
             taxon_id = str(next((r.get('taxon_id') for r in rows if r.get('taxon_id')), '')).strip()
             species = species_map.get(taxon_id) or (f"taxon_{taxon_id}" if taxon_id else 'unknown_species')
 
+            group_outputs = []
             if args.mode == 'per-run':
                 for r in rows:
                     ra = (r.get('run_accession') or r.get('run') or '').strip()
@@ -140,25 +152,22 @@ def main():
                     study = args.study
                     if study_map:
                         study = study_map.get(assembly) or study_map.get(taxon_id) or study
-                    row_out = {
+                    group_outputs.append({
                         'file_path': file_path,
                         'file_type': args.file_ext,
-                        'study': study,
-                        'analysis_alias': alias,
-                        'title': title,
-                        'description': desc,
-                        'run_accessions': ra,
-                        'assembly_accession': assembly,
-                        'sample_accession': sa,
-                        'analysis_links': links,
-                        'analysis_attributes': analysis_attributes,
                         'remote_name': remote_name,
-                        'analysis_type': 'REFERENCE_ALIGNMENT',
-                        'omit_run_refs_in_test': 'true',
+                        'run_accession': ra,
+                        'run_accessions': ra,
+                        'sample_accession': sa,
+                        'sample_accessions': sa,
+                        'experiment_accession': (r.get('experiment_accession') or '').strip(),
+                    })
+                    group_manifest = {
+                        'analysis_alias': alias, 'title': title, 'description': desc,
+                        'analysis_links': links, 'analysis_attributes': analysis_attributes,
                     }
-                    w.writerow(row_out)
+                    group_outputs[-1]['_manifest'] = group_manifest
             else:
-                # merged mode: existing behaviour
                 tissue = None
                 if 'tissue' in group_by or 'tissue_prediction' in group_by:
                     tissue = key[group_by.index('tissue') if 'tissue' in group_by else group_by.index('tissue_prediction')]
@@ -207,23 +216,36 @@ def main():
                 desc = f"Merged {len(run_list)} public runs across multiple BioSamples; evidence for genome annotation {args.release}."
                 remote_name = f"{alias}.{args.file_ext}"
                 file_path = os.path.join(args.file_dir, remote_name)
-                row_out = {
+                group_outputs = [{
                     'file_path': file_path,
                     'file_type': args.file_ext,
-                    'study': study,
-                    'analysis_alias': alias,
-                    'title': title,
-                    'description': desc,
-                    'run_list_path': run_list_path,
-                    'assembly_accession': assembly,
-                    'sample_accession': '',
-                    'analysis_links': links,
-                    'analysis_attributes': analysis_attributes,
                     'remote_name': remote_name,
-                    'analysis_type': 'REFERENCE_ALIGNMENT',
-                    'omit_run_refs_in_test': 'true',
-                }
-                w.writerow(row_out)
+                    'run_accessions': ','.join(run_list),
+                    'sample_accessions': ','.join(sorted(sample_counts)),
+                    '_manifest': {'analysis_alias': alias, 'title': title,
+                                  'description': desc, 'analysis_links': links,
+                                  'analysis_attributes': analysis_attributes},
+                }]
+
+            if not group_outputs:
+                continue
+            manifest_info = group_outputs[0].pop('_manifest')
+            files_tsv = os.path.join(files_dir, f"{manifest_info['analysis_alias']}.tsv")
+            with open(files_tsv, 'w', newline='') as ff:
+                file_writer = csv.DictWriter(ff, fieldnames=file_cols, delimiter='\t')
+                file_writer.writeheader()
+                file_writer.writerows(group_outputs)
+            project_alias = f"prj_{slug(assembly)}" if assembly else f"prj_taxon_{slug(taxon_id)}"
+            manifest_writer.writerow({
+                'files_tsv': files_tsv, 'study': study, 'project_alias': project_alias,
+                'analysis_alias': manifest_info['analysis_alias'],
+                'title': manifest_info['title'], 'description': manifest_info['description'],
+                'assembly_accession': assembly, 'last_geneset_update': args.release,
+                'partial_release_label': args.release, 'species': species, 'taxon_id': taxon_id,
+                'analysis_links': manifest_info['analysis_links'],
+                'analysis_attributes': manifest_info['analysis_attributes'],
+                'analysis_type': 'REFERENCE_ALIGNMENT', 'omit_run_refs_in_test': 'true',
+            })
 
     print(manifest_path)
 
