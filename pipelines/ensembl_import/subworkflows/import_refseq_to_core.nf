@@ -45,5 +45,6 @@ workflow IMPORT_REFSEQ_TO_CORE {
         loaded_refseq = LOAD_REFSEQ.out.loaded
         genome = LOAD_REFSEQ.out.genome
         metadata_input = LOAD_REFSEQ.out.loaded
+        assembly_report = LOAD_REFSEQ.out.assembly_report
         versions = versions_ch
     }
