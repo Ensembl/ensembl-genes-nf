@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from .config import StableIdEventConfig
+from .finalization import write_metadata_map_table, write_sample_gene_finalization_sql
 from .models import Decision, PK_BY_TYPE, TABLE_BY_TYPE
 
 
@@ -106,6 +107,23 @@ def write_sql(
             handle.write("\n")
 
         handle.write("START TRANSACTION;\n\n")
+
+        metadata_map_rows = []
+        for decision in decisions:
+            if decision.feature_type not in {"gene", "transcript"}:
+                continue
+            if not decision.new_stable_id:
+                continue
+            for old_id in (decision.current_stable_id, decision.old_stable_id):
+                if old_id:
+                    metadata_map_rows.append(
+                        (decision.feature_type, old_id, decision.new_stable_id)
+                    )
+        write_metadata_map_table(
+            handle,
+            metadata_map_rows,
+            batch_size=config.batch_size,
+        )
 
         if config.dry_run:
             decision_table = "tmp_stable_id_mapper_decisions"
@@ -322,6 +340,8 @@ def write_sql(
                 config.batch_size,
             )
 
+        write_sample_gene_finalization_sql(handle)
+
         handle.write("COMMIT;\n")
 
 
@@ -361,4 +381,3 @@ def write_tsv(decisions: list[Decision], path: str | Path) -> None:
                     decision.reason,
                 ]
             )
-

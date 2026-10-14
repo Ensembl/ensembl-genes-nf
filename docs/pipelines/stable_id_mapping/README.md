@@ -8,6 +8,10 @@ This Nextflow DSL2 pipeline prepares stable-ID updates for an Ensembl core datab
 
 The pipeline generates SQL for review. It does **not** automatically execute the SQL that commits stable-ID changes.
 
+The executable SQL ends with a deterministic core-finalisation and validation
+phase. Apply the complete generated SQL, rather than extracting only the
+stable-ID table updates.
+
 ## Requirements
 
 The pipeline is designed for the Ensembl genebuild cluster environment. It expects:
@@ -268,6 +272,14 @@ Outputs are published below `results/<db_name>/` by default.
 | `dry_run_sql/` | Output captured when the mapping dry-run SQL is executed. |
 | `reassignment/` | Executable reassignment SQL, rollback dry-run SQL, JSON summary and old-to-new ID-map TSV. Present only for the reassignment route. |
 
+## Sample-gene metadata
+
+After the feature-table stable-ID updates, the executable SQL remaps
+`sample.gene_param`, `sample.gene_text` and `genebuild.sample_gene`. Direct
+stable-ID mappings are preferred; if the old gene ID is absent, the existing
+sample location is used to select a final target gene deterministically. The
+SQL fails if any of these metadata values still do not exist in `gene`.
+
 The mapping branch copies staged FASTA and GFF files into `inputs/`; these can be large.
 
 ## Reading the mapping audit
@@ -394,4 +406,3 @@ Before applying mapping or reassignment SQL:
 4. apply executable SQL only after manual review.
 
 The executable SQL files are generated for deliberate manual execution. Do not treat successful pipeline completion alone as approval to modify the database.
-

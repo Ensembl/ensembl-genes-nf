@@ -24,6 +24,10 @@ from stable_id_mapping.outputs import (
     sql_string,
     write_values_insert,
 )
+from stable_id_mapping.finalization import (
+    write_metadata_map_table,
+    write_sample_gene_finalization_sql,
+)
 from stable_id_mapping.range_check import (
     check_stable_id,
     find_duplicate_stable_ids,
@@ -179,11 +183,17 @@ def write_noop_sql(
         if dry_run:
             handle.write("-- Dry-run SQL: no changes to preview.\n")
         handle.write(f"\nUSE {sql_identifier(db_name)};\n")
+        if not dry_run:
+            handle.write("START TRANSACTION;\n\n")
+            write_metadata_map_table(handle, [], batch_size=1)
+            write_sample_gene_finalization_sql(handle)
+            handle.write("COMMIT;\n")
 
 
 def write_reassignment_sql(
     path: Path,
     db_name: str,
+    populations: dict[str, list[dict]],
     assignments: dict[str, list[tuple[int, str]]],
     batch_size: int,
     backup_prefix: str,
@@ -207,6 +217,23 @@ def write_reassignment_sql(
             handle.write("\n")
 
         handle.write("START TRANSACTION;\n\n")
+
+        metadata_map_rows = []
+        for feature_type in ("gene", "transcript"):
+            assigned_by_feature_id = dict(assignments[feature_type])
+            for row in populations[feature_type]:
+                metadata_map_rows.append(
+                    (
+                        feature_type,
+                        row["stable_id"],
+                        assigned_by_feature_id[row["feature_id"]],
+                    )
+                )
+        write_metadata_map_table(
+            handle,
+            metadata_map_rows,
+            batch_size=batch_size,
+        )
 
         for feature_type, rows in assignments.items():
             table_name, primary_key = FEATURE_TABLES[feature_type]
@@ -283,7 +310,12 @@ def write_reassignment_sql(
                 "    f.version = 1;\n\n"
             )
 
-        handle.write("ROLLBACK;\n" if dry_run else "COMMIT;\n")
+        if dry_run:
+            handle.write("ROLLBACK;\n")
+            return
+
+        write_sample_gene_finalization_sql(handle)
+        handle.write("COMMIT;\n")
 
 
 def write_summary(path: Path, summary: dict) -> None:
@@ -359,8 +391,16 @@ def main() -> int:
         }
 
     if total_disagreeing == 0:
-        write_noop_sql(args.output_sql, args.db_name, dry_run=False)
-        write_noop_sql(args.dry_run_sql, args.db_name, dry_run=True)
+        write_noop_sql(
+            args.output_sql,
+            args.db_name,
+            dry_run=False,
+        )
+        write_noop_sql(
+            args.dry_run_sql,
+            args.db_name,
+            dry_run=True,
+        )
 
         identity_assignments = {
             feature_type: [
@@ -425,6 +465,7 @@ def main() -> int:
     write_reassignment_sql(
         args.output_sql,
         args.db_name,
+        populations,
         assignments,
         args.batch_size,
         args.backup_prefix,
@@ -433,6 +474,7 @@ def main() -> int:
     write_reassignment_sql(
         args.dry_run_sql,
         args.db_name,
+        populations,
         assignments,
         args.batch_size,
         args.backup_prefix,
