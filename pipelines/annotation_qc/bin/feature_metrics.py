@@ -181,7 +181,7 @@ def main():
     rows.append((f"{phase_prefix} records without usable phase", phase_missing if phase_total else "N/A"))
     add_summary(rows, "Exon length", exon_lengths, " (bp)")
     rows.extend((f"Exon length {label}", count_pct(count, len(exon_lengths))) for label, count in histogram(exon_lengths, EXON_BINS))
-    add_summary(rows, "Intron length", intron_lengths, " (bp)")
+    add_summary(rows, "Intron length", intron_lengths, " (bp)", include_count=True)
     rows.extend((f"Intron length {label}", count_pct(count, len(intron_lengths))) for label, count in histogram(intron_lengths, INTRON_BINS))
 
     five, three = set(), set()
@@ -208,4 +208,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

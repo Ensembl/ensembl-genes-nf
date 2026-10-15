@@ -33,6 +33,8 @@ def scan(path, exons, annotations, masked_output=None):
     annotation_intervals = intervals_by_seqid(annotations)
     gc_counts = [0] * len(exons)
     base_counts = [0] * len(exons)
+    exon_cursors = {}
+    annotation_cursors = {}
     genome_size = total_masked = masked_annotated = 0
     seen = set()
     overlap_out = None
@@ -55,7 +57,12 @@ def scan(path, exons, annotations, masked_output=None):
                 mask_length = mask_end - mask_start
                 total_masked += mask_length
                 annotated = False
-                for start, end, _index, feature in annotation_intervals.get(seqid, ()):
+                intervals = annotation_intervals.get(seqid, ())
+                cursor = annotation_cursors.get(seqid, 0)
+                while cursor < len(intervals) and intervals[cursor][1] <= mask_start:
+                    cursor += 1
+                for interval_index in range(cursor, len(intervals)):
+                    start, end, _index, feature = intervals[interval_index]
                     if start >= mask_end:
                         break
                     overlap_start = max(mask_start, start)
@@ -65,6 +72,9 @@ def scan(path, exons, annotations, masked_output=None):
                     annotated = True
                     if overlap_out:
                         overlap_out.write(f"{seqid}\t{overlap_start}\t{overlap_end}\t{mask_start}\t{mask_end}\t{feature.feature_id}\t{feature.start}\t{feature.end}\t{feature.strand}\t{overlap_end - overlap_start}\n")
+                while cursor < len(intervals) and intervals[cursor][1] <= mask_end:
+                    cursor += 1
+                annotation_cursors[seqid] = cursor
                 if annotated:
                     masked_annotated += mask_length
                 mask_start = mask_end = None
@@ -92,7 +102,12 @@ def scan(path, exons, annotations, masked_output=None):
                 if mask_start is not None and mask_end != line_end:
                     finish_mask()
 
-                for start, end, index, _feature in exon_intervals.get(seqid, ()):
+                intervals = exon_intervals.get(seqid, ())
+                cursor = exon_cursors.get(seqid, 0)
+                while cursor < len(intervals) and intervals[cursor][1] <= line_start:
+                    cursor += 1
+                for interval_index in range(cursor, len(intervals)):
+                    start, end, index, _feature = intervals[interval_index]
                     if start >= line_end:
                         break
                     overlap_start, overlap_end = max(line_start, start), min(line_end, end)
@@ -101,6 +116,9 @@ def scan(path, exons, annotations, masked_output=None):
                     chunk = sequence[overlap_start - line_start:overlap_end - line_start].upper()
                     gc_counts[index] += chunk.count(b"G") + chunk.count(b"C")
                     base_counts[index] += sum(chunk.count(base) for base in b"ACGT")
+                while cursor < len(intervals) and intervals[cursor][1] <= line_end:
+                    cursor += 1
+                exon_cursors[seqid] = cursor
                 position = line_end
             finish_mask()
     finally:
@@ -150,4 +168,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

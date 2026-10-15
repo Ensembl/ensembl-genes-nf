@@ -1,7 +1,0 @@
-metrics_name,metrics_value
-Genome size (bp),1460365368
-gene count,44807
-gene density (genes/Mb),30.6820
-% genome covered by gene,64.9101
-Overlapping gene pairs (same strand),4185
-Antisense gene pairs (opposite strand),10349
