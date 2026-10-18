@@ -11,6 +11,11 @@ SAMPLE_GENE_KEYS = (
     "genebuild.sample_gene",
 )
 
+SAMPLE_TRANSCRIPT_KEYS = (
+    "sample.transcript_param",
+    "sample.transcript_text",
+)
+
 
 def sql_string(value: str | None) -> str:
     if value is None:
@@ -51,6 +56,7 @@ def write_metadata_map_table(
 def write_sample_gene_finalization_sql(handle: TextIO) -> None:
     """Update sample-gene metadata using the final gene stable IDs."""
     gene_keys = ", ".join(sql_string(key) for key in SAMPLE_GENE_KEYS)
+    transcript_keys = ", ".join(sql_string(key) for key in SAMPLE_TRANSCRIPT_KEYS)
     handle.write(
         "-- Remap stable-ID-dependent sample-gene metadata after gene updates.\n"
         "CREATE TEMPORARY TABLE tmp_stable_id_mapper_sample_gene_resolution AS\n"
@@ -87,6 +93,13 @@ def write_sample_gene_finalization_sql(handle: TextIO) -> None:
         "  ON r.species_id = m.species_id AND r.meta_key = m.meta_key\n"
         "SET m.meta_value = r.resolved_value\n"
         "WHERE r.resolved_value IS NOT NULL;\n\n"
+
+        "UPDATE meta m\n"
+        "JOIN tmp_stable_id_mapper_metadata_map map\n"
+        "  ON map.feature_type = 'transcript'\n"
+        " AND map.old_stable_id = m.meta_value\n"
+        "SET m.meta_value = map.new_stable_id\n"
+        f"WHERE m.meta_key IN ({transcript_keys});\n\n"
         "DROP PROCEDURE IF EXISTS stable_id_mapper_sample_gene_validation;\n"
         "DELIMITER //\n"
         "CREATE PROCEDURE stable_id_mapper_sample_gene_validation()\n"
@@ -97,6 +110,17 @@ def write_sample_gene_finalization_sql(handle: TextIO) -> None:
         "       AND NOT EXISTS (SELECT 1 FROM gene g WHERE g.stable_id = m.meta_value)\n"
         "  ) THEN\n"
         "    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'stale sample gene stable ID in meta';\n"
+        "  END IF;\n"
+                "  IF EXISTS (\n"
+        "    SELECT 1 FROM meta m\n"
+        f"     WHERE m.meta_key IN ({transcript_keys})\n"
+        "       AND NOT EXISTS (\n"
+        "         SELECT 1 FROM transcript t\n"
+        "          WHERE t.stable_id = m.meta_value\n"
+        "       )\n"
+        "  ) THEN\n"
+        "    SIGNAL SQLSTATE '45000' "
+        "SET MESSAGE_TEXT = 'stale sample transcript stable ID in meta';\n"
         "  END IF;\n"
         "END//\n"
         "DELIMITER ;\n"
