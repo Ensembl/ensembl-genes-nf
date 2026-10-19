@@ -5,6 +5,7 @@ import os
 import shutil
 import time
 import urllib.request
+import urllib.error
 from pathlib import Path
 
 
@@ -13,6 +14,22 @@ def md5(path):
     with open(path, "rb") as f:
         for block in iter(lambda: f.read(1024 * 1024), b""): h.update(block)
     return h.hexdigest()
+
+
+def open_with_retries(request, attempts=6):
+    """Retry transient public-object-store failures before giving up."""
+    for attempt in range(attempts):
+        try:
+            return urllib.request.urlopen(request, timeout=120)
+        except urllib.error.HTTPError as exc:
+            transient = exc.code == 429 or 500 <= exc.code < 600
+            if not transient or attempt == attempts - 1:
+                raise
+            time.sleep(min(60, 5 * (2 ** attempt)))
+        except urllib.error.URLError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(min(60, 5 * (2 ** attempt)))
 
 
 def main():
@@ -39,7 +56,7 @@ def main():
             if offset:
                 headers["Range"] = f"bytes={offset}-"
             request = urllib.request.Request(a.source_uri, headers=headers)
-            with urllib.request.urlopen(request, timeout=120) as src:
+            with open_with_retries(request) as src:
                 resumed = offset > 0 and getattr(src, "status", None) == 206
                 if offset and not resumed:
                     part.unlink()
@@ -58,7 +75,8 @@ def main():
             name = Path(uri.split("?", 1)[0]).name; side = Path(a.cache_dir) / a.classification / expected / name
             side.parent.mkdir(parents=True, exist_ok=True)
             if not side.exists():
-                with urlopen(uri) as src, open(str(side) + ".part", "wb") as dst: shutil.copyfileobj(src, dst)
+                side_request = urllib.request.Request(uri, headers={"User-Agent": "Mozilla/5.0 (Ensembl long-read pipeline)"})
+                with open_with_retries(side_request) as src, open(str(side) + ".part", "wb") as dst: shutil.copyfileobj(src, dst)
                 if md5(str(side) + ".part") != expected: raise SystemExit(f"Sidecar checksum mismatch for {a.accession}: {name}")
                 os.replace(str(side) + ".part", side)
             if md5(side) != expected: raise SystemExit(f"Cached sidecar checksum mismatch for {a.accession}: {name}")
