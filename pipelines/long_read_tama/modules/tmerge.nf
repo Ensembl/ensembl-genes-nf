@@ -33,7 +33,7 @@ process TMERGE {
     """
 
     stub:
-    """
+    """ 
     printf 'stub\\t0\\t4\\t${backend}.${cohort_id}.merged.1\\t0\\t+\\t0\\t4\\t0\\t1\\t4,\\t0,\\n' > ${backend}_${cohort_id}_merged.bed
     touch ${cohort_id}_merged_gene_report.txt ${cohort_id}_merged_merge.txt ${cohort_id}_merged_trans_report.txt
     printf 'tmerge_input.gtf\\n' > merge_filelist.tsv

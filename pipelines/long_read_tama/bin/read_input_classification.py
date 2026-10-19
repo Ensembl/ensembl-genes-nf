@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Iterable, TextIO
 
 RUN = re.compile(r"^(?:SRR|ERR|DRR)[0-9]+$")
+DIRECT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 MD5 = re.compile(r"^[0-9a-fA-F]{32}$")
 SHA256 = re.compile(r"^[0-9a-fA-F]{64}$")
 UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")
@@ -343,7 +344,16 @@ def validate_approved(rows: list[dict]) -> None:
     for n, row in enumerate(rows, 2):
         if row.get("status", "APPROVED") != "APPROVED" or row.get("review_decision") != "APPROVE": raise ValueError(f"row {n}: run is not approved")
         if row.get("classification") not in allowed or row.get("proposed_action") != allowed[row["classification"]]: raise ValueError(f"row {n}: incompatible classification/action")
-        if not RUN.fullmatch(row.get("run_accession", "")) or not MD5.fullmatch(row.get("selected_artifact_md5", "")): raise ValueError(f"row {n}: unsafe accession or checksum")
+        source_type = row.get("source_type", "ENA").strip()
+        direct_exception = source_type == "PACBIO_DIRECT_URI"
+        if direct_exception:
+            if not DIRECT_ID.fullmatch(row.get("run_accession", "")): raise ValueError(f"row {n}: unsafe direct-source sample ID")
+            if not row.get("exception_reason", "").strip(): raise ValueError(f"row {n}: direct-source exception requires a reason")
+            if row.get("checksum_policy") not in ("record_on_acquisition", "verified_md5"): raise ValueError(f"row {n}: unsupported direct-source checksum policy")
+            if row.get("checksum_policy") == "record_on_acquisition" and row.get("selected_artifact_md5") != "PENDING": raise ValueError(f"row {n}: record_on_acquisition requires PENDING checksum")
+            if row.get("checksum_policy") == "verified_md5" and not MD5.fullmatch(row.get("selected_artifact_md5", "")): raise ValueError(f"row {n}: direct-source checksum is not an MD5")
+        elif not RUN.fullmatch(row.get("run_accession", "")) or not MD5.fullmatch(row.get("selected_artifact_md5", "")):
+            raise ValueError(f"row {n}: unsafe accession or checksum")
         if not SAFE_URI.fullmatch(row.get("selected_artifact_uri", "")) or not SAFE_FILE.fullmatch(row.get("selected_artifact_basename", "")): raise ValueError(f"row {n}: unsafe artifact")
         if row.get("minimap2_preset") not in ("splice", "splice:hq"): raise ValueError(f"row {n}: unsupported minimap2 preset")
         if not SHA256.fullmatch(row.get("classification_report_sha256", "")): raise ValueError(f"row {n}: missing classification report hash")
@@ -356,7 +366,7 @@ def validate_approved(rows: list[dict]) -> None:
         if row["classification"] == "PACBIO_CCS_FASTQ" and not basename.endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")): raise ValueError(f"row {n}: CCS FASTQ route requires FASTQ")
         if row["classification"] == "PACBIO_PROCESSED_FASTQ" and not basename.endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")): raise ValueError(f"row {n}: processed FASTQ route requires FASTQ")
         if row["classification"] == "PACBIO_SUBREAD_BAM" and not basename.endswith(".subreads.bam"): raise ValueError(f"row {n}: subread route requires .subreads.bam")
-        if row["classification"] == "PACBIO_CCS_BAM" and not basename.endswith((".ccs.bam", ".hifi_reads.bam")): raise ValueError(f"row {n}: CCS BAM route requires a consensus BAM")
+        if row["classification"] == "PACBIO_CCS_BAM" and not (direct_exception and basename.endswith(".bam")) and not basename.endswith((".ccs.bam", ".hifi_reads.bam")): raise ValueError(f"row {n}: CCS BAM route requires a consensus BAM")
         side_uris = [value for value in row.get("required_artifact_uris", "").split(";") if value]
         side_md5s = [value for value in row.get("required_artifact_md5s", "").split(";") if value]
         if len(side_uris) != len(side_md5s): raise ValueError(f"row {n}: sidecar URI/checksum mismatch")

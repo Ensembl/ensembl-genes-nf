@@ -1,0 +1,3 @@
+run_accession	sample_accession	tissue	specimen	platform	library_strategy	fastq_uri	fastq_md5	observed_basis	decision
+ERR13757840	SAMEA13207749	liver	SAN00002332	PacBio Revio	FL-cDNA	https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR137/040/ERR13757840/ERR13757840.fastq.gz	5f8517713591c974802c2ba47143c97f	ENA processed FASTQ; archive-renamed transcript headers	APPROVE
+ERR13757843	SAMEA13207752	brain	SAN00002332	PacBio Revio	FL-cDNA	https://ftp.sra.ebi.ac.uk/vol1/fastq/ERR137/043/ERR13757843/ERR13757843.fastq.gz	e204ba3ba9ac7d58b7b5d2912516d5ef	ENA processed FASTQ; archive-renamed transcript headers	APPROVE

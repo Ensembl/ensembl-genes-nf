@@ -1,5 +1,7 @@
 from pathlib import Path
 import os
+import subprocess
+import tempfile
 
 
 PIPELINE = Path(__file__).parents[1]
@@ -31,6 +33,16 @@ def test_all_pipeline_helpers_are_executable():
     assert all(os.access(path, os.X_OK) for path in helpers)
     assert os.access(PIPELINE / "bin" / "bam_to_alignment_gtf.sh", os.X_OK)
     assert os.access(PIPELINE / "bin" / "bam_to_junction_bed.py", os.X_OK)
+
+
+def test_direct_source_exception_requires_explicit_audit_fields():
+    manifest = """run_accession\ttissue\tdescription\tclassification\tproposed_action\tselected_artifact_uri\tselected_artifact_md5\tselected_artifact_basename\tminimap2_preset\texpected_header_representation\tclassification_report_sha256\treviewer\treviewed_at\tstatus\treview_decision\tsource_type\tchecksum_policy\texception_reason
+HG002a_MAS_cDNA\tHG002\tPacBio Kinnex segmented CCS reads\tPACBIO_CCS_BAM\tCANONICALISE_CCS_THEN_ALIGN\thttps://example.org/segmented.bam\tPENDING\tsegmented.bam\tsplice:hq\tPACBIO_CCS\t0000000000000000000000000000000000000000000000000000000000000000\ttest\t2026-10-19T00:00:00Z\tAPPROVED\tAPPROVE\tPACBIO_DIRECT_URI\trecord_on_acquisition\tpublic direct BAM has no published checksum or archive accession\n"""
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "approved.tsv"
+        path.write_text(manifest)
+        result = subprocess.run(["python3", str(PIPELINE / "bin" / "read_input_classification.py"), "validate-approved", str(path)], capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
 
 
 def test_workflow_exposes_required_boundaries():
@@ -178,8 +190,20 @@ def test_diamond_qc_receives_each_finalised_backend():
     main = (PIPELINE / "main.nf").read_text()
     diamond = (PIPELINE / "subworkflows" / "run_diamond_qc.nf").read_text()
     assert "if (run_diamond_validation)" in main
-    assert "qc_bed = combined_bed.map { _meta, _backend, bed -> tuple(_meta, bed) }" in diamond
+    assert "qc_bed = combined_bed.map { meta, backend, bed ->" in diamond
+    assert "meta + [backend: backend, scope: meta.scope ?: 'cohort']" in diamond
     assert "EXTRACT_COMBINED_TRANSCRIPTS(qc_bed, reference)" in diamond
+
+
+def test_annotation_only_diamond_path_bypasses_read_processing():
+    main = (PIPELINE / "main.nf").read_text()
+    annotation_workflow = (PIPELINE / "subworkflows" / "run_diamond_annotations.nf").read_text()
+    schema = (PIPELINE / "nextflow_schema.json").read_text()
+    assert "diamond_annotation_manifest" in main
+    assert "RUN_DIAMOND_ANNOTATIONS" in main
+    assert "diamond_annotation_manifest" in schema
+    assert "GTF_TO_BED12" in annotation_workflow
+    assert "RUN_DIAMOND_QC(annotation_beds, reference)" in annotation_workflow
 
 
 def test_native_backends_preserve_native_formats_until_merge():

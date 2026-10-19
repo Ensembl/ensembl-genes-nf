@@ -1,0 +1,3 @@
+species	assembly_accession	asset_type	url	filename	release	checksum_url
+Erinaceus europaeus	GCA_950295315.1	download	https://ftp.ensembl.org/pub/release-116/fasta/erinaceus_europaeus/dna/Erinaceus_europaeus.HEDGEHOG.dna.toplevel.fa.gz	Erinaceus_europaeus.HEDGEHOG.dna.toplevel.fa.gz	116	https://ftp.ensembl.org/pub/release-116/fasta/erinaceus_europaeus/dna/CHECKSUMS
+Erinaceus europaeus	GCA_950295315.1	download	https://ftp.ensembl.org/pub/release-116/gtf/erinaceus_europaeus/Erinaceus_europaeus.HEDGEHOG.116.gtf.gz	Erinaceus_europaeus.HEDGEHOG.116.gtf.gz	116	https://ftp.ensembl.org/pub/release-116/gtf/erinaceus_europaeus/CHECKSUMS

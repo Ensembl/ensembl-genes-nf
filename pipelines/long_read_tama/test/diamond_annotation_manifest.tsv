@@ -1,0 +1,2 @@
+id	backend	scope	annotation	format
+fixture_run	fixture_tool	accession	pipelines/long_read_tama/test/diamond_annotation.gtf	gtf

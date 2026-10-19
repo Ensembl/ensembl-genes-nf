@@ -1,0 +1,2 @@
+sample_id	source_type	selected_artifact_uri	selected_artifact_basename	classification	checksum_policy	exception_reason	reviewer	reviewed_at
+HG002a_MAS_cDNA	PACBIO_DIRECT_URI	https://downloads.pacbcloud.com/public/dataset/Kinnex-full-length-RNA/DATA-Revio-HG002-1/1-Sreads/segmented.bam	segmented.bam	PACBIO_CCS_BAM	record_on_acquisition	PacBio public Kinnex direct BAM has no published archive accession or MD5; acquire and record the MD5 in the task checksum report before conversion to FASTQ.	jackt	2026-10-19T15:00:00+01:00

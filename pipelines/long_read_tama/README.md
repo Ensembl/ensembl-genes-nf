@@ -337,6 +337,27 @@ python3 pipelines/long_read_tama/bin/summarise_backend_resources.py \
   /shared/long-read-results/all-native/reports/comparison/backend_resources.json
 ```
 
+### Reusable backend report
+
+To produce a status-first report from one or more published result trees, run:
+
+```bash
+python3 pipelines/long_read_tama/bin/report_long_read_backends.py \
+  --results-root /shared/long-read-results/all-native \
+  --results-root /shared/long-read-results/all-native-skip-tama \
+  --output-dir reports/long-read-backends
+```
+
+Each result root gets the same set of tables under its run-id directory:
+`run_manifest.tsv`, `input_alignment_summary.tsv`, `backend_status.tsv`,
+`shard_status.tsv`, `backend_model_counts.tsv`, `comparison_summary.tsv`,
+`merge_summary.tsv`, `failure_summary.tsv`, `resource_summary.tsv`, and
+`software_versions.tsv`, plus `report.md`. Status records and matching
+Nextflow trace rows are authoritative. A BED/GTF found without that evidence
+is retained as `STALE_OR_UNVERIFIED`; it is never counted as a completed
+backend. Unknown values are written as `NA`, and pairwise comparisons use only
+common `SUCCESS`/`CACHED` BED12 products with an exact exon-chain denominator.
+
 Do not compare an ONT run with the default IsoQuant `pacbio_ccs` setting. The
 technology is intentionally explicit so that a filename or accession label
 cannot silently change the model-building behaviour.
@@ -376,3 +397,32 @@ emits the corresponding `_1`–`_7` suffix in
 `legacy_biotype_suffix`. The original Perl runnable updates an Ensembl
 transcript biotype in SQL; this pipeline records the suffix as a report field
 because the combined TAMA models are not yet in an Ensembl core database.
+
+### Annotation-only Diamond validation
+
+If the GTF/BED12 products already exist, use `--diamond_annotation_manifest` to
+skip read acquisition, alignment, collapsing, merging, and all model builders.
+The manifest is tab-separated and must contain `id`, `backend`, `scope`, and
+`annotation`; `format` is optional and defaults to `gtf`:
+
+```text
+id\tbackend\tscope\tannotation\tformat
+run_01\tbambu\taccession\t/path/to/run_01.bambu.gtf\tgtf
+zebrafish\tbambu\tcohort\t/path/to/bambu.cohort.gtf\tgtf
+```
+
+Run the annotation-only path with an existing database:
+
+```bash
+nextflow run pipelines/long_read_tama/main.nf -profile slurm \
+  --diamond_annotation_manifest diamond_annotations.tsv \
+  --reference_fasta genome.fa \
+  --run_diamond_validation \
+  --diamond_reference_db reference.dmnd \
+  --outdir diamond_annotation_results
+```
+
+Each manifest row is converted or consumed independently, and the output names
+retain the annotation id, scope, and backend. This makes per-run and merged
+cohort annotations comparable without rerunning the upstream model-building
+workflow.
