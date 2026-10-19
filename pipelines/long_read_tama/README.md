@@ -12,7 +12,9 @@ The workflow is composed from these named subworkflows:
 - `PREPARE_LONG_READS`: approved-manifest validation, acquisition, CCS/BAM
   conversion, and canonical FASTQ validation.
 - `ALIGN_LONG_READS`: minimap2 alignment, samtools sorting/indexing, and
-  alignment QC.
+  alignment QC. QC includes pre-alignment FASTQ summaries, alignment counts,
+  minimap2 `cs`-tag identity summaries, mosdepth per-base coverage, and
+  primary-read intron-chain/junction extraction.
 - `COLLAPSE_LONG_READ_MODELS` and `MERGE_LONG_READ_MODELS`: backend-native
   model generation and deterministic native/legacy merge inputs.
 - `VALIDATE_COMBINED_MODELS`: canonical naming/checksum and BED12 validation.
@@ -51,6 +53,14 @@ minimap2 SAM output directly into `samtools sort`, collapses each accession
 with TAMA, and merges models for an annotation cohort. SAM is never declared
 as an output or written to disk. Sorted BAM and its index are the restartable
 alignment intermediate.
+
+Alignment QC products are published per accession under `qc/pre_alignment`
+and `qc/post_alignment`. The post-alignment directory contains mapping counts,
+identity summaries derived from minimap2 `cs:long` tags, mosdepth per-base and
+threshold coverage, primary-read intron chains and junctions, and a joined
+`sample_qc_summary.tsv`. Coverage and chain counts use primary mapped reads by
+default; secondary and supplementary alignments are retained in the BAM and
+the standard alignment reports but are not counted in these evidence summaries.
 
 The workflow has two phases. First, normalize and inspect the candidate
 manifest with the classifier. If `--metadata_json` is not supplied, the

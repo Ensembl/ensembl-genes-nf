@@ -17,7 +17,7 @@ process MINIMAP2_ALIGN {
     def secondary = task.ext.secondary ?: (params.secondary_mode == 'yes' ? '--secondary=yes' : '--secondary=no')
     def preset = meta.minimap2_preset ?: params.minimap2_preset
     """
-    minimap2 -t ${task.cpus} -ax ${preset} ${secondary} "${minimap_index}" "${reads}" \\
+    minimap2 -t ${task.cpus} -ax ${preset} ${secondary} --cs=long "${minimap_index}" "${reads}" \\
         | samtools sort -@ ${task.cpus} -m ${params.samtools_sort_memory} -O BAM -o "${meta.id}.sorted.bam" -
     test -s "${meta.id}.sorted.bam" || { echo "alignment produced no BAM for ${meta.id}" >&2; exit 1; }
     samtools index "${meta.id}.sorted.bam"

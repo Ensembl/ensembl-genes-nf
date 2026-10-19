@@ -128,7 +128,7 @@ workflow {
         approved_source,
         cache
     )
-    ALIGN_LONG_READS(PREPARE_LONG_READS.out.reads, reference_fasta)
+    ALIGN_LONG_READS(PREPARE_LONG_READS.out.reads, PREPARE_LONG_READS.out.reports, reference_fasta)
     isoquant_enabled = params.model_backend in ['isoquant', 'all']
     isoquant_bed = channel.empty()
     isoquant_accession_bed = channel.empty()
