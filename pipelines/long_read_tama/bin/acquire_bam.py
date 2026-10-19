@@ -3,8 +3,8 @@ import argparse
 import hashlib
 import os
 import shutil
-import subprocess
 import time
+import urllib.request
 from pathlib import Path
 
 
@@ -30,14 +30,21 @@ def main():
     try:
         if not cache.exists():
             part = Path(str(cache) + ".part")
-            # Some public object stores return 403 to Python urllib from HPC
-            # task containers while accepting curl.  Use curl for resumable,
-            # retried transfer and keep the checksum gate below authoritative.
-            subprocess.run([
-                "curl", "--fail", "--location", "--retry", "5", "--retry-all-errors",
-                "--retry-delay", "5", "--connect-timeout", "60", "--continue-at", "-",
-                "--output", str(part), a.source_uri,
-            ], check=True)
+            # Some public object stores return 403 to Python's default
+            # User-Agent from HPC task containers.  Keep the acquisition
+            # self-contained: an explicit User-Agent is enough for PacBio,
+            # and the Range request resumes a partial task-local transfer.
+            offset = part.stat().st_size if part.exists() else 0
+            headers = {"User-Agent": "Mozilla/5.0 (Ensembl long-read pipeline)"}
+            if offset:
+                headers["Range"] = f"bytes={offset}-"
+            request = urllib.request.Request(a.source_uri, headers=headers)
+            with urllib.request.urlopen(request, timeout=120) as src:
+                resumed = offset > 0 and getattr(src, "status", None) == 206
+                if offset and not resumed:
+                    part.unlink()
+                with open(part, "ab" if resumed else "wb") as dst:
+                    shutil.copyfileobj(src, dst, length=1024 * 1024)
             actual = md5(part)
             if not checksum_pending and actual != a.expected_md5: raise SystemExit(f"BAM checksum mismatch for {a.accession}")
             os.replace(part, cache)
