@@ -3,9 +3,9 @@ import argparse
 import hashlib
 import os
 import shutil
+import subprocess
 import time
 from pathlib import Path
-from urllib.request import urlopen
 
 
 def md5(path):
@@ -30,7 +30,14 @@ def main():
     try:
         if not cache.exists():
             part = Path(str(cache) + ".part")
-            with urlopen(a.source_uri) as src, open(part, "wb") as dst: shutil.copyfileobj(src, dst)
+            # Some public object stores return 403 to Python urllib from HPC
+            # task containers while accepting curl.  Use curl for resumable,
+            # retried transfer and keep the checksum gate below authoritative.
+            subprocess.run([
+                "curl", "--fail", "--location", "--retry", "5", "--retry-all-errors",
+                "--retry-delay", "5", "--connect-timeout", "60", "--continue-at", "-",
+                "--output", str(part), a.source_uri,
+            ], check=True)
             actual = md5(part)
             if not checksum_pending and actual != a.expected_md5: raise SystemExit(f"BAM checksum mismatch for {a.accession}")
             os.replace(part, cache)
