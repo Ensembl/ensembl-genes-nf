@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import time
 from pathlib import Path
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 
 def checksum(path):
@@ -63,7 +63,8 @@ def main():
             acquisition = Path("acquisition"); acquisition.mkdir(exist_ok=True)
             if a.source_uri:
                 fetched = acquisition / a.filename
-                with urlopen(a.source_uri) as source, open(fetched, "wb") as target:
+                request = Request(a.source_uri, headers={"User-Agent": "Mozilla/5.0 (Ensembl long-read pipeline)"})
+                with urlopen(request, timeout=120) as source, open(fetched, "wb") as target:
                     shutil.copyfileobj(source, target)
             else:
                 subprocess.run(["fastq-dl", "-a", a.run, "--cpus", str(a.cpus)], cwd=acquisition, check=True)

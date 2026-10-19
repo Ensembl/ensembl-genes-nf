@@ -340,12 +340,12 @@ def classify(*, declared_platform: str, ena_platform: str, sra_platform: str,
 
 
 def validate_approved(rows: list[dict]) -> None:
-    allowed = {"PACBIO_CCS_FASTQ": "ALIGN_PACBIO_CCS", "PACBIO_PROCESSED_FASTQ": "ALIGN_PACBIO_PROCESSED", "PACBIO_CCS_BAM": "CANONICALISE_CCS_THEN_ALIGN", "ONT_FASTQ": "ALIGN_ONT", "PACBIO_SUBREAD_BAM": "RUN_CCS_THEN_ALIGN"}
+    allowed = {"PACBIO_CCS_FASTQ": "ALIGN_PACBIO_CCS", "PACBIO_PROCESSED_FASTQ": "ALIGN_PACBIO_PROCESSED", "PACBIO_CCS_BAM": "CANONICALISE_CCS_THEN_ALIGN", "ONT_FASTQ": "ALIGN_ONT", "ONT_BAM": "ALIGN_ONT", "PACBIO_SUBREAD_BAM": "RUN_CCS_THEN_ALIGN"}
     for n, row in enumerate(rows, 2):
         if row.get("status", "APPROVED") != "APPROVED" or row.get("review_decision") != "APPROVE": raise ValueError(f"row {n}: run is not approved")
         if row.get("classification") not in allowed or row.get("proposed_action") != allowed[row["classification"]]: raise ValueError(f"row {n}: incompatible classification/action")
         source_type = row.get("source_type", "ENA").strip()
-        direct_exception = source_type == "PACBIO_DIRECT_URI"
+        direct_exception = source_type.endswith("_DIRECT_URI")
         if direct_exception:
             if not DIRECT_ID.fullmatch(row.get("run_accession", "")): raise ValueError(f"row {n}: unsafe direct-source sample ID")
             if not row.get("exception_reason", "").strip(): raise ValueError(f"row {n}: direct-source exception requires a reason")
@@ -359,10 +359,11 @@ def validate_approved(rows: list[dict]) -> None:
         if not SHA256.fullmatch(row.get("classification_report_sha256", "")): raise ValueError(f"row {n}: missing classification report hash")
         if not row.get("reviewer") or not row.get("reviewed_at"): raise ValueError(f"row {n}: missing reviewer audit fields")
         expected = row.get("expected_header_representation")
-        allowed_expected = {"ONT"} if row["classification"] == "ONT_FASTQ" else ({"PACBIO_CCS", "PACBIO_CCS_ORIGINAL"} if row["classification"] == "PACBIO_CCS_FASTQ" else {"PACBIO_PROCESSED"} if row["classification"] == "PACBIO_PROCESSED_FASTQ" else {"PACBIO_CCS"})
+        allowed_expected = {"ONT"} if row["classification"] in {"ONT_FASTQ", "ONT_BAM"} else ({"PACBIO_CCS", "PACBIO_CCS_ORIGINAL"} if row["classification"] == "PACBIO_CCS_FASTQ" else {"PACBIO_PROCESSED"} if row["classification"] == "PACBIO_PROCESSED_FASTQ" else {"PACBIO_CCS"})
         if expected not in allowed_expected: raise ValueError(f"row {n}: incompatible expected header representation")
         basename = row["selected_artifact_basename"].lower()
         if row["classification"] == "ONT_FASTQ" and not basename.endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")): raise ValueError(f"row {n}: ONT route requires FASTQ")
+        if row["classification"] == "ONT_BAM" and not basename.endswith(".bam"): raise ValueError(f"row {n}: ONT BAM route requires BAM")
         if row["classification"] == "PACBIO_CCS_FASTQ" and not basename.endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")): raise ValueError(f"row {n}: CCS FASTQ route requires FASTQ")
         if row["classification"] == "PACBIO_PROCESSED_FASTQ" and not basename.endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")): raise ValueError(f"row {n}: processed FASTQ route requires FASTQ")
         if row["classification"] == "PACBIO_SUBREAD_BAM" and not basename.endswith(".subreads.bam"): raise ValueError(f"row {n}: subread route requires .subreads.bam")

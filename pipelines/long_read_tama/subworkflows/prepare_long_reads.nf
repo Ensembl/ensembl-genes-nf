@@ -19,6 +19,7 @@ workflow PREPARE_LONG_READS {
     approved_rows = VALIDATE_APPROVED_LONG_READ_MANIFEST.out.manifest.splitCsv(header: true, sep: '\t')
     approved_rows.branch { row ->
         ont: row.classification == 'ONT_FASTQ'
+        ont_bam: row.classification == 'ONT_BAM'
         ccs_fastq: row.classification == 'PACBIO_CCS_FASTQ'
         processed_fastq: row.classification == 'PACBIO_PROCESSED_FASTQ'
         ccs_bam: row.classification == 'PACBIO_CCS_BAM'
@@ -31,7 +32,7 @@ workflow PREPARE_LONG_READS {
                minimap2_preset: row.minimap2_preset, expected_header_representation: row.expected_header_representation],
               row.run_accession, row.selected_artifact_md5, row.selected_artifact_basename, row.selected_artifact_uri)
     }
-    bam_inputs = routes.ccs_bam.mix(routes.subread_bam).map { row ->
+    bam_inputs = routes.ccs_bam.mix(routes.ont_bam).mix(routes.subread_bam).map { row ->
         tuple([id: row.run_accession, tissue: row.tissue, description: row.description,
                classification: row.classification, proposed_action: row.proposed_action,
                minimap2_preset: row.minimap2_preset, expected_header_representation: row.expected_header_representation],
@@ -41,11 +42,12 @@ workflow PREPARE_LONG_READS {
     FASTQ_DL(direct_fastq, cache_dir)
     ACQUIRE_LONG_READ_BAM(bam_inputs, cache_dir)
     ACQUIRE_LONG_READ_BAM.out.artifacts.branch { meta, _files ->
+        ont: meta.classification == 'ONT_BAM'
         subreads: meta.classification == 'PACBIO_SUBREAD_BAM'
         ccs: meta.classification == 'PACBIO_CCS_BAM'
     }.set { bam_routes }
     RUN_PBCCS(bam_routes.subreads)
-    BAM_TO_FASTQ(bam_routes.ccs.mix(RUN_PBCCS.out.bam))
+    BAM_TO_FASTQ(bam_routes.ont.mix(bam_routes.ccs).mix(RUN_PBCCS.out.bam))
     canonical_fastq = FASTQ_DL.out.fastq.mix(BAM_TO_FASTQ.out.reads)
     VALIDATE_FASTQ(canonical_fastq)
 
