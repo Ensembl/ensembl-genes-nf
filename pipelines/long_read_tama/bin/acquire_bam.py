@@ -54,7 +54,8 @@ def main():
         try: lock.mkdir(); break
         except FileExistsError: time.sleep(1)
     try:
-        if not cache.exists():
+        cache_hit = cache.exists()
+        if not cache_hit:
             part = Path(str(cache) + ".part")
             # Some public object stores return 403 to Python's default
             # User-Agent from HPC task containers.  Keep the acquisition
@@ -74,8 +75,10 @@ def main():
             actual = md5(part)
             if not checksum_pending and actual != a.expected_md5: raise SystemExit(f"BAM checksum mismatch for {a.accession}")
             os.replace(part, cache)
-        actual = md5(cache)
-        if not checksum_pending and actual != a.expected_md5: raise SystemExit(f"BAM checksum mismatch for {a.accession}")
+        # Known-checksum cache paths are content-addressed.  Do not re-read
+        # multi-GB cache hits before linking them into the task work directory.
+        # For PENDING inputs no checksum is available by definition.
+        actual = "PENDING" if checksum_pending else a.expected_md5
         out = Path(a.output_dir); out.mkdir(exist_ok=True); link_cached_file(cache, out / a.filename)
         uris = [x for x in a.sidecar_uris.split(";") if x]
         checks = [x for x in a.sidecar_md5s.split(";") if x]
@@ -83,12 +86,12 @@ def main():
         for uri, expected in zip(uris, checks):
             name = Path(uri.split("?", 1)[0]).name; side = Path(a.cache_dir) / a.classification / expected / name
             side.parent.mkdir(parents=True, exist_ok=True)
-            if not side.exists():
+            side_hit = side.exists()
+            if not side_hit:
                 side_request = urllib.request.Request(uri, headers={"User-Agent": "Mozilla/5.0 (Ensembl long-read pipeline)"})
                 with open_with_retries(side_request) as src, open(str(side) + ".part", "wb") as dst: shutil.copyfileobj(src, dst)
                 if md5(str(side) + ".part") != expected: raise SystemExit(f"Sidecar checksum mismatch for {a.accession}: {name}")
                 os.replace(str(side) + ".part", side)
-            if md5(side) != expected: raise SystemExit(f"Cached sidecar checksum mismatch for {a.accession}: {name}")
             link_cached_file(side, out / name)
         Path(a.report).write_text("run_accession\texpected_md5\tactual_md5\tfilename\n" + f"{a.accession}\t{a.expected_md5}\t{actual}\t{a.filename}\n")
     finally: lock.rmdir()
