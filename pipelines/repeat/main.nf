@@ -227,7 +227,7 @@ workflow REPEAT_ANNOTATION {
 
     checkedLibraries = CHECK_REPEATMODELER_LIBRARY(
         repeatModelInput
-    ).rep_library_file_output
+    ).status_out
 
     ch_versions_file = ch_versions_file.mix(
         CHECK_REPEATMODELER_LIBRARY.out.versions_file
