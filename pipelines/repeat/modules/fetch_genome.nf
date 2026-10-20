@@ -27,17 +27,9 @@ process FETCH_GENOME {
         cp -L "${meta.genome_file}" genome.fa
     else
         fetch_genome.py \
-            --reheader_file \
             --output_dir . \
             --gca ${meta.gca} \
             --ncbi_base ${params.ncbiBaseUrl}
-
-        downloaded_genome=\$(find . -maxdepth 1 -type f -name "*.fa" | head -n 1)
-
-        if [[ -z "\$downloaded_genome" ]]; then
-            echo "No genome FASTA found for ${meta.gca}" >&2
-            exit 1
-        fi
     fi
     
     # Create versions file
