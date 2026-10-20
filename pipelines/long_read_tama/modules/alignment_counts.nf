@@ -20,8 +20,9 @@ process ALIGNMENT_COUNTS {
         \$NF == "primary" { primary = \$1 }
         \$NF == "secondary" { secondary = \$1 }
         \$NF == "supplementary" { supplementary = \$1 }
-        / unmapped \(/ { unmapped = \$1 }
+        / unmapped \(/ { unmapped = \$1; saw_unmapped = 1 }
         END {
+            if (!saw_unmapped) unmapped = total - mapped
             printf "sample_id\\ttotal_alignments\\tmapped_alignments\\tprimary_alignments\\tsecondary_alignments\\tsupplementary_alignments\\tunmapped_alignments\\tmapping_rate_percent\\tprimary_mapping_rate_percent\\n"
             printf "%s\\t%d\\t%d\\t%d\\t%d\\t%d\\t%d\\t%.6f\\t%.6f\\n", sample, total, mapped, primary, secondary, supplementary, unmapped, (total ? 100 * mapped / total : 0), (total ? 100 * primary / total : 0)
         }

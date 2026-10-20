@@ -86,6 +86,7 @@ def test_alignment_counts_escapes_awk_field_references_for_nextflow():
     assert "secondary = \\$1" in text
     assert "supplementary = \\$1" in text
     assert "unmapped = \\$1" in text
+    assert "if (!saw_unmapped) unmapped = total - mapped" in text
     assert "$/" not in text
 
 
@@ -128,14 +129,13 @@ def test_tama_soft_failures_have_explicit_status_and_diagnostics():
     assert "samtools view -bh -F 2308" in runner
 
 
-def test_native_backend_failures_are_terminal_but_legacy_tama_can_be_soft():
+def test_backend_failures_follow_the_bounded_retry_policy():
     config = (PIPELINE / "nextflow.config").read_text()
     assert "withName: '.*'" in config
     assert "withName: 'TAMA_COLLAPSE'" in config
-    assert "params.backend_merge_mode == 'native' ? 'terminate' : 'ignore'" in config
+    assert "errorStrategy = { task.attempt <= 5 ? 'retry' : 'ignore' }" in config
     assert "STRINGTIE2_COLLAPSE|STRINGTIE3_COLLAPSE|TMERGE_COLLAPSE" in config
-    assert "errorStrategy = 'terminate'" in config
-    assert "? 'retry' : 'terminate'" not in config
+    assert "maxRetries = 5" in config
 
 
 def test_tmerge_is_an_explicit_optional_merge_backend():
@@ -317,7 +317,7 @@ def test_flair_and_common_comparison_are_independent_contracts():
     helper = (PIPELINE / "bin" / "compare_candidate_models.py").read_text()
     schema = (PIPELINE / "nextflow_schema.json").read_text()
     assert '"flair", "bambu", "all"' in schema
-    assert "RUN_FLAIR(ALIGN_LONG_READS.out.bam, reference_fasta)" in main
+    assert "RUN_FLAIR(flair_bams, reference_fasta)" in main
     assert "FLAIR_JUNCTIONS(aligned_bams)" in runner
     assert "FLAIR_TRANSCRIPTOME(flair_inputs, reference)" in runner
     assert ".join(FLAIR_JUNCTIONS.out.bed" in runner
@@ -335,7 +335,7 @@ def test_flair_and_common_comparison_are_independent_contracts():
     assert "unique_intron_chain_count" in helper
     assert "candidate_model_manifest" in comparison
     assert "report_suffix = stage == 'accession'" in comparison
-    assert "path(model_beds)" in comparison
+    assert "path(model_beds, stageAs: 'bed??/*')" in comparison
 
 
 def test_bambu_is_an_independent_annotation_free_complete_bam_backend():
