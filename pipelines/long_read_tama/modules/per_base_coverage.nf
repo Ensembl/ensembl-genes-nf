@@ -1,7 +1,7 @@
 process PER_BASE_COVERAGE {
     tag "${meta.id}:per-base-coverage"
     label 'process_medium'
-    container 'community.wave.seqera.io/library/mosdepth:0.3.6--hdfd78af_1'
+    container 'https://depot.galaxyproject.org/singularity/mosdepth:0.3.6--hd299d5a_0'
     input:
     tuple val(meta), path(bam), path(bai)
     output:
