@@ -70,6 +70,13 @@ def test_workflow_exposes_required_boundaries():
     assert "SAMTOOLS_SORT_INDEX(MINIMAP2_ALIGN.out.sam)" not in align_workflow
 
 
+def test_bam_input_discovery_accepts_nextflow_staged_symlinks():
+    for module in ("bam_to_fastq.nf", "run_pbccs.nf"):
+        text = (PIPELINE / "modules" / module).read_text()
+        assert "find . -maxdepth 1 -name '*.bam' -print -quit" in text
+        assert "find . -maxdepth 1 -type f -name '*.bam'" not in text
+
+
 def test_contig_manifest_stays_keyed_to_its_shard_directory():
     split = (PIPELINE / "modules" / "split_contigs.nf").read_text()
     collapse = (PIPELINE / "subworkflows" / "collapse_long_read_models.nf").read_text()

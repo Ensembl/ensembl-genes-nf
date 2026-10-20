@@ -10,9 +10,11 @@ process BAM_TO_FASTQ {
     tuple val(meta), path('canonical.fastq.gz'), emit: reads
     path 'versions.yml', emit: versions
 
+    // Nextflow stages path inputs as symlinks by default, so the BAM lookup
+    // must not restrict the search to regular files.
     script:
     """
-    input_bam=\$(find . -maxdepth 1 -type f -name '*.bam' -print -quit)
+    input_bam=\$(find . -maxdepth 1 -name '*.bam' -print -quit)
     test -n "\${input_bam}" || { echo "Expected CCS BAM for ${meta.id}" >&2; exit 1; }
     samtools fastq -F 0x900 "\${input_bam}" | gzip -c > canonical.fastq.gz
     test -s canonical.fastq.gz || { echo "BAM-to-FASTQ produced no reads for ${meta.id}" >&2; exit 1; }

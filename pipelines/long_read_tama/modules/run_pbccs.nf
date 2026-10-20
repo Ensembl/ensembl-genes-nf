@@ -10,10 +10,12 @@ process RUN_PBCCS {
     tuple val(meta), path('consensus.bam'), emit: bam
     path 'versions.yml', emit: versions
 
+    // Nextflow stages path inputs as symlinks by default, so the BAM lookup
+    // must not restrict the search to regular files.
     script:
     def ccs_args = task.ext.ccs_args ?: params.ccs_args ?: ''
     """
-    input_bam=\$(find . -maxdepth 1 -type f -name '*.bam' -print -quit)
+    input_bam=\$(find . -maxdepth 1 -name '*.bam' -print -quit)
     test -n "\${input_bam}" || { echo "Expected raw-subread BAM for ${meta.id}" >&2; exit 1; }
     ${params.ccs_command ?: 'ccs'} ${ccs_args} "\${input_bam}" consensus.bam
     test -s consensus.bam || { echo "CCS produced no BAM for ${meta.id}" >&2; exit 1; }
