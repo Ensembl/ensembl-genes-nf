@@ -22,3 +22,16 @@ def test_install_cache_file_handles_separate_filesystems(tmp_path):
     assert cache.read_bytes() == b"downloaded-fastq"
     assert not fetched.exists()
     assert not Path(str(cache) + ".partial").exists()
+
+
+def test_link_cached_file_does_not_copy_contents(tmp_path):
+    cache = tmp_path / "cache" / "reads.fastq.gz"
+    output = tmp_path / "work" / "downloaded" / cache.name
+    cache.parent.mkdir()
+    cache.write_bytes(b"cached-fastq")
+
+    mod.link_cached_file(cache, output)
+
+    assert output.is_symlink()
+    assert output.resolve() == cache.resolve()
+    assert output.read_bytes() == cache.read_bytes()

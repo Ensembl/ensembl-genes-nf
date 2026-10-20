@@ -16,6 +16,15 @@ def md5(path):
     return h.hexdigest()
 
 
+def link_cached_file(cache, output):
+    """Expose a validated cache file without copying its contents."""
+    destination = Path(output)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() or destination.is_symlink():
+        destination.unlink()
+    destination.symlink_to(Path(cache).resolve())
+
+
 def open_with_retries(request, attempts=6):
     """Retry transient public-object-store failures before giving up."""
     for attempt in range(attempts):
@@ -67,7 +76,7 @@ def main():
             os.replace(part, cache)
         actual = md5(cache)
         if not checksum_pending and actual != a.expected_md5: raise SystemExit(f"BAM checksum mismatch for {a.accession}")
-        out = Path(a.output_dir); out.mkdir(exist_ok=True); shutil.copy2(cache, out / a.filename)
+        out = Path(a.output_dir); out.mkdir(exist_ok=True); link_cached_file(cache, out / a.filename)
         uris = [x for x in a.sidecar_uris.split(";") if x]
         checks = [x for x in a.sidecar_md5s.split(";") if x]
         if len(uris) != len(checks): raise SystemExit("sidecar URI/checksum mismatch")
@@ -80,7 +89,7 @@ def main():
                 if md5(str(side) + ".part") != expected: raise SystemExit(f"Sidecar checksum mismatch for {a.accession}: {name}")
                 os.replace(str(side) + ".part", side)
             if md5(side) != expected: raise SystemExit(f"Cached sidecar checksum mismatch for {a.accession}: {name}")
-            shutil.copy2(side, out / name)
+            link_cached_file(side, out / name)
         Path(a.report).write_text("run_accession\texpected_md5\tactual_md5\tfilename\n" + f"{a.accession}\t{a.expected_md5}\t{actual}\t{a.filename}\n")
     finally: lock.rmdir()
 
