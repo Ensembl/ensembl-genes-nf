@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import re
 import subprocess
 import tempfile
 
@@ -85,6 +86,13 @@ def test_alignment_counts_escapes_awk_field_references_for_nextflow():
     assert "secondary = \\$1" in text
     assert "supplementary = \\$1" in text
     assert "unmapped = \\$1" in text
+
+
+def test_modules_do_not_leave_shell_tokens_for_nextflow_interpolation():
+    suspicious = re.compile(r"(?<!\\)\$(?:[0-9@#?*!_-]|\()")
+    for module in (PIPELINE / "modules").glob("*.nf"):
+        matches = re.findall(suspicious, module.read_text())
+        assert not matches, f"Unescaped shell token in {module}: {matches}"
 
 
 def test_contig_manifest_stays_keyed_to_its_shard_directory():
