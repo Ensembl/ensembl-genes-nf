@@ -15,12 +15,12 @@ process ALIGNMENT_COUNTS {
     samtools flagstat "${bam}" > flagstat.txt
     samtools idxstats "${bam}" > idxstats.txt
     awk -v sample='${meta.id}' '
-        / in total/ { total = $1 }
-        / mapped \(/ && !/primary mapped/ { mapped = $1 }
-        / primary$/ { primary = $1 }
-        / secondary$/ { secondary = $1 }
-        / supplementary$/ { supplementary = $1 }
-        / unmapped \(/ { unmapped = $1 }
+        / in total/ { total = \$1 }
+        / mapped \(/ && !/primary mapped/ { mapped = \$1 }
+        / primary$/ { primary = \$1 }
+        / secondary$/ { secondary = \$1 }
+        / supplementary$/ { supplementary = \$1 }
+        / unmapped \(/ { unmapped = \$1 }
         END {
             printf "sample_id\\ttotal_alignments\\tmapped_alignments\\tprimary_alignments\\tsecondary_alignments\\tsupplementary_alignments\\tunmapped_alignments\\tmapping_rate_percent\\tprimary_mapping_rate_percent\\n"
             printf "%s\\t%d\\t%d\\t%d\\t%d\\t%d\\t%d\\t%.6f\\t%.6f\\n", sample, total, mapped, primary, secondary, supplementary, unmapped, (total ? 100 * mapped / total : 0), (total ? 100 * primary / total : 0)

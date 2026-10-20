@@ -77,6 +77,16 @@ def test_bam_input_discovery_accepts_nextflow_staged_symlinks():
         assert "find . -maxdepth 1 -type f -name '*.bam'" not in text
 
 
+def test_alignment_counts_escapes_awk_field_references_for_nextflow():
+    text = (PIPELINE / "modules" / "alignment_counts.nf").read_text()
+    assert "total = \\$1" in text
+    assert "mapped = \\$1" in text
+    assert "primary = \\$1" in text
+    assert "secondary = \\$1" in text
+    assert "supplementary = \\$1" in text
+    assert "unmapped = \\$1" in text
+
+
 def test_contig_manifest_stays_keyed_to_its_shard_directory():
     split = (PIPELINE / "modules" / "split_contigs.nf").read_text()
     collapse = (PIPELINE / "subworkflows" / "collapse_long_read_models.nf").read_text()
