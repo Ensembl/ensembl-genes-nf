@@ -58,11 +58,15 @@ def main():
     cache = Path(a.cache_dir) / a.classification / a.expected_md5 / a.filename
     cache.parent.mkdir(parents=True, exist_ok=True)
     lock = Path(str(cache) + ".lock")
-    while True:
-        try:
-            lock.mkdir(); break
-        except FileExistsError:
-            time.sleep(1)
+    lock_acquired = False
+    if not cache.exists():
+        while True:
+            try:
+                lock.mkdir()
+                lock_acquired = True
+                break
+            except FileExistsError:
+                time.sleep(1)
     try:
         cache_hit = cache.exists()
         if cache_hit:
@@ -91,7 +95,8 @@ def main():
         link_cached_file(cache, out / a.filename)
         Path(a.output_checksum).write_text("run_accession\texpected_md5\tactual_md5\tfilename\n" + f"{a.run}\t{a.expected_md5}\t{actual}\t{a.filename}\n")
     finally:
-        lock.rmdir()
+        if lock_acquired and lock.exists():
+            lock.rmdir()
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ def test_cache_hit_links_without_rehashing(tmp_path, monkeypatch):
     cache = tmp_path / "cache" / "PACBIO_CCS_BAM" / expected / "reads.bam"
     cache.parent.mkdir(parents=True)
     cache.write_bytes(b"cached-bam")
+    Path(str(cache) + ".lock").mkdir()
     output = tmp_path / "work" / "downloaded"
     report = output / "checksum.tsv"
 
@@ -42,3 +43,4 @@ def test_cache_hit_links_without_rehashing(tmp_path, monkeypatch):
 
     assert (output / cache.name).is_symlink()
     assert (output / cache.name).resolve() == cache.resolve()
+    assert Path(str(cache) + ".lock").exists()
