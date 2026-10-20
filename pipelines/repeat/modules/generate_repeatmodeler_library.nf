@@ -33,7 +33,7 @@ process GENERATE_REPEATMODELER_LIBRARY {
     gzip -f ${meta.gca}.repeatmodeler-families.stk
     mv ${meta.gca}.repeatmodeler-families.stk.gz ${meta.gca}.families.stk.gz
     mv ${meta.gca}.repeatmodeler-rmod.log ${meta.gca}.rmod.log
-                    
+            
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         repeatmodeler: \$(RepeatModeler --version 2>&1 | sed -n 's/.*RepeatModeler version \\([0-9.]\\+\\).*/\\1/p')

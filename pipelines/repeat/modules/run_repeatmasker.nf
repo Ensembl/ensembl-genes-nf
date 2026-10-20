@@ -18,6 +18,7 @@ process RUN_REPEATMASKER {
     tuple val(meta), val(library_file)
 
     output:
+    tuple val(meta), path("*softmasked.fa"), emit: repeatmasker_softmasked_out
     tuple val(meta), path("*.gtf"), emit: repeatmasker_out
     path "versions.yml", emit: versions_file
 
