@@ -12,6 +12,7 @@ process UPLOAD_REPEAT_LIBRARY_INTO_FTP {
 
 input:
 tuple val(meta),path(fasta_file),path(stk_file),path(log_file)
+val ftp_base
 
 output:
 tuple val(meta),path(fasta_file), emit: library_out                                                            
@@ -19,10 +20,10 @@ path "versions.yml", emit: versions_file
 
 script:
 """
-sudo -u genebuild mkdir -p /nfs/ftp/public/databases/ensembl/repeats/unfiltered_repeatmodeler/species/${meta.species_name}
-sudo -u genebuild cp ${fasta_file} /nfs/ftp/public/databases/ensembl/repeats/unfiltered_repeatmodeler/species/${meta.species_name}
-sudo -u genebuild cp ${stk_file} /nfs/ftp/public/databases/ensembl/repeats/unfiltered_repeatmodeler/species/${meta.species_name}
-sudo -u genebuild cp ${log_file} /nfs/ftp/public/databases/ensembl/repeats/unfiltered_repeatmodeler/species/${meta.species_name}
+sudo -u genebuild mkdir -p ${ftp_base}/species/${meta.species_name}
+sudo -u genebuild cp ${fasta_file} ${ftp_base}/species/${meta.species_name}
+sudo -u genebuild cp ${stk_file} ${ftp_base}/species/${meta.species_name}
+sudo -u genebuild cp ${log_file} ${ftp_base}/species/${meta.species_name}
 cat <<'EOF' > versions.yml
     "${task.process}":
     upload_repeat_library_into_ftp: "1.0"
