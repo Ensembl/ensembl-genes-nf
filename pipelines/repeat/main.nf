@@ -52,15 +52,16 @@ include { validateParameters ; paramsSummaryLog } from 'plugin/nf-schema'
 
 // Import process modules
 include { FETCH_GENOME }                     from './modules/fetch_genome.nf'
-include { FETCH_REPEAT_MODEL }               from './modules/fetch_repeat_model.nf'
+include { CHECK_FTP  as CHECK_REPEATMODELER_LIBRARY } from './modules/check_ftp.nf'
+include { CHECK_FTP  as CHECK_REPEATMASKER_OUTPUT } from './modules/check_ftp.nf'
 include { GENERATE_REPEATMODELER_LIBRARY }   from './modules/generate_repeatmodeler_library.nf'
-include { CHECK_AND_DOWNLOAD_RMLIBRARY }     from './modules/check_and_download_rmlibrary.nf'
+include { DOWNLOAD_REPEATMODELER_LIBRARY }     from './modules/download_repeatmodeler_library.nf'
 include { RUN_REPEATMASKER }                 from './modules/run_repeatmasker.nf'
 include { RUN_RED }                          from './modules/run_red.nf'
 include { RUN_DUST }                         from './modules/run_dust.nf'
 include { RUN_TRF }                          from './modules/run_trf.nf'
-include { UPLOAD_REPEAT_LIBRARY_INTO_FTP }   from './modules/upload_repeat_library_into_ftp.nf'
-include { UPLOAD_REPEATS_INTO_FTP }          from './modules/upload_repeats_into_ftp.nf'
+include { UPLOAD_INTO_FTP as UPLOAD_REPEAT_LIBRARY_INTO_FTP }   from './modules/upload_into_ftp.nf'
+include { UPLOAD_INTO_FTP as UPLOAD_REPEATS_INTO_FTP }          from './modules/upload_into_ftp.nf'
 include { COLLECT_SOFTWARE_VERSIONS }        from './modules/collect_software_versions.nf'
 
 /*
@@ -69,158 +70,349 @@ include { COLLECT_SOFTWARE_VERSIONS }        from './modules/collect_software_ve
 ========================================================================================
 */
 
-// Helper function to clean cache directory
-def cleanCacheDirectory() {
-    if (params.cleanCache) {
-        try {
-            def cacheDir = file(params.cacheDir)
-            if (cacheDir.exists() && cacheDir.isDirectory()) {
-                cacheDir.listFiles().each { f ->
-            if (f.isDirectory()) {
-                f.deleteDir()
-            } else {
-                f.delete()
-            }
-        }
-        log.info("Cleaning process completed successfully.")
-        }
-        } catch (Exception e) {
-        log.error("Exception occurred while executing cleaning command: ${e.message}")
-        }
-    }
-}
+
+
 
 workflow REPEAT_ANNOTATION {
+
     take:
     csv_file
+
     main:
-    
-        // Initialize versions channel
-        ch_versions_file = channel.empty()
-        data = channel.fromPath(csv_file, type: 'file', checkIfExists: true)
-            .splitCsv(sep: ',', header: true)
-            .map { row ->
-                [
-                    gca: row.get('gca'),
-                    species_name: row.get('species_name'),
-                    genome_file: row.get('genome_file'),
-                    repeatmasker_library: row.get('repeatmasker_library')
-                ]
-            }
-    
-    
-        // Stage 1: Fetch genome assemblies from NCBI
-        //FETCH_GENOME(data)
-        genomeData = FETCH_GENOME(data).genome_file_output
-            .map { meta, fna_file ->
-                return meta + [ genome_file: fna_file ]
-            }
-            .view { meta -> "Processing: gca=${meta.gca},${meta.species_name},  genome=${meta.genome_file}" }
-        ch_versions_file = ch_versions_file.mix(FETCH_GENOME.out.versions_file)
-        if (params.generate_lib) {
 
-        // Stage 2: Check for existing RepeatModeler libraries
-        checkedLibraries = FETCH_REPEAT_MODEL(genomeData).rep_library_file_output
-            .view { meta, library_file -> "Checked for RepeatModeler library for ${meta.gca}, genome_file ${meta.genome_file}, file: ${library_file}" }
-        ch_versions_file = ch_versions_file.mix(FETCH_REPEAT_MODEL.out.versions_file)
+    // ========================================================
+    // Initialize
+    // ========================================================
 
-        // Separate genomes based on library availability
-        checkedLibraries
-        .view { meta,  library_file ->
-                "meta=${meta}  library=${library_file}"
-                    }
-            .branch { _meta,  library_file ->
-                // Check if library file contains error message
-                available: !library_file.text.contains("No repeatmodeler file available")
-                missing: library_file.text.contains("No repeatmodeler file available")
+    ch_versions_file = channel.empty()
+    ch_repeat_output = channel.empty()
+
+    // ========================================================
+    // Stage 1: Read CSV
+    // ========================================================
+
+    data = channel.fromPath(
+        csv_file,
+        type: 'file',
+        checkIfExists: true
+    )
+    .splitCsv(sep: ',', header: true)
+    .map { row ->
+
+        [
+            gca: row.get('gca'),
+            species_name: row.get('species_name'),
+            genome_file: row.get('genome_file'),
+            repeatmasker_library: row.get('repeatmasker_library')
+        ]
+    }
+
+    // ========================================================
+    // Stage 2: Fetch genomes
+    // ========================================================
+
+    genomeData = FETCH_GENOME(data).genome_file_output
+        .map { meta, fa_file ->
+            meta + [genome_file: fa_file]
+        }
+
+    ch_versions_file = ch_versions_file.mix(
+        FETCH_GENOME.out.versions_file
+    )
+    // ========================================================
+    // Stage 3: Check existing RepeatMasker outputs
+    // ========================================================
+
+    if (params.run_repeatmasker) {
+
+        repeatmaskerCheckInput = genomeData.map { meta ->
+
+            // IMPORTANT:
+            // Replace this filename with the actual FTP output.
+            def repeatmasker_url =
+                "${params.repeats_ftp_base}/${meta.species_name}/${meta.gca}.repeatmasker.gtf.gz"
+
+            tuple(meta, repeatmasker_url, "repeatmasker")
+        }
+
+        checkedRepeatMasker = CHECK_REPEATMASKER_OUTPUT(
+            repeatmaskerCheckInput
+        ).status_out
+
+        ch_versions_file = ch_versions_file.mix(
+            CHECK_REPEATMASKER_OUTPUT.out.versions_file
+        )
+
+        checkedRepeatMasker
+            .map { meta, _url, _file_type, status_file ->
+                tuple(meta, status_file.text.trim() == "true")
             }
-            .set { library_status }
-        
-        // Stage 3a: Generate de novo RepeatModeler libraries for genomes without existing libraries
-        generateLibraryInput = library_status.missing
-            .map { meta,  _library_file -> meta }
-        ftpInput=GENERATE_REPEATMODELER_LIBRARY(generateLibraryInput).repeatmodeler_library_out
-        ch_versions_file = ch_versions_file.mix(GENERATE_REPEATMODELER_LIBRARY.out.versions_file)
-        
-        repeatModelerInput = UPLOAD_REPEAT_LIBRARY_INTO_FTP(ftpInput).library_out
-        ch_versions_file = ch_versions_file.mix(UPLOAD_REPEAT_LIBRARY_INTO_FTP.out.versions_file) 
-        // Stage 3b: Download pre-computed libraries for genomes that have them
-        // Transform to [url, gca] format expected by CHECK_AND_DOWNLOAD_RMLIBRARY
-        downloadInput = library_status.available
-            .map { meta,  _library_file ->
-                def url = "${params.repeats_ftp_base}/${meta.species_name}/${meta.gca}.repeatmodeler.fa"
-                return tuple(url, meta)
+            .branch { _meta, exists ->
+                available: exists
+                missing: !exists
             }
-        // nextflow-lint-disable    
-        rmlibrary = CHECK_AND_DOWNLOAD_RMLIBRARY(downloadInput).repeatmodeler_library_out // nextflow-lint-disable
-        ch_versions_file = ch_versions_file.mix(CHECK_AND_DOWNLOAD_RMLIBRARY.out.versions_file)
-        
-        // Merge both library sources (generated + downloaded)
-        // Outputs have format: tuple val(meta), path(genome_file), path(library_file)
-        //allLibraries = GENERATE_REPEATMODELER_LIBRARY.out.repeatmodeler_library_out
-        
-        if(params.run_repeatmasker) {
-        allLibraries = repeatModelerInput
-            .mix(rmlibrary)
-            .view { meta,  library -> "Library ready for ${meta.gca}: ${library}" }
-        } else {
-            allLibraries = genomeData
+            .set { repeatmasker_status }
+
+        // Only assemblies missing RepeatMasker annotations
+        // should proceed to library selection.
+        repeatmaskerData = repeatmasker_status.missing
+            .map { meta, _exists -> meta }
+
+    } else {
+
+        // No RepeatMasker checks needed.
+        repeatmaskerData = channel.empty()
+    }
+    // ========================================================
+    // Stage 4: Decide which libraries are needed
+    // ========================================================
+
+    // If RepeatMasker is enabled and the CSV provides a
+    // library, use that library directly.
+    //
+    // Otherwise, use the RepeatModeler library workflow.
+
+    if (params.run_repeatmasker) {
+
+        genomeData
+            .branch { meta ->
+
+                custom_library:
+                    meta.repeatmasker_library?.trim()
+
+                needs_repeatmodeler:
+                    !meta.repeatmasker_library?.trim()
+            }
+            .set { input_library_status }
+
+        // ----------------------------------------------------
+        // User-provided RepeatMasker libraries
+        // ----------------------------------------------------
+
+        customLibraries = input_library_status.custom_library
             .map { meta ->
-            def library = file(meta.repeatmasker_library)
 
-            if (!library.exists()) {
-                error "RepeatMasker library not found: ${meta.repeatmasker_library}"
+                def library = file(
+                    meta.repeatmasker_library,
+                    checkIfExists: true
+                )
+
+                tuple(meta, library)
             }
 
-            tuple(meta, library)
+        repeatModelerData = input_library_status.needs_repeatmodeler
+
+    } else {
+
+        customLibraries = channel.empty()
+
+        // Generate/check RepeatModeler libraries independently
+        // when RepeatMasker is disabled but generation requested.
+        repeatModelerData = params.generate_lib ?
+            genomeData : channel.empty()
+    }
+
+    // ========================================================
+    // Stage 5: Check existing RepeatModeler libraries
+    // ========================================================
+
+    repeatModelInput = repeatModelerData
+        .map { meta ->
+
+            def repeat_url =
+                "${params.repeatmodeler_ftp_base}/${meta.species_name}/${meta.gca}.repeatmodeler.fa"
+
+            tuple(meta, repeat_url, "repeatmodeler")
+        }
+
+    checkedLibraries = CHECK_REPEATMODELER_LIBRARY(
+        repeatModelInput
+    ).rep_library_file_output
+
+    ch_versions_file = ch_versions_file.mix(
+        CHECK_REPEATMODELER_LIBRARY.out.versions_file
+    )
+
+    // ========================================================
+    // Stage 6: Branch based on remote library availability
+    // ========================================================
+
+    checkedLibraries
+        .map { meta, repeat_url, _file_type, status_file ->
+
+            def available = status_file.text.trim() == "true"
+
+            tuple(meta, repeat_url, available)
+        }
+        .branch { _meta, _repeat_url, available ->
+
+            available: available
+
+            missing: !available
+        }
+        .set { library_status }
+
+    // ========================================================
+    // Stage 7a: Download existing RepeatModeler libraries
+    // ========================================================
+
+    downloadInput = library_status.available
+        .map { meta, repeat_url, _available ->
+
+            tuple(repeat_url, meta)
+        }
+
+    rmlibrary = DOWNLOAD_REPEATMODELER_LIBRARY(
+        downloadInput
+    ).repeatmodeler_library_out
+
+    ch_versions_file = ch_versions_file.mix(
+        DOWNLOAD_REPEATMODELER_LIBRARY.out.versions_file
+    )
+
+    // ========================================================
+    // Stage 7b: Generate missing RepeatModeler libraries
+    // ========================================================
+
+    generateLibraryInput = library_status.missing
+        .map { meta, _repeat_url, _available ->
+
+            if (!params.generate_lib) {
+                error (
+                    "No RepeatModeler library available for " +
+                    "${meta.gca}, and params.generate_lib is false"
+                )
             }
-        
-        //if(params.run_repeatmasker) {
-        
-        // Stage 4: Run RepeatMasker to identify and mask repeats
+
+            meta
+        }
+
+    ftpInput = GENERATE_REPEATMODELER_LIBRARY(
+        generateLibraryInput
+    ).repeatmodeler_library_out
+    
+
+    ch_versions_file = ch_versions_file.mix(
+        GENERATE_REPEATMODELER_LIBRARY.out.versions_file
+    )
+
+    // ========================================================
+    // Stage 7: Upload newly generated RepeatModeler libraries
+    // ========================================================
+
+    repeatModelerInput = UPLOAD_REPEAT_LIBRARY_INTO_FTP(
+        ftpInput, params.repeatmodeler_ftp_base
+    ).library_out
+
+    ch_versions_file = ch_versions_file.mix(
+        UPLOAD_REPEAT_LIBRARY_INTO_FTP.out.versions_file
+    )
+
+    // ========================================================
+    // Stage 9: Merge RepeatModeler libraries
+    // ========================================================
+
+    allRepeatModelerLibraries = repeatModelerInput
+        .mix(rmlibrary)
+
+    // ========================================================
+    // Stage 9: Select libraries for RepeatMasker
+    // ========================================================
+
+    if (params.run_repeatmasker) {
+
+        // Priority:
+        // 1. CSV repeatmasker_library
+        // 2. Downloaded RepeatModeler library
+        // 3. Newly generated RepeatModeler library
+
+        allLibraries = customLibraries
+            .mix(allRepeatModelerLibraries)
+
         RUN_REPEATMASKER(allLibraries)
-        
-        ch_versions_file = ch_versions_file.mix(RUN_REPEATMASKER.out.versions_file)
-        }
 
-        ch_repeat_output = channel.empty()
-        if(params.run_repeatmasker) {  
-            // Stage 4: Run RepeatMasker to identify and mask repeats
-            RUN_REPEATMASKER(allLibraries)
-            ch_versions_file = ch_versions_file.mix(RUN_REPEATMASKER.out.versions_file)
-            ch_repeat_output = ch_repeat_output.mix(RUN_REPEATMASKER.out.repeatmasker_out)
-            
-        }
-        if (params.run_red) {
-            // Run RED for repeat annotation
-            RUN_RED(genomeData)
-            ch_versions_file = ch_versions_file.mix(RUN_RED.out.versions_file)
-            ch_repeat_output = ch_repeat_output.mix(RUN_RED.out.repeat_output)
+        ch_versions_file = ch_versions_file.mix(
+            RUN_REPEATMASKER.out.versions_file
+        )
+        repeatmasker_output = RUN_REPEATMASKER.out.repeatmasker_out
+        ch_repeat_output = ch_repeat_output.mix(
+            repeatmasker_output
+        )
+    }
 
-        }
-        if (params.run_dust) {
-            // Run DUST for repeat annotation
-            RUN_DUST(genomeData) 
-            ch_versions_file = ch_versions_file.mix(RUN_DUST.out.versions_file)   
-            ch_repeat_output = ch_repeat_output.mix(RUN_DUST.out.repeat_output)       
-        }
-        if (params.run_trf) {
-            // Run TRF for repeat annotation
-            RUN_TRF(genomeData)
-            ch_versions_file = ch_versions_file.mix(RUN_TRF.out.versions_file)  
-            ch_repeat_output = ch_repeat_output.mix(RUN_TRF.out.repeat_output)
+    // ========================================================
+    // Stage 10: RED
+    // ========================================================
 
-        }
-        
-        if (params.upload_repeats) {
-        UPLOAD_REPEATS_INTO_FTP(ch_repeat_output)
-        ch_versions_file = ch_versions_file.mix(UPLOAD_REPEATS_INTO_FTP.out.versions_file)
-        }
+    if (params.run_red) {
 
-        // Merge into single file and publish
-        COLLECT_SOFTWARE_VERSIONS(ch_versions_file.collect())
+        RUN_RED(genomeData)
 
+        ch_versions_file = ch_versions_file.mix(
+            RUN_RED.out.versions_file
+        )
+
+        //ch_repeat_output = ch_repeat_output.mix(
+        //    RUN_RED.out.repeat_output
+        //)
+    }
+
+    // ========================================================
+    // Stage 11: DUST
+    // ========================================================
+
+    if (params.run_dust) {
+
+        RUN_DUST(genomeData)
+
+        ch_versions_file = ch_versions_file.mix(
+            RUN_DUST.out.versions_file
+        )
+
+        //ch_repeat_output = ch_repeat_output.mix(
+        //   RUN_DUST.out.repeat_output
+        //)
+    }
+
+    // ========================================================
+    // Stage 12: TRF
+    // ========================================================
+
+    if (params.run_trf) {
+
+        RUN_TRF(genomeData)
+
+        ch_versions_file = ch_versions_file.mix(
+            RUN_TRF.out.versions_file
+        )
+
+        //ch_repeat_output = ch_repeat_output.mix(
+        //    RUN_TRF.out.repeat_output
+        //)
+    }
+
+    // ========================================================
+    // Stage 13: Upload repeat annotations
+    // ========================================================
+
+    if (params.upload_repeats) {
+
+        UPLOAD_REPEATS_INTO_FTP(ch_repeat_output, params.repeatmasker_ftp_base)
+
+        ch_versions_file = ch_versions_file.mix(
+            UPLOAD_REPEATS_INTO_FTP.out.versions_file
+        )
+    }
+
+    // ========================================================
+    // Stage 14: Collect software versions
+    // ========================================================
+
+    COLLECT_SOFTWARE_VERSIONS(
+        ch_versions_file.collect()
+    )
 }
+
 
 /*
 ========================================================================================
@@ -238,10 +430,6 @@ workflow {
     REPEAT_ANNOTATION(params.csvFile)
 }
 
-//onComplete {
- //   log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
- //   log.info("Execution status: ${workflow.success ? 'Successful' : 'Failed'}")
- //   cleanCacheDirectory()
-//}
+
 
 
