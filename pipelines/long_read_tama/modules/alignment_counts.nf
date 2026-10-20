@@ -17,9 +17,9 @@ process ALIGNMENT_COUNTS {
     awk -v sample='${meta.id}' '
         / in total/ { total = \$1 }
         / mapped \(/ && !/primary mapped/ { mapped = \$1 }
-        / primary$/ { primary = \$1 }
-        / secondary$/ { secondary = \$1 }
-        / supplementary$/ { supplementary = \$1 }
+        \$NF == "primary" { primary = \$1 }
+        \$NF == "secondary" { secondary = \$1 }
+        \$NF == "supplementary" { supplementary = \$1 }
         / unmapped \(/ { unmapped = \$1 }
         END {
             printf "sample_id\\ttotal_alignments\\tmapped_alignments\\tprimary_alignments\\tsecondary_alignments\\tsupplementary_alignments\\tunmapped_alignments\\tmapping_rate_percent\\tprimary_mapping_rate_percent\\n"

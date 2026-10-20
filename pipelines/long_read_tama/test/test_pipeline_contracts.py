@@ -86,6 +86,7 @@ def test_alignment_counts_escapes_awk_field_references_for_nextflow():
     assert "secondary = \\$1" in text
     assert "supplementary = \\$1" in text
     assert "unmapped = \\$1" in text
+    assert "$/" not in text
 
 
 def test_modules_do_not_leave_shell_tokens_for_nextflow_interpolation():
