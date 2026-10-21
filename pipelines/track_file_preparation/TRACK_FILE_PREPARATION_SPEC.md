@@ -290,6 +290,11 @@ The expected module responsibilities are:
 - `VALIDATE_MANIFEST_RECORD`: validate row fields and track selection.
 - `VALIDATE_REFERENCE`: validate `chrom.sizes`, assembly metadata, and contig
   order.
+- `RESOLVE_BAM_REFERENCE`: compare BAM sequence names and lengths with
+  `chrom.sizes`; use a sorted supplied dictionary when names match, or emit a
+  BAM-named dictionary when names differ but the complete length multiset
+  matches. Stop before track generation when lengths disagree, and report the
+  resolution per entity.
 - `VALIDATE_ENTITY_INPUTS`: check required paths and entity naming.
 - `NORMALIZE_ENTITY_METADATA`: create canonical `meta` without mutating the
   original record.

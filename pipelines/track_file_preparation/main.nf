@@ -133,7 +133,17 @@ workflow {
         tuple(meta, bam, gtf, sj, resolve_current_bam_index(bam, bai, meta.id, false))
     }
     chrom_sizes = file(params.chrom_sizes, checkIfExists: true)
-    PREFLIGHT_TRACK_INPUTS(chrom_sizes, params.assembly_release)
+    bam_reference_entities = entities
+        .filter { _meta, bam, _gtf, _sj, _bai -> bam }
+        .map { meta, bam, _gtf, _sj, _bai -> tuple(meta, bam, chrom_sizes) }
+    PREFLIGHT_TRACK_INPUTS(chrom_sizes, params.assembly_release, bam_reference_entities)
+
+    bam_reference_sizes = PREFLIGHT_TRACK_INPUTS.out.bam_references
+        .map { meta, compatible_chrom_sizes -> tuple("${meta.gca_accession}\t${meta.id}", compatible_chrom_sizes) }
+    no_bam_reference_sizes = entities
+        .filter { _meta, bam, _gtf, _sj, _bai -> !bam }
+        .map { meta, _bam, _gtf, _sj, _bai -> tuple("${meta.gca_accession}\t${meta.id}", chrom_sizes) }
+    entity_reference_sizes = bam_reference_sizes.mix(no_bam_reference_sizes)
 
     bam_index_entities = entities
         .filter { meta, bam, gtf, sj, bai ->
@@ -151,11 +161,15 @@ workflow {
 
     coverage_entities = indexed_entities
         .filter { meta, bam, bai -> 'coverage' in meta.track_types }
-        .map { meta, bam, bai -> tuple(meta, bam, bai, chrom_sizes) }
+        .map { meta, bam, bai -> tuple("${meta.gca_accession}\t${meta.id}", meta, bam, bai) }
+        .join(entity_reference_sizes)
+        .map { _key, meta, bam, bai, compatible_chrom_sizes -> tuple(meta, bam, bai, compatible_chrom_sizes) }
     gene_entities = entities.filter { meta, bam, gtf, sj, bai -> 'gene_model' in meta.track_types }
         .map { meta, bam, gtf, sj, bai -> tuple(meta, gtf, chrom_sizes) }
     splice_entities = entities.filter { meta, bam, gtf, sj, bai -> 'splice_junction' in meta.track_types }
-        .map { meta, bam, gtf, sj, bai -> tuple(meta, derive_junctions_enabled() ? bam : sj, bam ?: sj, chrom_sizes) }
+        .map { meta, bam, _gtf, sj, _bai -> tuple("${meta.gca_accession}\t${meta.id}", meta, derive_junctions_enabled() ? bam : sj, bam ?: sj) }
+        .join(entity_reference_sizes)
+        .map { _key, meta, sj, bam_or_sj, compatible_chrom_sizes -> tuple(meta, sj, bam_or_sj, compatible_chrom_sizes) }
 
     coverage = PREPARE_COVERAGE_TRACKS(coverage_entities)
     genes = PREPARE_GENE_MODEL_TRACKS(gene_entities)

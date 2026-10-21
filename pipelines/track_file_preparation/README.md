@@ -53,6 +53,14 @@ The stage directory keeps copies named by assembly, entity, and input type.
 Non-LTS paths continue to be used in place. An index older than its BAM is
 discarded and regenerated from the staged BAM before BAM-dependent tracks run.
 
+Before BAM-based tracks run, the pipeline compares each BAM sequence dictionary
+with the supplied `chrom.sizes`. If names and lengths match, it uses a sorted
+copy of the supplied file. If names differ but the complete set of sequence
+lengths matches, it writes a BAM-named `chrom.sizes` for that entity; this
+supports alignment aliases such as `1` where the assembly file uses accession
+IDs. A length mismatch stops the run before track generation. The resolution
+and chromosome count are recorded under `${outdir}/reference/`.
+
 The generator writes an audit, exceptions table, and JSON summary beside the
 manifest. Strict mode is the default: any unresolved candidate prevents the
 manifest from being published. `--dry-run` writes diagnostics without the
