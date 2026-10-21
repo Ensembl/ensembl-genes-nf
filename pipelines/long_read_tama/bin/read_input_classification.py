@@ -29,7 +29,7 @@ MD5 = re.compile(r"^[0-9a-fA-F]{32}$")
 SHA256 = re.compile(r"^[0-9a-fA-F]{64}$")
 UUID = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$")
 SUBREAD = re.compile(r"^([^/\s]+)/([0-9]+)/([0-9]+_[0-9]+)$")
-CCS = re.compile(r"^([^/\s]+)/([0-9]+)/ccs$")
+CCS = re.compile(r"^([^/\s]+)/([0-9]+)/ccs(?:/([0-9]+_[0-9]+))?$")
 SAFE_URI = re.compile(r"^(?:https?|ftp)://[^\s]+$", re.I)
 SAFE_FILE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
@@ -59,9 +59,15 @@ def header_signature(token: str, header: str = "") -> tuple[str, str | None]:
     match = SUBREAD.fullmatch(token)
     if match:
         return "PACBIO_SUBREAD", f"{match.group(1)}/{match.group(2)}"
-    if CCS.fullmatch(token):
-        match = CCS.fullmatch(token)
-        return "PACBIO_CCS", f"{match.group(1)}/{match.group(2)}"
+    match = CCS.fullmatch(token)
+    if match:
+        molecule = f"{match.group(1)}/{match.group(2)}"
+        # Kinnex/MAS CCS records append the transcript segment interval to a
+        # parent ZMW. Each interval is its own transcript molecule, so retain
+        # it in the molecule key instead of collapsing all segments to a ZMW.
+        if match.group(3):
+            molecule += f"/ccs/{match.group(3)}"
+        return "PACBIO_CCS", molecule
     if UUID.fullmatch(token) and any(k in header.lower() for k in ("runid=", "ch=", "barcode=")):
         return "ONT", token
     return "UNKNOWN", None

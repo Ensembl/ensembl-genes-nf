@@ -72,6 +72,7 @@ Match against the first whitespace-delimited header token after `@`.
 | --- | --- | --- |
 | `^[^/[:space:]]+/[0-9]+/[0-9]+_[0-9]+$` | PacBio raw subread | The fields are movie / ZMW / polymerase interval. The molecule key is exactly movie + `/` + ZMW. |
 | `^[^/[:space:]]+/[0-9]+/ccs$` | PacBio CCS/HiFi | One consensus observation per ZMW, subject to the normal duplicate-ID audit. |
+| `^[^/[:space:]]+/[0-9]+/ccs/[0-9]+_[0-9]+$` | PacBio Kinnex/MAS segmented CCS | The final interval identifies a separate transcript segment within the parent ZMW; include it in the molecule key. |
 | RFC-4122-like UUID as the complete first token, plus ONT-compatible archive or SRA evidence | probable ONT | UUID alone is not enough to declare ONT. Record ONT fields such as `barcode`, `runid`, and `ch` when present in the rest of a header. |
 | More than one high-confidence signature in one sampled file | `MIXED` | Quarantine. |
 | No decisive signature | `UNKNOWN` | Quarantine unless an explicit future policy is approved. |
@@ -289,12 +290,13 @@ Required unit cases:
 
 1. `movie/ZMW/start_end` headers classify as `PACBIO_SUBREAD` and extract the exact movie/ZMW key.
 2. `movie/ZMW/ccs` headers classify as `PACBIO_CCS`.
-3. UUID plus ONT metadata classifies as `ONT_FASTQ`; UUID without supporting evidence is not automatically ONT.
-4. A PacBio-declared/ONT-observed `SRR29278220`-shaped case is `CONFLICT` and proposed for quarantine.
-5. A submitted `.subreads.bam` with matching PacBio evidence becomes `PACBIO_SUBREAD_BAM`.
-6. A subread FASTQ with no submitted BAM becomes `PACBIO_SUBREAD_FASTQ_ONLY` and is quarantined.
-7. Mismatched semicolon-separated artifact lists, malformed URLs/checksums, mixed header signatures, invalid FASTQ records, and duplicate output molecule IDs fail explicitly.
-8. Approved-manifest validation rejects every status/classification/action combination that is not allowed.
+3. `movie/ZMW/ccs/start_end` Kinnex/MAS headers classify as `PACBIO_CCS` and retain the interval in the molecule key.
+4. UUID plus ONT metadata classifies as `ONT_FASTQ`; UUID without supporting evidence is not automatically ONT.
+5. A PacBio-declared/ONT-observed `SRR29278220`-shaped case is `CONFLICT` and proposed for quarantine.
+6. A submitted `.subreads.bam` with matching PacBio evidence becomes `PACBIO_SUBREAD_BAM`.
+7. A subread FASTQ with no submitted BAM becomes `PACBIO_SUBREAD_FASTQ_ONLY` and is quarantined.
+8. Mismatched semicolon-separated artifact lists, malformed URLs/checksums, mixed header signatures, invalid FASTQ records, and duplicate output molecule IDs fail explicitly.
+9. Approved-manifest validation rejects every status/classification/action combination that is not allowed.
 
 Required workflow test:
 
