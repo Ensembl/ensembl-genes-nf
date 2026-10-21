@@ -6,7 +6,7 @@ process UPLOAD_INTO_FTP {
     label 'ensembl_ftp'
 
     input:
-    tuple val(meta), path(files, arity: '0..*')
+    tuple val(meta), path(files, arity: '1..*')
     val ftp_base
 
     output:
