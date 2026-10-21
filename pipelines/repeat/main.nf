@@ -130,7 +130,7 @@ workflow REPEAT_ANNOTATION {
             // IMPORTANT:
             // Replace this filename with the actual FTP output.
             def repeatmasker_url =
-                "${params.repeats_ftp_base}/${meta.species_name}/${meta.gca}.repeatmasker.gtf.gz"
+                "${params.repeatmasker_ftp_base}/${meta.species_name}/${meta.gca}.repeatmasker.gtf.gz"
 
             tuple(meta, repeatmasker_url, "repeatmasker")
         }
