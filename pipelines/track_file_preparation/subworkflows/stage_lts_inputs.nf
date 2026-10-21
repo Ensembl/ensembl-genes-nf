@@ -5,14 +5,14 @@ workflow STAGE_LTS_INPUTS {
     entities
 
     main:
-    branched = entities.branch { meta, _bam, _gtf, _sj, _bai ->
+    branched = entities.branch { _meta, _bam, _gtf, _sj, _bai ->
         needs_staging: [_bam, _gtf, _sj, _bai].any { input -> input && input.toString().startsWith('/lts/') }
         direct: true
     }
 
     staging_inputs = branched.needs_staging.map { meta, bam, gtf, sj, bai ->
         def fields = [bam: bam, gtf: gtf, sj_out_tab: sj, bai: bai]
-        def lts_fields = fields.findAll { name, input -> input && input.toString().startsWith('/lts/') }
+        def lts_fields = fields.findAll { _name, input -> input && input.toString().startsWith('/lts/') }
         def stage_kinds = lts_fields.keySet().toList()
         def sources = lts_fields.values().toList()
         def stage_names = stage_kinds.withIndex().collect { kind, index ->
