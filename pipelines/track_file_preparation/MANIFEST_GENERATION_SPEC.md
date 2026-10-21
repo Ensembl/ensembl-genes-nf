@@ -50,20 +50,20 @@ directory. It recursively discovers accession-named STAR BAMs beneath
 `alignment/`, matches adjacent SJ files, and infers GCA from a canonical GCA
 path component or a species directory such as
 `sus_scrofa_gca000003025v6`. Its default tracks are coverage and
-splice-junction because this tree has no per-run GTFs. Specify `--track-types
-all` only when a matching GTF is available for every run.
+splice-junction because manifests are run-level; tissue GTFs are intentionally
+out of scope.
 
-Repeated GDM run IDs fail closed by default. After reviewing duplicate source
-paths, `--gdm-duplicate-policy newest` selects the unique candidate with the
-latest modification time and records the choice in the audit warning. Ties
-remain unresolved. If both `.bai` and `.csi` indexes exist, `.bai` is selected.
+For repeated GDM run IDs within one assembly, the default
+`--gdm-duplicate-policy newest` selects the unique candidate with the latest
+modification time and records the choice in the audit warning. The same run ID
+in different assemblies produces a separate row for each assembly. Ties remain
+unresolved. If both `.bai` and `.csi` indexes exist, `.bai` is selected.
 
 The GDM inventory at `/lts/production/fergal/genebuild/gdm_data` has both
 `<species>/<taxon>/<run>/alignment` and
 `<species>/<taxon>/ILLUMINA/<run>/alignment` layouts. Run rows are one row per
-ERR/SRR/DRR accession. Tissue-level gene-model rows are not inferred from those
-run directories; they require a separate explicit tissue/GTF mapping source.
-The current generator does not yet create those sample rows.
+ERR/SRR/DRR run accession. Tissue GTFs are intentionally excluded from these
+run-level manifests.
 
 ## Canonical output TSV
 
@@ -172,7 +172,8 @@ Supports the DeepMind/GDM layout:
   <run_accession>_SJ.out.tab
 ```
 
-The directory name and BAM basename must agree. GCA is inferred from the
+The directory name and BAM basename must agree. Identical run IDs in different
+assemblies produce separate entities. GCA is inferred from the
 species/assembly path or supplied with `--gca`; it is not required in the
 immediate parent of the run directory. The current implementation does not
 resolve tissue GTFs or a separate annotation root for GDM run rows. An

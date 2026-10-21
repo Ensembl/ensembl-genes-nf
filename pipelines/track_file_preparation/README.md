@@ -9,7 +9,8 @@ and splice-junction tracks. Junction derivation from BAM is opt-in with
 
 Run-level manifests can be discovered with the standalone generator. `main`
 and `anno` default to all three tracks; `gdm` defaults to coverage and
-splice-junction because the GDM alignment tree has no per-run GTFs.
+splice-junction because GDM input is handled at run level and tissue GTFs are
+out of scope.
 
 ```bash
 python3 pipelines/track_file_preparation/bin/generate_manifest.py \
@@ -30,15 +31,14 @@ the whole `gdm_data` tree; GCA accessions are read from canonical GCA path
 components or species directory names such as `sus_scrofa_gca000003025v6`. For
 a multi-species root, omit `--assembly-release` so each row defaults to its own
 GCA release.
-Use `--track-types all` only when each run has a matching GTF. Tissue-level
-GTF tracks need explicit sample/group rows because the GDM run directories do
-not identify which runs belong to each tissue.
+GDM manifests contain run entities only. Tissue GTFs are intentionally not
+processed by this workflow.
 
-If a run accession appears in multiple directories, strict mode reports it as
-ambiguous by default. After reviewing the duplicate paths, pass
-`--gdm-duplicate-policy newest` to keep the unique most recently modified BAM;
-the selected row records that choice in the audit warning. When both `.bai`
-and `.csi` exist, the manifest uses `.bai`.
+If a run accession appears more than once within the same assembly, the default
+`--gdm-duplicate-policy newest` keeps the uniquely newest BAM; the selected row
+records that choice in the audit warning. The same run accession in different
+assemblies produces separate rows. Tied mtimes remain unresolved. When both
+`.bai` and `.csi` exist, the manifest uses `.bai`.
 
 The generator writes an audit, exceptions table, and JSON summary beside the
 manifest. Strict mode is the default: any unresolved candidate prevents the

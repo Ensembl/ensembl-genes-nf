@@ -45,8 +45,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--annotation-dir", type=Path, help="Override the mode's annotation directory")
     parser.add_argument("--gca", help="GCA accession; inferred from the base path when omitted")
     parser.add_argument("--assembly-release", help="Assembly release; defaults to --gca")
-    parser.add_argument("--gdm-duplicate-policy", choices=("error", "newest"), default="error",
-                        help="How to resolve repeated GDM run BAMs; newest selects the unique latest mtime")
+    parser.add_argument("--gdm-duplicate-policy", choices=("error", "newest"), default="newest",
+                        help="How to resolve repeated GDM run BAMs (default: newest unique mtime within assembly)")
     parser.add_argument(
         "--track-types",
         help="Comma-delimited tracks; defaults to all for main/anno and coverage,splice_junction for gdm",
