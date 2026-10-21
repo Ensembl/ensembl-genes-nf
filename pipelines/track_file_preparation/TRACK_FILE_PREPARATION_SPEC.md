@@ -88,7 +88,7 @@ sample_id
 | `gca_accession` | Assembly accession, normally matching `GCA_#########.#`. Required for every row. |
 | `assembly_release` | Human-readable assembly/release identifier retained in provenance. |
 | `bam` | Coordinate-sorted BAM path. Required when any selected track requires BAM input. |
-| `bai` | Optional BAM index path. If absent, the pipeline uses an adjacent `<bam>.bai` or `<bam>.csi` when available, otherwise creates `<bam>.bai` before BAM-dependent processing. |
+| `bai` | Optional BAM index path. A supplied or adjacent `<bam>.bai`/`.csi` is used only if its modification time is at least as new as the BAM; otherwise the pipeline creates a fresh `<bam>.bai` before BAM-dependent processing. |
 | `gtf` | Per-entity GTF path. Required when `gene_model` is selected. |
 | `track_types` | Comma-delimited selection from `coverage`, `gene_model`, and `splice_junction`. Empty or `all` means the default selection: attempt all three. |
 | `sj_out_tab` | Optional matching STAR `SJ.out.tab`. Used only for the same entity and assembly. |
@@ -281,8 +281,9 @@ The expected module responsibilities are:
 - `VALIDATE_ENTITY_INPUTS`: check required paths and entity naming.
 - `NORMALIZE_ENTITY_METADATA`: create canonical `meta` without mutating the
   original record.
-- `INDEX_BAM`: create a missing BAM index and emit it using the BAM basename so
-  downstream tools discover it automatically.
+- `INDEX_BAM`: create a missing or stale BAM index and emit it using the BAM
+  basename so downstream tools discover it automatically. An index is
+  considered stale when its modification time predates the BAM.
 
 ### Coverage modules
 

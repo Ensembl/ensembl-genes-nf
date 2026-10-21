@@ -32,6 +32,27 @@ def resolve_manifest_path(String raw, base_dir, boolean must_exist, int row_numb
     path.exists() ? path : null
 }
 
+def resolve_current_bam_index(bam, supplied_index, String entity_id) {
+    if (!bam) return null
+    def candidates = []
+    if (supplied_index) candidates << supplied_index
+    [file("${bam}.bai"), file("${bam}.csi")].each { candidate ->
+        if (candidate.exists() && !candidates.contains(candidate)) candidates << candidate
+    }
+    if (!candidates) return null
+
+    def bam_mtime = bam.toFile().lastModified()
+    def current = candidates.findAll { it.toFile().lastModified() >= bam_mtime }
+    if (current.size() < candidates.size())
+        log.warn "Ignoring stale BAM index for ${entity_id}: BAM file is newer than its index"
+    current.sort { left, right ->
+        def left_bai = left.toString().endsWith('.bai') ? 0 : 1
+        def right_bai = right.toString().endsWith('.bai') ? 0 : 1
+        left_bai <=> right_bai
+    }
+    current ? current[0] : null
+}
+
 def derive_junctions_enabled() {
     params.derive_junctions == true || params.derive_junctions?.toString()?.toBoolean()
 }
@@ -69,12 +90,8 @@ def manifest_entities(manifest, base_dir, override) {
         def bam = resolve_manifest_path(row.bam, manifest_base, 'coverage' in selected || derive_junctions_enabled(), row_number + 2)
         def gtf = resolve_manifest_path(row.gtf, manifest_base, 'gene_model' in selected, row_number + 2)
         def sj = resolve_manifest_path(row.sj_out_tab, manifest_base, 'splice_junction' in selected && !derive_junctions_enabled(), row_number + 2)
-        def bai = resolve_manifest_path(row.bai, manifest_base, false, row_number + 2)
-        if (!bai && bam) {
-            def adjacent_bai = file("${bam}.bai")
-            def adjacent_csi = file("${bam}.csi")
-            bai = adjacent_bai.exists() ? adjacent_bai : (adjacent_csi.exists() ? adjacent_csi : null)
-        }
+        def supplied_bai = resolve_manifest_path(row.bai, manifest_base, false, row_number + 2)
+        def bai = resolve_current_bam_index(bam, supplied_bai, row.entity_id)
         def meta = [id: row.entity_id, safe_id: safe, entity_type: row.entity_type,
                     gca_accession: row.gca_accession, assembly_release: row.assembly_release,
                     source_entity_ids: row.source_entity_ids ?: '', run_accession: row.run_accession ?: '',
