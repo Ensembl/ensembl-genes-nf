@@ -2,6 +2,7 @@
 
 include { validateParameters } from 'plugin/nf-schema'
 include { PREFLIGHT_TRACK_INPUTS } from './subworkflows/preflight.nf'
+include { STAGE_LTS_INPUTS } from './subworkflows/stage_lts_inputs.nf'
 include { PREPARE_COVERAGE_TRACKS } from './subworkflows/coverage.nf'
 include { INDEX_BAM } from './modules/index_bam.nf'
 include { PREPARE_GENE_MODEL_TRACKS } from './subworkflows/gene_models.nf'
@@ -10,6 +11,12 @@ include { ASSEMBLE_TRACK_SETS } from './subworkflows/reporting.nf'
 
 def safe_entity_id(String value) {
     value.replaceAll(/[^A-Za-z0-9_.-]/, '_')
+}
+
+def is_lts_location(String raw, base_dir) {
+    if (!raw?.trim()) return false
+    def path = raw.startsWith('/') ? raw : new File(base_dir.toString(), raw).getAbsolutePath()
+    path == '/lts' || path.startsWith('/lts/')
 }
 
 def parse_track_selection(String value) {
@@ -32,7 +39,7 @@ def resolve_manifest_path(String raw, base_dir, boolean must_exist, int row_numb
     path.exists() ? path : null
 }
 
-def resolve_current_bam_index(bam, supplied_index, String entity_id) {
+def resolve_current_bam_index(bam, supplied_index, String entity_id, boolean warn_on_stale = true) {
     if (!bam) return null
     def candidates = []
     if (supplied_index) candidates << supplied_index
@@ -43,7 +50,7 @@ def resolve_current_bam_index(bam, supplied_index, String entity_id) {
 
     def bam_mtime = bam.toFile().lastModified()
     def current = candidates.findAll { it.toFile().lastModified() >= bam_mtime }
-    if (current.size() < candidates.size())
+    if (warn_on_stale && current.size() < candidates.size())
         log.warn "Ignoring stale BAM index for ${entity_id}: BAM file is newer than its index"
     current.sort { left, right ->
         def left_bai = left.toString().endsWith('.bai') ? 0 : 1
@@ -59,7 +66,7 @@ def derive_junctions_enabled() {
 
 def manifest_entities(manifest, base_dir, override) {
     def manifest_file = new File(manifest.toString()).getAbsoluteFile()
-    def manifest_base = manifest_file.getParentFile()
+    def manifest_base = base_dir ?: manifest_file.getParentFile()
     def lines = manifest_file.readLines()
     if (!lines)
         error "Input manifest is empty: ${manifest}"
@@ -86,6 +93,7 @@ def manifest_entities(manifest, base_dir, override) {
         if (!seen.add(key)) error "Duplicate entity_id plus gca_accession: ${key}"
         def safe = safe_entity_id(row.entity_id)
         if (!safe_seen.add("${row.gca_accession}\t${safe}")) error "Entity ID sanitization collision for ${key}"
+        def contains_lts_path = ['bam', 'gtf', 'sj_out_tab', 'bai'].any { field -> is_lts_location(row[field], manifest_base) }
         def selected = override ? parse_track_selection(override) : parse_track_selection(row.track_types)
         def bam = resolve_manifest_path(row.bam, manifest_base, 'coverage' in selected || derive_junctions_enabled(), row_number + 2)
         def gtf = resolve_manifest_path(row.gtf, manifest_base, 'gene_model' in selected, row_number + 2)
@@ -96,7 +104,7 @@ def manifest_entities(manifest, base_dir, override) {
                     gca_accession: row.gca_accession, assembly_release: row.assembly_release,
                     source_entity_ids: row.source_entity_ids ?: '', run_accession: row.run_accession ?: '',
                     sample_id: row.sample_id ?: '', track_types: selected,
-                    derive_junctions: derive_junctions_enabled()]
+                    derive_junctions: derive_junctions_enabled(), contains_lts_path: contains_lts_path]
         records << tuple(meta, bam, gtf, sj, bai)
     }
     records
@@ -110,7 +118,20 @@ workflow {
     def base_dir = params.manifest_base_dir ? file(params.manifest_base_dir) : new File(params.input_manifest.toString()).getAbsoluteFile().getParentFile()
     if (!base_dir.exists()) error "Manifest base directory does not exist: ${base_dir}"
 
-    entities = Channel.fromList(manifest_entities(params.input_manifest, base_dir, params.track_types == 'all' ? null : params.track_types))
+    def entity_records = manifest_entities(params.input_manifest, base_dir, params.track_types == 'all' ? null : params.track_types)
+    def has_lts_inputs = entity_records.any { meta, _bam, _gtf, _sj, _bai -> meta.contains_lts_path }
+    if (has_lts_inputs) {
+        if (!params.lts_stage_dir) error '--lts_stage_dir is required when any manifest input is under /lts'
+        def stage_dir_path = new File(params.lts_stage_dir.toString()).toPath().toAbsolutePath().normalize().toString()
+        if (!(stage_dir_path.startsWith('/hps/') || stage_dir_path.startsWith('/nfs/')))
+            error "--lts_stage_dir must be under /hps or /nfs when staging /lts inputs: ${stage_dir_path}"
+    }
+
+    source_entities = channel.fromList(entity_records)
+    STAGE_LTS_INPUTS(source_entities)
+    entities = STAGE_LTS_INPUTS.out.entities.map { meta, bam, gtf, sj, bai ->
+        tuple(meta, bam, gtf, sj, resolve_current_bam_index(bam, bai, meta.id, false))
+    }
     chrom_sizes = file(params.chrom_sizes, checkIfExists: true)
     PREFLIGHT_TRACK_INPUTS(chrom_sizes, params.assembly_release)
 
@@ -144,6 +165,7 @@ workflow {
         .mix(genes.results.map { meta, artifact, result, provenance, exception -> result })
         .mix(splice.results.map { meta, artifact, result, provenance, exception -> result })
     version_channels = PREFLIGHT_TRACK_INPUTS.out.versions
+        .mix(STAGE_LTS_INPUTS.out.versions)
         .mix(coverage.versions)
         .mix(generated_indexes.versions)
         .mix(genes.versions)

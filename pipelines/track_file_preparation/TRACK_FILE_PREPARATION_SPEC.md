@@ -29,6 +29,8 @@ Nextflow 26.04.6+, strict-shell, Singularity-first conventions.
 ### In scope
 
 - Parse and validate the external entity TSV.
+- Copy `/lts` inputs to a persistent HPS/NFS location on the Slurm datamover
+  partition before processing.
 - Validate assembly reference inputs and GCA identity.
 - Validate BAMs and generate coverage BigWigs.
 - Validate GTFs and generate gene-model BigBeds.
@@ -95,6 +97,13 @@ sample_id
 | `source_entity_ids` | Comma-delimited source entities for `sample` or `merged` records. Informational and preserved in provenance. |
 | `run_accession` | Optional run/accession identifier for handover and metadata joins. |
 | `sample_id` | Optional sample identifier for handover and metadata joins. |
+
+If any manifest field names a path under `/lts`, `--lts_stage_dir` is required
+and must name a persistent location under `/hps/` or `/nfs/`. The initial
+staging process copies each LTS input with timestamps preserved and emits the
+localized path for downstream work. Non-LTS inputs remain at their declared
+paths. The destination is an execution input cache and must be on shared
+storage visible to subsequent Slurm jobs.
 
 Paths must not contain tabs. Commas are reserved as delimiters for
 `track_types` and `source_entity_ids`; the manifest producer must reject or
@@ -233,7 +242,9 @@ pipelines/track_file_preparation/
   nextflow_schema.json
   README.md
   modules/
+    stage_lts_files.nf
   subworkflows/
+    stage_lts_inputs.nf
   test/
 ```
 
@@ -254,6 +265,7 @@ named subworkflows approximately as follows:
 
 ```text
 READ_TRACK_MANIFEST
+  → STAGE_LTS_INPUTS (when paths are under /lts)
   → PREFLIGHT_TRACK_INPUTS
   → PREPARE_COVERAGE_TRACKS
   → PREPARE_GENE_MODEL_TRACKS
@@ -283,7 +295,8 @@ The expected module responsibilities are:
   original record.
 - `INDEX_BAM`: create a missing or stale BAM index and emit it using the BAM
   basename so downstream tools discover it automatically. An index is
-  considered stale when its modification time predates the BAM.
+  considered stale when its modification time predates the BAM. Index freshness
+  is checked both before and after LTS staging, which preserves source mtimes.
 
 ### Coverage modules
 

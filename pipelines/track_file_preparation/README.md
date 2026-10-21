@@ -40,6 +40,19 @@ records that choice in the audit warning. The same run accession in different
 assemblies produces separate rows. Tied mtimes remain unresolved. When both
 `.bai` and `.csi` exist, the manifest uses `.bai`.
 
+When any manifest path is under `/lts`, supply a persistent HPS/NFS destination
+with `--lts_stage_dir`. The pipeline copies each entity's LTS inputs there at
+the start, on the Slurm `datamover` partition, preserving source timestamps.
+For example:
+
+```bash
+--lts_stage_dir /hps/nobackup/flicek/ensembl/genebuild/jackt/expression_tracks/staged_gdm
+```
+
+The stage directory keeps copies named by assembly, entity, and input type.
+Non-LTS paths continue to be used in place. An index older than its BAM is
+discarded and regenerated from the staged BAM before BAM-dependent tracks run.
+
 The generator writes an audit, exceptions table, and JSON summary beside the
 manifest. Strict mode is the default: any unresolved candidate prevents the
 manifest from being published. `--dry-run` writes diagnostics without the

@@ -7,7 +7,7 @@ process WRITE_TRACK_RECORD {
     }
 
     input:
-    tuple val(meta), path(track), path(source), path(checksum)
+    tuple val(meta), path(track, stageAs: 'source_track'), path(source), path(checksum)
 
     output:
     tuple val(meta), path("${meta.safe_id}.${meta.current_track == 'coverage' ? 'bw' : 'bb'}"), path("${meta.safe_id}.${meta.current_track}.track_result.tsv"), path("${meta.safe_id}.${meta.current_track}.provenance.tsv"), path("${meta.safe_id}.${meta.current_track}.exceptions.tsv"), emit: results

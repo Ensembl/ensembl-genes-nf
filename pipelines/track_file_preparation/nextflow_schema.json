@@ -5,6 +5,7 @@
   "properties": {
     "input_manifest": {"type": "string", "exists": true, "description": "Authoritative entity TSV manifest"},
     "manifest_base_dir": {"type": ["string", "null"], "description": "Base directory for relative manifest paths"},
+    "lts_stage_dir": {"type": ["string", "null"], "description": "Persistent /hps or /nfs destination for inputs copied from /lts; required when the manifest references /lts paths"},
     "chrom_sizes": {"type": "string", "exists": true, "description": "Assembly chrom.sizes file"},
     "assembly_release": {"type": "string", "minLength": 1},
     "outdir": {"type": "string", "default": "./results"},
