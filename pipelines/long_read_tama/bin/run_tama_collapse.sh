@@ -61,6 +61,11 @@ fi
 printf 'accession\tshard\tstatus\texit_status\n%s\t%s\t%s\t%s\n' \
     "$accession" "$shard" "$status" "$rc" > "$status_file"
 
-# A shard-level TAMA failure is data recorded for the cohort, not a workflow
-# failure. The status and stderr outputs are the authoritative diagnostics.
+# Resource-related exits must reach Nextflow so the task is retried with a
+# larger memory request. Other shard-level TAMA failures remain recorded data
+# and do not prevent the rest of the cohort from running.
+if [[ "$rc" -eq 137 || "$rc" -eq 140 || "$rc" -eq 143 ]]; then
+    exit "$rc"
+fi
+
 exit 0

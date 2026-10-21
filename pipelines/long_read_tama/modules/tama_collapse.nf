@@ -1,9 +1,13 @@
 process TAMA_COLLAPSE {
     tag "${meta.id}${shard ? ':' + shard : ''}:${resource_class}:${mapped_reads} reads"
     label 'process_high_memory'
-    // The pipeline adapter records a per-shard failure and returns success so
-    // one failed shard cannot terminate the cohort run.
-    memory { resource_class == 'very_large' ? params.tama_memory_very_large : (resource_class == 'large' ? params.tama_memory_large : params.tama_memory_small) }
+    // Retry resource-related TAMA exits at the Nextflow level; the adapter
+    // keeps non-resource shard failures as status records so other shards run.
+    memory {
+        def base = nextflow.util.MemoryUnit.of(resource_class == 'very_large' ? params.tama_memory_very_large :
+            (resource_class == 'large' ? params.tama_memory_large : params.tama_memory_small))
+        base + 64.GB * (task.attempt - 1)
+    }
     conda 'bioconda::gs-tama=1.0.3'
     container "${params.tama_container ?: (workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
         'https://depot.galaxyproject.org/singularity/gs-tama:1.0.3--hdfd78af_0' :

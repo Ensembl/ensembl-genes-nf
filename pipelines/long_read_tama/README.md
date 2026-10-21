@@ -156,8 +156,9 @@ shards are still included in the accession and cohort merges.
 
 Known per-shard TAMA failures are recorded in `tama_status.tsv` and do not
 produce a BED for that shard; successful shards continue to the accession and
-cohort merges. TAMA exit statuses are captured by the shard adapter and are
-non-terminal. The separate `--merge_tool` option controls only the legacy
+cohort merges. Resource-related TAMA exits (137, 140, and 143) are returned to
+Nextflow for memory-escalating retries; other TAMA failures remain non-terminal
+status records. The separate `--merge_tool` option controls only the legacy
 common post-collapse accession/cohort merge stage; it is not the
 model-construction backend selector. For a direct native backend comparison,
 use `--model_backend all --backend_merge_mode native`.
@@ -176,11 +177,12 @@ calling tmerge; it does not convert already-collapsed TAMA BED12 models. It is
 not a drop-in replacement for TAMA's collapse algorithm.
 
 TAMA allocations use configurable workload tiers. The defaults are
-`128.GB`, `256.GB`, and `512.GB`. The TAMA adapter records exit statuses such
-as 137, 140, and 143 in `tama_status.tsv`; other
-tool and validation failures are also non-terminal at the process-policy
-boundary and remain visible in the trace/report outputs. `--shard_contig_reads` is an operational mapped-read
-heuristic, not a biological or guaranteed memory boundary.
+`128.GB`, `256.GB`, and `512.GB`; each retry adds `64.GB` to the selected tier.
+IsoQuant and Bambu multiply their starting memory by the attempt number, as do
+FLAIR discovery and backend merge tasks. Retry attempts and exhausted failures
+remain visible in the Nextflow trace/report. `--shard_contig_reads` is an
+operational mapped-read heuristic, not a biological or guaranteed memory
+boundary.
 
 Example:
 
