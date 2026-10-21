@@ -180,9 +180,11 @@ TAMA allocations use configurable workload tiers. The defaults are
 `128.GB`, `256.GB`, and `512.GB`; each retry adds `64.GB` to the selected tier.
 IsoQuant and Bambu multiply their starting memory by the attempt number, as do
 FLAIR discovery and backend merge tasks. Retry attempts and exhausted failures
-remain visible in the Nextflow trace/report. `--shard_contig_reads` is an
-operational mapped-read heuristic, not a biological or guaranteed memory
-boundary.
+also receive longer walltime, scaled from each process label's configured
+limit. TAMA starts at 96 hours and adds 12 hours per retry. Retry attempts and
+exhausted failures remain visible in the Nextflow trace/report.
+`--shard_contig_reads` is an operational mapped-read heuristic, not a
+biological or guaranteed memory boundary.
 
 Example:
 
