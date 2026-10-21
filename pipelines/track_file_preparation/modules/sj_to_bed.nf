@@ -11,7 +11,7 @@ process STAR_JUNCTIONS_TO_BED {
 
     script:
     """
-    awk 'BEGIN { OFS="\\t" } { strand=(\$4 == 1 ? "+" : (\$4 == 2 ? "-" : ".")); print \$1, \$2-1, \$3, \$1":"\$2"-"\$3, \$7, strand }' ${sj} > ${meta.safe_id}.junctions.bed
+    awk 'BEGIN { OFS="\\t" } NR == 1 && \$1 == "chrom" && \$2 == "start" && \$3 == "end" && \$4 == "strand" && \$5 == "motif" && \$6 == "annotated" && \$7 == "uniqReads" && \$8 == "multiReads" && \$9 == "maxOverhang" { next } { strand=(\$4 == 1 ? "+" : (\$4 == 2 ? "-" : ".")); print \$1, \$2-1, \$3, \$1":"\$2"-"\$3, \$7, strand }' ${sj} > ${meta.safe_id}.junctions.bed
     """
 
     stub:

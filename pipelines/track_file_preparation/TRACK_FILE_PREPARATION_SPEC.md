@@ -303,11 +303,13 @@ The expected module responsibilities are:
 
 ### Splice-junction modules
 
-- `VALIDATE_STAR_JUNCTIONS`: validate supplied `SJ.out.tab`.
+- `VALIDATE_STAR_JUNCTIONS`: validate supplied `SJ.out.tab`, allowing the
+  standard nine-column STAR header on the first line.
 - `EXTRACT_JUNCTIONS`: optional BAM-derived junction extraction, preferably
   with `regtools junctions extract`.
-- `STAR_JUNCTIONS_TO_BED`: apply the explicit coordinate conversion
-  `start = STAR start - 1`, `end = STAR end` while preserving score and strand.
+- `STAR_JUNCTIONS_TO_BED`: skip the optional standard header and apply the
+  explicit coordinate conversion `start = STAR start - 1`, `end = STAR end`
+  while preserving score and strand.
 - `SORT_JUNCTION_BED`: deterministic junction BED sorting.
 - `JUNCTION_BED_TO_BIGBED`: BigBed creation with custom autoSql.
 - `VALIDATE_SPLICE_BIGBED`: validate intervals, scores, strand, and contigs.
