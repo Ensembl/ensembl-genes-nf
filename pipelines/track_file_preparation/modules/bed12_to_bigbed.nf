@@ -1,7 +1,7 @@
 process BED12_TO_BIGBED {
     tag { "${meta.gca_accession}:${meta.id}" }
     label 'process_medium'
-    container 'https://depot.galaxyproject.org/singularity/python:3.11'
+    container 'https://depot.galaxyproject.org/singularity/ucsc-bedtobigbed:482--hdc0a859_0'
 
     input:
     tuple val(meta), path(bed12), path(chrom_sizes), path(gtf)

@@ -1,7 +1,7 @@
 process EXTRACT_JUNCTIONS {
     tag { "${meta.gca_accession}:${meta.id}" }
     label 'process_medium'
-    container 'https://depot.galaxyproject.org/singularity/bedtools:2.31.1--hf5e1c6e_1'
+    container 'https://depot.galaxyproject.org/singularity/regtools:1.0.0--h077b44d_5'
 
     input:
     tuple val(meta), path(bam), path(chrom_sizes)
