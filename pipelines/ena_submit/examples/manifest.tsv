@@ -1,0 +1,2 @@
+files_tsv	study	project_alias	analysis_alias	title	description	assembly_accession	last_geneset_update	partial_release_label	species	analysis_type	omit_run_refs_in_test
+pipelines/ena_submit/examples/files.tsv	PRJEB12345	prj_example		Example RNA-seq alignment evidence	Stub/test manifest for the ENA submission pipeline.	GCA_000001405.28	2026-10	GCA_000001405.28-Ensembl-2026-10	Homo_sapiens	REFERENCE_ALIGNMENT	true
