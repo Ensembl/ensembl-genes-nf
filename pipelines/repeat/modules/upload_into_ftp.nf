@@ -14,7 +14,7 @@ process UPLOAD_INTO_FTP {
     path "versions.yml", emit: versions_file
 
     script:
-    def destination = "${ftb_local}/${meta.species_name}"
+    def destination = "${params.ftb_local}/${meta.species_name}"
 
     """
     sudo -u genebuild mkdir -p "${destination}"
