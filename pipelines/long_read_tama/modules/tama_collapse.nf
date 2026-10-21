@@ -1,6 +1,8 @@
 process TAMA_COLLAPSE {
     tag "${meta.id}${shard ? ':' + shard : ''}:${resource_class}:${mapped_reads} reads"
-    label 'process_high_memory'
+    // Keep the process-level resource_class allocation below in control. The
+    // shared process_high_memory label pins memory at 64 GB and overrides this
+    // task's small/large/very_large tier and retry escalation.
     // Retry resource-related TAMA exits at the Nextflow level; the adapter
     // keeps non-resource shard failures as status records so other shards run.
     memory {
