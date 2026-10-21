@@ -5,9 +5,9 @@ annotation manifest is needed.
 
 `--diamond_scope` controls the model scope:
 
-- `cohort` (default): run one QC branch per finalized cohort/backend model.
+- `cohort`: run one QC branch per finalized cohort/backend model.
 - `accession`: run one QC branch per finalized accession/backend model.
-- `both`: run both scopes.
+- `both` (default): run both scopes.
 
 Accession inputs are the same validated BED12 products used by accession model
 comparison. The workflow adds explicit `scope` metadata before invoking the

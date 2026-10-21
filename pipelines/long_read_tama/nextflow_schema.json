@@ -55,7 +55,7 @@
     "tama_memory_large": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "256.GB", "description": "Second TAMA allocation after a resource kill"},
     "tama_memory_very_large": {"type": "string", "pattern": "^[1-9][0-9]*\\.?[0-9]*\\.(KB|MB|GB|TB)$", "default": "512.GB", "description": "Final TAMA allocation after resource retries"},
     "run_diamond_validation": {"enum": [true, false, "true", "false"], "default": false, "description": "Generate longest-ATG ORFs and validate them with Diamond"}
-    ,"diamond_scope": {"type": "string", "enum": ["cohort", "accession", "both"], "default": "cohort", "description": "Diamond QC scope for integrated runs: cohort models, accession models, or both"}
+    ,"diamond_scope": {"type": "string", "enum": ["cohort", "accession", "both"], "default": "both", "description": "Diamond QC scope for integrated runs: cohort models, accession models, or both (default)"}
     ,"diamond_annotation_manifest": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Annotation-only DIAMOND manifest with id, backend, scope, annotation, and optional format columns; bypasses read acquisition, alignment, and model construction"}
     ,"diamond_reference_db": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Existing Diamond database for combined-model validation"}
     ,"diamond_reference_proteins": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Reference protein FASTA used to build a Diamond database"}
@@ -63,7 +63,7 @@
     ,"ensembl_genes_container": {"type": "string", "default": "dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-genes", "description": "Container providing the transcriptomic data selector"}
     ,"transcriptomic_data_command": {"type": "string", "default": "python3 -m ensembl.genes.transcriptomic_data.get_transcriptomic_data", "description": "Command used inside the Ensembl genes container to retrieve long-read candidates"}
     ,"isoquant_mode": {"type": "string", "enum": ["annotation_free", "reference_guided"], "default": "annotation_free", "description": "IsoQuant mode; annotation_free is the primary initial-annotation mode"}
-    ,"isoquant_scope": {"type": "string", "enum": ["accession", "cohort", "both"], "default": "cohort"}
+    ,"isoquant_scope": {"type": "string", "enum": ["accession", "cohort", "both"], "default": "both", "description": "Run IsoQuant per accession and once on the full cohort by default"}
     ,"isoquant_data_type": {"type": "string", "enum": ["pacbio_ccs", "nanopore", "assembly"], "default": "pacbio_ccs", "description": "Explicit IsoQuant input data type; never inferred from filenames"}
     ,"isoquant_genedb": {"type": ["string", "null"], "format": "file-path", "exists": true, "default": null, "description": "GTF/GFF or gffutils database for reference_guided IsoQuant"}
     ,"isoquant_complete_genedb": {"enum": [true, false, "true", "false"], "default": false}
@@ -80,7 +80,7 @@
     ,"flair_args": {"type": "string", "default": "", "description": "Additional FLAIR transcriptome arguments; pipeline-owned inputs are rejected"}
     ,"flair_threads": {"type": ["integer", "null"], "minimum": 1, "default": null}
     ,"bambu_container": {"type": ["string", "null"], "default": null, "description": "Pinned Bambu container override"}
-    ,"bambu_scope": {"type": "string", "enum": ["accession", "cohort", "both"], "default": "cohort", "description": "Bambu execution scope"}
+    ,"bambu_scope": {"type": "string", "enum": ["accession", "cohort", "both"], "default": "both", "description": "Run Bambu per accession and once on the full cohort by default"}
     ,"bambu_install_biocmanager": {"enum": [true, false, "true", "false"], "default": true, "description": "Install the small BiocManager bootstrap into the task-local R library when the pinned Bambu image omits it"}
     ,"bambu_track_reads": {"enum": [true, false, "true", "false"], "default": true, "description": "Retain Bambu read-to-transcript assignments in the native RDS; disable only for a lower-memory structural-only benchmark"}
     ,"bambu_quantify": {"enum": [true, false, "true", "false"], "default": true, "description": "Run Bambu quantification so native read-to-transcript assignments are available; set false for discovery-only mode"}

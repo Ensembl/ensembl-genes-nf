@@ -237,7 +237,8 @@ secondary-alignment choice must still be benchmarked on
 IsoQuant is an independent backend over the complete sorted/indexed BAMs. It
 does not consume contig shards and its native GTF, read evidence, counts, and
 audit manifest are kept separate from TAMA/StringTie/tmerge merging. The
-default IsoQuant mode is annotation-free cohort discovery:
+default IsoQuant mode is annotation-free discovery, run independently for
+each accession and once over the full cohort:
 
 ```bash
 nextflow run pipelines/long_read_tama/main.nf -profile slurm \
@@ -245,13 +246,13 @@ nextflow run pipelines/long_read_tama/main.nf -profile slurm \
   --fastq_cache_dir /shared/long-read-fastq-cache \
   --reference_fasta genome.fa \
   --model_backend isoquant \
-  --isoquant_data_type pacbio_ccs \
-  --isoquant_scope cohort
+  --isoquant_data_type pacbio_ccs
 ```
 
-Use `--isoquant_scope accession` or `both` for per-accession evidence. The
-reference-guided mode requires `--isoquant_genedb`; annotation-free mode
-rejects that parameter. The pinned BioContainers image is IsoQuant 4.0.0 and
+Use `--isoquant_scope cohort` to request only the cohort run, or `accession` to
+request only per-accession runs. The reference-guided mode requires
+`--isoquant_genedb`; annotation-free mode rejects that parameter. The pinned
+BioContainers image is IsoQuant 4.0.0 and
 the process uses the upstream-supported `isoquant --reference --bam
 --data_type --analysis --large_output` command shape.
 Under the local Apptainer runtime, the workflow redirects IsoQuant's `HOME`
@@ -285,8 +286,9 @@ Bambu is included as an additional annotation-free complete-BAM discovery
 backend. It runs with `annotations=NULL` and `NDR=1`; quantification and
 read-tracking are enabled by default so the candidate models retain native
 read evidence. Set `--model_backend bambu` or include it in
-`--model_backend all`; use `--bambu_scope both` for accession and cohort
-outputs. The pinned Bioconda image omits `BiocManager`, so the default
+`--model_backend all`; by default Bambu runs per accession and once on the
+cohort. Set `--bambu_scope cohort` or `accession` to request just one scope.
+The pinned Bioconda image omits `BiocManager`, so the default
 `--bambu_install_biocmanager true` bootstraps that small dependency into the
 task-local R library. On an executor without outbound package access, provide
 a site-built `--bambu_container` that already contains BiocManager and set

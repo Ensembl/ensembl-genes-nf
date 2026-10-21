@@ -198,11 +198,11 @@ Defaults:
 
 ```text
 isoquant_mode = annotation_free
-isoquant_scope = cohort
+isoquant_scope = both
 ```
 
-The default deliberately reflects the initial-annotation use case. `both` is
-the recommended explicit setting for a benchmarking run.
+The default runs both per-accession analyses and a fresh cohort analysis, so
+the per-run evidence and cohort candidate set are available together.
 
 ### Inputs
 
