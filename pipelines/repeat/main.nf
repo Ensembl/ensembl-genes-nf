@@ -255,21 +255,24 @@ workflow REPEAT_ANNOTATION {
     // ========================================================
     // Stage 7a: Download existing RepeatModeler libraries
     // ========================================================
+    // Download existing RepeatModeler libraries only if RepeatMasker is enabled
+    rmlibrary = channel.empty()
+    if (params.run_repeatmasker) {
 
-    downloadInput = library_status.available
-        .map { meta, repeat_url, _available ->
+        downloadInput = library_status.available
+            .map { meta, repeat_url, _available ->
 
-            tuple(repeat_url, meta)
-        }
+                tuple(repeat_url, meta)
+            }
 
-    rmlibrary = DOWNLOAD_REPEATMODELER_LIBRARY(
-        downloadInput
-    ).repeatmodeler_library_out
+        rmlibrary = DOWNLOAD_REPEATMODELER_LIBRARY(
+            downloadInput
+        ).repeatmodeler_library_out
 
-    ch_versions_file = ch_versions_file.mix(
-        DOWNLOAD_REPEATMODELER_LIBRARY.out.versions_file
-    )
-
+        ch_versions_file = ch_versions_file.mix(
+            DOWNLOAD_REPEATMODELER_LIBRARY.out.versions_file
+        )
+    }
     // ========================================================
     // Stage 7b: Generate missing RepeatModeler libraries
     // ========================================================
