@@ -29,6 +29,42 @@ not an expanding set of untested filename heuristics.
 - Do not require production database access. Every output row must already have
   a GCA accession; optional UUID enrichment belongs to a later handover phase.
 
+## Current CLI and layouts
+
+The implemented generator accepts one layout per invocation:
+
+```text
+--mode main|anno|gdm
+--base-dir <directory>
+--entity <optional run accession or directory below base-dir>
+--track-types <comma-delimited tracks>
+```
+
+`main` discovers BAM/SJ files under `rnaseq/output` or `rnaseq/outputs` and
+matching GTFs under that output's `scallop` directory. `anno` discovers BAM/SJ
+files under `star_output` and matching GTFs under `scallop_output`. Both default
+to coverage, gene-model, and splice-junction tracks.
+
+`gdm` accepts either one species/taxon directory or the entire `gdm_data`
+directory. It recursively discovers accession-named STAR BAMs beneath
+`alignment/`, matches adjacent SJ files, and infers GCA from a canonical GCA
+path component or a species directory such as
+`sus_scrofa_gca000003025v6`. Its default tracks are coverage and
+splice-junction because this tree has no per-run GTFs. Specify `--track-types
+all` only when a matching GTF is available for every run.
+
+Repeated GDM run IDs fail closed by default. After reviewing duplicate source
+paths, `--gdm-duplicate-policy newest` selects the unique candidate with the
+latest modification time and records the choice in the audit warning. Ties
+remain unresolved. If both `.bai` and `.csi` indexes exist, `.bai` is selected.
+
+The GDM inventory at `/lts/production/fergal/genebuild/gdm_data` has both
+`<species>/<taxon>/<run>/alignment` and
+`<species>/<taxon>/ILLUMINA/<run>/alignment` layouts. Run rows are one row per
+ERR/SRR/DRR accession. Tissue-level gene-model rows are not inferred from those
+run directories; they require a separate explicit tissue/GTF mapping source.
+The current generator does not yet create those sample rows.
+
 ## Canonical output TSV
 
 The generator writes one row per entity with this fixed column order:
@@ -61,10 +97,11 @@ Rules:
 - `bai` may be empty because the Nextflow pipeline creates a missing index.
 - `source_entity_ids` is required for explicit sample/merged groupings.
 
-## Source specification
+## Planned source specification
 
-The generator accepts a source-specification TSV so multiple layouts can be
-combined without changing the CLI.
+The source-specification TSV is a planned interface for combining multiple
+layouts and explicit groupings in one invocation; it is not accepted by the
+current script.
 
 Required columns:
 
@@ -79,7 +116,7 @@ alignment_root  annotation_root  entity_map  bam_pattern  bai_pattern
 sj_pattern  gtf_pattern  id_regex  id_replacement  sample_group  merged_id
 ```
 
-Recommended CLI:
+Planned CLI:
 
 ```text
 --source_spec <sources.tsv>
@@ -124,20 +161,22 @@ The run ID is the BAM basename after removing
 `_Aligned.sortedByCoord.out.bam`. GTF and SJ matches must use that same ID.
 STAR logs, genome directories, and pass-one directories are ignored.
 
-### `gdm_alignment`
+### `gdm_alignment` (implemented for run-level STAR rows)
 
 Supports the DeepMind/GDM layout:
 
 ```text
-<gdm_root>/<species>/<taxon_id>/<run_accession>/alignment/
+<gdm_root>/<species>/<taxon_id>/[ILLUMINA/]<run_accession>/alignment/
   <run_accession>_Aligned.sortedByCoord.out.bam
   <run_accession>_Aligned.sortedByCoord.out.bam.bai
   <run_accession>_SJ.out.tab
 ```
 
-The directory name and BAM basename must agree. Annotations may come from a
-separate configured `annotation_root`; they must not be assumed to exist in
-the alignment directory. An unreadable LTS root is an explicit access failure.
+The directory name and BAM basename must agree. GCA is inferred from the
+species/assembly path or supplied with `--gca`; it is not required in the
+immediate parent of the run directory. The current implementation does not
+resolve tissue GTFs or a separate annotation root for GDM run rows. An
+unreadable LTS root is an explicit access failure.
 
 ### `stringtie`
 
