@@ -7,18 +7,18 @@ process VALIDATE_LONG_READ_MODELS {
     tuple val(meta), val(backend), path(model_bed)
 
     output:
-    tuple val(meta), val(backend), path('model_validation.tsv'), emit: report
+    tuple val(meta), val(backend), path("${backend}_${meta.id}_model_validation.tsv"), emit: report
     path 'versions.yml', emit: versions
 
     script:
     """
-    validate_tama_bed.py ${model_bed} model_validation.tsv
+    validate_tama_bed.py ${model_bed} ${backend}_${meta.id}_model_validation.tsv
     printf '"%s":\\n    validator: python\\n' '${task.process}' > versions.yml
     """
 
     stub:
     """
-    printf 'models\\t1\\n' > model_validation.tsv
+    printf 'models\\t1\\n' > ${backend}_${meta.id}_model_validation.tsv
     printf '"%s":\\n    validator: stub\\n' '${task.process}' > versions.yml
     """
 }

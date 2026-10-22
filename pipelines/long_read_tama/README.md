@@ -61,6 +61,12 @@ threshold coverage, primary-read intron chains and junctions, and a joined
 `sample_qc_summary.tsv`. Coverage and chain counts use primary mapped reads by
 default; secondary and supplementary alignments are retained in the BAM and
 the standard alignment reports but are not counted in these evidence summaries.
+All configured published workflow outputs are copied into `--outdir` (including each
+minimap2-sorted BAM and its BAI under `alignments`). Validated model products
+under `final_models` include both backend and accession/cohort identifiers in
+their filenames; checksums, BED12 normalisation summaries, and model-validation
+reports use the same key. Native merge intermediates remain optional through
+`--publish_native_intermediates`.
 
 The workflow has two phases. First, normalize and inspect the candidate
 manifest with the classifier. If `--metadata_json` is not supplied, the
