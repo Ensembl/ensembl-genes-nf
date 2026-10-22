@@ -28,9 +28,16 @@ workflow MERGE_LONG_READ_MODELS {
     legacy_versions = channel.empty()
 
     if (native_mode) {
-        accession_groups = native_models
+        accession_group_input = native_models
             .map { meta, backend, shard, model, native_format -> tuple("${backend}@@${meta.id}", meta, backend, shard, model, native_format) }
-            .groupTuple()
+        // With no sharding, each backend/accession has exactly one native
+        // model. Emit that group immediately instead of waiting for every
+        // accession's caller stream to close (which can be delayed by a slow
+        // TAMA task). In contig mode, retain the full grouping behavior so
+        // all shards for an accession are merged together.
+        accession_groups = params.shard_mode == 'none' ?
+            accession_group_input.groupTuple(size: 1) :
+            accession_group_input.groupTuple()
 
         tama_accession_inputs = accession_groups.filter { _key, _metas, backends, _shards, _models, _formats -> backends[0] == 'tama' }
             .map { _key, metas, backends, _shards, models, _formats -> tuple(metas[0], backends[0], metas[0].id, models.sort { left, right -> left.name <=> right.name }) }
@@ -116,8 +123,13 @@ workflow MERGE_LONG_READ_MODELS {
             .map { meta, backend, shard, bed, _format -> tuple(meta, backend, shard, bed) }
             .mix(GTF_TO_BED12.out.bed)
 
-        accession_inputs = legacy_beds.map { meta, backend, _shard, bed -> tuple("${backend}@@${meta.id}", meta, backend, meta.id, bed) }
-            .groupTuple().map { _key, metas, backends, accessions, beds -> tuple(metas[0], backends[0], accessions[0], beds.sort { left, right -> left.name <=> right.name }) }
+        legacy_accession_group_input = legacy_beds.map { meta, backend, _shard, bed -> tuple("${backend}@@${meta.id}", meta, backend, meta.id, bed) }
+        // Match the native-mode streaming behavior for unsharded runs.
+        legacy_accession_groups = params.shard_mode == 'none' ?
+            legacy_accession_group_input.groupTuple(size: 1) :
+            legacy_accession_group_input.groupTuple()
+        accession_inputs = legacy_accession_groups
+            .map { _key, metas, backends, accessions, beds -> tuple(metas[0], backends[0], accessions[0], beds.sort { left, right -> left.name <=> right.name }) }
 
         if (params.merge_tool == 'tmerge') {
             TMERGE_MERGE_ACCESSION(accession_inputs)
