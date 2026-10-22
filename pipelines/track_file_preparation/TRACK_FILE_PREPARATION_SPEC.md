@@ -327,9 +327,10 @@ The expected module responsibilities are:
 - `EXTRACT_JUNCTIONS`: optional BAM-derived junction extraction, preferably
   with `regtools junctions extract`.
 - `STAR_JUNCTIONS_TO_BED`: skip the optional standard header and apply the
-  explicit coordinate conversion `start = STAR start - 1`, `end = STAR end`
-  while preserving the unique-read count as BED score, strand, and the
-  multi-read count as the seventh BED field required by `bed6+1`.
+  explicit coordinate conversion `start = STAR start - 1`, `end = STAR end`.
+  The unique-read count is used as BED score, capped at 1000 because the BED
+  score field is limited to 0–1000; strand and the multi-read count are retained
+  as the sixth and seventh fields required by `bed6+1`.
 - `SORT_JUNCTION_BED`: deterministic junction BED sorting.
 - `JUNCTION_BED_TO_BIGBED`: BigBed creation with custom autoSql.
 - `VALIDATE_SPLICE_BIGBED`: validate intervals, scores, strand, and contigs.
