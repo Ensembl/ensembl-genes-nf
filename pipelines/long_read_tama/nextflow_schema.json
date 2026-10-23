@@ -21,9 +21,10 @@
     "reference_fai": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Optional FASTA index to validate alongside the reference"},
     "minimap_index": {"type": ["string", "null"], "format": "file-path", "exists": true, "description": "Existing minimap2 .mmi; omit to build it"},
     "cohort_id": {"type": "string", "default": "bos_indicus_long_read"},
-    "model_backend": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "isoquant", "flair", "bambu", "all"], "default": "tama", "description": "Independent candidate-model backend; IsoQuant, FLAIR, and Bambu retain their native complete-BAM workflows"},
+    "model_backend": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "isoquant", "flair", "bambu", "all"], "default": "tama", "description": "Single candidate-model backend, retained for compatibility; use model_backends for a selected subset"},
+    "model_backends": {"type": ["array", "null"], "items": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "isoquant", "flair", "bambu"]}, "uniqueItems": true, "minItems": 1, "default": null, "description": "Explicit selected backend set, for example [flair,stringtie3,isoquant]; takes precedence only when model_backend remains its default tama"},
     "backend_merge_mode": {"type": "string", "enum": ["native", "legacy_common"], "default": "native", "description": "Merge semantics: native preserves each backend's native format and topology; legacy_common is an explicit compatibility path using merge_tool"},
-    "backend_failure_policy": {"type": "string", "enum": ["fail_fast", "continue"], "default": "fail_fast", "description": "Exploration policy for backend process failures; continue preserves results from other backends and records failures in the execution trace"},
+    "backend_failure_policy": {"type": "string", "enum": ["continue"], "default": "continue", "description": "After bounded retries, ignore a failed job and continue with available outputs; failures remain in the execution trace"},
     "outdir": {"type": "string", "default": "./long_read_tama_results"},
     "tracedir": {"type": "string", "description": "Directory for Nextflow execution reports and trace files"},
     "minimap2_preset": {"type": "string", "default": "splice:hq"},
@@ -128,6 +129,10 @@
     {
       "if": {"required": ["model_backend"], "properties": {"model_backend": {"enum": ["isoquant", "all"]}}},
       "then": {"required": ["reference_fasta", "isoquant_mode", "isoquant_scope", "isoquant_data_type"]}
+    },
+    {
+      "if": {"required": ["model_backends"], "properties": {"model_backends": {"contains": {"const": "isoquant"}}}},
+      "then": {"required": ["reference_fasta", "isoquant_mode", "isoquant_scope"]}
     },
     {
       "if": {"required": ["isoquant_mode"], "properties": {"isoquant_mode": {"const": "annotation_free"}}},

@@ -68,6 +68,7 @@ workflow ALIGN_LONG_READS {
 
     emit:
     bam = MINIMAP2_ALIGN.out.bam
+    reports = pre_qc.mix(MINIMAP2_ALIGN.out.config)
     stats = qc_stats
     pre_qc = pre_qc
     sample_qc = sample_qc

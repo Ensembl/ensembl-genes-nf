@@ -22,20 +22,38 @@ workflow PREPARE_LONG_READS {
         ont_bam: row.classification == 'ONT_BAM'
         ccs_fastq: row.classification == 'PACBIO_CCS_FASTQ'
         processed_fastq: row.classification == 'PACBIO_PROCESSED_FASTQ'
+        subread_fastq: row.classification in ['PACBIO_SUBREAD_FASTQ_ONLY', 'PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE']
         ccs_bam: row.classification == 'PACBIO_CCS_BAM'
         subread_bam: row.classification == 'PACBIO_SUBREAD_BAM'
     }.set { routes }
 
-    direct_fastq = routes.ont.mix(routes.ccs_fastq).mix(routes.processed_fastq).map { row ->
+    direct_fastq = routes.ont.mix(routes.ccs_fastq).mix(routes.processed_fastq).mix(routes.subread_fastq).map { row ->
+        def is_ont = row.classification.toString().startsWith('ONT_')
+        def raw_subread = row.read_representation == 'raw_subread'
+        def representation = row.read_representation ?: (is_ont ? 'ont_cdna' : 'ccs')
         tuple([id: row.run_accession, tissue: row.tissue, description: row.description,
                classification: row.classification, proposed_action: row.proposed_action,
-               minimap2_preset: row.minimap2_preset, expected_header_representation: row.expected_header_representation],
+               technology: row.technology ?: (is_ont ? 'ont' : 'pacbio'),
+               read_representation: representation,
+               preprocessing_state: row.preprocessing_state ?: 'processed',
+               isoquant_data_type: row.isoquant_data_type ?: (raw_subread ? '' : (is_ont ? 'nanopore' : 'pacbio_ccs')),
+               observation_unit: row.observation_unit ?: (is_ont ? 'ont_read' : (raw_subread ? 'subread_record' : 'consensus_molecule')),
+               minimap2_preset: row.minimap2_preset, minimap2_args: row.minimap2_args ?: '',
+               expected_header_representation: row.expected_header_representation],
               row.run_accession, row.selected_artifact_md5, row.selected_artifact_basename, row.selected_artifact_uri)
     }
     bam_inputs = routes.ccs_bam.mix(routes.ont_bam).mix(routes.subread_bam).map { row ->
+        def is_ont = row.classification.toString().startsWith('ONT_')
+        def raw_subread = row.classification == 'PACBIO_SUBREAD_BAM'
         tuple([id: row.run_accession, tissue: row.tissue, description: row.description,
                classification: row.classification, proposed_action: row.proposed_action,
-               minimap2_preset: row.minimap2_preset, expected_header_representation: row.expected_header_representation],
+               technology: row.technology ?: (is_ont ? 'ont' : 'pacbio'),
+               read_representation: row.read_representation ?: (raw_subread ? 'raw_subread' : (is_ont ? 'ont_cdna' : 'ccs')),
+               preprocessing_state: row.preprocessing_state ?: (raw_subread ? 'needs_ccs' : 'processed'),
+               isoquant_data_type: row.isoquant_data_type ?: (is_ont ? 'nanopore' : (raw_subread ? '' : 'pacbio_ccs')),
+               observation_unit: row.observation_unit ?: (is_ont ? 'ont_read' : (raw_subread ? 'subread_record' : 'consensus_molecule')),
+               minimap2_preset: row.minimap2_preset, minimap2_args: row.minimap2_args ?: '',
+               expected_header_representation: row.expected_header_representation],
               row.selected_artifact_md5, row.selected_artifact_basename, row.selected_artifact_uri,
               row.required_artifact_uris ?: '', row.required_artifact_md5s ?: '')
     }

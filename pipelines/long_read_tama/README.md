@@ -3,9 +3,10 @@
 ## Runtime and module boundaries
 
 Production runs require Nextflow 26.04.6 or newer and write timeline, report,
-and trace files under `pipeline_info`. Acquisition and explicitly soft-failed
-TAMA shard tasks may continue with status records; required native merge and
-validation tasks terminate on failure.
+and trace files under `pipeline_info`. Jobs are retried with resource increases
+where configured, then ignored after the retry limit so other accessions and
+backends can finish. Failed jobs remain visible in the Nextflow trace/report;
+downstream outputs contain only successful jobs.
 
 The workflow is composed from these named subworkflows:
 
@@ -21,7 +22,7 @@ The workflow is composed from these named subworkflows:
 - `RUN_DIAMOND_QC`: optional transcript, ORF, Diamond, and model-keyed report
   generation.
 
-Model construction is selected with `--model_backend tama|stringtie2|stringtie3|tmerge|isoquant|flair|bambu|all`.
+Model construction is selected with `--model_backend tama|stringtie2|stringtie3|tmerge|isoquant|flair|bambu|all`, or an explicit subset with `--model_backends flair,stringtie3,isoquant`. The plural option is used while the singular option remains at its default (`tama`); do not provide both. `all` retains the existing all-backend convenience behavior.
 Merge semantics are selected independently with
 `--backend_merge_mode native|legacy_common` (default: `native`). In native mode,
 all backend processes receive the same split minimap2 BAM shards and retain
@@ -68,6 +69,23 @@ their filenames; checksums, BED12 normalisation summaries, and model-validation
 reports use the same key. Native merge intermediates remain optional through
 `--publish_native_intermediates`.
 
+The approved manifest records technology, read representation, preprocessing
+state, per-row minimap2 arguments, IsoQuant data type, and observation unit.
+Older approved manifests remain supported through conservative metadata
+fallbacks. Direct-RNA rows use the `splice` preset with `-k14 -uf`; the
+effective settings are retained in a per-accession alignment configuration
+audit. IsoQuant and Bambu cohort jobs are split by compatible input type. Raw
+subreads are excluded from those backends with a published reason report.
+Approved PacBio subread FASTQs can be aligned directly as raw observations;
+their manifest says `read_representation=raw_subread`,
+`preprocessing_state=ccs_not_applied`, `ccs_applied=no`, and
+`observation_unit=subread_record`. This route does not run CCS. CCS requires a
+Subreads BAM, so archive FASTQ subreads are aligned as provided and repeated
+passes are retained. Kinnex/MAS-seq subreads also need CCS and concatemer
+segmentation for transcript-level interpretation; direct alignment is marked
+as unsegmented in the sample-sheet notes. Rows requiring basecalling remain
+unsupported until their approved preprocessing state is `processed`.
+
 The workflow has two phases. First, normalize and inspect the candidate
 manifest with the classifier. If `--metadata_json` is not supplied, the
 pipeline resolves ENA metadata and submitted artifacts automatically into a
@@ -75,8 +93,8 @@ persistent metadata cache, then probes the declared FASTQ headers remotely.
 It preserves declared metadata separately from observed representation,
 expands ENA's semicolon-separated artifacts, and writes
 `run_classification.tsv`, `run_artifacts.tsv`, raw metadata snapshots, and a
-cohort summary. `CONFLICT`, `UNKNOWN`, `MIXED`, and FASTQ-only raw-subread
-cases are quarantined.
+cohort summary. `CONFLICT`, `UNKNOWN`, and `MIXED` cases are quarantined. FASTQ-only
+PacBio subreads can be approved only through the explicit raw-subread route.
 
 For PacBio, the classifier first consults NCBI Original Format metadata when
 available. This is essential because ENA may expose an original file such as
@@ -190,7 +208,12 @@ also receive longer walltime, scaled from each process label's configured
 limit. TAMA starts at 96 hours and adds 12 hours per retry. Retry attempts and
 exhausted failures remain visible in the Nextflow trace/report.
 `--shard_contig_reads` is an operational mapped-read heuristic, not a
-biological or guaranteed memory boundary.
+biological or guaranteed memory boundary. All tasks receive up to five
+retries. Resource-heavy jobs increase memory and walltime across attempts;
+after retries are exhausted, a failed job is ignored so other accessions and
+backends can finish. The trace/report records failed jobs, and downstream
+outputs contain only successful jobs, so review those records before treating
+the cohort as complete.
 
 Example:
 

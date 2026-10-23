@@ -28,7 +28,11 @@ workflow COLLAPSE_LONG_READ_MODELS {
     main:
     INSPECT_BAM_WORKLOAD(bam)
     inspected_bam = INSPECT_BAM_WORKLOAD.out.workload
-    requested_backends = params.model_backend == 'all' ? ['tama', 'stringtie2', 'stringtie3', 'tmerge'] : [params.model_backend]
+    all_backends = ['tama', 'stringtie2', 'stringtie3', 'tmerge', 'isoquant', 'flair', 'bambu']
+    selected_backends = params.model_backends != null ?
+        (params.model_backends instanceof List ? params.model_backends : params.model_backends.toString().split(',').collect { backend -> backend.trim() }) :
+        (params.model_backend == 'all' ? all_backends : [params.model_backend])
+    requested_backends = selected_backends.findAll { backend -> backend in ['tama', 'stringtie2', 'stringtie3', 'tmerge'] }
     split_versions = channel.empty()
     shard_plans = channel.empty()
     legacy_skips = (params.skip_tama_shards ?: '').split(',').collect { value -> value.trim() }.findAll { value -> value }.toSet()

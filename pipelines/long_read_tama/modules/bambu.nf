@@ -39,6 +39,8 @@ process BAMBU_DISCOVERY {
             'backend\tbambu' \\
             'scope\t${scope}' \\
             'accession_or_cohort\t${meta.id}' \\
+            'source_accessions\t${meta.source_accessions ?: meta.id}' \\
+            'input_read_metadata\t${meta.source_read_metadata ?: 'unspecified'}' \\
             "bambu_version\t\$(Rscript -e 'cat(as.character(packageVersion("bambu")))')" \\
             'data_type\t${data_type}' \\
             'mode\tannotation_free' \\
@@ -60,7 +62,7 @@ process BAMBU_DISCOVERY {
     mkdir bambu_output
     printf 'stub\n' > bambu_output/extended_annotations.gtf
     printf 'sample\tread_id\tequal_matches\tcompatible_matches\n1\tread1\tbambu_t1\tbambu_t1\n' > bambu_read_assignments.tsv
-    printf 'key\tvalue\nbackend\tbambu\nscope\t${scope}\naccession_or_cohort\t${meta.id}\nbambu_version\t3.12.1\ndata_type\t${data_type}\nmode\tannotation_free\nquantify\t${params.bambu_quantify}\ntrack_reads\t${params.bambu_track_reads}\nbambu_read_assignment_count\t1\n' > bambu_input_manifest.tsv
+    printf 'key\tvalue\nbackend\tbambu\nscope\t${scope}\naccession_or_cohort\t${meta.id}\nsource_accessions\t${meta.source_accessions ?: meta.id}\ninput_read_metadata\t${meta.source_read_metadata ?: 'unspecified'}\nbambu_version\t3.12.1\ndata_type\t${data_type}\nmode\tannotation_free\nquantify\t${params.bambu_quantify}\ntrack_reads\t${params.bambu_track_reads}\nbambu_read_assignment_count\t1\n' > bambu_input_manifest.tsv
     printf '"%s":\n    bambu: 3.12.1\n' '${task.process}' > versions.yml
     """
 }

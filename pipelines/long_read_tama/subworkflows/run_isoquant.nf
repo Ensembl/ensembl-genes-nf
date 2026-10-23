@@ -4,6 +4,7 @@ include { ISOQUANT_ANNOTATION_FREE; ISOQUANT_REFERENCE_GUIDED } from '../modules
 include { NORMALISE_ISOQUANT_OUTPUTS } from '../modules/normalise_isoquant_outputs.nf'
 include { AUDIT_ISOQUANT_OUTPUTS } from '../modules/audit_isoquant_outputs.nf'
 include { ISOQUANT_TO_BED12 } from '../modules/isoquant_to_bed12.nf'
+include { REPORT_UNSUPPORTED_MODEL_INPUTS as REPORT_UNSUPPORTED_ISOQUANT_INPUTS } from '../modules/report_unsupported_model_inputs.nf'
 
 workflow RUN_ISOQUANT {
     take:
@@ -16,12 +17,21 @@ workflow RUN_ISOQUANT {
     analysis = params.isoquant_analysis instanceof List ? params.isoquant_analysis : [params.isoquant_analysis]
     large_output = params.isoquant_large_output instanceof List ? params.isoquant_large_output : [params.isoquant_large_output]
     read_group = params.isoquant_read_group instanceof List ? params.isoquant_read_group : [params.isoquant_read_group]
-    common = aligned_bams.map { meta, bam, bai -> tuple(meta, [bam], [bai], 'accession', params.isoquant_data_type, analysis, large_output, read_group, params.isoquant_args ?: '', params.isoquant_report_novel_unspliced, params.isoquant_check_canonical) }
+    eligible_bams = aligned_bams.filter { meta, _bam, _bai -> meta.isoquant_data_type in ['pacbio_ccs', 'nanopore'] }
+    unsupported_bams = aligned_bams.filter { meta, _bam, _bai -> !(meta.isoquant_data_type in ['pacbio_ccs', 'nanopore']) }
+    REPORT_UNSUPPORTED_ISOQUANT_INPUTS(unsupported_bams.map { meta, _bam, _bai -> tuple(meta, 'isoquant') })
+    common = eligible_bams.map { meta, bam, bai ->
+        def read_metadata = "${meta.id}:${meta.technology}:${meta.read_representation}:${meta.preprocessing_state}:${meta.observation_unit}"
+        tuple(meta + [source_read_metadata: read_metadata], [bam], [bai], 'accession', meta.isoquant_data_type, analysis, large_output, read_group, params.isoquant_args ?: '', params.isoquant_report_novel_unspliced, params.isoquant_check_canonical)
+    }
     if (params.isoquant_scope in ['cohort', 'both']) {
-        cohort = aligned_bams
-            .map { _meta, bam, bai -> tuple('cohort', bam, bai) }
+        cohort = eligible_bams
+            .map { meta, bam, bai -> tuple(meta.isoquant_data_type, meta, bam, bai) }
             .groupTuple()
-            .map { _key, bams, bais -> tuple([id: params.cohort_id, scope: 'cohort'], bams, bais, 'cohort', params.isoquant_data_type, analysis, large_output, read_group, params.isoquant_args ?: '', params.isoquant_report_novel_unspliced, params.isoquant_check_canonical) }
+            .map { data_type, metas, bams, bais ->
+                def source_metadata = metas.sort { left, right -> left.id <=> right.id }.collect { source_meta -> "${source_meta.id}:${source_meta.technology}:${source_meta.read_representation}:${source_meta.preprocessing_state}:${source_meta.observation_unit}" }.join(';')
+                tuple([id: "${params.cohort_id}_${data_type}", scope: 'cohort', isoquant_data_type: data_type, source_accessions: metas.collect { source_meta -> source_meta.id }.sort().join(','), source_read_metadata: source_metadata], bams, bais, 'cohort', data_type, analysis, large_output, read_group, params.isoquant_args ?: '', params.isoquant_report_novel_unspliced, params.isoquant_check_canonical)
+            }
     } else {
         cohort = channel.empty()
     }
@@ -48,8 +58,9 @@ workflow RUN_ISOQUANT {
         .map { meta, scope, bed -> tuple(meta, 'isoquant', scope, bed) }
     accession_bed = ISOQUANT_TO_BED12.out.bed.filter { _meta, scope, _bed -> scope == 'accession' }
         .map { meta, scope, bed -> tuple(meta, 'isoquant', scope, bed) }
-    reports = AUDIT_ISOQUANT_OUTPUTS.out.manifest.mix(AUDIT_ISOQUANT_OUTPUTS.out.status)
+    reports = AUDIT_ISOQUANT_OUTPUTS.out.manifest.mix(AUDIT_ISOQUANT_OUTPUTS.out.status).mix(REPORT_UNSUPPORTED_ISOQUANT_INPUTS.out.report)
     versions = versions.mix(NORMALISE_ISOQUANT_OUTPUTS.out.versions)
         .mix(AUDIT_ISOQUANT_OUTPUTS.out.versions)
         .mix(ISOQUANT_TO_BED12.out.versions)
+        .mix(REPORT_UNSUPPORTED_ISOQUANT_INPUTS.out.versions)
 }

@@ -17,13 +17,30 @@ include { RUN_DIAMOND_ANNOTATIONS } from './subworkflows/run_diamond_annotations
 include { COLLECT_LONG_READ_SOFTWARE_VERSIONS } from './modules/collect_software_versions.nf'
 include { COMPARE_CANDIDATE_MODELS; COMPARE_CANDIDATE_MODELS as COMPARE_ACCESSION_CANDIDATE_MODELS } from './modules/compare_candidate_models.nf'
 
+def selected_backends() {
+    def supported = ['tama', 'stringtie2', 'stringtie3', 'tmerge', 'isoquant', 'flair', 'bambu']
+    if (params.model_backends != null) {
+        if (params.model_backend != 'tama')
+            error 'Use either --model_backend or --model_backends, not both'
+        def selected = params.model_backends instanceof List ? params.model_backends : params.model_backends.toString().split(',').collect { backend -> backend.trim() }
+        if (!selected || selected.any { backend -> !backend } || selected.size() != selected.toSet().size())
+            error '--model_backends must be a non-empty list without duplicates'
+        if (selected.any { backend -> !supported.contains(backend) })
+            error "Unsupported --model_backends value; choose from ${supported.join(',')}"
+        return selected
+    }
+    if (params.model_backend == 'all') return supported
+    return [params.model_backend]
+}
+
 def validate_runtime_options(auto_approve_safe, run_diamond_validation, annotation_only) {
     if (!(params.model_backend in ['tama', 'stringtie2', 'stringtie3', 'tmerge', 'isoquant', 'flair', 'bambu', 'all']))
         error '--model_backend must be tama, stringtie2, stringtie3, tmerge, isoquant, flair, bambu, or all'
+    def selected = selected_backends()
     if (!(params.backend_merge_mode in ['native', 'legacy_common']))
         error "--backend_merge_mode must be native or legacy_common"
-    if (!(params.backend_failure_policy in ['fail_fast', 'continue']))
-        error "--backend_failure_policy must be fail_fast or continue"
+    if (params.backend_failure_policy != 'continue')
+        error "--backend_failure_policy only supports continue; exhausted jobs are ignored after retries"
     if (!(params.diamond_scope in ['cohort', 'accession', 'both']))
         error '--diamond_scope must be cohort, accession, or both'
     if (params.backend_merge_mode == 'native' && params.merge_tool != 'tama')
@@ -54,7 +71,7 @@ def validate_runtime_options(auto_approve_safe, run_diamond_validation, annotati
         error 'Provide --fastq_cache_dir for production processing or automatic selection'
     if (run_diamond_validation && !params.diamond_reference_db && !params.diamond_reference_proteins)
         error 'Provide --diamond_reference_db or --diamond_reference_proteins when --run_diamond_validation is enabled'
-    def isoquant_enabled = params.model_backend in ['isoquant', 'all']
+    def isoquant_enabled = selected.contains('isoquant')
     if (isoquant_enabled && !params.reference_fasta)
         error 'IsoQuant requires --reference_fasta'
     if (isoquant_enabled && params.isoquant_mode == 'annotation_free' && params.isoquant_genedb)
@@ -71,10 +88,10 @@ def validate_runtime_options(auto_approve_safe, run_diamond_validation, annotati
         error '--isoquant_analysis must include transcript_discovery'
     if (isoquant_enabled && params.isoquant_args && params.isoquant_args =~ /--(reference|bam|genedb|output|data_type|analysis|threads|large_output|read_group)(\s|=|$)/)
         error '--isoquant_args cannot override pipeline-owned reference, BAM, genedb, output, data_type, analysis, threads, large_output, or read_group arguments'
-    def flair_enabled = params.model_backend in ['flair', 'all']
+    def flair_enabled = selected.contains('flair')
     if (flair_enabled && params.flair_args && params.flair_args =~ /--(genomealignedbam|output|threads|genome|gtf|manifest)(\s|=|$)/)
         error '--flair_args cannot override pipeline-owned BAM, output, threads, genome, annotation, or manifest arguments'
-    def bambu_enabled = params.model_backend in ['bambu', 'all']
+    def bambu_enabled = selected.contains('bambu')
     if (bambu_enabled && !(params.bambu_scope in ['accession', 'cohort', 'both']))
         error '--bambu_scope must be accession, cohort, or both'
 }
@@ -129,7 +146,8 @@ workflow {
         cache
     )
     ALIGN_LONG_READS(PREPARE_LONG_READS.out.reads, PREPARE_LONG_READS.out.reports, reference_fasta)
-    isoquant_enabled = params.model_backend in ['isoquant', 'all']
+    selected = selected_backends()
+    isoquant_enabled = selected.contains('isoquant')
     isoquant_bed = channel.empty()
     isoquant_accession_bed = channel.empty()
     isoquant_versions = channel.empty()
@@ -141,7 +159,7 @@ workflow {
         isoquant_versions = RUN_ISOQUANT.out.versions
         isoquant_reports = RUN_ISOQUANT.out.reports
     }
-    flair_enabled = params.model_backend in ['flair', 'all']
+    flair_enabled = selected.contains('flair')
     flair_bed = channel.empty()
     flair_accession_bed = channel.empty()
     flair_versions = channel.empty()
@@ -155,7 +173,7 @@ workflow {
         flair_versions = RUN_FLAIR.out.versions
         flair_reports = RUN_FLAIR.out.reports
     }
-    bambu_enabled = params.model_backend in ['bambu', 'all']
+    bambu_enabled = selected.contains('bambu')
     bambu_bed = channel.empty()
     bambu_accession_bed = channel.empty()
     bambu_versions = channel.empty()
@@ -167,7 +185,8 @@ workflow {
     }
 
     collapse_versions = channel.empty()
-    if (!(params.model_backend in ['isoquant', 'flair', 'bambu'])) {
+    collapse_enabled = selected.any { backend -> backend in ['tama', 'stringtie2', 'stringtie3', 'tmerge'] }
+    if (collapse_enabled) {
         COLLAPSE_LONG_READ_MODELS(
             ALIGN_LONG_READS.out.bam,
             reference_fasta
@@ -177,7 +196,7 @@ workflow {
     merged_bed = channel.empty()
     merged_accession_bed = channel.empty()
     merge_versions = channel.empty()
-    if (!(params.model_backend in ['isoquant', 'flair', 'bambu'])) {
+    if (collapse_enabled) {
         MERGE_LONG_READ_MODELS(COLLAPSE_LONG_READ_MODELS.out.native_models)
         merged_bed = MERGE_LONG_READ_MODELS.out.bed
         merged_accession_bed = MERGE_LONG_READ_MODELS.out.accession_bed

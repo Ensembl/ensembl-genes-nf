@@ -13,7 +13,6 @@ process VALIDATE_APPROVED_LONG_READ_MANIFEST {
 
     script:
     """
-    read_input_classification.py validate-approved ${manifest}
     prepare_approved_manifest.py ${manifest} validated_approved_run_manifest.tsv approved_manifest_validation.tsv
     printf '"%s":\\n    python: runtime\\n' '${task.process}' > versions.yml
     """

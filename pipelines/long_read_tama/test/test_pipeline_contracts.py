@@ -20,7 +20,7 @@ def test_runtime_policy_and_schema_are_present():
     assert '"default": "contig"' in (PIPELINE / "nextflow_schema.json").read_text()
     assert "backend_merge_mode = 'native'" in pipeline
     assert '"backend_merge_mode"' in (PIPELINE / "nextflow_schema.json").read_text()
-    assert "backend_failure_policy = 'fail_fast'" in pipeline
+    assert "backend_failure_policy = 'continue'" in pipeline
     assert '"backend_failure_policy"' in (PIPELINE / "nextflow_schema.json").read_text()
     assert "withName: '.*'" in pipeline
     assert "withName: 'TAMA_COLLAPSE'" in pipeline

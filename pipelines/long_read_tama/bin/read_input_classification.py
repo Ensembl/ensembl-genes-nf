@@ -47,7 +47,9 @@ CLASSIFICATION_FIELDS = [
 ARTIFACT_FIELDS = ["run_accession", "source", "uri", "basename", "md5", "format", "artifact_role", "selected"]
 APPROVED_FIELDS = ["run_accession", "tissue", "description", "classification", "proposed_action",
                    "selected_artifact_uri", "selected_artifact_md5", "selected_artifact_basename",
-                   "minimap2_preset", "expected_header_representation", "classification_report_sha256",
+                   "minimap2_preset", "minimap2_args", "technology", "read_representation",
+                   "preprocessing_state", "isoquant_data_type", "observation_unit",
+                   "expected_header_representation", "classification_report_sha256",
                    "reviewer", "reviewed_at"]
 
 
@@ -182,6 +184,7 @@ def validate_fastq(path_or_uri: str, expected: str = "UNKNOWN") -> dict:
     import gzip
     handle = gzip.open(path_or_uri, "rt") if path_or_uri.lower().endswith(".gz") else open(path_or_uri)
     duplicates = 0
+    duplicate_molecules = 0
     records = 0
     distinct_ids = 0
     distinct_molecules = 0
@@ -203,7 +206,12 @@ def validate_fastq(path_or_uri: str, expected: str = "UNKNOWN") -> dict:
                 else:
                     distinct_ids += 1
                 if molecule and database.execute("INSERT OR IGNORE INTO molecule_ids VALUES (?)", (molecule,)).rowcount == 0:
-                    duplicates += 1
+                    duplicate_molecules += 1
+                    # Raw subreads from one ZMW are separate observations.
+                    # Keep their redundancy visible instead of rejecting them
+                    # as duplicate CCS molecules.
+                    if expected != "PACBIO_SUBREAD_OR_ARCHIVE_RENAMED":
+                        duplicates += 1
                 elif molecule:
                     distinct_molecules += 1
                 representations.add(representation)
@@ -216,10 +224,15 @@ def validate_fastq(path_or_uri: str, expected: str = "UNKNOWN") -> dict:
     # Archive services can rename ONT/CCS read IDs while retaining valid
     # sequences. Original-format metadata or the approved ONT archive-renamed
     # classification makes UNKNOWN headers acceptable for those representations.
-    if expected not in ("UNKNOWN", "NOT_APPLICABLE", "ONT", "PACBIO_CCS_ORIGINAL", "PACBIO_PROCESSED") and observed != expected: raise ValueError(f"expected {expected}, observed {observed}")
+    if expected == "PACBIO_SUBREAD_OR_ARCHIVE_RENAMED":
+        if observed not in {"PACBIO_SUBREAD", "UNKNOWN"}:
+            raise ValueError(f"expected PACBIO_SUBREAD or archive-renamed subread IDs, observed {observed}")
+    elif expected not in ("UNKNOWN", "NOT_APPLICABLE", "ONT", "PACBIO_CCS_ORIGINAL", "PACBIO_PROCESSED") and observed != expected:
+        raise ValueError(f"expected {expected}, observed {observed}")
     if duplicates: raise ValueError(f"duplicate read or molecule IDs: {duplicates}")
     return {"records": records, "representation": observed,
-            "distinct_ids": distinct_ids, "distinct_molecules": distinct_molecules}
+            "distinct_ids": distinct_ids, "distinct_molecules": distinct_molecules,
+            "duplicate_molecules": duplicate_molecules}
 
 
 def write_fastq_stats(path_or_uri: str, output: str) -> None:
@@ -252,6 +265,10 @@ def expand_artifacts(run: str, source: str, uris: str, md5s: str, formats: str =
     uri_list = [x for x in uris.split(";") if x]
     md5_list = [x for x in md5s.split(";") if x]
     format_list = formats.split(";") if formats else [""] * len(uri_list)
+    # A single declared format applies to every file when ENA reports a
+    # multi-file run (for example, paired or split FASTQ artifacts).
+    if len(format_list) == 1 and len(uri_list) > 1:
+        format_list *= len(uri_list)
     if len(uri_list) != len(md5_list) or len(format_list) != len(uri_list):
         raise ValueError("semicolon-separated artifact lists have different lengths")
     output = []
@@ -325,11 +342,11 @@ def classify(*, declared_platform: str, ena_platform: str, sra_platform: str,
     elif has_ccs_bam or original_ccs_bam: classification, action, confidence = "PACBIO_CCS_BAM", "CANONICALISE_CCS_THEN_ALIGN", "CONFIRMED"
     elif original_ccs_fastq: classification, action, confidence = "PACBIO_CCS_FASTQ", "ALIGN_PACBIO_CCS", "CONFIRMED"
     elif original_processed_fastq: classification, action, confidence = "PACBIO_PROCESSED_FASTQ", "ALIGN_PACBIO_PROCESSED", "CONFIRMED"
-    elif header == "PACBIO_SUBREAD": classification, action, confidence = "PACBIO_SUBREAD_FASTQ_ONLY", "QUARANTINE", "CONFIRMED"
+    elif header == "PACBIO_SUBREAD": classification, action, confidence = "PACBIO_SUBREAD_FASTQ_ONLY", "ALIGN_PACBIO_SUBREAD_FASTQ", "CONFIRMED"
     elif header == "PACBIO_CCS": classification, action, confidence = "PACBIO_CCS_FASTQ", "ALIGN_PACBIO_CCS", "CONFIRMED"
     elif pacbio_declared and fastq_artifacts and fastq_subread_hint and header == "UNKNOWN":
         reasons.append("ARCHIVE_FASTQ_HEADERS_LACK_MOLECULE_GROUPING")
-        classification, action, confidence = "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE", "QUARANTINE", "PROBABLE"
+        classification, action, confidence = "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE", "ALIGN_PACBIO_SUBREAD_FASTQ", "PROBABLE"
     elif ont_declared and not pacbio_declared and fastq_artifacts and header == "UNKNOWN":
         # ENA/SRA-derived FASTQs may have archive-renamed IDs such as
         # SRR33046253.1 rather than the original ONT UUID/runid/ch header.
@@ -342,11 +359,11 @@ def classify(*, declared_platform: str, ena_platform: str, sra_platform: str,
     if not reasons: reasons.append("NO_SUPPORTED_ARTIFACT")
     return {"submitted_representation": submitted, "header_representation": header, "classification": classification,
             "proposed_action": action, "confidence": confidence, "reason_codes": ";".join(reasons),
-            "status": "QUARANTINED" if classification in ("CONFLICT", "UNKNOWN", "MIXED", "PACBIO_SUBREAD_FASTQ_ONLY") else "READY_FOR_REVIEW"}
+            "status": "QUARANTINED" if classification in ("CONFLICT", "UNKNOWN", "MIXED") else "READY_FOR_REVIEW"}
 
 
 def validate_approved(rows: list[dict]) -> None:
-    allowed = {"PACBIO_CCS_FASTQ": "ALIGN_PACBIO_CCS", "PACBIO_PROCESSED_FASTQ": "ALIGN_PACBIO_PROCESSED", "PACBIO_CCS_BAM": "CANONICALISE_CCS_THEN_ALIGN", "ONT_FASTQ": "ALIGN_ONT", "ONT_BAM": "ALIGN_ONT", "PACBIO_SUBREAD_BAM": "RUN_CCS_THEN_ALIGN"}
+    allowed = {"PACBIO_CCS_FASTQ": "ALIGN_PACBIO_CCS", "PACBIO_PROCESSED_FASTQ": "ALIGN_PACBIO_PROCESSED", "PACBIO_CCS_BAM": "CANONICALISE_CCS_THEN_ALIGN", "ONT_FASTQ": "ALIGN_ONT", "ONT_BAM": "ALIGN_ONT", "PACBIO_SUBREAD_BAM": "RUN_CCS_THEN_ALIGN", "PACBIO_SUBREAD_FASTQ_ONLY": "ALIGN_PACBIO_SUBREAD_FASTQ", "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE": "ALIGN_PACBIO_SUBREAD_FASTQ"}
     for n, row in enumerate(rows, 2):
         if row.get("status", "APPROVED") != "APPROVED" or row.get("review_decision") != "APPROVE": raise ValueError(f"row {n}: run is not approved")
         if row.get("classification") not in allowed or row.get("proposed_action") != allowed[row["classification"]]: raise ValueError(f"row {n}: incompatible classification/action")
@@ -362,16 +379,63 @@ def validate_approved(rows: list[dict]) -> None:
             raise ValueError(f"row {n}: unsafe accession or checksum")
         if not SAFE_URI.fullmatch(row.get("selected_artifact_uri", "")) or not SAFE_FILE.fullmatch(row.get("selected_artifact_basename", "")): raise ValueError(f"row {n}: unsafe artifact")
         if row.get("minimap2_preset") not in ("splice", "splice:hq"): raise ValueError(f"row {n}: unsupported minimap2 preset")
+        classification = row["classification"]
+        expected_technology = "ont" if classification.startswith("ONT_") else "pacbio"
+        technology = row.get("technology", expected_technology).strip().lower()
+        if technology != expected_technology: raise ValueError(f"row {n}: technology conflicts with classification")
+        representation = row.get("read_representation", "").strip().lower()
+        if not representation:
+            representation = "ont_cdna" if expected_technology == "ont" else ("raw_subread" if classification == "PACBIO_SUBREAD_BAM" else "ccs")
+        if representation not in {"ccs", "hifi", "kinnex", "ont_cdna", "ont_direct_rna", "raw_subread"}:
+            raise ValueError(f"row {n}: unsupported read_representation")
+        expected_representations = {"ont_cdna", "ont_direct_rna"} if expected_technology == "ont" else {"ccs", "hifi", "kinnex", "raw_subread"}
+        if representation not in expected_representations: raise ValueError(f"row {n}: read_representation conflicts with technology")
+        preprocessing = row.get("preprocessing_state", "").strip().lower()
+        if not preprocessing:
+            preprocessing = "needs_ccs" if classification == "PACBIO_SUBREAD_BAM" else "processed"
+        if preprocessing not in {"processed", "needs_ccs", "ccs_not_applied", "needs_kinnex_segmentation", "basecall_required"}:
+            raise ValueError(f"row {n}: unsupported preprocessing_state")
+        if preprocessing in {"needs_kinnex_segmentation", "basecall_required"}:
+            raise ValueError(f"row {n}: input requires an unsupported preprocessing route")
+        if preprocessing == "needs_ccs" and not (classification == "PACBIO_SUBREAD_BAM" and representation == "raw_subread"):
+            raise ValueError(f"row {n}: needs_ccs is only supported for the approved subread-BAM route")
+        if preprocessing == "ccs_not_applied" and classification not in {"PACBIO_SUBREAD_FASTQ_ONLY", "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE"}:
+            raise ValueError(f"row {n}: ccs_not_applied is only valid for raw PacBio subread FASTQ")
+        if classification in {"PACBIO_SUBREAD_FASTQ_ONLY", "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE"} and (representation != "raw_subread" or preprocessing != "ccs_not_applied"):
+            raise ValueError(f"row {n}: raw subread FASTQ must be labelled raw_subread/ccs_not_applied")
+        if classification == "PACBIO_SUBREAD_BAM" and (representation != "raw_subread" or preprocessing != "needs_ccs"):
+            raise ValueError(f"row {n}: subread BAM must retain raw_subread/needs_ccs metadata")
+        model_type = row.get("isoquant_data_type", "").strip().lower()
+        expected_model_type = "nanopore" if expected_technology == "ont" else ("" if representation == "raw_subread" else "pacbio_ccs")
+        if model_type and model_type != expected_model_type:
+            raise ValueError(f"row {n}: isoquant_data_type conflicts with technology/representation")
+        if not model_type:
+            model_type = expected_model_type
+        observation_unit = row.get("observation_unit", "").strip().lower()
+        expected_unit = "ont_read" if expected_technology == "ont" else ("subread_record" if representation == "raw_subread" else "consensus_molecule")
+        if observation_unit and observation_unit != expected_unit:
+            raise ValueError(f"row {n}: observation_unit conflicts with representation")
+        minimap2_args = row.get("minimap2_args", "").strip()
+        if minimap2_args not in {"", "-k14 -uf"}:
+            raise ValueError(f"row {n}: minimap2_args must be empty or '-k14 -uf'")
+        if representation == "ont_direct_rna" and minimap2_args != "-k14 -uf":
+            raise ValueError(f"row {n}: direct-RNA input requires minimap2_args '-k14 -uf'")
+        if representation != "ont_direct_rna" and minimap2_args:
+            raise ValueError(f"row {n}: minimap2_args '-k14 -uf' is only valid for direct RNA")
         if not SHA256.fullmatch(row.get("classification_report_sha256", "")): raise ValueError(f"row {n}: missing classification report hash")
         if not row.get("reviewer") or not row.get("reviewed_at"): raise ValueError(f"row {n}: missing reviewer audit fields")
         expected = row.get("expected_header_representation")
-        allowed_expected = {"ONT"} if row["classification"] in {"ONT_FASTQ", "ONT_BAM"} else ({"PACBIO_CCS", "PACBIO_CCS_ORIGINAL"} if row["classification"] == "PACBIO_CCS_FASTQ" else {"PACBIO_PROCESSED"} if row["classification"] == "PACBIO_PROCESSED_FASTQ" else {"PACBIO_CCS"})
+        allowed_expected = ({"ONT"} if row["classification"] in {"ONT_FASTQ", "ONT_BAM"} else
+                            {"PACBIO_SUBREAD_OR_ARCHIVE_RENAMED"} if row["classification"] in {"PACBIO_SUBREAD_FASTQ_ONLY", "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE"} else
+                            {"PACBIO_CCS", "PACBIO_CCS_ORIGINAL"} if row["classification"] == "PACBIO_CCS_FASTQ" else
+                            {"PACBIO_PROCESSED"} if row["classification"] == "PACBIO_PROCESSED_FASTQ" else {"PACBIO_CCS"})
         if expected not in allowed_expected: raise ValueError(f"row {n}: incompatible expected header representation")
         basename = row["selected_artifact_basename"].lower()
         if row["classification"] == "ONT_FASTQ" and not basename.endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")): raise ValueError(f"row {n}: ONT route requires FASTQ")
         if row["classification"] == "ONT_BAM" and not basename.endswith(".bam"): raise ValueError(f"row {n}: ONT BAM route requires BAM")
         if row["classification"] == "PACBIO_CCS_FASTQ" and not basename.endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")): raise ValueError(f"row {n}: CCS FASTQ route requires FASTQ")
         if row["classification"] == "PACBIO_PROCESSED_FASTQ" and not basename.endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")): raise ValueError(f"row {n}: processed FASTQ route requires FASTQ")
+        if row["classification"] in {"PACBIO_SUBREAD_FASTQ_ONLY", "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE"} and not basename.endswith((".fastq", ".fastq.gz", ".fq", ".fq.gz")): raise ValueError(f"row {n}: raw subread FASTQ route requires FASTQ")
         if row["classification"] == "PACBIO_SUBREAD_BAM" and not basename.endswith(".subreads.bam"): raise ValueError(f"row {n}: subread route requires .subreads.bam")
         if row["classification"] == "PACBIO_CCS_BAM" and not (direct_exception and basename.endswith(".bam")) and not basename.endswith((".ccs.bam", ".hifi_reads.bam")): raise ValueError(f"row {n}: CCS BAM route requires a consensus BAM")
         side_uris = [value for value in row.get("required_artifact_uris", "").split(";") if value]
@@ -408,12 +472,26 @@ def _cli() -> None:
         output_rows = []
         for row in source_rows:
             if row.get("status") != "APPROVED" or row.get("review_decision") != "APPROVE": continue
-            preset = "splice" if row.get("classification") == "ONT_FASTQ" else "splice:hq"
+            is_ont = row["classification"].startswith("ONT_")
+            direct_rna = is_ont and "direct" in row.get("library_selection", "").lower() and "rna" in row.get("library_selection", "").lower()
+            library_description = " ".join((row.get(field, "") for field in ("description", "library_selection", "ncbi_original_representation"))).lower()
+            kinnex = not is_ont and any(term in library_description for term in ("kinnex", "mas-seq", "mas seq"))
+            hifi = not is_ont and "hifi" in library_description
+            subread_fastq = row["classification"] in {"PACBIO_SUBREAD_FASTQ_ONLY", "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE"}
+            representation = "ont_direct_rna" if direct_rna else ("ont_cdna" if is_ont else ("raw_subread" if row["classification"] in {"PACBIO_SUBREAD_BAM", "PACBIO_SUBREAD_FASTQ_ONLY", "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE"} else ("kinnex" if kinnex else ("hifi" if hifi else "ccs"))))
+            technology = "ont" if is_ont else "pacbio"
+            preprocessing = "needs_ccs" if row["classification"] == "PACBIO_SUBREAD_BAM" else ("ccs_not_applied" if subread_fastq else ("needs_kinnex_segmentation" if kinnex else "processed"))
+            model_type = "nanopore" if is_ont else ("" if representation == "raw_subread" else "pacbio_ccs")
+            observation_unit = "ont_read" if is_ont else ("subread_record" if representation == "raw_subread" else "consensus_molecule")
+            preset = "splice" if is_ont or subread_fastq else "splice:hq"
             output_rows.append({"run_accession": row["run_accession"], "tissue": row.get("tissue", "unknown"), "description": row.get("description", "unknown"),
                                 "classification": row["classification"], "proposed_action": row["proposed_action"],
                                 "selected_artifact_uri": row["selected_artifact_uri"], "selected_artifact_md5": row["selected_artifact_md5"],
                                 "selected_artifact_basename": row["selected_artifact_basename"], "minimap2_preset": preset,
-                                "expected_header_representation": "ONT" if row["classification"] == "ONT_FASTQ" else ("PACBIO_CCS_ORIGINAL" if "NCBI_ORIGINAL_CCS_FASTQ" in row.get("reason_codes", "") else "PACBIO_CCS" if row["classification"] == "PACBIO_CCS_FASTQ" else "PACBIO_PROCESSED"),
+                                "minimap2_args": "-k14 -uf" if direct_rna else "", "technology": technology,
+                                "read_representation": representation, "preprocessing_state": preprocessing,
+                                "isoquant_data_type": model_type, "observation_unit": observation_unit,
+                                "expected_header_representation": "ONT" if is_ont else ("PACBIO_SUBREAD_OR_ARCHIVE_RENAMED" if subread_fastq else ("PACBIO_CCS_ORIGINAL" if "NCBI_ORIGINAL_CCS_FASTQ" in row.get("reason_codes", "") else "PACBIO_CCS" if row["classification"] in {"PACBIO_CCS_FASTQ", "PACBIO_CCS_BAM", "PACBIO_SUBREAD_BAM"} else "PACBIO_PROCESSED")),
                                 "classification_report_sha256": report_hash, "reviewer": row.get("reviewer", "unknown"), "reviewed_at": row.get("reviewed_at", "unknown"),
                                 "status": "APPROVED", "review_decision": "APPROVE"})
         with open(args.output, "w", newline="") as handle:

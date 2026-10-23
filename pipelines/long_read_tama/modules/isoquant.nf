@@ -35,6 +35,8 @@ process ISOQUANT_ANNOTATION_FREE {
         printf '%s\n' 'key\tvalue' \\
             'scope\t${scope}' \\
             'accession_or_cohort\t${meta.id}' \\
+            'source_accessions\t${meta.source_accessions ?: meta.id}' \\
+            'input_read_metadata\t${meta.source_read_metadata ?: 'unspecified'}' \\
             "isoquant_version\t\$(isoquant --version)" \\
             'data_type\t${data_type}' \\
             'mode\tannotation_free' \\
@@ -99,6 +101,8 @@ process ISOQUANT_REFERENCE_GUIDED {
         printf '%s\n' 'key\tvalue' \\
             'scope\t${scope}' \\
             'accession_or_cohort\t${meta.id}' \\
+            'source_accessions\t${meta.source_accessions ?: meta.id}' \\
+            'input_read_metadata\t${meta.source_read_metadata ?: 'unspecified'}' \\
             "isoquant_version\t\$(isoquant --version)" \\
             'data_type\t${data_type}' \\
             'mode\treference_guided' \\
