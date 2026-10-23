@@ -16,7 +16,7 @@ process TMERGE_COLLAPSE {
     """
     tmerge ${params.tmerge_args} --input ${reads_gtf} --output ${prefix}.gtf
     test -s ${prefix}.gtf || { echo 'tmerge collapse produced an empty GTF' >&2; exit 1; }
-    model_count=\$(grep -o 'transcript_id "[^"]*"' ${prefix}.gtf | sort -u | wc -l | tr -d ' ')
+    model_count=\$(awk '{ if (match(\$0, /transcript_id "[^"]+"/)) { id = substr(\$0, RSTART + 15, RLENGTH - 16); seen[id] = 1 } } END { for (id in seen) count++; print count + 0 }' ${prefix}.gtf)
     printf 'backend\\trun_accession\\tshard\\tstatus\\tmodels\\ntmerge\\t${meta.id}\\t${shard}\\tSUCCESS\\t%s\\n' "\${model_count}" > ${prefix}.status.tsv
     printf '"%s":\\n    tmerge: runtime\\n' '${task.process}' > versions.yml
     """

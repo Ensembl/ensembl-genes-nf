@@ -11,7 +11,7 @@ process FASTQ_DL {
     val cache_dir
 
     output:
-    tuple val(meta), path('downloaded/*.fastq.gz'), emit: fastq
+    tuple val(meta), path("downloaded/${expected_filename}"), emit: fastq
     tuple val(meta), path('downloaded/checksum.tsv'), emit: checksum
     path 'versions.yml', emit: versions
 
