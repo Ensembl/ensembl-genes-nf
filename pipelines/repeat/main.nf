@@ -130,7 +130,7 @@ workflow REPEAT_ANNOTATION {
             // IMPORTANT:
             // Replace this filename with the actual FTP output.
             def repeatmasker_url =
-                "${params.repeatmasker_ftp_base}/${meta.species_name}/${meta.gca}.repeatmasker.gtf.gz"
+                "${params.repeatmasker_ftp_base}/${meta.species_name}/${meta.gca}_genome.masked.fa"
 
             tuple(meta, repeatmasker_url, "repeatmasker")
         }
@@ -304,7 +304,7 @@ workflow REPEAT_ANNOTATION {
     // ========================================================
 
     repeatModelerInput = UPLOAD_REPEAT_LIBRARY_INTO_FTP(
-        ftpInput, params.repeatmodeler_ftp_base
+        ftpInput, params.repeatmodeler_ftp_local
     ).library_out
 
     ch_versions_file = ch_versions_file.mix(
@@ -337,7 +337,7 @@ workflow REPEAT_ANNOTATION {
         ch_versions_file = ch_versions_file.mix(
             RUN_REPEATMASKER.out.versions_file
         )
-        repeatmasker_output = RUN_REPEATMASKER.out.repeatmasker_out
+        repeatmasker_output = RUN_REPEATMASKER.out.repeatmasker_softmasked_out
         ch_repeat_output = ch_repeat_output.mix(
             repeatmasker_output
         )
@@ -400,7 +400,7 @@ workflow REPEAT_ANNOTATION {
 
     if (params.upload_repeats) {
 
-        UPLOAD_REPEATS_INTO_FTP(ch_repeat_output, params.repeatmasker_ftp_base)
+        UPLOAD_REPEATS_INTO_FTP(ch_repeat_output, params.repeatmasker_ftp_local)
 
         ch_versions_file = ch_versions_file.mix(
             UPLOAD_REPEATS_INTO_FTP.out.versions_file

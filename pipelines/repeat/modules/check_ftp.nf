@@ -32,7 +32,11 @@ process CHECK_FTP {
         --output /dev/null \\
         --write-out '%{http_code}' \\
         --head \\
-        --retry 3 \\
+        --retry 5 \
+    --retry-all-errors \
+    --retry-delay 10 \
+    --connect-timeout 15 \
+    --max-time 60 \
         "${url}")
 
     if [ "\$HTTP_STATUS" = "200" ]; then
