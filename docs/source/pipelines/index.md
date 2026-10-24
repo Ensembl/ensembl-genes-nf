@@ -14,6 +14,7 @@ Documentation for the available Ensembl Nextflow pipelines.
 :maxdepth: 1
 
 example/README
+qc/README
 repeat/README
 statistics/README
 ```
