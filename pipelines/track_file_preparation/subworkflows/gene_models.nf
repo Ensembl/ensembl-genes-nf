@@ -12,7 +12,7 @@ workflow PREPARE_GENE_MODEL_TRACKS {
     gene_entities // tuple [meta, gtf, chrom_sizes]
 
     main:
-    checked = VALIDATE_GTF(gene_entities)
+    checked = VALIDATE_GTF(gene_entities, file("${projectDir}/bin/validate_gtf.py"))
     genepred = GTF_TO_GENEPRED(checked.validated)
     bed12 = GENEPRED_TO_BED12(genepred.genepred)
     sorted = SORT_GENE_MODELS(bed12.bed12)
