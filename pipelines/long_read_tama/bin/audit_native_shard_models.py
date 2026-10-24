@@ -16,7 +16,7 @@ GFF_ID = re.compile(r'(?:^|;)\s*ID=([^;]+)')
 
 def count_gtf_models(path: Path) -> int:
     transcript_ids: set[str] = set()
-    model_records = 0
+    transcript_records = 0
     with path.open() as handle:
         for line_number, line in enumerate(handle, start=1):
             line = line.strip()
@@ -25,15 +25,20 @@ def count_gtf_models(path: Path) -> int:
             fields = line.split("\t")
             if len(fields) != 9:
                 raise ValueError(f"{path}:{line_number}: expected 9 GTF columns, found {len(fields)}")
+            feature = fields[2].lower()
+            # Gene and exon rows are not transcript models and may not carry
+            # transcript_id attributes.
+            if feature != "transcript":
+                continue
             attributes = fields[8]
             match = TRANSCRIPT_ID.search(attributes)
-            if match is None and fields[2].lower() == "transcript":
+            if match is None:
                 match = GFF_ID.search(attributes)
             if match is None:
-                raise ValueError(f"{path}:{line_number}: model feature has no transcript identifier")
-            model_records += 1
+                raise ValueError(f"{path}:{line_number}: transcript feature has no transcript identifier")
+            transcript_records += 1
             transcript_ids.add(match.group(1))
-    return len(transcript_ids) if transcript_ids else model_records
+    return len(transcript_ids) if transcript_ids else transcript_records
 
 
 def count_bed12_models(path: Path) -> int:

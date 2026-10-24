@@ -2,6 +2,7 @@ process FLAIR_JUNCTIONS {
     tag "${meta.id}:${shard}:flair-junctions"
     label 'process_medium'
     container 'docker://community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'
+    publishDir path: { "${params.outdir}/flair/native/${meta.id}/${shard}/junctions" }, mode: 'copy'
 
     input:
     tuple val(meta), val(shard), val(resource_class), val(mapped_reads), path(bam), path(bai)
@@ -30,6 +31,7 @@ process FLAIR_TRANSCRIPTOME {
     tag "${meta.id}:${shard}:flair-transcriptome"
     label 'process_high_memory'
     container 'docker://community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'
+    publishDir path: { "${params.outdir}/flair/native/${meta.id}/${shard}" }, mode: 'copy'
 
     input:
     tuple val(meta), val(shard), val(resource_class), val(mapped_reads), path(bam), path(bai), path(junctions)
@@ -38,17 +40,31 @@ process FLAIR_TRANSCRIPTOME {
     output:
     tuple val(meta), val(shard), path("${meta.id}.${shard}.flair_products.tar.gz"), emit: products
     tuple val(meta), val(shard), path('flair_products/isoforms.gtf'), emit: gtf
+    tuple val(meta), val(shard), path("${meta.id}.${shard}.flair_shard_status.tsv"), emit: status
     path 'versions.yml', emit: versions
 
     script:
     """
     test -s '${bam}' || { echo 'FLAIR received an empty BAM' >&2; exit 1; }
     test -s '${bam}.bai' || { echo 'FLAIR received no BAM index' >&2; exit 1; }
-    flair transcriptome --genomealignedbam '${bam}' --genome '${reference}' \
-        --junction_bed '${junctions}' --junction_support 1 --noaligntoannot \
-        --threads ${task.cpus} --output flair_result ${params.flair_args ?: ''}
-    normalise_flair_outputs.py . flair_products flair_result
-    printf 'backend\\tflair\\nmethod\\ttranscriptome\\nscope\\tshard\\n' > flair_products/backend_manifest.tsv
+    mkdir -p flair_products
+    if [[ ! -s '${junctions}' ]]; then
+        printf 'status\\tmodel_count\\nNO_JUNCTIONS\\t0\\n' > '${meta.id}.${shard}.flair_shard_status.tsv'
+        : > flair_products/isoforms.gtf
+        : > flair_products/isoforms.bed
+        : > flair_products/isoforms.fa
+        : > flair_products/read.map.txt
+        printf 'stable_name\\tsource_name\\n' > flair_products/product_manifest.tsv
+        printf 'backend\\tflair\\nmethod\\ttranscriptome\\nscope\\tshard\\nstatus\\tNO_JUNCTIONS\\nmodel_count\\t0\\n' > flair_products/backend_manifest.tsv
+    else
+        flair transcriptome --genomealignedbam '${bam}' --genome '${reference}' \\
+            --junction_bed '${junctions}' --junction_support 1 --noaligntoannot \\
+            --threads ${task.cpus} --output flair_result ${params.flair_args ?: ''}
+        normalise_flair_outputs.py . flair_products flair_result
+        transcript_count=\$(awk -F '\t' 'BEGIN { n=0 } !/^#/ && NF == 9 && tolower(\$3) == "transcript" { n++ } END { print n }' flair_products/isoforms.gtf)
+        printf 'status\\tmodel_count\\nCOMPLETE\\t%s\\n' "\$transcript_count" > '${meta.id}.${shard}.flair_shard_status.tsv'
+        printf 'backend\\tflair\\nmethod\\ttranscriptome\\nscope\\tshard\\nstatus\\tCOMPLETE\\nmodel_count\\t%s\\n' "\$transcript_count" > flair_products/backend_manifest.tsv
+    fi
     tar -czf '${meta.id}.${shard}.flair_products.tar.gz' flair_products
     printf '"%s":\n    flair: \$(flair --version 2>&1 | tail -n1 || true)\n' '${task.process}' > versions.yml
     """
@@ -56,8 +72,11 @@ process FLAIR_TRANSCRIPTOME {
     stub:
     """
     mkdir -p flair_products
+    printf 'status\\tmodel_count\\nCOMPLETE\\t1\\n' > '${meta.id}.${shard}.flair_shard_status.tsv'
     printf 'chrStub\\t0\\t4\\t${meta.id}.flair.1\\t0\\t+\\t0\\t4\\t0\\t1\\t4,\\t0,\\n' > flair_products/isoforms.bed
-    printf 'chrStub\\tFLAIR\\texon\\t1\\t4\\t.\\t+\\t.\\tgene_id "${meta.id}.g1"; transcript_id "${meta.id}.flair.1";\\n' > flair_products/isoforms.gtf
+    printf 'chrStub\\tFLAIR\\tgene\\t1\\t4\\t.\\t+\\t.\\tgene_id "${meta.id}.g1";\\n' > flair_products/isoforms.gtf
+    printf 'chrStub\\tFLAIR\\ttranscript\\t1\\t4\\t.\\t+\\t.\\tgene_id "${meta.id}.g1"; transcript_id "${meta.id}.flair.1";\\n' >> flair_products/isoforms.gtf
+    printf 'chrStub\\tFLAIR\\texon\\t1\\t4\\t.\\t+\\t.\\tgene_id "${meta.id}.g1"; transcript_id "${meta.id}.flair.1";\\n' >> flair_products/isoforms.gtf
     printf '>flair.1\\nACGT\\n' > flair_products/isoforms.fa
     printf 'read_id\\tisoform_id\\n${meta.id}.read1\\t${meta.id}.flair.1\\n' > flair_products/read.map.txt
     printf 'stable_name\\tsource_name\\nisoforms.bed\\tstub\\nisoforms.gtf\\tstub\\nisoforms.fa\\tstub\\nread.map.txt\\tstub\\n' > flair_products/product_manifest.tsv
@@ -71,6 +90,7 @@ process FLAIR_COMBINE {
     tag "${meta.id}:flair-combine"
     label 'process_high_memory'
     container 'docker://community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'
+    publishDir path: { "${params.outdir}/flair/native/${meta.id}/${scope}" }, mode: 'copy'
 
     input:
     tuple val(meta), val(scope), path(archives)

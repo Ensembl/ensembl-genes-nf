@@ -56,7 +56,9 @@ workflow RUN_FLAIR {
     accession_bed = GTF_TO_BED12.out.bed.filter { _meta, _backend, scope, _bed -> scope == 'accession' }
         .map { meta, _backend, scope, bed -> tuple(meta, 'flair', scope, bed) }
     reports = accession_products.mix(FLAIR_COMBINE_COHORT.out.products)
+        .mix(FLAIR_TRANSCRIPTOME.out.status.map { _meta, _shard, status -> status })
     model_counts = AUDIT_NATIVE_SHARD_MODELS.out.counts
+    shard_status = FLAIR_TRANSCRIPTOME.out.status
     versions = FLAIR_TRANSCRIPTOME.out.versions
         .mix(FLAIR_JUNCTIONS.out.versions)
         .mix(AUDIT_NATIVE_SHARD_MODELS.out.versions)
