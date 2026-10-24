@@ -83,15 +83,33 @@
           "default": false,
           "description": "Run TRF on the fetched genome assembly."
         },
+        "upload_repeats": {
+          "type": "boolean",
+          "default": false,
+          "description": "Upload the repeat annotation results to the Ensembl database."
+        },
         "ncbiBaseUrl": {
           "type": "string",
           "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/",
           "description": "NCBI datasets API base URL used for genome downloads."
         },
-        "repeats_ftp_base": {
+        "repeatmodeler_ftp_base": {
           "type": "string",
-          "default": "http://ftp.ebi.ac.uk/pub/databases/ensembl/repeats/unfiltered_repeatmodeler/species/",
+          "default": "https://ftp.ebi.ac.uk/pub/databases/ensembl/repeats/unfiltered_repeatmodeler/species/",
           "description": "Base URL for pre-computed RepeatModeler libraries."
+        },
+        "repeatmasker_ftp_base": {
+          "type": "string",
+          "default": "https://ftp.ebi.ac.uk/pub/databases/ensembl/repeats/unfiltered_repeatmasker/species/",
+          "description": "Base URL for pre-computed RepeatMasker libraries."
+        },
+        "repeatmodeler_ftp_local": {
+          "type": "string",
+          "description": "Local directory for cached RepeatModeler libraries."
+        },
+        "repeatmasker_ftp_local": {
+          "type": "string",
+          "description": "Local directory for cached RepeatMasker libraries."
         },
         "repeatmasker_path": {
           "type": "string",
