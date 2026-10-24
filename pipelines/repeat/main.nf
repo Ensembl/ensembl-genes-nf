@@ -145,14 +145,28 @@ workflow REPEAT_ANNOTATION {
 
         checkedRepeatMasker
             .map { meta, _url, _file_type, status_file ->
-                tuple(meta, status_file.text.trim() == "true")
+            def status = status_file.text.trim()
+        def exists = status.equalsIgnoreCase("true")
+
+        log.info "RepeatMasker check: ${meta.taxon_id} status=${status} exists=${exists}"
+
+        tuple(meta, exists)
+                //tuple(meta, status_file.text.trim() == "true")
             }
             .branch { _meta, exists ->
                 available: exists
                 missing: !exists
             }
             .set { repeatmasker_status }
+        repeatmasker_status.available.view {
+    meta, exists ->
+        "SKIPPING RepeatMasker: ${meta.taxon_id} (already available)"
+}
 
+repeatmasker_status.missing.view {
+    meta, exists ->
+        "RUNNING RepeatMasker: ${meta.taxon_id} (missing)"
+}
         // Only assemblies missing RepeatMasker annotations
         // should proceed to library selection.
         repeatmaskerData = repeatmasker_status.missing
@@ -174,7 +188,7 @@ workflow REPEAT_ANNOTATION {
 
     if (params.run_repeatmasker) {
 
-        genomeData
+        repeatmaskerData
             .branch { meta ->
 
                 custom_library:
