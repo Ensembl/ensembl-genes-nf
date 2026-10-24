@@ -33,8 +33,8 @@ independent final model sets; it does not make TAMA canonical. See
 `LONG_READ_BACKEND_EVALUATION.md` for the common benchmark contract and
 measurements needed before selecting a backend for future Ensembl work.
 
-Before merging per-contig TAMA, StringTie2, StringTie3, or tmerge outputs, the
-pipeline counts models in each native shard file and writes
+Before native merging, the pipeline counts models in each TAMA, StringTie2,
+StringTie3, tmerge, and FLAIR shard file and writes
 `reports/native_contig_model_counts.tsv`. Empty shards remain recorded with a
 zero model count and are excluded from merge inputs. The `shard` column is the
 reference contig when `--shard_mode contig` is used; in whole-BAM mode it is
@@ -174,10 +174,12 @@ manifest checksum, and checked against the manifest filename before an atomic
 rename into the cache. A valid cached file is reused on later runs; an invalid
 cached file fails rather than being silently overwritten.
 
-By default, sorted BAMs are partitioned by reference contig before TAMA
-Collapse. TAMA runs per contig, and those beds are merged per accession before
-the cohort merge. Use `--shard_mode none` only for deliberately small inputs.
-Arbitrary read sharding and genomic windows are intentionally unsupported.
+By default, sorted BAMs are partitioned by reference contig before TAMA,
+StringTie2/3, tmerge, and FLAIR. FLAIR runs `transcriptome` per contig, then
+uses `flair combine` to gather non-empty contig products per accession and
+again across the cohort. Use `--shard_mode none` only for deliberately small
+inputs. Arbitrary read sharding and genomic windows are intentionally
+unsupported.
 
 If an individual TAMA shard has been deliberately abandoned, it can be omitted
 without dropping the rest of its accession by passing exact comma-separated
@@ -306,19 +308,20 @@ is not emitted; the audit manifest records that source explicitly.
 ## FLAIR backend
 
 FLAIR is an independent annotation-free transcript-discovery backend. It first
-derives a junction BED from each complete accession BAM with the repository's
+derives a junction BED from each contig BAM shard with the repository's
 CIGAR-aware BAM helper, then runs `flair transcriptome` and combines the native
-accession products with `flair_combine`. The helper retains splice `N`
+shard products per accession and across the cohort with `flair combine`. The helper retains splice `N`
 operations while accepting the clipping and indel operations produced by
 minimap2. No annotation is supplied. Stable products include the native
 BED/GTF/FASTA and read-to-isoform map; the cohort BED12 is derived only after
 FLAIR's native combine stage. Set
 `--model_backend flair` or include it in `--model_backend all`.
 
-FLAIR and IsoQuant intentionally use complete sorted/indexed BAMs rather than
-contig shards. They must be compared with the same BAMs and explicit library
-technology as the other backends, but should not be treated as having TAMA or
-StringTie merge semantics.
+IsoQuant and Bambu continue to use complete sorted/indexed BAMs. FLAIR uses
+contig shards but retains its native combine semantics. These backends must be
+compared with the same source alignments and explicit library technology as
+the other backends; their native merge semantics differ from TAMA and
+StringTie.
 
 ## Bambu backend
 

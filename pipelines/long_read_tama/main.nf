@@ -10,12 +10,14 @@ include { RUN_ISOQUANT } from './subworkflows/run_isoquant.nf'
 include { RUN_FLAIR } from './subworkflows/run_flair.nf'
 include { RUN_BAMBU } from './subworkflows/run_bambu.nf'
 include { COLLAPSE_LONG_READ_MODELS } from './subworkflows/collapse_long_read_models.nf'
+include { PREPARE_CONTIG_SHARDS } from './subworkflows/prepare_contig_shards.nf'
 include { MERGE_LONG_READ_MODELS } from './subworkflows/merge_long_read_models.nf'
 include { VALIDATE_COMBINED_MODELS; VALIDATE_COMBINED_MODELS as VALIDATE_ACCESSION_MODELS } from './subworkflows/validate_combined_models.nf'
 include { RUN_DIAMOND_QC } from './subworkflows/run_diamond_qc.nf'
 include { RUN_DIAMOND_ANNOTATIONS } from './subworkflows/run_diamond_annotations.nf'
 include { COLLECT_LONG_READ_SOFTWARE_VERSIONS } from './modules/collect_software_versions.nf'
 include { COMPARE_CANDIDATE_MODELS; COMPARE_CANDIDATE_MODELS as COMPARE_ACCESSION_CANDIDATE_MODELS } from './modules/compare_candidate_models.nf'
+include { SUMMARISE_NATIVE_SHARD_MODEL_COUNTS } from './modules/audit_native_shard_models.nf'
 
 def selected_backends() {
     def supported = ['tama', 'stringtie2', 'stringtie3', 'tmerge', 'isoquant', 'flair', 'bambu']
@@ -159,19 +161,42 @@ workflow {
         isoquant_versions = RUN_ISOQUANT.out.versions
         isoquant_reports = RUN_ISOQUANT.out.reports
     }
+    collapse_versions = channel.empty()
+    collapse_model_counts = channel.empty()
+    collapse_enabled = selected.any { backend -> backend in ['tama', 'stringtie2', 'stringtie3', 'tmerge'] }
+    if (collapse_enabled) {
+        COLLAPSE_LONG_READ_MODELS(
+            ALIGN_LONG_READS.out.bam,
+            reference_fasta
+        )
+        collapse_versions = COLLAPSE_LONG_READ_MODELS.out.versions
+        collapse_model_counts = COLLAPSE_LONG_READ_MODELS.out.model_counts
+    }
+
     flair_enabled = selected.contains('flair')
     flair_bed = channel.empty()
     flair_accession_bed = channel.empty()
     flair_versions = channel.empty()
     flair_reports = channel.empty()
+    flair_model_counts = channel.empty()
+    flair_shard_prep_versions = channel.empty()
     if (flair_enabled) {
         flair_skips = (params.skip_flair_accessions ?: '').split(',').collect { value -> value.trim() }.findAll { value -> value }.toSet()
         flair_bams = ALIGN_LONG_READS.out.bam.filter { meta, _bam, _bai -> !flair_skips.contains(meta.id) }
-        RUN_FLAIR(flair_bams, reference_fasta)
+        if (collapse_enabled) {
+            flair_shards = COLLAPSE_LONG_READ_MODELS.out.shards
+                .filter { meta, _shard, _resource_class, _mapped_reads, _bam, _bai -> !flair_skips.contains(meta.id) }
+        } else {
+            PREPARE_CONTIG_SHARDS(flair_bams)
+            flair_shards = PREPARE_CONTIG_SHARDS.out.shards
+            flair_shard_prep_versions = PREPARE_CONTIG_SHARDS.out.versions
+        }
+        RUN_FLAIR(flair_shards, reference_fasta)
         flair_bed = RUN_FLAIR.out.bed
         flair_accession_bed = RUN_FLAIR.out.accession_bed
         flair_versions = RUN_FLAIR.out.versions
         flair_reports = RUN_FLAIR.out.reports
+        flair_model_counts = RUN_FLAIR.out.model_counts
     }
     bambu_enabled = selected.contains('bambu')
     bambu_bed = channel.empty()
@@ -184,15 +209,6 @@ workflow {
         bambu_versions = RUN_BAMBU.out.versions
     }
 
-    collapse_versions = channel.empty()
-    collapse_enabled = selected.any { backend -> backend in ['tama', 'stringtie2', 'stringtie3', 'tmerge'] }
-    if (collapse_enabled) {
-        COLLAPSE_LONG_READ_MODELS(
-            ALIGN_LONG_READS.out.bam,
-            reference_fasta
-        )
-        collapse_versions = COLLAPSE_LONG_READ_MODELS.out.versions
-    }
     merged_bed = channel.empty()
     merged_accession_bed = channel.empty()
     merge_versions = channel.empty()
@@ -201,6 +217,14 @@ workflow {
         merged_bed = MERGE_LONG_READ_MODELS.out.bed
         merged_accession_bed = MERGE_LONG_READ_MODELS.out.accession_bed
         merge_versions = MERGE_LONG_READ_MODELS.out.versions
+    }
+    shard_count_versions = channel.empty()
+    if (collapse_enabled || flair_enabled) {
+        shard_count_tables = collapse_model_counts.mix(flair_model_counts)
+            .map { _meta, _backend, _shard, table -> table }
+            .collect()
+        SUMMARISE_NATIVE_SHARD_MODEL_COUNTS(shard_count_tables)
+        shard_count_versions = SUMMARISE_NATIVE_SHARD_MODEL_COUNTS.out.versions
     }
     cohort_candidates = merged_bed.mix(isoquant_bed).mix(flair_bed).mix(bambu_bed)
     accession_candidates = merged_accession_bed.mix(isoquant_accession_bed).mix(flair_accession_bed).mix(bambu_accession_bed)
@@ -242,6 +266,8 @@ workflow {
         .mix(merge_versions)
         .mix(isoquant_versions)
         .mix(flair_versions)
+        .mix(flair_shard_prep_versions)
+        .mix(shard_count_versions)
         .mix(bambu_versions)
         .mix(VALIDATE_COMBINED_MODELS.out.versions)
         .mix(diamond_versions)

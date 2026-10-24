@@ -317,10 +317,13 @@ def test_flair_and_common_comparison_are_independent_contracts():
     helper = (PIPELINE / "bin" / "compare_candidate_models.py").read_text()
     schema = (PIPELINE / "nextflow_schema.json").read_text()
     assert '"flair", "bambu", "all"' in schema
-    assert "RUN_FLAIR(flair_bams, reference_fasta)" in main
-    assert "FLAIR_JUNCTIONS(aligned_bams)" in runner
+    assert "RUN_FLAIR(flair_shards, reference_fasta)" in main
+    assert "PREPARE_CONTIG_SHARDS(flair_bams)" in main
+    assert "FLAIR_JUNCTIONS(flair_shards)" in runner
     assert "FLAIR_TRANSCRIPTOME(flair_inputs, reference)" in runner
     assert ".join(FLAIR_JUNCTIONS.out.bed" in runner
+    assert "AUDIT_NATIVE_SHARD_MODELS(audit_inputs)" in runner
+    assert "nonempty_shard_keys" in runner
     assert "process FLAIR_JUNCTIONS" in module
     assert "bam_to_junction_bed.py" in module
     assert "flair transcriptome" in module and "--genome '${reference}'" in module

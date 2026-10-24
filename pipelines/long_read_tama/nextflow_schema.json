@@ -47,7 +47,7 @@
     "stringtie_merge_scope": {"type": "string", "enum": ["run_then_cohort"], "default": "run_then_cohort", "description": "StringTie native merge topology; only run_then_cohort is currently supported"},
     "publish_native_intermediates": {"enum": [true, false, "true", "false"], "default": false, "description": "Publish native run and merge intermediates under the backend-namespaced output tree"},
     "tmerge_args": {"type": "string", "default": "", "description": "Additional arguments passed to tmerge"},
-    "shard_mode": {"type": "string", "enum": ["none", "contig"], "default": "contig", "description": "Split each sorted BAM by reference contig before TAMA; use none only for deliberately small inputs"},
+    "shard_mode": {"type": "string", "enum": ["none", "contig"], "default": "contig", "description": "Split each sorted BAM by reference contig before supported model backends, including FLAIR; use none only for deliberately small inputs"},
     "shard_contig_reads": {"type": "integer", "minimum": 0, "default": 1000000, "description": "Mapped-read heuristic used to classify large contigs"},
     "skip_tama_shards": {"type": "string", "default": "", "description": "Backward-compatible comma-separated exact run:shard keys to omit from TAMA Collapse"},
     "skip_model_shards": {"type": "string", "default": "", "description": "Comma-separated backend:run:shard keys to omit from model construction"},

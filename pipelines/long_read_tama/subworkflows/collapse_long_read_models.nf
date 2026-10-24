@@ -7,7 +7,7 @@ include { STRINGTIE2_COLLAPSE } from '../modules/stringtie2_collapse.nf'
 include { STRINGTIE3_COLLAPSE } from '../modules/stringtie3_collapse.nf'
 include { BAM_TO_ALIGNMENT_GTF } from '../modules/bam_to_alignment_gtf.nf'
 include { TMERGE_COLLAPSE } from '../modules/tmerge_collapse.nf'
-include { AUDIT_NATIVE_SHARD_MODELS; SUMMARISE_NATIVE_SHARD_MODEL_COUNTS } from '../modules/audit_native_shard_models.nf'
+include { AUDIT_NATIVE_SHARD_MODELS } from '../modules/audit_native_shard_models.nf'
 include { VALIDATE_BACKEND_BED } from '../modules/validate_backend_bed.nf'
 include { AUDIT_BACKEND_SHARD_PLAN } from '../modules/audit_backend_shard_plan.nf'
 include { VALIDATE_BACKEND_SHARD_PLAN } from '../modules/validate_backend_shard_plan.nf'
@@ -112,9 +112,6 @@ workflow COLLAPSE_LONG_READ_MODELS {
     mergeable_native_models = AUDIT_NATIVE_SHARD_MODELS.out.mergeable
         .map { meta, backend, shard, model, native_format -> tuple(meta, backend, shard, model, native_format) }
     count_tables = AUDIT_NATIVE_SHARD_MODELS.out.counts
-        .map { _meta, _backend, _shard, table -> table }
-        .collect()
-    SUMMARISE_NATIVE_SHARD_MODEL_COUNTS(count_tables)
 
     success_keys = raw_native_models
         .map { meta, backend, shard, _model, _native_format -> "${backend}:${meta.id}:${shard}" }
@@ -125,7 +122,6 @@ workflow COLLAPSE_LONG_READ_MODELS {
     collapse_reports = collapse_reports.mix(VALIDATE_BACKEND_SHARD_PLAN.out.status)
     version_ch = INSPECT_BAM_WORKLOAD.out.versions.mix(split_versions)
         .mix(AUDIT_NATIVE_SHARD_MODELS.out.versions)
-        .mix(SUMMARISE_NATIVE_SHARD_MODEL_COUNTS.out.versions)
     if (requested_backends.contains('tama')) { version_ch = version_ch.mix(TAMA_COLLAPSE.out.versions) }
     if (requested_backends.contains('tama')) { version_ch = version_ch.mix(VALIDATE_BACKEND_BED.out.versions) }
     if (requested_backends.contains('stringtie2')) { version_ch = version_ch.mix(STRINGTIE2_COLLAPSE.out.versions) }
@@ -137,6 +133,8 @@ workflow COLLAPSE_LONG_READ_MODELS {
     statuses = status_ch
     shard_plans = AUDIT_BACKEND_SHARD_PLAN.out.plan
     shard_statuses = VALIDATE_BACKEND_SHARD_PLAN.out.status
+    shards = shard_bams
+    model_counts = count_tables
     collapse_reports
     versions = version_ch
 }
