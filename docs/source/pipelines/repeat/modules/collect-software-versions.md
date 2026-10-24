@@ -1,5 +1,10 @@
 # COLLECT_SOFTWARE_VERSIONS
 
+Collect software versions from all processes and merge them into a single file
+Inputs:
+- versions_*.yml: versions files from all processes
+Outputs:- software_versions.yml: merged versions file containing software versions used in the pipeline
+
 ## Process Details
 
 | Property | Value |

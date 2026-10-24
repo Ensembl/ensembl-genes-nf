@@ -5,15 +5,14 @@ Documentation for the modules used by this pipeline.
 ```{toctree}
 :maxdepth: 1
 
-check-and-download-rmlibrary
+check-ftp
 collect-software-versions
+download-repeatmodeler-library
 fetch-genome
-fetch-repeat-model
 generate-repeatmodeler-library
 run-dust
 run-red
 run-repeatmasker
 run-trf
 upload-into-ftp
-upload-repeats-into-ftp
 ```

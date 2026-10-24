@@ -1,25 +1,20 @@
 # UPLOAD_INTO_FTP
 
-This process uploads the RepeatModeler library files (FASTA, STK, and log files)
-to the Ensembl FTP server for a given species. It creates a directory
-for the species on the FTP server and copies the files into that directory.
-The process also generates a versions.yml file containing the version
-of the upload process used.
-
 ## Process Details
 
 | Property | Value |
 |----------|-------|
 | Process | `UPLOAD_INTO_FTP` |
 | Label | `'ensembl_ftp'` |
-| Tag | `$meta.gca:upload_into_ftp` |
+| Tag | `${meta.gca}:upload_into_ftp` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-tuple val(meta),path(fasta_file),path(stk_file),path(log_file)
+tuple val(meta), path(files, arity: '1..*')
+val ftp_base
 ```
 
 ## Outputs
@@ -27,7 +22,7 @@ tuple val(meta),path(fasta_file),path(stk_file),path(log_file)
 ### Nextflow interface
 
 ```nextflow
-tuple val(meta),path(fasta_file), emit: library_out
+tuple val(meta), path(files), emit: library_out
 path "versions.yml", emit: versions_file
 ```
 

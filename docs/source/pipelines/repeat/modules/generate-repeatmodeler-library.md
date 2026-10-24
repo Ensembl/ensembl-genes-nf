@@ -16,6 +16,7 @@ containing the version of RepeatModeler used.
 | Label | `'repeatmodeler'` |
 | Tag | `$meta.gca:run_repeatmodeler` |
 | Publish directory | `"${params.outdir}/${meta.gca}/library", mode: 'copy'` |
+| maxForks | `2` |
 
 ## Inputs
 

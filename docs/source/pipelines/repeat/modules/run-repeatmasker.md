@@ -15,7 +15,7 @@ of RepeatMasker used.
 | Process | `RUN_REPEATMASKER` |
 | Label | `python` |
 | Tag | `${meta.gca}:genome` |
-| Publish directory | `"${params.outdir}/${meta.gca}/repeatmasker/", pattern: "repeatmasker_output/*.gtf", mode: "copy"` |
+| Publish directory | `"${params.outdir}/${meta.gca}/repeatmasker/", pattern: "repeatmasker_output/*.fa", mode: "copy"` |
 
 ## Inputs
 
@@ -30,6 +30,7 @@ tuple val(meta), val(library_file)
 ### Nextflow interface
 
 ```nextflow
+tuple val(meta), path("*genome.masked.fa"), emit: repeatmasker_softmasked_out
 tuple val(meta), path("*.gtf"), emit: repeatmasker_out
 path "versions.yml", emit: versions_file
 ```

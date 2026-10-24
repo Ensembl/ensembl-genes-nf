@@ -27,8 +27,12 @@ Enable repeat annotation steps and configure repeat tools.
 | `run_red` | boolean | False | no | Run RED on the fetched genome assembly. |
 | `run_dust` | boolean | False | no | Run DustMasker on the fetched genome assembly. |
 | `run_trf` | boolean | False | no | Run TRF on the fetched genome assembly. |
+| `upload_repeats` | boolean | False | no | Upload the repeat annotation results to the Ensembl database. |
 | `ncbiBaseUrl` | string | https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/ | no | NCBI datasets API base URL used for genome downloads. |
-| `repeats_ftp_base` | string | http://ftp.ebi.ac.uk/pub/databases/ensembl/repeats/unfiltered_repeatmodeler/species/ | no | Base URL for pre-computed RepeatModeler libraries. |
+| `repeatmodeler_ftp_base` | string | https://ftp.ebi.ac.uk/pub/databases/ensembl/repeats/unfiltered_repeatmodeler/species/ | no | Base URL for pre-computed RepeatModeler libraries. |
+| `repeatmasker_ftp_base` | string | https://ftp.ebi.ac.uk/pub/databases/ensembl/repeats/unfiltered_repeatmasker/species/ | no | Base URL for pre-computed RepeatMasker libraries. |
+| `repeatmodeler_ftp_local` | string |  | no | Local directory for cached RepeatModeler libraries. |
+| `repeatmasker_ftp_local` | string |  | no | Local directory for cached RepeatMasker libraries. |
 | `repeatmasker_path` | string |  | no | Path to the RepeatMasker executable. |
 | `builddatabase_path` | string |  | no | Path to the BuildDatabase executable. |
 | `engine_repeatmasker` | string | rmblast | no | RepeatMasker search engine. |
