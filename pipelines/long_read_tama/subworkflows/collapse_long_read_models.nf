@@ -7,6 +7,7 @@ include { STRINGTIE2_COLLAPSE } from '../modules/stringtie2_collapse.nf'
 include { STRINGTIE3_COLLAPSE } from '../modules/stringtie3_collapse.nf'
 include { BAM_TO_ALIGNMENT_GTF } from '../modules/bam_to_alignment_gtf.nf'
 include { TMERGE_COLLAPSE } from '../modules/tmerge_collapse.nf'
+include { AUDIT_NATIVE_SHARD_MODELS; SUMMARISE_NATIVE_SHARD_MODEL_COUNTS } from '../modules/audit_native_shard_models.nf'
 include { VALIDATE_BACKEND_BED } from '../modules/validate_backend_bed.nf'
 include { AUDIT_BACKEND_SHARD_PLAN } from '../modules/audit_backend_shard_plan.nf'
 include { VALIDATE_BACKEND_SHARD_PLAN } from '../modules/validate_backend_shard_plan.nf'
@@ -60,7 +61,7 @@ workflow COLLAPSE_LONG_READ_MODELS {
         }
     }
 
-    native_models = channel.empty()
+    raw_native_models = channel.empty()
     backend_status = channel.empty()
     status_ch = channel.empty()
     backend_shard_plans = shard_plans.flatMap { meta, plan ->
@@ -76,18 +77,18 @@ workflow COLLAPSE_LONG_READ_MODELS {
         VALIDATE_BACKEND_BED(tama_beds)
         backend_status = VALIDATE_BACKEND_BED.out.status
         status_ch = backend_status
-        native_models = native_models.mix(VALIDATE_BACKEND_BED.out.bed.map { meta, _backend, shard, bed -> tuple(meta, 'tama', shard, bed, 'bed12') })
+        raw_native_models = raw_native_models.mix(VALIDATE_BACKEND_BED.out.bed.map { meta, _backend, shard, bed -> tuple(meta, 'tama', shard, bed, 'bed12') })
     }
     if (requested_backends.contains('stringtie2')) {
         stringtie2_bams = shard_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai -> !backend_skip_keys('stringtie2', explicit_skips, legacy_skips).contains("${meta.id}:${shard}") }
         STRINGTIE2_COLLAPSE(stringtie2_bams)
-        native_models = native_models.mix(STRINGTIE2_COLLAPSE.out.gtf.map { meta, shard, gtf -> tuple(meta, 'stringtie2', shard, gtf, 'gtf') })
+        raw_native_models = raw_native_models.mix(STRINGTIE2_COLLAPSE.out.gtf.map { meta, shard, gtf -> tuple(meta, 'stringtie2', shard, gtf, 'gtf') })
         status_ch = status_ch.mix(STRINGTIE2_COLLAPSE.out.status)
     }
     if (requested_backends.contains('stringtie3')) {
         stringtie3_bams = shard_bams.filter { meta, shard, _resource_class, _mapped_reads, _bam, _bai -> !backend_skip_keys('stringtie3', explicit_skips, legacy_skips).contains("${meta.id}:${shard}") }
         STRINGTIE3_COLLAPSE(stringtie3_bams)
-        native_models = native_models.mix(STRINGTIE3_COLLAPSE.out.gtf.map { meta, shard, gtf -> tuple(meta, 'stringtie3', shard, gtf, 'gtf') })
+        raw_native_models = raw_native_models.mix(STRINGTIE3_COLLAPSE.out.gtf.map { meta, shard, gtf -> tuple(meta, 'stringtie3', shard, gtf, 'gtf') })
         status_ch = status_ch.mix(STRINGTIE3_COLLAPSE.out.status)
     }
     if (requested_backends.contains('tmerge')) {
@@ -95,7 +96,7 @@ workflow COLLAPSE_LONG_READ_MODELS {
         BAM_TO_ALIGNMENT_GTF(tmerge_bams)
         tmerge_gtf = BAM_TO_ALIGNMENT_GTF.out.gtf.map { meta, shard, reads_gtf -> tuple(meta, shard, reads_gtf) }
         TMERGE_COLLAPSE(tmerge_gtf)
-        native_models = native_models.mix(TMERGE_COLLAPSE.out.gtf.map { meta, shard, gtf -> tuple(meta, 'tmerge', shard, gtf, 'gtf') })
+        raw_native_models = raw_native_models.mix(TMERGE_COLLAPSE.out.gtf.map { meta, shard, gtf -> tuple(meta, 'tmerge', shard, gtf, 'gtf') })
         status_ch = status_ch.mix(TMERGE_COLLAPSE.out.status)
     }
 
@@ -105,7 +106,17 @@ workflow COLLAPSE_LONG_READ_MODELS {
     if (requested_backends.contains('stringtie2')) { collapse_reports = collapse_reports.mix(STRINGTIE2_COLLAPSE.out.status) }
     if (requested_backends.contains('stringtie3')) { collapse_reports = collapse_reports.mix(STRINGTIE3_COLLAPSE.out.status) }
     if (requested_backends.contains('tmerge')) { collapse_reports = collapse_reports.mix(TMERGE_COLLAPSE.out.status) }
-    success_keys = native_models
+    // Audit every shard model before either native or legacy merging. Empty
+    // shard files remain in the count report but never reach a merge tool.
+    AUDIT_NATIVE_SHARD_MODELS(raw_native_models)
+    mergeable_native_models = AUDIT_NATIVE_SHARD_MODELS.out.mergeable
+        .map { meta, backend, shard, model, native_format -> tuple(meta, backend, shard, model, native_format) }
+    count_tables = AUDIT_NATIVE_SHARD_MODELS.out.counts
+        .map { _meta, _backend, _shard, table -> table }
+        .collect()
+    SUMMARISE_NATIVE_SHARD_MODEL_COUNTS(count_tables)
+
+    success_keys = raw_native_models
         .map { meta, backend, shard, _model, _native_format -> "${backend}:${meta.id}:${shard}" }
         .collect()
         .ifEmpty([''])
@@ -113,6 +124,8 @@ workflow COLLAPSE_LONG_READ_MODELS {
     VALIDATE_BACKEND_SHARD_PLAN(backend_shard_plans, success_keys)
     collapse_reports = collapse_reports.mix(VALIDATE_BACKEND_SHARD_PLAN.out.status)
     version_ch = INSPECT_BAM_WORKLOAD.out.versions.mix(split_versions)
+        .mix(AUDIT_NATIVE_SHARD_MODELS.out.versions)
+        .mix(SUMMARISE_NATIVE_SHARD_MODEL_COUNTS.out.versions)
     if (requested_backends.contains('tama')) { version_ch = version_ch.mix(TAMA_COLLAPSE.out.versions) }
     if (requested_backends.contains('tama')) { version_ch = version_ch.mix(VALIDATE_BACKEND_BED.out.versions) }
     if (requested_backends.contains('stringtie2')) { version_ch = version_ch.mix(STRINGTIE2_COLLAPSE.out.versions) }
@@ -120,7 +133,7 @@ workflow COLLAPSE_LONG_READ_MODELS {
     if (requested_backends.contains('tmerge')) { version_ch = version_ch.mix(BAM_TO_ALIGNMENT_GTF.out.versions).mix(TMERGE_COLLAPSE.out.versions) }
 
     emit:
-    native_models
+    native_models = mergeable_native_models
     statuses = status_ch
     shard_plans = AUDIT_BACKEND_SHARD_PLAN.out.plan
     shard_statuses = VALIDATE_BACKEND_SHARD_PLAN.out.status

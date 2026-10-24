@@ -33,6 +33,13 @@ independent final model sets; it does not make TAMA canonical. See
 `LONG_READ_BACKEND_EVALUATION.md` for the common benchmark contract and
 measurements needed before selecting a backend for future Ensembl work.
 
+Before merging per-contig TAMA, StringTie2, StringTie3, or tmerge outputs, the
+pipeline counts models in each native shard file and writes
+`reports/native_contig_model_counts.tsv`. Empty shards remain recorded with a
+zero model count and are excluded from merge inputs. The `shard` column is the
+reference contig when `--shard_mode contig` is used; in whole-BAM mode it is
+`whole`.
+
 `--merge_tool` is deprecated and applies only to the explicit `legacy_common`
 compatibility mode. StringTie merge arguments are configured with
 `--stringtie2_merge_args` and `--stringtie3_merge_args`; only the
