@@ -1,4 +1,5 @@
 process TMERGE_NATIVE_MERGE {
+    publishDir path: { accession == params.cohort_id ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/tmerge" : "${params.outdir}/per_run/${accession}/tools/tmerge" }, mode: 'copy', enabled: params.publish_native_intermediates, saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${backend}:${accession}:tmerge-merge"
     label 'process_high_memory'
     container 'community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea'

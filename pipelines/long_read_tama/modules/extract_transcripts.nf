@@ -1,4 +1,5 @@
 process EXTRACT_COMBINED_TRANSCRIPTS {
+    publishDir path: { meta.scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/${meta.backend}" : "${params.outdir}/per_run/${meta.id}/tools/${meta.backend}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:transcripts"
     label 'process_medium'
     container 'https://depot.galaxyproject.org/singularity/bedtools:2.31.1--hf5e1c6e_1'

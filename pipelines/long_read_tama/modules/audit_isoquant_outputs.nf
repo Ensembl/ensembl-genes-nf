@@ -1,4 +1,5 @@
 process AUDIT_ISOQUANT_OUTPUTS {
+    publishDir path: { scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/qc" : "${params.outdir}/per_run/${meta.id}/qc" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:${scope}:isoquant-audit"
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/python:3.11'

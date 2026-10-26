@@ -32,7 +32,7 @@ process SUMMARISE_NATIVE_SHARD_MODEL_COUNTS {
     tag 'native-contig-model-counts'
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/python:3.11'
-    publishDir "${params.outdir}/reports", mode: 'copy'
+    publishDir "${params.outdir}/per_cohort/${params.cohort_id}/qc", mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
 
     input:
     path(count_tables, stageAs: 'counts??/*')

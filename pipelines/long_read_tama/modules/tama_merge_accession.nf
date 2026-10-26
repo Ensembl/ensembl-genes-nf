@@ -1,4 +1,5 @@
 process TAMA_MERGE_ACCESSION {
+    publishDir path: { "${params.outdir}/per_run/${accession}/tools/${backend}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${backend}:${accession}"
     label 'process_high_memory'
     conda 'bioconda::gs-tama=1.0.3'

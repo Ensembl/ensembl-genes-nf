@@ -1,4 +1,5 @@
 process TAMA_MERGE {
+    publishDir path: { "${params.outdir}/per_cohort/${cohort_id}/tools/${backend}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${backend}:${cohort_id}"
     label 'process_high_memory'
     conda 'bioconda::gs-tama=1.0.3'

@@ -1,4 +1,5 @@
 process PREDICT_LONGEST_ATG_ORFS {
+    publishDir path: { meta.scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/qc" : "${params.outdir}/per_run/${meta.id}/qc" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:orfs"
     label 'process_medium'
     container 'https://depot.galaxyproject.org/singularity/python:3.11'

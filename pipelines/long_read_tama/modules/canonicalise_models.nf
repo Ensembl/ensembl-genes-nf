@@ -1,4 +1,5 @@
 process CANONICALISE_COMBINED_MODELS {
+    publishDir path: { meta.id == params.cohort_id ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/${backend}" : "${params.outdir}/per_run/${meta.id}/tools/${backend}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${backend}:${meta.id}:combined-models"
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/python:3.11'

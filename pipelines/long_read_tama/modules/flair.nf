@@ -2,7 +2,7 @@ process FLAIR_JUNCTIONS {
     tag "${meta.id}:${shard}:flair-junctions"
     label 'process_medium'
     container 'docker://community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'
-    publishDir path: { "${params.outdir}/flair/native/${meta.id}/${shard}/junctions" }, mode: 'copy'
+    publishDir path: { params.shard_mode == 'none' ? "${params.outdir}/per_run/${meta.id}/tools/flair" : "${params.outdir}/per_run/${meta.id}/tools/flair/shards/${shard}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
 
     input:
     tuple val(meta), val(shard), val(resource_class), val(mapped_reads), path(bam), path(bai)
@@ -31,7 +31,7 @@ process FLAIR_TRANSCRIPTOME {
     tag "${meta.id}:${shard}:flair-transcriptome"
     label 'process_high_memory'
     container 'docker://community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'
-    publishDir path: { "${params.outdir}/flair/native/${meta.id}/${shard}" }, mode: 'copy'
+    publishDir path: { params.shard_mode == 'none' ? "${params.outdir}/per_run/${meta.id}/tools/flair" : "${params.outdir}/per_run/${meta.id}/tools/flair/shards/${shard}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
 
     input:
     tuple val(meta), val(shard), val(resource_class), val(mapped_reads), path(bam), path(bai), path(junctions)
@@ -90,7 +90,7 @@ process FLAIR_COMBINE {
     tag "${meta.id}:flair-combine"
     label 'process_high_memory'
     container 'docker://community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'
-    publishDir path: { "${params.outdir}/flair/native/${meta.id}/${scope}" }, mode: 'copy'
+    publishDir path: { scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/flair" : "${params.outdir}/per_run/${meta.id}/tools/flair" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
 
     input:
     tuple val(meta), val(scope), path(archives)

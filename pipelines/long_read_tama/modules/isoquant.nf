@@ -1,4 +1,5 @@
 process ISOQUANT_ANNOTATION_FREE {
+    publishDir path: { scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/isoquant" : "${params.outdir}/per_run/${meta.id}/tools/isoquant" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:${scope}:isoquant-annotation-free"
     label 'process_high_memory'
     container 'docker://quay.io/biocontainers/isoquant:4.0.0--pyh106432d_0'
@@ -61,6 +62,7 @@ process ISOQUANT_ANNOTATION_FREE {
 }
 
 process ISOQUANT_REFERENCE_GUIDED {
+    publishDir path: { scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/isoquant" : "${params.outdir}/per_run/${meta.id}/tools/isoquant" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:${scope}:isoquant-reference-guided"
     label 'process_high_memory'
     container 'docker://quay.io/biocontainers/isoquant:4.0.0--pyh106432d_0'

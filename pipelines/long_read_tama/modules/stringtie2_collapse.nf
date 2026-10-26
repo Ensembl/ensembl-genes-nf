@@ -1,4 +1,5 @@
 process STRINGTIE2_COLLAPSE {
+    publishDir path: { params.shard_mode == 'none' ? "${params.outdir}/per_run/${meta.id}/tools/stringtie2" : "${params.outdir}/per_run/${meta.id}/tools/stringtie2/shards/${shard}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:${shard}:stringtie2"
     label 'process_high_memory'
     conda 'bioconda::stringtie=2.2.3'

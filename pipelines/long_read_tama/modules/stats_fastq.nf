@@ -1,4 +1,5 @@
 process STATS_FASTQ {
+    publishDir path: { "${params.outdir}/per_run/${meta.id}/qc" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}"
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/python:3.11'

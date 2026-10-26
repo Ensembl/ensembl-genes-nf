@@ -1,4 +1,5 @@
 process TMERGE_COLLAPSE {
+    publishDir path: { params.shard_mode == 'none' ? "${params.outdir}/per_run/${meta.id}/tools/tmerge" : "${params.outdir}/per_run/${meta.id}/tools/tmerge/shards/${shard}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:${shard}:tmerge"
     label 'process_high_memory'
     container 'community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea'

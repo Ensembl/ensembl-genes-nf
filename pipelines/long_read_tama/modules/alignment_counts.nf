@@ -1,4 +1,5 @@
 process ALIGNMENT_COUNTS {
+    publishDir path: { "${params.outdir}/per_run/${meta.id}/qc" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:alignment-counts"
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/samtools:1.20--h50ea8bc_1'

@@ -1,4 +1,5 @@
 process SAMTOOLS_SORT_INDEX {
+    publishDir path: { "${params.outdir}/per_run/${meta.id}/alignment" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:sort-index"
     label 'process_high'
     container 'https://depot.galaxyproject.org/singularity/samtools:1.20--h50ea8bc_1'

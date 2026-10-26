@@ -1,4 +1,5 @@
 process NORMALISE_ISOQUANT_OUTPUTS {
+    publishDir path: { scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/isoquant" : "${params.outdir}/per_run/${meta.id}/tools/isoquant" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:${scope}:isoquant-normalise"
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/python:3.11'

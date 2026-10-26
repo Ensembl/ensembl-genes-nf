@@ -1,4 +1,5 @@
 process ALIGNMENT_IDENTITY {
+    publishDir path: { "${params.outdir}/per_run/${meta.id}/qc" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:alignment-identity"
     label 'process_medium'
     container 'community.wave.seqera.io/library/flair_coreutils_python:9744ce1f6049d5bd'

@@ -1,4 +1,5 @@
 process AUDIT_NATIVE_MODELS {
+    publishDir path: { scope == params.cohort_id ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/${backend}" : "${params.outdir}/per_run/${scope}/tools/${backend}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${backend}:${meta.id}:${scope}:native-audit"
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/python:3.11'

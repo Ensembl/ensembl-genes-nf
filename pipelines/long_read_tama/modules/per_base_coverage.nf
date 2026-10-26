@@ -1,4 +1,5 @@
 process PER_BASE_COVERAGE {
+    publishDir path: { "${params.outdir}/per_run/${meta.id}/qc" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:per-base-coverage"
     label 'process_medium'
     container 'https://depot.galaxyproject.org/singularity/mosdepth:0.3.6--hd299d5a_0'

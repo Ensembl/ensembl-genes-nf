@@ -1,4 +1,5 @@
 process TMERGE_MERGE_ACCESSION {
+    publishDir path: { "${params.outdir}/per_run/${accession}/tools/${backend}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${backend}:${accession}"
     label 'process_high_memory'
     container 'community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea'

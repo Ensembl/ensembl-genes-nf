@@ -1,7 +1,7 @@
 process COMPARE_CANDIDATE_MODELS {
     tag "${meta.id}:${stage}:candidate-model-comparison"
     label 'process_light'
-    publishDir "${params.outdir}/reports/comparison", mode: 'copy'
+    publishDir path: { stage == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/qc" : "${params.outdir}/per_run/${meta.id}/qc" }, mode: 'copy'
 
     input:
     // Each backend emits the same canonical BED basename. Stage the collection

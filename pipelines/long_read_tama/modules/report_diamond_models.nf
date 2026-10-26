@@ -4,7 +4,7 @@ process REPORT_COMBINED_DIAMOND_MODELS {
     // This process runs the Python report generator; Diamond itself runs in
     // the upstream PREP_DIAMOND_DB/DIAMOND_BLASTP processes.
     container 'https://depot.galaxyproject.org/singularity/python:3.11'
-    publishDir "${params.outdir}/qc/diamond", mode: 'copy', overwrite: true
+    publishDir path: { meta.scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/qc" : "${params.outdir}/per_run/${meta.id}/qc" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
 
     input:
     tuple val(meta), path(orf_manifest), path(diamond_hits)

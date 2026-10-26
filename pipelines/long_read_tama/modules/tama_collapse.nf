@@ -1,4 +1,5 @@
 process TAMA_COLLAPSE {
+    publishDir path: { params.shard_mode == 'none' ? "${params.outdir}/per_run/${meta.id}/tools/tama" : "${params.outdir}/per_run/${meta.id}/tools/tama/shards/${shard}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}${shard ? ':' + shard : ''}:${resource_class}:${mapped_reads} reads"
     // Keep the process-level resource_class allocation below in control. The
     // shared process_high_memory label pins memory at 64 GB and overrides this

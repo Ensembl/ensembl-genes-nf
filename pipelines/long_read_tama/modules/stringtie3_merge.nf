@@ -1,4 +1,5 @@
 process STRINGTIE3_MERGE {
+    publishDir path: { accession == params.cohort_id ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/stringtie3" : "${params.outdir}/per_run/${accession}/tools/stringtie3" }, mode: 'copy', enabled: params.publish_native_intermediates, saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${backend}:${accession}:stringtie3-merge"
     label 'process_high_memory'
     container 'https://depot.galaxyproject.org/singularity/stringtie:3.0.3--h29c0135_0'

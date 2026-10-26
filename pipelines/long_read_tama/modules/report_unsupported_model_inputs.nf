@@ -1,7 +1,7 @@
 process REPORT_UNSUPPORTED_MODEL_INPUTS {
     tag "${meta.id}:${backend}:unsupported-input"
     label 'process_light'
-    publishDir "${params.outdir}/reports/model_input_skips", mode: 'copy'
+    publishDir path: { "${params.outdir}/per_run/${meta.id}/qc" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
 
     input:
     tuple val(meta), val(backend)

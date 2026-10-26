@@ -1,4 +1,5 @@
 process BAMBU_DISCOVERY {
+    publishDir path: { scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/bambu" : "${params.outdir}/per_run/${meta.id}/tools/bambu" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:${scope}:bambu"
     label 'process_high_memory'
     container "${params.bambu_container ?: 'docker://quay.io/biocontainers/bioconductor-bambu:3.12.1--r45ha27e39d_1'}"

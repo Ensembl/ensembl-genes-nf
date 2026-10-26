@@ -1,4 +1,5 @@
 process MINIMAP2_ALIGN {
+    publishDir path: { "${params.outdir}/per_run/${meta.id}/alignment" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${meta.id}:alignment"
     label 'process_high'
     // Keep minimap2 and samtools in one image so SAM streams directly into

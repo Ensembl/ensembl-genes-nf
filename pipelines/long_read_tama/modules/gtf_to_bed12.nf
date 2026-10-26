@@ -1,4 +1,5 @@
 process GTF_TO_BED12 {
+    publishDir path: { stage == 'cohort' || stage == params.cohort_id || meta.scope == 'cohort' ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/${backend}" : "${params.outdir}/per_run/${meta.id}/tools/${backend}" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${backend}:${meta.id}:${stage}:comparison-bed12"
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/python:3.11'
