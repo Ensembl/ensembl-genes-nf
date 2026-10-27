@@ -15,8 +15,8 @@ process VALIDATE_SPLICE_BIGBED {
     test -s ${bigbed} || { echo 'Splice-junction BigBed validation failed' >&2; exit 1; }
     bigBedInfo -as ${bigbed} > ${meta.safe_id}.embedded_splice_schema.as
     for field in chrom chromStart chromEnd name score strand unique_reads multi_reads splice_motif; do
-        grep -q "[[:space:]]${field};" ${meta.safe_id}.embedded_splice_schema.as || {
-            echo "Splice BigBed is missing embedded AutoSql field: ${field}" >&2
+        grep -q "[[:space:]]\${field};" ${meta.safe_id}.embedded_splice_schema.as || {
+            echo "Splice BigBed is missing embedded AutoSql field: \${field}" >&2
             exit 1
         }
     done
