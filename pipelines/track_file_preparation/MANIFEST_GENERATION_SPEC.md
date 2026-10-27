@@ -224,9 +224,9 @@ No unresolved row enters the production manifest.
 
 - `coverage` requires BAM; an absent index is valid because Nextflow creates it.
 - `gene_model` requires GTF.
-- `splice_junction` requires SJ unless BAM derivation is explicitly enabled
-  in the downstream pipeline.
-- Derivation is not silently enabled by the generator.
+- `splice_junction` requires STAR SJ input. The current BAM derivation path
+  cannot provide separate unique/multimapping read counts and motif values for
+  the declared nine-column output contract.
 
 ## Assembly and metadata
 

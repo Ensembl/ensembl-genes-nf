@@ -4,8 +4,19 @@ This DSL2 pipeline treats the supplied TSV as the authoritative entity
 inventory. It does not scan production directories or infer run/sample/merged
 relationships. The per-row `track_types` value is used unless the pipeline
 parameter supplies an explicit override; `all` means coverage, gene-model,
-and splice-junction tracks. Junction derivation from BAM is opt-in with
-`--derive_junctions true`.
+and splice-junction tracks. A selected `coverage` track produces both
+`coverage_forward/<entity>.forward.bw` and
+`coverage_reverse/<entity>.reverse.bw`. These use deepTools'
+`--filterRNAstrand` interpretation, which assumes a dUTP/NSR/NNSR stranded
+RNA-seq library; check the library protocol before interpreting the labels.
+
+Splice-junction BigBeds contain the nine fields documented in
+`resources/splice_junction.as`. Their AutoSql schema is embedded in each
+BigBed; UCSC tools can display the names and descriptions with
+`bigBedInfo -as <file.bb>`. BAM-derived junctions are rejected for this output
+contract because the current BAM extraction path cannot provide separate
+unique and multimapping counts plus the splice motif. Supply the matching STAR
+`SJ.out.tab`.
 
 Run-level manifests can be discovered with the standalone generator. `main`
 and `anno` default to all three tracks; `gdm` defaults to coverage and
@@ -83,6 +94,6 @@ original entity ID while filenames use a collision-checked sanitized ID.
 For BAM-dependent tracks, the pipeline uses a manifest-supplied BAM index or
 an adjacent `.bai`/`.csi` only when its modification time is at least as new
 as the BAM. If no current index exists, it creates a `.bai` with `samtools index`
-before running coverage or BAM-derived junction extraction. Index
+before running coverage. Index
 creation is a declared workflow stage, not a prerequisite that the manifest
 producer must perform.

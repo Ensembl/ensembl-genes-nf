@@ -95,6 +95,8 @@ def manifest_entities(manifest, base_dir, override) {
         if (!safe_seen.add("${row.gca_accession}\t${safe}")) error "Entity ID sanitization collision for ${key}"
         def contains_lts_path = ['bam', 'gtf', 'sj_out_tab', 'bai'].any { field -> is_lts_location(row[field], manifest_base) }
         def selected = override ? parse_track_selection(override) : parse_track_selection(row.track_types)
+        if (derive_junctions_enabled() && 'splice_junction' in selected)
+            error "BAM-derived splice junctions cannot satisfy the nine-column output contract (separate unique/multimapping counts and splice motif); provide STAR SJ.out.tab for ${row.entity_id}"
         def bam = resolve_manifest_path(row.bam, manifest_base, 'coverage' in selected || derive_junctions_enabled(), row_number + 2)
         def gtf = resolve_manifest_path(row.gtf, manifest_base, 'gene_model' in selected, row_number + 2)
         def sj = resolve_manifest_path(row.sj_out_tab, manifest_base, 'splice_junction' in selected && !derive_junctions_enabled(), row_number + 2)
