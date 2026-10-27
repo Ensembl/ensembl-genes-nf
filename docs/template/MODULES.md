@@ -131,7 +131,8 @@ process MINIMAP2 {
 
 **Why**: Reproducibility - know exactly which tool versions produced results
 
-**Required output**:
+**Recommended output when version reporting is part of the pipeline's
+reproducibility approach**:
 ```groovy
 output:
 path "versions.yml", emit: versions
@@ -196,15 +197,15 @@ END_VERSIONS
 
 **Running stub mode**:
 ```bash
-nextflow run pipeline.nf -stub --outdir results
+nextflow run pipeline.nf -stub-run --outdir results
 ```
 
 **Best practices**:
 ```groovy
-- Create ALL output files that script creates
+- Create every output file that the process declares
 - Use same file naming logic as script block
 - Keep stub simple - just touch/echo
-- Include versions.yml with hardcoded versions
+- Include `versions.yml` when the process reports tool versions
 ```
 
 **Why this matters**:
@@ -375,12 +376,12 @@ aligner ${args} input.fq | sorter ${args2} > output.bam
 """
 ```
 
-## Patterns to use carefully
+## Patterns to review carefully
 
 The following examples are common sources of maintenance problems, but context
 matters. Treat them as warning signs to review rather than absolute bans.
 
-- **Hardcoded parameters**
+- **Hardcoded parameters** (consider configuration when values vary)
 ```groovy
 // Bad
 """

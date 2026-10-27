@@ -8,11 +8,11 @@
 
 This repository provides templates and examples to help you build Nextflow pipelines:
 
-- **Pipeline templates** - Production-ready patterns and structure
+- **Pipeline templates** - Practical starting patterns and structure
 - **Example workflows** - Working examples from simple to complex
 - **Module templates** - Reusable process definitions
-- **Comprehensive documentation** - Guides, patterns, and best practices
-- **Advanced patterns** - Entry point system for complex workflows
+- **Documentation and examples** - Guides, patterns, and practical examples
+- **Additional patterns** - Optional approaches for more complex workflows
 
 ## Quick Start
 
@@ -23,14 +23,13 @@ Explore the templates by running the example workflows:
 cd pipelines/example
 
 # Run the simplest example (single process)
-nextflow run workflows/simple_workflow.nf -stub --outdir results
+nextflow run workflows/simple_workflow.nf -stub-run --outdir results
 
 # Run the main workflow (subworkflows chained together)
-nextflow run main.nf -stub --outdir results
+nextflow run main.nf -stub-run -profile test
 
-# Explore the advanced entry point system
-cd advanced_entrypoints
-nextflow run main.nf --help
+# Read the repository conventions
+cat ../../docs/NEXTFLOW_REQUIREMENTS.md
 ```
 
 ## Repository Structure
@@ -42,7 +41,7 @@ ensembl-genes-nf/  (template branch)
 │       ├── workflows/    # Example workflows (start here)
 │       ├── subworkflows/ # Subworkflow patterns (parallel, sequential)
 │       ├── modules/      # Process templates
-│       └── advanced_entrypoints/  # Dynamic entry point system
+│       └── assets/            # Deterministic test inputs
 ├── modules/              # Module templates for creating new processes
 ├── subworkflows/         # Subworkflow templates
 ├── config/               # Configuration templates
@@ -54,7 +53,7 @@ ensembl-genes-nf/  (template branch)
 **[docs/](docs/)** - Complete documentation
 
 Start with:
-- **[docs/QUICK_START.md](docs/QUICK_START.md)** - Step-by-step guide from basics to advanced
+- **[docs/template/QUICK_START.md](docs/template/QUICK_START.md)** - Step-by-step guide from lint to stub run
 - **[docs/PATTERNS.md](docs/PATTERNS.md)** - 12 common Nextflow patterns with examples
 - **[pipelines/example/README.md](pipelines/example/README.md)** - Example pipeline overview
 
@@ -66,25 +65,24 @@ The example pipeline demonstrates patterns from simple to complex:
 
 1. **Simple workflows** - Single process execution
 2. **Subworkflow composition** - Chaining reusable components
-3. **Dynamic entry points** - Automatic workflow resumption
+3. **Test profiles and stubs** - Fast structural checks during development
 
 ### Best Practices
 
 - Modular design with reusable components
 - Consistent metadata (`meta`) handling across processes
 - Proper channel operations and data flow
-- Version tracking for all tools
+- Version tracking where it supports reproducibility
 - Stub mode for fast testing and development
 
-### Advanced Patterns
+### Additional Patterns
 
-- **Entry point registry** - Declarative dependency management
-- **Automatic validation** - Verify required inputs before execution
-- **Smart resumption** - Detect existing outputs and skip completed steps
+- **Parameter validation** - Check required inputs before execution
+- **Workflow composition** - Organize reusable stages and processes
 
 ## Using This Template
 
-**Learning the patterns?** Start with the [Quick Start Guide](docs/QUICK_START.md) and run the example workflows in `pipelines/example/`.
+**Learning the patterns?** Start with the [Quick Start Guide](docs/template/QUICK_START.md) and run the example workflows in `pipelines/example/`.
 
 **Building a new pipeline?**
 1. Copy the structure from `pipelines/example/`
@@ -125,8 +123,8 @@ nextflow run pipelines/example/main.nf \
   -c config/singularity.config
 ```
 
-See [docs/NEXTFLOW_REQUIREMENTS.md](docs/NEXTFLOW_REQUIREMENTS.md) for the
-repository contract and validation commands.
+See [docs/NEXTFLOW_REQUIREMENTS.md](docs/NEXTFLOW_REQUIREMENTS.md) for
+recommended conventions and validation commands.
 
 ## Private Container Registry
 

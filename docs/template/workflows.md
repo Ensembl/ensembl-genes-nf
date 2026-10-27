@@ -508,9 +508,9 @@ nextflow run main.nf -with-dag workflow.svg
 - Verify dependencies
 - Documentation for team
 
-## Anti-Patterns to Avoid
+## Patterns to review carefully
 
-### Don't: Put Logic in Workflows
+### Use care with logic in workflows
 
 ```groovy
 // Bad: Business logic in workflow
@@ -528,7 +528,7 @@ workflow {
 }
 ```
 
-### Don't: Hardcode Values
+### Use care with hardcoded values
 
 ```groovy
 // Bad: Hardcoded paths and values
@@ -544,7 +544,7 @@ workflow {
 }
 ```
 
-### Don't: Create Monolithic Subworkflows
+### Use care with monolithic subworkflows
 
 ```groovy
 // Bad: Everything in one subworkflow
@@ -559,7 +559,7 @@ workflow ALIGNMENT { /* ... */ }
 workflow QUANTIFICATION { /* ... */ }
 ```
 
-### Don't: Forget Error Handling
+### Handle empty or optional channels deliberately
 
 ```groovy
 // Bad: No handling of empty channels
@@ -576,7 +576,7 @@ workflow {
 }
 ```
 
-### Don't: Duplicate Subworkflows
+### Consider reuse before duplicating subworkflows
 
 ```groovy
 // Bad: Copy-paste similar subworkflows

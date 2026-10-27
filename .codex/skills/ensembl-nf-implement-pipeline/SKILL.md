@@ -11,18 +11,18 @@ Inspect the target pipeline and its nearest working analogue before editing. Tre
 
 - Keep pipeline-owned code beneath `pipelines/<name>/`: `main.nf`, `nextflow.config`, modules, subworkflows, resources, and tests/examples as needed.
 - Use DSL2 and let `main.nf` compose named subworkflows. Keep tool processes out of the entry point except for truly pipeline-specific minimal work.
-- Use one primary bioinformatics tool per module. Put orchestration and channel transformations in subworkflows.
+- Prefer one primary bioinformatics tool per module when that improves reuse and clarity. Put orchestration and channel transformations in subworkflows where useful.
 - Pass sample data as tuples beginning with `meta`; preserve `meta` through outputs. State tuple shapes in comments at public subworkflow boundaries.
 - Keep reusable modules configurable through `task.ext` and pipeline configuration. Put a pipeline-only parameter, resource override, or profile in that pipeline's `nextflow.config`; do not modify root configuration for a one-pipeline need.
-- Add or update user-facing parameters in the pipeline schema/configuration together. Validate required inputs early, before work is launched.
+- Add or update user-facing parameters in the pipeline schema/configuration together when those artifacts are used. Validate required inputs early when practical, before work is launched.
 
 ## Work deliberately
 
 1. Read the affected `main.nf`, `nextflow.config`, direct modules/subworkflows, and the relevant sections of `docs/NEXTFLOW_REQUIREMENTS.md`, `docs/template/MODULES.md`, `docs/template/PATTERNS.md`, and `docs/template/CONFIGURATION.md`.
-2. Trace every changed input and output channel end-to-end. Name emitted channels for their content, not their position.
-3. Reuse resource labels from `config/resources.config`, explicit tool versions, and an appropriate container/conda definition.
+2. Trace changed input and output channels end-to-end. Name emitted channels for their content, not their position.
+3. Reuse resource labels from `config/resources.config`, explicit tool versions, and an appropriate container/Conda definition where applicable.
 4. Keep outputs under `${params.outdir}` and preserve standard execution reporting through the inherited root configuration.
-5. Add a small, representative stub-mode path for changed orchestration. Do not add generated results, `.nextflow*`, `work/`, or container caches to version control.
+5. Add a small, representative stub-mode path for changed orchestration when useful. Do not add generated results, `.nextflow*`, `work/`, or container caches to version control.
 
 ## Finish with evidence
 

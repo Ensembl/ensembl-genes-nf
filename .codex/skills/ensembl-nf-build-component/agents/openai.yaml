@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Ensembl NF Component"
+  short_description: "Create conformant Nextflow components"
+  default_prompt: "Use $ensembl-nf-build-component to add this Nextflow module or subworkflow."

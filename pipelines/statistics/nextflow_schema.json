@@ -28,6 +28,10 @@
       "type": "boolean",
       "description":"Run Ensembl statistics given a mysql db"
     },
+    "run_pepstats": {
+      "type": "boolean",
+      "description":"Run pepstats given a protein fasta file"
+    },
     "run_ensembl_beta_metakeys": {
       "type": "boolean",
       "description":"Run Ensembl beta metakeys given a mysql db"
