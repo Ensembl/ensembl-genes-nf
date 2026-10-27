@@ -35,8 +35,12 @@ def resolve_manifest_path(String raw, base_dir, boolean must_exist, int row_numb
         return null
     }
     def path = file(raw.startsWith('/') ? raw : "${base_dir}/${raw}")
-    if (must_exist && !path.exists()) error "Manifest row ${row_number} path does not exist: ${path}"
-    path.exists() ? path : null
+    // The launcher may not be able to stat /lts. Defer those existence checks
+    // to STAGE_LTS_FILES, which runs on the configured datamover queue.
+    def lts_input = is_lts_location(raw, base_dir)
+    if (must_exist && !path.exists() && !lts_input)
+        error "Manifest row ${row_number} path does not exist: ${path}"
+    (path.exists() || lts_input) ? path : null
 }
 
 def resolve_current_bam_index(bam, supplied_index, String entity_id, boolean warn_on_stale = true) {
