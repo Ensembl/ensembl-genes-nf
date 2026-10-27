@@ -147,6 +147,10 @@ workflow RUN_BUSCO {
         if (!params.asm_metadata) {
             error("--asm_metadata (JSON with assembly metadata DB connection params) is required with --update_registry")
         }
+        // A suppressed GCA may be swapped for its currentAccession, whose BUSCO would be recorded against the requested GCA
+        if (params.allow_suppressed_accessions) {
+            error("--allow_suppressed_accessions cannot be used with --update_registry: the genome of a replacement accession would be recorded against the requested GCA")
+        }
         // Accept a JSON string (command line) or a map (params file) and normalise to a JSON string
         def asmMetadata = params.asm_metadata instanceof Map
             ? groovy.json.JsonOutput.toJson(params.asm_metadata)
