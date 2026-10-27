@@ -1,7 +1,7 @@
 process VALIDATE_SPLICE_BIGBED {
     tag { "${meta.gca_accession}:${meta.id}" }
     label 'process_light'
-    container 'https://depot.galaxyproject.org/singularity/ucsc-bedtobigbed:482--hdc0a859_0'
+    container 'https://depot.galaxyproject.org/singularity/ucsc-bigbedinfo:482--h0b57e2e_0'
 
     input:
     tuple val(meta), path(bigbed), path(bam)
