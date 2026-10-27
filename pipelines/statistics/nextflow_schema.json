@@ -50,7 +50,7 @@
     },
     "update_registry": {
       "type": "boolean",
-      "description":"Load BUSCO genome results into the assembly metadata db (assembly_metrics table) and mark genome_busco.status as done (assembly_events table)"
+      "description":"Load BUSCO genome results into the assembly metadata db (assembly_metrics table) and mark genome_busco.status as done (assembly_events table). Cannot be used with --allow_suppressed_accessions"
     },
     "asm_metadata": {
       "type": ["string", "object"],
@@ -96,7 +96,7 @@
     "allow_suppressed_accessions": {
       "type": "boolean",
       "default": false,
-      "description":"Use NCBI currentAccession for suppressed or previous assemblies when fetching genome FASTA"
+      "description":"Use NCBI currentAccession for suppressed or previous assemblies when fetching genome FASTA. Cannot be used with --update_registry"
     },
     "readme": {
       "type": "string",

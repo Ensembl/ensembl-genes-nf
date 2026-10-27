@@ -11,6 +11,7 @@ The `BUSCO_ASSEMBLY_DB` process loads BUSCO **genome mode** results into the ass
 - **Cache**: Disabled because the process writes to the database
 - **Publish Directory**: `${params.outdir}/${meta.gca}`
 - **Conditional Execution**: Only runs when `params.update_registry` is true, and only on genome mode BUSCO results
+- **Not with suppressed accessions**: The pipeline stops if `params.allow_suppressed_accessions` is also set. FETCH_GENOME may then download a suppressed GCA's `currentAccession` while `meta.gca` keeps the requested one, so the replacement's BUSCO would be recorded against the requested GCA
 
 ## Inputs
 
