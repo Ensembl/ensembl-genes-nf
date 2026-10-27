@@ -20,24 +20,21 @@ workflow RUN_ISOQUANT {
     // IsoQuant has no raw-subread data_type. Run PacBio raw-subread BAMs with
     // its PacBio algorithm settings, while preserving raw_subread provenance
     // in source_read_metadata and never changing the biological read label.
-    isoquant_type_for = { meta ->
-        meta.isoquant_data_type ?: (meta.technology == 'pacbio' && meta.read_representation == 'raw_subread' ? 'pacbio_ccs' : null)
-    }
     eligible_bams = aligned_bams.filter { meta, _bam, _bai ->
-        isoquant_type_for(meta) in ['pacbio_ccs', 'nanopore']
+        (meta.isoquant_data_type ?: (meta.technology == 'pacbio' && meta.read_representation == 'raw_subread' ? 'pacbio_ccs' : null)) in ['pacbio_ccs', 'nanopore']
     }
     unsupported_bams = aligned_bams.filter { meta, _bam, _bai ->
-        !(isoquant_type_for(meta) in ['pacbio_ccs', 'nanopore'])
+        !((meta.isoquant_data_type ?: (meta.technology == 'pacbio' && meta.read_representation == 'raw_subread' ? 'pacbio_ccs' : null)) in ['pacbio_ccs', 'nanopore'])
     }
     REPORT_UNSUPPORTED_ISOQUANT_INPUTS(unsupported_bams.map { meta, _bam, _bai -> tuple(meta, 'isoquant') })
     common = eligible_bams.map { meta, bam, bai ->
         def read_metadata = "${meta.id}:${meta.technology}:${meta.read_representation}:${meta.preprocessing_state}:${meta.observation_unit}"
-        def data_type = isoquant_type_for(meta)
+        def data_type = meta.isoquant_data_type ?: (meta.technology == 'pacbio' && meta.read_representation == 'raw_subread' ? 'pacbio_ccs' : null)
         tuple(meta + [source_read_metadata: read_metadata, isoquant_data_type: data_type], [bam], [bai], 'accession', data_type, analysis, large_output, read_group, params.isoquant_args ?: '', params.isoquant_report_novel_unspliced, params.isoquant_check_canonical)
     }
     if (params.isoquant_scope in ['cohort', 'both']) {
         cohort = eligible_bams
-            .map { meta, bam, bai -> tuple(isoquant_type_for(meta), meta, bam, bai) }
+            .map { meta, bam, bai -> tuple(meta.isoquant_data_type ?: (meta.technology == 'pacbio' && meta.read_representation == 'raw_subread' ? 'pacbio_ccs' : null), meta, bam, bai) }
             .groupTuple()
             .map { data_type, metas, bams, bais ->
                 def source_metadata = metas.sort { left, right -> left.id <=> right.id }.collect { source_meta -> "${source_meta.id}:${source_meta.technology}:${source_meta.read_representation}:${source_meta.preprocessing_state}:${source_meta.observation_unit}" }.join(';')
