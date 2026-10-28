@@ -6,6 +6,8 @@
     "properties": {
       "input": {
         "type": "string",
+        "format": "file-path",
+        "exists": true,
         "description": "Path to input file"
       },
       "outdir": {

@@ -10,20 +10,22 @@
 
 nextflow.enable.dsl = 2
 
+nextflow.enable.strict = true
+
 include { MINIMAL_SUBWORKFLOW_EXAMPLE } from '../subworkflows/minimal_subworkflow_example'
 include { SIMPLE_SEQUENTIAL_EXAMPLE } from '../subworkflows/simple_sequential_example'
 
-params.outdir = 'results'
-
 workflow SUBWORKFLOW_EXAMPLE {
+    take:
+        input_file
+
+    main:
     // Create input
-    Channel.of(
+    channel.of(
         [id: 'sample1'],
         [id: 'sample2']
     )
     .map { meta ->
-        def input_file = file("${workflow.workDir}/input.txt")
-        input_file.text = "input data"
         [meta, input_file]
     }
     .set { input_ch }

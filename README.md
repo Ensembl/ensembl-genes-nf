@@ -8,11 +8,11 @@
 
 This repository provides templates and examples to help you build Nextflow pipelines:
 
-- **Pipeline templates** - Production-ready patterns and structure
+- **Pipeline templates** - Practical starting patterns and structure
 - **Example workflows** - Working examples from simple to complex
 - **Module templates** - Reusable process definitions
-- **Comprehensive documentation** - Guides, patterns, and best practices
-- **Advanced patterns** - Entry point system for complex workflows
+- **Documentation and examples** - Guides, patterns, and practical examples
+- **Additional patterns** - Optional approaches for more complex workflows
 
 ## Quick Start
 
@@ -23,14 +23,13 @@ Explore the templates by running the example workflows:
 cd pipelines/example
 
 # Run the simplest example (single process)
-nextflow run workflows/simple_workflow.nf -stub --outdir results
+nextflow run workflows/simple_workflow.nf -stub-run --outdir results
 
 # Run the main workflow (subworkflows chained together)
-nextflow run main.nf -stub --outdir results
+nextflow run main.nf -stub-run -profile test
 
-# Explore the advanced entry point system
-cd advanced_entrypoints
-nextflow run main.nf --help
+# Read the repository conventions
+cat ../../docs/NEXTFLOW_REQUIREMENTS.md
 ```
 
 ## Repository Structure
@@ -42,7 +41,7 @@ ensembl-genes-nf/  (template branch)
 │       ├── workflows/    # Example workflows (start here)
 │       ├── subworkflows/ # Subworkflow patterns (parallel, sequential)
 │       ├── modules/      # Process templates
-│       └── advanced_entrypoints/  # Dynamic entry point system
+│       └── assets/            # Deterministic test inputs
 ├── modules/              # Module templates for creating new processes
 ├── subworkflows/         # Subworkflow templates
 ├── config/               # Configuration templates
@@ -71,38 +70,94 @@ The example pipeline demonstrates patterns from simple to complex:
 
 1. **Simple workflows** - Single process execution
 2. **Subworkflow composition** - Chaining reusable components
-3. **Dynamic entry points** - Automatic workflow resumption
+3. **Test profiles and stubs** - Fast structural checks during development
 
 ### Best Practices
 
 - Modular design with reusable components
 - Consistent metadata (`meta`) handling across processes
 - Proper channel operations and data flow
-- Version tracking for all tools
+- Version tracking where it supports reproducibility
 - Stub mode for fast testing and development
 
-### Advanced Patterns
+### Additional Patterns
 
-- **Entry point registry** - Declarative dependency management
-- **Automatic validation** - Verify required inputs before execution
-- **Smart resumption** - Detect existing outputs and skip completed steps
+- **Parameter validation** - Check required inputs before execution
+- **Workflow composition** - Organize reusable stages and processes
 
 ## Using This Template
 
-**Learning the patterns?** Start with the [Quick Start Guide](docs/QUICK_START.md) and run the example workflows in `pipelines/example/`.
+**Learning the patterns?** Start with the [Quick Start Guide](docs/template/QUICK_START.md) and run the example workflows in `pipelines/example/`.
 
 **Building a new pipeline?**
 1. Copy the structure from `pipelines/example/`
 2. Use module templates from `modules/` as starting points
-3. Follow the patterns in [docs/PATTERNS.md](docs/PATTERNS.md)
+3. Follow the patterns in [docs/template/PATTERNS.md](docs/template/PATTERNS.md)
 4. Reference the example implementations
 
 **Adding to an existing pipeline?** Browse `modules/` and `subworkflows/` for reusable components you can adapt.
 
-## Requirements
+## Requirements and Nextflow syntax versions
 
-- Nextflow ≥ 21.04.0 (DSL2)
-- Singularity 
+- Nextflow ≥ 25.10.2
+- Java 17 or newer
+- Singularity or Apptainer
+
+The repository uses Nextflow's strict/v2 syntax. Nextflow 26.04 and newer use
+the v2 parser by default. With Nextflow 25.10.2 through 25.x, enable it
+explicitly with `NXF_SYNTAX_PARSER=v2`.
+
+```bash
+# Recommended: Nextflow 26.04+
+nextflow -version
+nextflow run pipelines/example/main.nf -stub-run -profile test
+
+# Supported compatibility mode: Nextflow 25.10.2+
+NXF_SYNTAX_PARSER=v2 nextflow -version
+NXF_SYNTAX_PARSER=v2 nextflow run pipelines/example/main.nf -stub-run -profile test
+```
+
+The root configuration enforces Singularity and disables Docker and Conda.
+HPC-specific cache settings are kept in
+[`config/singularity.config`](config/singularity.config) and can be selected
+with `-c` when running on the Ensembl cluster:
+
+```bash
+nextflow run pipelines/example/main.nf \
+  -profile test \
+  -c config/singularity.config
+```
+
+See [docs/NEXTFLOW_REQUIREMENTS.md](docs/NEXTFLOW_REQUIREMENTS.md) for
+recommended conventions and validation commands.
+
+## Private Container Registry
+
+Some implementation pipelines use private images from the EBI Docker registry.
+Authenticate Singularity or Apptainer outside Nextflow with an EBI/GitLab
+account or token that has registry-read permission:
+
+```bash
+export EBI_REGISTRY_USER="${EBI_REGISTRY_USER:-$USER}"
+read -r -s EBI_REGISTRY_TOKEN
+printf '\n'
+printf '%s\n' "$EBI_REGISTRY_TOKEN" | singularity registry login \
+  --username "$EBI_REGISTRY_USER" \
+  --password-stdin \
+  docker://dockerhub.ebi.ac.uk
+unset EBI_REGISTRY_TOKEN
+```
+
+Check access before launching a pipeline:
+
+```bash
+singularity registry list
+singularity pull docker://dockerhub.ebi.ac.uk/<project>/<image>:<tag>
+```
+
+For CI, use masked `APPTAINER_DOCKER_USERNAME` and
+`APPTAINER_DOCKER_PASSWORD` secrets. Never put registry credentials in a
+sample sheet, Nextflow parameter, or committed configuration file.
 
 ## Branch Structure
 

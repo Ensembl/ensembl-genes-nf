@@ -10,7 +10,7 @@ process EXAMPLE_MODULE {
     
     // Each job should point to an appropriate singularity container. 
     // these can be specified in the module like this or in a config file (Like Annas Json)
-    container "https://depot.galaxyproject.org/singularity/mulled-v2-example:latest"
+    container "docker://ubuntu@sha256:c664f8f86ed5a386b0a340d981b8f81714e21a8b9c73f658c4bea56aa179d54a"
     
     // Dynamic tagging for better process identification in CLI or reports
     tag "${meta.id}"
@@ -41,10 +41,10 @@ process EXAMPLE_MODULE {
     val mode                                // Required parameter for tool execution
     
     output:
-    tuple val(meta), path("${prefix}.txt"),             emit: results // keep meta in output for tracking
-    tuple val(meta), path("${prefix}.log"),             emit: logs
-    tuple val(meta), path("${prefix}_report.html"),     emit: reports, optional: true
-    tuple val(meta), path("${prefix}_stats.json"),      emit: stats,   optional: true
+    tuple val(meta), path('*.txt'),                      emit: results // keep meta in output for tracking
+    tuple val(meta), path('*.log'),                      emit: logs
+    tuple val(meta), path('*_report.html'),              emit: reports, optional: true
+    tuple val(meta), path('*_stats.json'),               emit: stats,   optional: true
     path "versions.yml",                                emit: versions // capture tool versions for reproducibility
     
     when:
@@ -64,7 +64,6 @@ process EXAMPLE_MODULE {
     // inputs should be defined in the input block above. Everything else should be
     // defined here and passed through the task.ext object.
     def args = task.ext.args ?: ''
-    def args2 = task.ext.args2 ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def is_paired = meta.single_end ? false : true
     def input_files = is_paired ? "${reads[0]} ${reads[1]}" : "${reads}"
@@ -96,8 +95,7 @@ process EXAMPLE_MODULE {
     stub:
     //  Allows rapid testing of workflow logic without running
     // expensive computations. Use 'nextflow run -stub' to validate your pipeline
-    // structure before committing to long-running jobs.    def args = task.ext.args ?: ''
-    def args2 = task.ext.args2 ?: ''
+    // structure before committing to long-running jobs.
     def prefix = task.ext.prefix ?: "${meta.id}"
     
     """

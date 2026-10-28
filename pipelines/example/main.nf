@@ -2,13 +2,13 @@
 
 nextflow.enable.dsl = 2
 
-include { validateParameters } from 'plugin/nf-schema'
+nextflow.enable.strict = true
 
-// Validate parameters against schema
-validateParameters()
+include { validateParameters } from 'plugin/nf-schema'
 
 include { SUBWORKFLOW_EXAMPLE } from './workflows/subworkflow_example.nf'
 
 workflow {
-    SUBWORKFLOW_EXAMPLE()
+    validateParameters()
+    SUBWORKFLOW_EXAMPLE(file(params.input))
 }

@@ -1,76 +1,138 @@
 # QC Pipeline
 
-This pipeline runs annotation quality-control metrics for one or more GFF3 files.
-
-At the moment, the implemented QC step is AGAT statistics generation followed by conversion of the AGAT text report into a `genebuild` CSV using the `parse_agat.py` parser from the `ensembl-genes` repository.
-
-## What It Does
-
-For each row in an input CSV, the pipeline:
-
-1. runs `agat_sp_statistics.pl` on the input GFF3 file
-2. writes the AGAT text report
-3. parses that report into a `*_genebuild.csv` metrics file
-
-The workflow processes all listed samples in parallel.
+This pipeline runs annotation QC from a genome FASTA and a GFF3 annotation. It
+can run AGAT metrics, InterProScan protein coverage, Diamond protein
+validation, or all three.
 
 ## Requirements
 
-- Nextflow with DSL2 enabled
-- Singularity or Apptainer available on the execution host
-- A local checkout of `ensembl-genes` containing:
-  - `src/python/ensembl/genes/annotation-qc/parsers/parse_agat.py`
-  - `src/python/ensembl/genes/annotation-qc/metrics/config/feature_levels.yaml`
+- Nextflow 26.04.6 or later (strict syntax)
+- Singularity or Apptainer
+- The InterProScan 5.78-109.0 data directory for `interproscan` and `combined`
+- A QC parser container exposing `annotation-qc parse-agat` and
+  `annotation-qc parse-interpro` when using AGAT or InterProScan
+- The pipeline supplies its Ensembl AGAT feature definitions internally
+- Registry credentials configured outside the pipeline if the GitLab registry
+  requires authentication
 
-## Inputs
+The parser image is assigned centrally to the `qc_parser` process label and
+currently uses the EBI Docker registry `:latest` image. Once the pipeline is
+versioned, change that single config reference to an immutable container tag
+based on the corresponding commit SHA.
 
-### Sample Sheet
+To select the Nextflow version explicitly, set `NXF_VER` before the command:
 
-The required input is `--gff_csv`, a CSV file with a header and at least these columns:
+```bash
+NXF_VER=26.04.6 nextflow run pipelines/qc/main.nf --help
+```
+
+## Input
+
+The manifest columns depend on the selected mode. The pipeline validates the
+manifest against a mode-specific schema before starting any processes.
+
+For AGAT, only the GFF3 is required:
 
 ```csv
 sample,gff3
 sample_1,/path/to/sample_1.gff3
-sample_2,/path/to/sample_2.gff3
 ```
 
-- `sample`: sample identifier used for logging and task tags
-- `gff3`: absolute or relative path to the GFF3 file
+For InterProScan, either a precomputed protein FASTA or both the genome FASTA
+and GFF3 may be supplied. The latter allows proteins to be derived with
+`gffread`:
+
+```csv
+sample,protein_fasta
+sample_1,/path/to/sample_1.faa
+```
+
+For Diamond and combined mode, the genome FASTA and GFF3 are required because
+Diamond translation validation uses both. A precomputed protein FASTA is
+optional in those modes:
+
+```csv
+sample,genome_fasta,gff3,protein_fasta
+sample_1,/path/to/sample_1.fa,/path/to/sample_1.gff3,/path/to/sample_1.faa
+```
+
+InterProScan and Diamond use the supplied protein FASTA when present and
+otherwise derive one with `gffread` where the required inputs are available.
+
+Diamond requires either a prebuilt database via `--diamond_reference_db` or a
+reference protein FASTA via `--diamond_reference_proteins`. The prebuilt
+database takes precedence and avoids rebuilding it. The FASTA is used only as
+the fallback source for `diamond makedb`.
 
 ## Parameters
 
-| Parameter | Required | Default | Description |
-| --- | --- | --- | --- |
-| `--gff_csv` | yes | none | CSV describing the samples and GFF3 paths |
-| `--ensembl_genes_repo` | yes | none | Path to a local `ensembl-genes` checkout |
-| `--feature_levels` | no | derived from `ensembl_genes_repo` | Path to `feature_levels.yaml` |
-| `--agat_parser` | no | derived from `ensembl_genes_repo` | Path to `parse_agat.py` |
-| `--run_agat_metrics` | no | `true` | Enable the AGAT metrics branch |
-| `--outdir` | no | `./results` | Output directory |
+| Parameter | Required | Description |
+| --- | --- | --- |
+| `--input_csv` | yes | Mode-specific CSV manifest; see the Input section |
+| `--mode` | yes | `agat`, `interproscan`, `diamond`, or `combined` |
+| `--data_file_path` | InterProScan modes | InterProScan data directory; supply this through a site/user config |
+| `--diamond_reference_db` | Diamond modes | Existing prebuilt Diamond database; takes precedence over the FASTA |
+| `--diamond_reference_proteins` | Diamond modes | Reference protein FASTA used to build a database when no prebuilt database is supplied |
+| `--database` | no | InterProScan database, default `Pfam` |
+| `--outdir` | no | Output directory, default `./results` |
 
 ## Running
 
-From the repository root:
-
 ```bash
 nextflow run pipelines/qc/main.nf \
-  --gff_csv /path/to/gff_samples.csv \
-  --ensembl_genes_repo /path/to/ensembl-genes \
-  --outdir results  \
-  -process.executor slurm
-
-```
-
-If the parser or feature-levels YAML are not present under the supplied `ensembl-genes` checkout, pass them explicitly:
-
-```bash
-nextflow run pipelines/qc/main.nf \
-  --gff_csv /path/to/gff_samples.csv \
-  --ensembl_genes_repo /path/to/ensembl-genes \
-  --agat_parser /path/to/parse_agat.py \
-  --feature_levels /path/to/feature_levels.yaml \
+  -profile slurm \
+  -c ~/.config/ensembl-genes-nf/ebi.config \
+  --input_csv /path/to/annotation_samples.csv \
+  --mode combined \
+  --diamond_reference_db /path/to/reference.dmnd \
   --outdir results
 ```
+
+The InterProScan data directory is site-specific and is intentionally not
+hard-coded in the repository. Create a user or site configuration containing,
+for example:
+
+```groovy
+params.data_file_path = '/nfs/production/flicek/ensembl/shared_data/interproscan-5.78-109.0/data'
+```
+
+Pass that file with `-c`. The parameter schema requires the value for
+`interproscan` and `combined` modes and validates that the directory exists.
+
+Do not put registry usernames, passwords, or tokens in the sample sheet or
+committed Nextflow configuration. Configure Apptainer or Singularity
+authentication on the execution host before launching the run.
+
+## Registry Authentication
+
+The QC parser image is private in the EBI Docker registry. Authenticate
+Apptainer once on the execution host using an EBI/GitLab account or token with
+permission to read the registry:
+
+Enter the token interactively and pipe it to the login command. The token is
+never placed on the command line or stored in the repository:
+
+```bash
+export EBI_REGISTRY_USER="${EBI_REGISTRY_USER:-$USER}"
+read -r -s EBI_REGISTRY_TOKEN
+printf '\n'
+printf '%s\n' "$EBI_REGISTRY_TOKEN" | singularity registry login \
+  --username "$EBI_REGISTRY_USER" \
+  --password-stdin \
+  docker://dockerhub.ebi.ac.uk
+unset EBI_REGISTRY_TOKEN
+```
+
+Verify the credentials and image access before starting Nextflow:
+
+```bash
+singularity registry list
+singularity pull docker://dockerhub.ebi.ac.uk/ensembl_genebuild/ensembl-genes-containers/ensembl-genes-qc-dev:latest
+```
+
+For CI or other non-interactive runs, provide masked secrets as
+`APPTAINER_DOCKER_USERNAME` and `APPTAINER_DOCKER_PASSWORD`. Do not pass
+registry credentials as Nextflow parameters or commit them to configuration.
 
 ## Outputs
 
@@ -78,31 +140,25 @@ Published outputs are written to:
 
 ```text
 <outdir>/qc/agat/
+<outdir>/qc/interpro/
+<outdir>/qc/diamond/
 ```
 
-        val  feature_levels_yaml
-Per sample, the pipeline currently produces:
+When Diamond builds a database from FASTA, the reusable database is also
+published as `<outdir>/qc/diamond/reference.dmnd` and can be supplied to a
+later run with `--diamond_reference_db`.
 
-- `<sample>_agat_stats.txt`: raw AGAT statistics output
-- `<sample>_agat_stats_genebuild.csv`: parsed metrics in CSV format
+## Separation Of Concerns
 
-## Validation
+- `nextflow_schema.json` validates parameter types, enums, and required
+  mode-specific parameters.
+- `assets/*_samplesheet.json` validates the mode-specific annotation manifest.
+- `main.nf` loads validated inputs and starts the workflow.
+- `workflows/qc.nf` decides which analyses run and shares derived proteins.
+- Subworkflows connect reusable analysis chains.
+- Modules run one tool or parser and do not decide which QC mode the user chose.
 
-The workflow stops early if any of the following are missing or invalid:
-
-- `--gff_csv`
-- `--ensembl_genes_repo`
-- derived or explicit `feature_levels.yaml`
-- derived or explicit `parse_agat.py`
-
-## Implementation Notes
-
-- The workflow entrypoint is `pipelines/qc/main.nf`.
-- AGAT statistics are implemented in `modules/agat/run_agat_stats.nf`.
-- AGAT report parsing is implemented in `modules/agat/parse_agat.nf`.
-- The AGAT subworkflow is defined in `subworkflows/agat/agat_stats.nf`.
-- `AGAT_RUN_STATS` and `AGAT_PARSE` are configured with `maxForks = 8` in `pipelines/qc/nextflow.config`.
-
-## Current Scope
-
-This README reflects the current implementation in this branch. The QC pipeline currently exposes the AGAT metrics path only; additional QC modules can be documented here as they are added.
+In short: **the schema validates configuration; workflow code resolves that
+configuration into behaviour.** This keeps reusable subworkflows independent
+of pipeline-specific parameter names and prevents one universal sample sheet
+from accumulating unrelated future inputs.

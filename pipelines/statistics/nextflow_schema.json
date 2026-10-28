@@ -28,6 +28,10 @@
       "type": "boolean",
       "description":"Run Ensembl statistics given a mysql db"
     },
+    "run_pepstats": {
+      "type": "boolean",
+      "description":"Run pepstats given a protein fasta file"
+    },
     "run_ensembl_beta_metakeys": {
       "type": "boolean",
       "description":"Run Ensembl beta metakeys given a mysql db"
@@ -80,6 +84,11 @@
       "type": "string",
       "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession",
       "description":"NCBI API"
+    },
+    "allow_suppressed_accessions": {
+      "type": "boolean",
+      "default": false,
+      "description":"Use NCBI currentAccession for suppressed or previous assemblies when fetching genome FASTA"
     },
     "readme": {
       "type": "string",

@@ -11,6 +11,8 @@
 
 nextflow.enable.dsl = 2
 
+nextflow.enable.strict = true
+
 include { TOOL_A } from '../modules/tool_a'
 
 // Parameters with defaults
@@ -18,7 +20,7 @@ params.outdir = 'simple_results'
 
 workflow {
     // Create a simple input channel
-    Channel.of(
+    channel.of(
         [id: 'sample1'],
         [id: 'sample2']
     )

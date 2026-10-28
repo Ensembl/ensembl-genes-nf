@@ -17,8 +17,8 @@
             "gca": {
                 "type": "string",
                 "description": "Genome assembly accession",
-                "pattern": "^GCA_\\d{9}\\.\\d$",
-                "errorMessage": "GCA must be in the format GCA_000000000.0",
+                "pattern": "^GC[AF]_\\d{9}\\.\\d+$",
+                "errorMessage": "Assembly accession must be in the format GCA_000000000.0 or GCF_000000000.0",
                 "meta": ["gca"]
             },
             "dbname": {

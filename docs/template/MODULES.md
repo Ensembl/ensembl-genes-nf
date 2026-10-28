@@ -4,12 +4,15 @@ How to design and structure Nextflow process modules in this repository.
 
 ## Module Philosophy
 
-**A module is a single, reusable process** that wraps one primary bioinformatics tool. Modules should be:
+**A module is usually a single, reusable process** that wraps one primary
+bioinformatics tool. This is a helpful default for keeping code composable;
+small related shell steps can be kept together when splitting them would make
+the interface harder to understand. When using a separate module, aim for:
 
-- **Generic** - Work across different pipelines and use cases
-- **Configurable** - Parameters come from config, not hardcoded
-- **Consistent** - Follow standard patterns for inputs, outputs, and metadata
-- **Self-documenting** - Include versions, clear naming, and structure
+- **Appropriate reuse** - Work across different pipelines when reuse is useful
+- **Configurable** - Put changeable settings in config or `task.ext` where that helps
+- **Consistent** - Follow familiar patterns for inputs, outputs, and metadata
+- **Self-documenting** - Include versions, clear naming, and enough structure to maintain it
 
 ## Core Module Structure
 
@@ -81,7 +84,7 @@ tool --sample ${meta.id} --input ${reads} --output ${prefix}.bam
 
 **Best practices**:
 ```groovy
-- Always include meta.id
+- Include `meta.id` when sample identity needs to be tracked
 - Use meta for sample attributes, not file properties
 - Don't modify meta in place, create new: meta + [new_field: value]
 - Keep meta structure consistent across modules
@@ -128,7 +131,8 @@ process MINIMAP2 {
 
 **Why**: Reproducibility - know exactly which tool versions produced results
 
-**Required output**:
+**Recommended output when version reporting is part of the pipeline's
+reproducibility approach**:
 ```groovy
 output:
 path "versions.yml", emit: versions
@@ -193,15 +197,15 @@ END_VERSIONS
 
 **Running stub mode**:
 ```bash
-nextflow run pipeline.nf -stub --outdir results
+nextflow run pipeline.nf -stub-run --outdir results
 ```
 
 **Best practices**:
 ```groovy
-- Create ALL output files that script creates
+- Create every output file that the process declares
 - Use same file naming logic as script block
 - Keep stub simple - just touch/echo
-- Include versions.yml with hardcoded versions
+- Include `versions.yml` when the process reports tool versions
 ```
 
 **Why this matters**:
@@ -237,7 +241,7 @@ process {
 ```
 
 **Benefits**:
-- Module code never needs editing for parameter changes
+- Module code often does not need editing when settings are exposed through configuration
 - Different pipelines can use same module differently
 - Configuration separate from implementation
 
@@ -278,7 +282,7 @@ tool --input ${input} --output ${prefix}_${suffix}.txt
 
 **Best practices**:
 ```groovy
-- Always use meta.id in output names
+- Use `meta.id` in output names when it provides useful sample-level uniqueness
 - Use task.ext.prefix for customisation
 - Check for input/output name conflicts
 - Use consistent naming patterns across modules
@@ -372,9 +376,12 @@ aligner ${args} input.fq | sorter ${args2} > output.bam
 """
 ```
 
-## Anti-Patterns to Avoid
+## Patterns to review carefully
 
-- **Hardcoded parameters**
+The following examples are common sources of maintenance problems, but context
+matters. Treat them as warning signs to review rather than absolute bans.
+
+- **Hardcoded parameters** (consider configuration when values vary)
 ```groovy
 // Bad
 """
@@ -445,19 +452,19 @@ path "versions.yml",            emit: versions
 
 See [modules/minimal_example.nf](../modules/minimal_example.nf) for a TODO-annotated template and [modules/reference_example.nf](../modules/reference_example.nf) for a comprehensive example with extensive comments.
 
-## Best Practices Summary
+## Recommended defaults
 
-- **Always include meta map** in inputs and outputs for tracking
+- **Include a meta map** when sample identity or attributes need to travel with data
 
-- **Always emit versions.yml** for reproducibility
+- **Emit versions.yml** when tool-version reporting matters for reproducibility
 
-- **Always include stub block** for fast testing
+- **Include a stub block** when fast structural testing is useful
 
 - **Use resource labels** rather than hardcoding resources
 
 - **Configure via ext.args** not hardcoded parameters
 
-- **One primary tool per module** - compose with subworkflows
+- **One primary tool per module when practical** - compose with subworkflows when that improves clarity
 
 - **Use specific container versions** not 'latest'
 
