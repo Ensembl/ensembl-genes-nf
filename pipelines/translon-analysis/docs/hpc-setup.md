@@ -8,7 +8,7 @@ Nextflow version is 26.04.6 and Java 17 or 21 is required.
 
 ```bash
 module load nextflow
-module load apptainer        # or: module load singularity
+module load apptainer/1.4.4
 module load java/21          # Java 17+ is also supported
 
 export NXF_APPTAINER_CACHEDIR=/hps/nobackup/flicek/ensembl/genebuild/singularity_cache
@@ -85,12 +85,12 @@ for samples that are being sent to the corresponding tools.
 
 ## Full-suite launch
 
-Use the `slurm_apptainer` profile when Apptainer is available:
+Launch through the repository wrapper. It loads `apptainer/1.4.4` before
+Nextflow starts and selects the `slurm_apptainer` profile, so caller commands
+run inside their declared images:
 
 ```bash
-nextflow run pipelines/translon-analysis \
-  -c pipelines/translon-analysis/conf/hpc_apptainer.config \
-  -profile slurm_apptainer \
+pipelines/translon-analysis/bin/run_codon_apptainer.sh \
   -resume \
   --samplesheet /hps/nobackup/.../translon/samplesheet.tsv \
   --gtf /hps/nobackup/.../references/genes.gtf \
@@ -102,6 +102,10 @@ nextflow run pipelines/translon-analysis \
   --orfrater_model /hps/nobackup/.../models/orfrater \
   --outdir /hps/nobackup/.../translon/results
 ```
+
+Load the Nextflow and Java modules first as shown above. Do not launch this run
+with only `-profile slurm`: that profile enables Singularity compatibility but
+does not enable the Apptainer runtime used on Codon.
 
 The process definitions use immutable public registry image references directly.
 Apptainer will cache those images under `NXF_APPTAINER_CACHEDIR`; pre-pulling is
