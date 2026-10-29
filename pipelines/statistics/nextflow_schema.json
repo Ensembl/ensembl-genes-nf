@@ -194,6 +194,29 @@
 "allOf": [
         {
             "$ref": "#/$defs/main_parameters"
+        },
+        {
+            "if": {
+                "properties": {
+                    "update_registry": {
+                        "const": true
+                    }
+                },
+                "required": [
+                    "update_registry"
+                ]
+            },
+            "then": {
+                "required": [
+                    "asm_metadata"
+                ],
+                "properties": {
+                    "allow_suppressed_accessions": {
+                        "const": false,
+                        "errorMessage": "cannot be used with --update_registry"
+                    }
+                }
+            }
         }
     ]
 }  
