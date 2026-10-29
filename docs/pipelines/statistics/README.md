@@ -131,6 +131,7 @@ This strategy reduces redundant computations and database queries when processin
 Some modules execute conditionally based on parameters:
 
 - **BUSCO_CORE_METAKEYS**: `params.apply_busco_metakeys`
+- **BUSCO_ASSEMBLY_DB**: `params.update_registry` (genome mode only)
 - **POPULATE_DB**: `params.apply_ensembl_stats` OR `params.apply_ensembl_beta_metakeys`
 - **CLEANING**: `params.clean` AND `params.clean_work_dir`
 

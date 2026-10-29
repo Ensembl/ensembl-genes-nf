@@ -1,0 +1,47 @@
+%% nf-metro map of the statistics pipeline in BUSCO genome mode (--run_busco_ncbi), one map per mode.
+%% Used by gb_prefect (ensembl-genes-metadata) for the live map of each BUSCO_gca run: the run is
+%% registered with the nf-metro server with this map, and Nextflow's -with-weblog events light up
+%% the stations. Each %%metro process line maps a station to the Nextflow process(es) it stands for
+%% (regex on the fully qualified name, e.g. RUN_BUSCO:FETCH_GENOME). Check with:
+%%   nf-metro validate assets/metro_map_busco_genome.mmd
+%%metro title: Statistics: BUSCO genome
+%%metro caption: BUSCO genome statistics for an NCBI assembly; results are loaded into the assembly metadata DB with --update_registry
+%%metro line_order: span
+%%metro line: genome | BUSCO genome | #2db572
+%%metro line: registry | Load into registry (--update_registry) | #0570b0 | dashed
+
+%%metro process: db_metadata | (^|:)DB_METADATA$
+%%metro process: busco_dataset | (^|:)BUSCO_DATASET$
+%%metro process: fetch_genome | (^|:)FETCH_GENOME$
+%%metro process: busco_lineage | (^|:)BUSCO_LINEAGE$
+%%metro process: busco_core_metakeys | (^|:)BUSCO_CORE_METAKEYS$
+%%metro process: busco_assembly_db | (^|:)BUSCO_ASSEMBLY_DB$
+%%metro process: collect_software_versions | (^|:)COLLECT_SOFTWARE_VERSIONS$
+
+graph LR
+    subgraph prepare [Prepare]
+        db_metadata([Assembly metadata])
+        busco_dataset([Choose lineage])
+        fetch_genome([Fetch genome])
+        db_metadata -->|genome| busco_dataset
+        busco_dataset -->|genome| fetch_genome
+    end
+
+    subgraph busco [BUSCO]
+        busco_lineage([Run BUSCO])
+        busco_core_metakeys([BUSCO metakeys])
+        busco_lineage -->|genome| busco_core_metakeys
+    end
+
+    subgraph registry [Registry]
+        busco_assembly_db([Load into registry])
+    end
+
+    subgraph versions [Versions]
+        collect_software_versions([Software versions])
+    end
+
+    fetch_genome -->|genome,registry| busco_lineage
+    busco_lineage -->|registry| busco_assembly_db
+    busco_core_metakeys -->|genome| collect_software_versions
+    busco_assembly_db -->|registry| collect_software_versions

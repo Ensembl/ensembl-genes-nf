@@ -31,6 +31,7 @@ include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { FETCH_PROTEINS } from '../modules/fetch_proteins.nf'
 include { BUSCO_LINEAGE } from '../modules/busco_lineage.nf'
 include { BUSCO_CORE_METAKEYS } from '../modules/busco_core_metakeys.nf'
+include { BUSCO_ASSEMBLY_DB } from '../modules/busco_assembly_db.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,6 +41,7 @@ In this subworkflow we run BUSCO on either genome or protein mode based on user 
 We first fetch metadata from the core database or from NCBI depending on the input parameters.
 We then select the appropriate BUSCO dataset based on the taxon_id.
 Finally, we run BUSCO in the selected mode(s) and populate the core database with the results.
+Optionally, genome mode results are loaded into the assembly metadata database and genome_busco.status is marked done (--update_registry).
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 */
 workflow RUN_BUSCO {
@@ -47,6 +49,25 @@ workflow RUN_BUSCO {
     csvFile
 
     main:
+    // Validate JSON format for asm_metadata before anything runs. 
+    // nextflow_schema.json already rejects null values or invalid flags.
+    def asmMetadata = null
+    if (params.update_registry) {
+        asmMetadata = params.asm_metadata instanceof Map
+            ? groovy.json.JsonOutput.toJson(params.asm_metadata)
+            : params.asm_metadata.toString()
+        def parsed = null
+        try {
+            parsed = new groovy.json.JsonSlurper().parseText(asmMetadata)
+        }
+        catch (Exception e) {
+            error("Invalid JSON in --asm_metadata: ${e.message}")
+        }
+        if (!(parsed instanceof Map)) {
+            error("--asm_metadata must be a JSON object with the assembly metadata DB connection params")
+        }
+    }
+
     def data
     def busco_mode = params.busco_mode == 'both' ? ['protein', 'genome'] : [params.busco_mode]
     if (params.run_busco_ncbi && !params.run_busco_core) {
@@ -121,10 +142,9 @@ workflow RUN_BUSCO {
     }
 
     if (busco_mode.contains('protein')) {
-        def proteinData = FETCH_PROTEINS(dataset_db).fasta_file_output
-            .map { meta, fasta_file ->
-                return tuple(meta + [busco_mode: 'protein'], fasta_file)
-            }
+        def proteinData = FETCH_PROTEINS(dataset_db).fasta_file_output.map { meta, fasta_file ->
+            return tuple(meta + [busco_mode: 'protein'], fasta_file)
+        }
         ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
 
         buscoInput = buscoInput != null ? buscoInput.mix(proteinData) : proteinData
@@ -139,6 +159,13 @@ workflow RUN_BUSCO {
 
     BUSCO_CORE_METAKEYS(buscoOutput)
     ch_versions_file = ch_versions_file.mix(BUSCO_CORE_METAKEYS.out.versions_file)
+
+    // Load BUSCO genome results into the assembly metadata database
+    if (params.update_registry) {
+        def genomeOutput = buscoOutput.filter { meta, _summary_file -> meta.busco_mode == 'genome' }
+        BUSCO_ASSEMBLY_DB(genomeOutput, asmMetadata)
+        ch_versions_file = ch_versions_file.mix(BUSCO_ASSEMBLY_DB.out.versions_file)
+    }
 
     emit:
     versions = ch_versions_file
