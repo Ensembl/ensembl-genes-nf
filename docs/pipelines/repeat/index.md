@@ -1,13 +1,12 @@
-# Qc
+# Repeat
 
 Welcome to the documentation for the
-**Qc** pipeline.
-
-## Documentation
+**Repeat** pipeline.
 
 ```{toctree}
 :maxdepth: 1
 
+README
 input
 output
 parameters

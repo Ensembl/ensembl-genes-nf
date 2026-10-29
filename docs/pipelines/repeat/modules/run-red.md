@@ -1,0 +1,44 @@
+# RUN_RED
+
+This process runs the Red to identify repetitive regions in a genome file.
+It uses the Red tool to perform the analysis and generates a GTF file
+containing the identified repetitive regions. The output GTF file is
+saved in the "red" directory under the output directory for the given
+GCA accession. The process also generates a versions.yml
+file containing the version of Red used.
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `RUN_RED` |
+| Label | `python` |
+| Tag | `${meta.gca}:genome` |
+| Publish directory | `"${params.outdir}/${meta.gca}/red/", pattern: "**/*.gtf", mode: "copy"` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val(meta)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("*.gtf"), emit: red_out
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Execute Run Red
+- Rename output files
+- Generate software version report
+
+## Source
+
+`/Users/ftricomi/Documents/ensembl-genes-nf/pipelines/repeat/modules/run_red.nf`
