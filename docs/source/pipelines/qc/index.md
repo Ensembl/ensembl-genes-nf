@@ -1,7 +1,7 @@
-# Repeat
+# Qc
 
 Welcome to the documentation for the
-**Repeat** pipeline.
+**Qc** pipeline.
 
 ```{toctree}
 :maxdepth: 1

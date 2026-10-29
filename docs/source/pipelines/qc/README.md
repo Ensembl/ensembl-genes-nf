@@ -1,12 +1,13 @@
-# Example
+# Qc
 
 Welcome to the documentation for the
-**Example** pipeline.
+**Qc** pipeline.
+
+## Documentation
 
 ```{toctree}
 :maxdepth: 1
 
-README
 input
 output
 parameters
