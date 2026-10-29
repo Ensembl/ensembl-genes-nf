@@ -49,6 +49,25 @@ workflow RUN_BUSCO {
     csvFile
 
     main:
+    // Validate JSON format for asm_metadata before anything runs. 
+    // nextflow_schema.json already rejects null values or invalid flags.
+    def asmMetadata = null
+    if (params.update_registry) {
+        asmMetadata = params.asm_metadata instanceof Map
+            ? groovy.json.JsonOutput.toJson(params.asm_metadata)
+            : params.asm_metadata.toString()
+        def parsed = null
+        try {
+            parsed = new groovy.json.JsonSlurper().parseText(asmMetadata)
+        }
+        catch (Exception e) {
+            error("Invalid JSON in --asm_metadata: ${e.message}")
+        }
+        if (!(parsed instanceof Map)) {
+            error("--asm_metadata must be a JSON object with the assembly metadata DB connection params")
+        }
+    }
+
     def data
     def busco_mode = params.busco_mode == 'both' ? ['protein', 'genome'] : [params.busco_mode]
     if (params.run_busco_ncbi && !params.run_busco_core) {
@@ -123,10 +142,9 @@ workflow RUN_BUSCO {
     }
 
     if (busco_mode.contains('protein')) {
-        def proteinData = FETCH_PROTEINS(dataset_db).fasta_file_output
-            .map { meta, fasta_file ->
-                return tuple(meta + [busco_mode: 'protein'], fasta_file)
-            }
+        def proteinData = FETCH_PROTEINS(dataset_db).fasta_file_output.map { meta, fasta_file ->
+            return tuple(meta + [busco_mode: 'protein'], fasta_file)
+        }
         ch_versions_file = ch_versions_file.mix(FETCH_PROTEINS.out.versions_file)
 
         buscoInput = buscoInput != null ? buscoInput.mix(proteinData) : proteinData
@@ -144,23 +162,6 @@ workflow RUN_BUSCO {
 
     // Load BUSCO genome results into the assembly metadata database
     if (params.update_registry) {
-        if (!params.asm_metadata) {
-            error("--asm_metadata (JSON with assembly metadata DB connection params) is required with --update_registry")
-        }
-        // A suppressed GCA may be swapped for its currentAccession, whose BUSCO would be recorded against the requested GCA
-        if (params.allow_suppressed_accessions) {
-            error("--allow_suppressed_accessions cannot be used with --update_registry: the genome of a replacement accession would be recorded against the requested GCA")
-        }
-        // Accept a JSON string (command line) or a map (params file) and normalise to a JSON string
-        def asmMetadata = params.asm_metadata instanceof Map
-            ? groovy.json.JsonOutput.toJson(params.asm_metadata)
-            : params.asm_metadata.toString()
-        try {
-            assert new groovy.json.JsonSlurper().parseText(asmMetadata) instanceof Map
-        }
-        catch (Throwable _e) {
-            error("--asm_metadata must be a JSON object with the assembly metadata DB connection params")
-        }
         def genomeOutput = buscoOutput.filter { meta, _summary_file -> meta.busco_mode == 'genome' }
         BUSCO_ASSEMBLY_DB(genomeOutput, asmMetadata)
         ch_versions_file = ch_versions_file.mix(BUSCO_ASSEMBLY_DB.out.versions_file)
