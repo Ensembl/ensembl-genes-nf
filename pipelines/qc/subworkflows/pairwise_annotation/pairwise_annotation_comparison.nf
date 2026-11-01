@@ -6,6 +6,8 @@ include { AUDIT_LOCUS_ASSIGNMENT } from '../../modules/pairwise_annotation/audit
 include { RENDER_SYNTHETIC_ANNOTATION } from '../../modules/pairwise_annotation/render_synthetic_annotation.nf'
 include { AUDIT_ANNOTATION_CONVERSION } from '../../modules/pairwise_annotation/audit_annotation_conversion.nf'
 include { SUMMARISE_MODEL_COUNTS } from '../../modules/pairwise_annotation/summarise_model_counts.nf'
+include { EXPORT_BENCHMARK_PAIR } from '../../modules/pairwise_annotation/export_benchmark_pair.nf'
+include { AGGREGATE_PAIRWISE_BENCHMARK } from '../../modules/pairwise_annotation/aggregate_benchmark.nf'
 include { COMPARE_INTRON_CHAINS } from '../../modules/pairwise_annotation/compare_intron_chains.nf'
 include { COMPARE_TRANSCRIPT_ENDS } from '../../modules/pairwise_annotation/compare_transcript_ends.nf'
 include { COMPARE_UTR_STRUCTURE } from '../../modules/pairwise_annotation/compare_utr_structure.nf'
@@ -101,6 +103,28 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
     SUMMARISE_STRUCTURAL_COMPARISON(structural_summary_input)
     ASSEMBLE_PAIR_REPORT(SUMMARISE_STRUCTURAL_COMPARISON.out.summary.map { meta, summary -> tuple(meta, summary) })
 
+    structural_summary_keyed = SUMMARISE_STRUCTURAL_COMPARISON.out.summary.map { meta, summary -> tuple(meta.pair_id, meta, summary) }
+    disagreement_keyed = SUMMARISE_STRUCTURAL_COMPARISON.out.disagreements.map { meta, disagreements -> tuple(meta.pair_id, meta, disagreements) }
+    benchmark_inputs = canonical_keyed.join(intron_keyed)
+        .map { pair_id, meta, source_a_models, source_b_models, _intron_meta, intron -> tuple(pair_id, meta, source_a_models, source_b_models, intron) }
+        .join(ends_keyed)
+        .map { pair_id, meta, source_a_models, source_b_models, intron, _ends_meta, ends -> tuple(pair_id, meta, source_a_models, source_b_models, intron, ends) }
+        .join(utr_keyed)
+        .map { pair_id, meta, source_a_models, source_b_models, intron, ends, _utr_meta, utr -> tuple(pair_id, meta, source_a_models, source_b_models, intron, ends, utr) }
+        .join(structural_summary_keyed)
+        .map { pair_id, meta, source_a_models, source_b_models, intron, ends, utr, _summary_meta, structural -> tuple(pair_id, meta, source_a_models, source_b_models, intron, ends, utr, structural) }
+        .join(disagreement_keyed)
+        .map { pair_id, meta, source_a_models, source_b_models, intron, ends, utr, structural, _disagreement_meta, disagreements -> tuple(pair_id, meta, source_a_models, source_b_models, intron, ends, utr, structural, disagreements) }
+        .join(evidence_keyed)
+        .map { _pair_id, meta, source_a_models, source_b_models, intron, ends, utr, structural, disagreements, _evidence_meta, evidence_a, evidence_b -> tuple(meta, source_a_models, source_b_models, intron, ends, utr, structural, disagreements, evidence_a, evidence_b) }
+    EXPORT_BENCHMARK_PAIR(benchmark_inputs)
+    AGGREGATE_PAIRWISE_BENCHMARK(
+        EXPORT_BENCHMARK_PAIR.out.models.map { _meta, file -> file }.collect(),
+        EXPORT_BENCHMARK_PAIR.out.comparisons.map { _meta, file -> file }.collect(),
+        EXPORT_BENCHMARK_PAIR.out.whole_models.map { _meta, file -> file }.collect(),
+        EXPORT_BENCHMARK_PAIR.out.summary.map { _meta, file -> file }.collect()
+    )
+
     gffcompare_summary = channel.empty()
     gffcompare_versions = channel.empty()
     if (params.run_pairwise_gffcompare) {
@@ -155,6 +179,8 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         .mix(ANNOTATE_MODEL_EVIDENCE.out.versions)
         .mix(gff_feature_versions)
         .mix(transcript_count_versions)
+        .mix(EXPORT_BENCHMARK_PAIR.out.versions)
+        .mix(AGGREGATE_PAIRWISE_BENCHMARK.out.versions)
         .mix(gffcompare_versions)
         .collect()
     COLLECT_SOFTWARE_VERSIONS(pairwise_versions)
@@ -186,6 +212,12 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
     utr_structure = COMPARE_UTR_STRUCTURE.out.results
     structural_summary = SUMMARISE_STRUCTURAL_COMPARISON.out.summary
     disagreement_loci = SUMMARISE_STRUCTURAL_COMPARISON.out.disagreements
+    benchmark_models = AGGREGATE_PAIRWISE_BENCHMARK.out.models
+    benchmark_comparisons = AGGREGATE_PAIRWISE_BENCHMARK.out.comparisons
+    benchmark_whole_models = AGGREGATE_PAIRWISE_BENCHMARK.out.whole_models
+    benchmark_manifest = AGGREGATE_PAIRWISE_BENCHMARK.out.manifest
+    benchmark_summary = AGGREGATE_PAIRWISE_BENCHMARK.out.summary
+    benchmark_definitions = AGGREGATE_PAIRWISE_BENCHMARK.out.definitions
     metric_status = METRIC_STATUS.out.status
     pair_report = ASSEMBLE_PAIR_REPORT.out.report
     evidence = ANNOTATE_MODEL_EVIDENCE.out.annotated

@@ -1,3 +1,4 @@
+import json
 import subprocess
 import sys
 import tempfile
@@ -7,6 +8,7 @@ from pathlib import Path
 
 SCRIPT = Path(__file__).parents[1] / "bin" / "normalise_pairwise_tsv.py"
 PAIRWISE_QC = Path(__file__).parents[1] / "bin" / "pairwise_qc.py"
+BENCHMARK_PRODUCTS = Path(__file__).parents[1] / "bin" / "build_benchmark_products.py"
 TESTDATA = Path(__file__).parents[1] / "testdata" / "pairwise"
 
 
@@ -151,6 +153,78 @@ class PairwiseContractTest(unittest.TestCase):
             subprocess.run([sys.executable, str(PAIRWISE_QC), "status", "--pair-id", "p", "--output", str(output), "--entry", "gene_presence", "not_applicable", "BED12", "--entry", "protein_validation", "missing_input", "no protein evidence"], check=True)
             self.assertIn("not_applicable", output.read_text())
             self.assertIn("missing_input", output.read_text())
+
+    def test_benchmark_products_preserve_provenance_and_pairwise_scope(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            models = {}
+            for source, label, fmt in (("a", "bambu", "bed12"), ("b", "flair", "bed12")):
+                models[source] = root / f"{source}.tsv"
+                subprocess.run(
+                    [sys.executable, str(PAIRWISE_QC), "normalise", "--input",
+                     str(TESTDATA / f"source_{source}.bed12"), "--source", label,
+                     "--pair-id", "p", "--assembly", "fixture", "--format", fmt,
+                     "--output", str(models[source])], check=True,
+                )
+            metadata = root / "metadata.json"
+            metadata.write_text(json.dumps({
+                "pair_id": "p", "assembly": "fixture", "species": "human", "sample": "HG002",
+                "source_a": "bambu", "source_b": "flair", "tool_a": "Bambu", "tool_b": "FLAIR",
+                "technology_a": "PacBio_IsoSeq", "technology_b": "PacBio_IsoSeq",
+                "format_a": "bed12", "format_b": "bed12",
+            }), encoding="utf-8")
+            intron = root / "intron.tsv"
+            intron.write_text(
+                "pair_id\tlocus_id\tsource_a_transcript_id\tsource_b_locus_id\tsource_b_transcript_id\tsource_a_introns\tsource_b_introns\tshared_introns\tjaccard\tclassification\n"
+                "p\tlocus:fixture:chr1:+:000001\ttx_a\tlocus:fixture:chr1:+:000001\ttx_b\t1\t1\t1\t1.0\texact\n",
+                encoding="utf-8",
+            )
+            ends = root / "ends.tsv"
+            ends.write_text(
+                "pair_id\tlocus_id\tend\tsource_a_transcript_id\tsource_b_locus_id\tsource_b_transcript_id\tdistance_bp\tclassification\n"
+                "p\tlocus:fixture:chr1:+:000001\tfive_prime_end\ttx_a\tlocus:fixture:chr1:+:000001\ttx_b\t0\twithin_threshold\n"
+                "p\tlocus:fixture:chr1:+:000001\tthree_prime_end\ttx_a\tlocus:fixture:chr1:+:000001\ttx_b\t0\twithin_threshold\n",
+                encoding="utf-8",
+            )
+            utr = root / "utr.tsv"
+            utr.write_text(
+                "pair_id\tlocus_id\tsource_a_transcript_id\tsource_b_transcript_id\tsource_a_utr_available\tsource_b_utr_available\texact_match\tclassification\n"
+                "p\tlocus:fixture:chr1:+:000001\ttx_a\ttx_b\t0\t0\t0\tmissing\n",
+                encoding="utf-8",
+            )
+            structural = root / "structural.tsv"
+            structural.write_text(
+                "pair_id\tn_intron_comparisons\tn_exact_intron_chains\tn_partial_intron_chains\tn_end_comparisons\tn_ends_within_threshold\tn_utr_comparisons\tn_exact_utr_matches\n"
+                "p\t1\t1\t0\t1\t1\t1\t0\n",
+                encoding="utf-8",
+            )
+            output_models, output_comparisons, output_whole_models, output_summary = (root / name for name in ("models.tsv", "comparisons.tsv", "whole_models.tsv", "summary.tsv"))
+            subprocess.run(
+                [sys.executable, str(BENCHMARK_PRODUCTS), "pair", "--metadata", str(metadata),
+                 "--source-a", str(models["a"]), "--source-b", str(models["b"]),
+                 "--intron", str(intron), "--ends", str(ends), "--utr", str(utr),
+                 "--structural", str(structural), "--output-models", str(output_models),
+                 "--output-comparisons", str(output_comparisons), "--output-whole-models", str(output_whole_models),
+                 "--output-summary", str(output_summary)],
+                check=True,
+            )
+            self.assertIn("technology", output_models.read_text(encoding="utf-8").splitlines()[0])
+            self.assertIn("Bambu", output_models.read_text(encoding="utf-8"))
+            comparison_text = output_comparisons.read_text(encoding="utf-8")
+            self.assertIn("intron_chain", comparison_text)
+            self.assertIn("utr_structure", comparison_text)
+            self.assertIn("whole_model_structure_only", output_whole_models.read_text(encoding="utf-8"))
+            summary_text = output_summary.read_text(encoding="utf-8")
+            self.assertIn("pairwise_concordance", summary_text)
+            self.assertIn("none", summary_text)
+            subprocess.run(
+                [sys.executable, str(BENCHMARK_PRODUCTS), "aggregate", "--models", str(output_models),
+                 "--comparisons", str(output_comparisons), "--whole-models", str(output_whole_models),
+                 "--summaries", str(output_summary)], cwd=root, check=True,
+            )
+            self.assertIn("Bambu", (root / "models_long.tsv").read_text(encoding="utf-8"))
+            self.assertIn("whole_model_structure_only", (root / "whole_model_comparisons.tsv").read_text(encoding="utf-8"))
+            self.assertIn("intron_chain_concordance", (root / "tool_technology_summary.tsv").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

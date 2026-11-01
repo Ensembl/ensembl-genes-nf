@@ -169,9 +169,14 @@ Set `--mode pairwise` to compare reconstructed transcript models. The
 pairwise manifest accepts GFF3, GTF, or BED12 and keeps source labels generic:
 
 ```csv
-pair_id,assembly,source_a,source_b,source_a_path,source_b_path,source_a_format,source_b_format,assembly_report,evidence_a,evidence_b
-pair_1,GRCh38,reference,long_read,/path/reference.gff3,/path/models.bed12,gff3,bed12,,/path/evidence_a.tsv,/path/evidence_b.tsv
+pair_id,assembly,species,sample,technology_a,technology_b,library_protocol,source_a,source_b,tool_a,tool_b,tool_version_a,tool_version_b,source_a_path,source_b_path,source_a_format,source_b_format,assembly_report,evidence_a,evidence_b
+pair_1,GRCh38,human,HG002,PacBio_IsoSeq,PacBio_IsoSeq,IsoSeq,reference,long_read,StringTie3,FLAIR,3.0.0,2.1,/path/reference.gff3,/path/models.bed12,gff3,bed12,,/path/evidence_a.tsv,/path/evidence_b.tsv
 ```
+
+The provenance columns are optional for compatibility, but should be supplied
+for benchmarking. `tool_a` and `tool_b` default to the source labels, while
+technology, sample, species, protocol and tool-version fields remain empty when
+they are not declared.
 
 Formats may be `gff3`, `gtf`, `bed12`, or `auto`. Evidence files are optional
 and, when supplied, must contain `transcript_id` plus any of `read_count`,
@@ -214,6 +219,23 @@ Pairwise outputs use:
 ├── evidence/    # optional evidence joins
 └── summary/     # metric status, disagreements and report
 ```
+
+Run-level benchmark products are written to
+`<outdir>/qc/pairwise_benchmark/`:
+
+```text
+models_long.tsv                    # one row per canonical model/tool plus evidence support
+structural_comparisons_long.tsv    # long-form intron, end and UTR comparisons
+whole_model_comparisons.tsv        # intron-chain/end/UTR combined classifications
+benchmark_manifest.tsv             # one provenance/summary row per pair
+tool_technology_summary.tsv        # grouped tool/technology concordance
+metric_definitions.tsv             # denominator and truth-use definitions
+```
+
+These products report `pairwise_concordance` and `truth_source=none` unless a
+separate truth-set analysis is supplied. They must not be interpreted as
+biological recall. Read-derived junction/intron-chain/end evidence or a defined
+reference truth set is required for recall, precision and F1 estimates.
 
 GffCompare is disabled by default. When enabled it runs both directions and
 does not hide tool failures. Pairwise tasks use pinned references for curl,

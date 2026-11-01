@@ -18,6 +18,16 @@ workflow {
                 def assembly = row.assembly ?: row.assembly_accession ?: pairId
                 def sourceA = row.source_a ?: 'source_a'
                 def sourceB = row.source_b ?: 'source_b'
+                def toolA = row.tool_a ?: sourceA
+                def toolB = row.tool_b ?: sourceB
+                def technologyA = row.technology_a ?: row.technology ?: ''
+                def technologyB = row.technology_b ?: row.technology ?: ''
+                def species = row.species ?: row.organism ?: ''
+                def sample = row.sample ?: row.sample_id ?: ''
+                def libraryProtocol = row.library_protocol ?: row.protocol ?: ''
+                def replicate = row.replicate ?: ''
+                def toolVersionA = row.tool_version_a ?: ''
+                def toolVersionB = row.tool_version_b ?: ''
                 def sourceAPath = row.source_a_path ?: row.gff_a ?: row.annotation_a
                 def sourceBPath = row.source_b_path ?: row.gff_b ?: row.annotation_b
                 def formatA = row.source_a_format ?: row.format_a ?: 'auto'
@@ -47,6 +57,11 @@ workflow {
                 def meta = [
                     id: pairId, pair_id: pairId, assembly: assembly,
                     source_a: sourceA, source_b: sourceB,
+                    tool_a: toolA, tool_b: toolB,
+                    technology_a: technologyA, technology_b: technologyB,
+                    species: species, sample: sample,
+                    library_protocol: libraryProtocol, replicate: replicate,
+                    tool_version_a: toolVersionA, tool_version_b: toolVersionB,
                     format_a: formatA.toLowerCase(), format_b: formatB.toLowerCase(),
                     source_a_assembly: row.source_a_assembly ?: '', source_b_assembly: row.source_b_assembly ?: '',
                     evidence_a: evidenceA, evidence_b: evidenceB,
