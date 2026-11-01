@@ -10,6 +10,7 @@ formats and every structural comparison.
 from __future__ import annotations
 
 import argparse
+from bisect import bisect_right
 import csv
 import gzip
 import hashlib
@@ -114,6 +115,47 @@ def safe_int(value: str | None, default: int = 10**18) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def coordinate_span(row: dict[str, str]) -> tuple[int, int] | None:
+    """Return a model's genomic span when both coordinates are numeric."""
+    try:
+        start, end = int(row.get("transcript_start", "")), int(row.get("transcript_end", ""))
+    except (TypeError, ValueError):
+        return None
+    return (start, end) if start <= end else None
+
+
+def build_interval_index(rows: list[dict[str, str]]) -> dict[tuple[str, str, str], tuple[list[int], list[tuple[int, int, int]]]]:
+    """Index transcript spans by assembly, contig and strand for overlap queries."""
+    buckets: defaultdict[tuple[str, str, str], list[tuple[int, int, int]]] = defaultdict(list)
+    for index, row in enumerate(rows):
+        span = coordinate_span(row)
+        if span is None:
+            continue
+        key = (row.get("assembly", ""), row.get("contig", ""), row.get("strand", "."))
+        buckets[key].append((span[0], span[1], index))
+
+    indexed = {}
+    for key, entries in buckets.items():
+        entries.sort(key=lambda item: (item[0], item[1], item[2]))
+        indexed[key] = ([item[0] for item in entries], entries)
+    return indexed
+
+
+def indexed_candidates(row: dict[str, str], index: dict[tuple[str, str, str], tuple[list[int], list[tuple[int, int, int]]]]):
+    """Yield row indexes whose transcript spans overlap the query span."""
+    span = coordinate_span(row)
+    if span is None:
+        return
+    key = (row.get("assembly", ""), row.get("contig", ""), row.get("strand", "."))
+    bucket = index.get(key)
+    if bucket is None:
+        return
+    starts, entries = bucket
+    for start, end, row_index in entries[:bisect_right(starts, span[1])]:
+        if end >= span[0]:
+            yield row_index
 
 
 def parse_models(path: str, source: str, pair_id: str, assembly: str,
@@ -308,9 +350,11 @@ def sha256(path: str | Path) -> str:
 
 
 def reference_candidates(row: dict[str, str], reference_rows: list[dict[str, str]], minimum_bp: int,
-                         reciprocal: float) -> list[tuple[tuple[int, int, float, float, str], dict[str, str]]]:
+                         reciprocal: float,
+                         reference_index: dict[tuple[str, str, str], tuple[list[int], list[tuple[int, int, int]]]]) -> list[tuple[tuple[int, int, float, float, str], dict[str, str]]]:
     candidates = []
-    for ref in reference_rows:
+    for ref_index in indexed_candidates(row, reference_index):
+        ref = reference_rows[ref_index]
         if not valid_gene_id(ref.get("original_gene_id")) or not related(row, ref, minimum_bp, reciprocal):
             continue
         overlap, left_fraction, right_fraction = reciprocal_overlap(row, ref)
@@ -328,6 +372,7 @@ def assign_loci(source_a: list[dict[str, str]], source_b: list[dict[str, str]], 
                     source_b[0].get("source", "source_b") if source_b else "source_b")
     all_rows = [empty_assignment(row) for row in source_a + source_b]
     reference_rows = reference_rows or []
+    reference_index = build_interval_index(reference_rows)
 
     for row in all_rows:
         row["assembly"] = row.get("assembly") or assembly
@@ -343,7 +388,7 @@ def assign_loci(source_a: list[dict[str, str]], source_b: list[dict[str, str]], 
     for row in all_rows:
         if row["locus_id"] or not reference_rows:
             continue
-        matches = reference_candidates(row, reference_rows, minimum_bp, reciprocal)
+        matches = reference_candidates(row, reference_rows, minimum_bp, reciprocal, reference_index)
         if matches:
             gene_id = matches[0][1]["original_gene_id"]
             row["gene_assignment_type"] = "reference_gene"
@@ -351,6 +396,7 @@ def assign_loci(source_a: list[dict[str, str]], source_b: list[dict[str, str]], 
             row["locus_assignment_method"] = "reference_splice_or_reciprocal_exon_overlap"
 
     synthetic = [row for row in all_rows if not row["locus_id"] and row.get("model_status") in {"valid", "no_exon_records"}]
+    synthetic_index = build_interval_index(synthetic)
     components: list[list[dict[str, str]]] = []
     unseen = set(range(len(synthetic)))
     while unseen:
@@ -363,7 +409,8 @@ def assign_loci(source_a: list[dict[str, str]], source_b: list[dict[str, str]], 
         frontier = [seed]
         while frontier:
             current = frontier.pop()
-            neighbours = [index for index in sorted(unseen) if related(synthetic[current], synthetic[index], minimum_bp, reciprocal)]
+            neighbours = [index for index in indexed_candidates(synthetic[current], synthetic_index)
+                          if index in unseen and related(synthetic[current], synthetic[index], minimum_bp, reciprocal)]
             for index in neighbours:
                 unseen.remove(index)
                 frontier.append(index)
