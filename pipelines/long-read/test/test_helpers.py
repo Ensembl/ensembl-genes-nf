@@ -430,6 +430,20 @@ def test_bam_to_alignment_gtf_preserves_splice_blocks_and_filters_flags(tmp_path
     assert 'transcript_id "read_spliced"' in sam_gtf.read_text()
 
 
+def test_bam_to_alignment_gtf_is_coordinate_sorted(tmp_path: Path):
+    sam = tmp_path / "unsorted.sam"
+    sam.write_text(
+        "@HD\tVN:1.6\tSO:unsorted\n"
+        "read_late\t0\tchr1\t50\t60\t10M10N10M\t*\t0\t0\tACGTACGTACGTACGTACGT\tIIIIIIIIIIIIIIIIIIII\n"
+        "read_early\t0\tchr1\t5\t60\t10M10N10M\t*\t0\t0\tACGTACGTACGTACGTACGT\tIIIIIIIIIIIIIIIIIIII\n"
+    )
+    gtf = tmp_path / "sorted.gtf"
+    result = run_helper("bam_to_alignment_gtf.py", "--sam", str(sam), "--output", str(gtf))
+    assert result.returncode == 0, result.stderr
+    coordinates = [(row.split("\t")[0], int(row.split("\t")[3]), int(row.split("\t")[4])) for row in gtf.read_text().splitlines()]
+    assert coordinates == sorted(coordinates)
+
+
 def test_invalid_bed12_is_rejected(tmp_path: Path):
     bed = tmp_path / "invalid.bed12"
     bed.write_text("chr1\t0\t10\tbad\t0\t+\t0\t10\t0\t2\t10,10,\t0,0,\n")

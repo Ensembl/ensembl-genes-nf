@@ -29,35 +29,36 @@ def main() -> None:
         source_handle = subprocess.Popen(["samtools", "view", "-F", str(EXCLUDED_FLAGS), str(args.bam)], stdout=subprocess.PIPE, text=True).stdout
     else:
         source_handle = args.sam.open()
+    records = []
+    for line in source_handle:
+        if not line.strip() or line.startswith("@"):
+            continue
+        fields = line.split("\t")
+        if len(fields) < 6:
+            continue
+        read_id, flag, chrom, start, cigar = fields[0], int(fields[1]), fields[2], int(fields[3]) - 1, fields[5]
+        strand = "-" if flag & 16 else "+"
+        reference_position = start
+        exon_start = start
+        exon_number = 0
+        for length_text, operation in CIGAR.findall(cigar):
+            length = int(length_text)
+            if operation in "M=X":
+                reference_position += length
+            elif operation == "N":
+                if reference_position > exon_start:
+                    exon_number += 1
+                    records.append((chrom, exon_start + 1, reference_position, f'{chrom}\tpipeline\texon\t{exon_start + 1}\t{reference_position}\t.\t{strand}\t.\tgene_id "{read_id}"; transcript_id "{read_id}"; exon_number "{exon_number}";\n'))
+                reference_position += length
+                exon_start = reference_position
+            elif operation in "D":
+                reference_position += length
+        if reference_position > exon_start:
+            exon_number += 1
+            records.append((chrom, exon_start + 1, reference_position, f'{chrom}\tpipeline\texon\t{exon_start + 1}\t{reference_position}\t.\t{strand}\t.\tgene_id "{read_id}"; transcript_id "{read_id}"; exon_number "{exon_number}";\n'))
+    records.sort(key=lambda record: (record[0], record[1], record[2], record[3]))
     with args.output.open("w") as handle:
-        for line in source_handle:
-            if not line.strip() or line.startswith("@"):
-                continue
-            fields = line.split("\t")
-            if len(fields) < 6:
-                continue
-            read_id, flag, chrom, start, cigar = fields[0], int(fields[1]), fields[2], int(fields[3]) - 1, fields[5]
-            strand = "-" if flag & 16 else "+"
-            reference_position = start
-            exon_start = start
-            exon_number = 0
-            for length_text, operation in CIGAR.findall(cigar):
-                length = int(length_text)
-                if operation in "M=X":
-                    reference_position += length
-                elif operation == "N":
-                    if reference_position > exon_start:
-                        exon_number += 1
-                        handle.write(f'{chrom}\tpipeline\texon\t{exon_start + 1}\t{reference_position}\t.\t{strand}\t.\tgene_id "{read_id}"; transcript_id "{read_id}"; exon_number "{exon_number}";\n')
-                    reference_position += length
-                    exon_start = reference_position
-                elif operation in "D":
-                    reference_position += length
-            if reference_position > exon_start:
-                exon_number += 1
-                handle.write(f'{chrom}\tpipeline\texon\t{exon_start + 1}\t{reference_position}\t.\t{strand}\t.\tgene_id "{read_id}"; transcript_id "{read_id}"; exon_number "{exon_number}";\n')
-            if exon_number == 0:
-                continue
+        handle.writelines(record[3] for record in records)
     if args.bam is not None:
         source_handle.close()
 if __name__ == "__main__":
