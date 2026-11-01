@@ -8,7 +8,9 @@ from pathlib import Path
 
 
 def records(path: Path):
-    opener = gzip.open if path.read_bytes()[:2] == b"\x1f\x8b" else open
+    with path.open("rb") as probe:
+        is_gzip = probe.read(2) == b"\x1f\x8b"
+    opener = gzip.open if is_gzip else open
     with opener(path, "rt", encoding="utf-8", errors="strict", newline="") as handle:
         while True:
             header = handle.readline()

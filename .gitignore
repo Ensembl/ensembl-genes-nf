@@ -153,3 +153,6 @@ work/
 # IDE
 .vscode
 .codex
+
+# Local analyses, reports, pipeline runs, and other workspace artifacts
+.workspace/

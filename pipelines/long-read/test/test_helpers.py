@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import gzip
 import importlib.util
 import json
 import subprocess
@@ -128,6 +129,16 @@ def test_finalize_prepared_manifest_replaces_input_checksum(tmp_path: Path):
     row = next(csv.DictReader((tmp_path / "final.tsv").open(), delimiter="\t"))
     assert row["input"] == "staged.fastq"
     assert row["input_sha256"] == "a" * 64
+
+
+def test_validate_fastq_handles_gzip_without_materialising_input(tmp_path: Path):
+    reads = tmp_path / "reads.fastq.gz"
+    with gzip.open(reads, "wt") as handle:
+        handle.write(DATA.joinpath("reads.fastq").read_text())
+    status = tmp_path / "status.tsv"
+    result = run_helper("validate_fastq.py", "--reads", str(reads), "--run-id", "run1", "--status", str(status))
+    assert result.returncode == 0, result.stderr
+    assert "run1\tVALID\t1" in status.read_text()
 
 
 def test_merge_filelist_is_sorted_and_checksum_bearing(tmp_path: Path):
