@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Track-file aggregation pipeline parameters",
+  "type": "object",
+  "properties": {
+    "track_manifest": {"type": "string", "exists": true, "description": "Completed track-preparation track_manifest.tsv"},
+    "aggregation_manifest": {"type": "string", "exists": true, "description": "Explicit source-to-aggregate membership TSV"},
+    "manifest_base_dir": {"type": ["string", "null"], "description": "Base directory for relative track_path values"},
+    "chrom_sizes": {"type": "string", "exists": true, "description": "Assembly chrom.sizes used to write aggregate BigWigs and BigBeds"},
+    "track_types": {"type": "string", "enum": ["all", "coverage", "splice_junction"], "default": "all", "description": "Aggregate coverage, splice junctions, or both"},
+    "allow_opaque_normalization": {"type": "boolean", "default": false, "description": "Allow legacy non-JSON coverage normalization metadata; use only for controlled compatibility tests"},
+    "outdir": {"type": "string", "default": "./results"},
+    "tracedir": {"type": ["string", "null"], "description": "Directory for execution reports"}
+  },
+  "required": ["track_manifest", "aggregation_manifest", "chrom_sizes"]
+}

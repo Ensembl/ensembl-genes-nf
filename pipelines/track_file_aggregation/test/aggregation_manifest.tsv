@@ -1,0 +1,4 @@
+aggregate_id	aggregate_type	source_entity_id	source_entity_type	aggregate_label	coverage_method	splice_method	metadata_json
+sample_a	sample	run_1	run	Sample A	mean	sum_counts	{"tissue":"brain"}
+sample_a	sample	run_2	run	Sample A	mean	sum_counts	{"tissue":"brain"}
+sample_b	sample	run_3	run	Sample B	mean	sum_counts	{"tissue":"liver"}

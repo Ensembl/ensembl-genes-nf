@@ -24,7 +24,7 @@ def parse_track_selection(String value) {
     if (selected == ['all'])
         return ['coverage', 'gene_model', 'splice_junction']
     def allowed = ['coverage', 'gene_model', 'splice_junction']
-    if (selected.any { !(it in allowed) })
+    if (selected.any { track_type -> !(track_type in allowed) })
         error "Unsupported track_types '${value}'; choose coverage, gene_model, splice_junction, or all"
     selected.unique()
 }
@@ -53,7 +53,7 @@ def resolve_current_bam_index(bam, supplied_index, String entity_id, boolean war
     if (!candidates) return null
 
     def bam_mtime = bam.toFile().lastModified()
-    def current = candidates.findAll { it.toFile().lastModified() >= bam_mtime }
+    def current = candidates.findAll { candidate -> candidate.toFile().lastModified() >= bam_mtime }
     if (warn_on_stale && current.size() < candidates.size())
         log.warn "Ignoring stale BAM index for ${entity_id}: BAM file is newer than its index"
     current.sort { left, right ->
@@ -76,7 +76,7 @@ def manifest_entities(manifest, base_dir, override) {
         error "Input manifest is empty: ${manifest}"
     def header = lines[0].split('\t', -1)
     def required = ['entity_id', 'entity_type', 'gca_accession', 'assembly_release', 'bam', 'gtf', 'track_types']
-    def missing = required.findAll { !(it in header) }
+    def missing = required.findAll { column -> !(column in header) }
     if (missing)
         error "Manifest is missing required columns: ${missing.join(', ')}"
     def indexes = header.toList().withIndex().collectEntries { pair -> [(pair[0]): pair[1]] }
@@ -110,6 +110,8 @@ def manifest_entities(manifest, base_dir, override) {
                     gca_accession: row.gca_accession, assembly_release: row.assembly_release,
                     source_entity_ids: row.source_entity_ids ?: '', run_accession: row.run_accession ?: '',
                     sample_id: row.sample_id ?: '', track_types: selected,
+                    coverage_bin_size: params.coverage_bin_size,
+                    coverage_normalization: params.coverage_normalization,
                     derive_junctions: derive_junctions_enabled(), contains_lts_path: contains_lts_path]
         records << tuple(meta, bam, gtf, sj, bai)
     }
@@ -152,27 +154,27 @@ workflow {
     entity_reference_sizes = bam_reference_sizes.mix(no_bam_reference_sizes)
 
     bam_index_entities = entities
-        .filter { meta, bam, gtf, sj, bai ->
+        .filter { meta, bam, _gtf, _sj, bai ->
             bam && !bai && ('coverage' in meta.track_types || (meta.derive_junctions && 'splice_junction' in meta.track_types))
         }
-        .map { meta, bam, gtf, sj, bai -> tuple(meta, bam) }
+        .map { meta, bam, _gtf, _sj, _bai -> tuple(meta, bam) }
     generated_indexes = INDEX_BAM(bam_index_entities)
 
     supplied_index_entities = entities
-        .filter { meta, bam, gtf, sj, bai ->
+        .filter { meta, bam, _gtf, _sj, bai ->
             bam && bai && ('coverage' in meta.track_types || (meta.derive_junctions && 'splice_junction' in meta.track_types))
         }
-        .map { meta, bam, gtf, sj, bai -> tuple(meta, bam, bai) }
+        .map { meta, bam, _gtf, _sj, bai -> tuple(meta, bam, bai) }
     indexed_entities = supplied_index_entities.mix(generated_indexes.indexed)
 
     coverage_entities = indexed_entities
-        .filter { meta, bam, bai -> 'coverage' in meta.track_types }
+        .filter { meta, _bam, _bai -> 'coverage' in meta.track_types }
         .map { meta, bam, bai -> tuple("${meta.gca_accession}\t${meta.id}", meta, bam, bai) }
         .join(entity_reference_sizes)
         .map { _key, meta, bam, bai, compatible_chrom_sizes -> tuple(meta, bam, bai, compatible_chrom_sizes) }
-    gene_entities = entities.filter { meta, bam, gtf, sj, bai -> 'gene_model' in meta.track_types }
-        .map { meta, bam, gtf, sj, bai -> tuple(meta, gtf, chrom_sizes) }
-    splice_entities = entities.filter { meta, bam, gtf, sj, bai -> 'splice_junction' in meta.track_types }
+    gene_entities = entities.filter { meta, _bam, _gtf, _sj, _bai -> 'gene_model' in meta.track_types }
+        .map { meta, _bam, gtf, _sj, _bai -> tuple(meta, gtf, chrom_sizes) }
+    splice_entities = entities.filter { meta, _bam, _gtf, _sj, _bai -> 'splice_junction' in meta.track_types }
         .map { meta, bam, _gtf, sj, _bai -> tuple("${meta.gca_accession}\t${meta.id}", meta, derive_junctions_enabled() ? bam : sj, bam ?: sj) }
         .join(entity_reference_sizes)
         .map { _key, meta, sj, bam_or_sj, compatible_chrom_sizes -> tuple(meta, sj, bam_or_sj, compatible_chrom_sizes) }
@@ -181,9 +183,9 @@ workflow {
     genes = PREPARE_GENE_MODEL_TRACKS(gene_entities)
     splice = PREPARE_SPLICE_TRACKS(splice_entities)
 
-    result_channels = coverage.results.map { meta, artifact, result, provenance, exception -> result }
-        .mix(genes.results.map { meta, artifact, result, provenance, exception -> result })
-        .mix(splice.results.map { meta, artifact, result, provenance, exception -> result })
+    result_channels = coverage.results.map { _meta, _artifact, result, _provenance, _exception -> result }
+        .mix(genes.results.map { _meta, _artifact, result, _provenance, _exception -> result })
+        .mix(splice.results.map { _meta, _artifact, result, _provenance, _exception -> result })
     version_channels = PREFLIGHT_TRACK_INPUTS.out.versions
         .mix(STAGE_LTS_INPUTS.out.versions)
         .mix(coverage.versions)

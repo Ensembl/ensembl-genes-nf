@@ -1,26 +1,28 @@
 process VALIDATE_SPLICE_BIGBED {
-    tag { "${meta.gca_accession}:${meta.id}" }
+    tag { "${meta.gca_accession}:${meta.id}:splice_junction" }
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/ucsc-bigbedinfo:482--h0b57e2e_0'
 
     input:
-    tuple val(meta), path(bigbed), path(bam)
+    tuple val(meta), path(bigbed)
 
     output:
-    tuple val(meta), path(bigbed), path(bam), emit: validated
+    tuple val(meta), path(bigbed), emit: validated
     path "${meta.safe_id}.splice_bigbed_validation.tsv", emit: validation
+    path "${meta.safe_id}.splice_bigbed_validation.versions.yml", emit: versions
 
     script:
     """
     test -s ${bigbed} || { echo 'Splice-junction BigBed validation failed' >&2; exit 1; }
     bigBedInfo -as ${bigbed} > ${meta.safe_id}.embedded_splice_schema.as
     for field in chrom chromStart chromEnd name score strand unique_reads multi_reads splice_motif; do
-        grep -q "[[:space:]]\${field};" ${meta.safe_id}.embedded_splice_schema.as || {
-            echo "Splice BigBed is missing embedded AutoSql field: \${field}" >&2
+        grep -q "[[:space:]]\$field;" ${meta.safe_id}.embedded_splice_schema.as || {
+            echo "Splice BigBed is missing embedded AutoSql field: \$field" >&2
             exit 1
         }
     done
     printf 'entity_id\\ttrack_type\\tstatus\\n${meta.id}\\tsplice_junction\\tcomplete\\n' > ${meta.safe_id}.splice_bigbed_validation.tsv
+    printf '"%s":\\n    bigBedInfo: 482\\n' '${task.process}' > ${meta.safe_id}.splice_bigbed_validation.versions.yml
     """
 
     stub:
@@ -41,5 +43,6 @@ process VALIDATE_SPLICE_BIGBED {
     )
     AUTOSQL
     printf 'entity_id\\ttrack_type\\tstatus\\n${meta.id}\\tsplice_junction\\tcomplete\\n' > ${meta.safe_id}.splice_bigbed_validation.tsv
+    printf '"%s":\\n    bigBedInfo: stub\\n' '${task.process}' > ${meta.safe_id}.splice_bigbed_validation.versions.yml
     """
 }

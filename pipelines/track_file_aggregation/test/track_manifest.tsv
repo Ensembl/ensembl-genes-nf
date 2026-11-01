@@ -1,0 +1,10 @@
+gca_accession	assembly_release	entity_id	entity_type	track_type	track_path	source_path	status	sha256	tool_versions	normalization_parameters
+GCA_000000001.1	test-release	run_1	run	coverage_forward	source/run_1.forward.bw	source/run_1.bam	complete	stub	deepTools	{"tool":"deepTools bamCoverage","bin_size":25,"normalization":"CPM","strand":"forward"}
+GCA_000000001.1	test-release	run_1	run	coverage_reverse	source/run_1.reverse.bw	source/run_1.bam	complete	stub	deepTools	{"tool":"deepTools bamCoverage","bin_size":25,"normalization":"CPM","strand":"reverse"}
+GCA_000000001.1	test-release	run_1	run	splice_junction	source/run_1.splice.bb	source/run_1.sj.out.tab	complete	stub	STAR/UCSC	not_applicable
+GCA_000000001.1	test-release	run_2	run	coverage_forward	source/run_2.forward.bw	source/run_2.bam	complete	stub	deepTools	{"tool":"deepTools bamCoverage","bin_size":25,"normalization":"CPM","strand":"forward"}
+GCA_000000001.1	test-release	run_2	run	coverage_reverse	source/run_2.reverse.bw	source/run_2.bam	complete	stub	deepTools	{"tool":"deepTools bamCoverage","bin_size":25,"normalization":"CPM","strand":"reverse"}
+GCA_000000001.1	test-release	run_2	run	splice_junction	source/run_2.splice.bb	source/run_2.sj.out.tab	complete	stub	STAR/UCSC	not_applicable
+GCA_000000001.1	test-release	run_3	run	coverage_forward	source/run_3.forward.bw	source/run_3.bam	complete	stub	deepTools	{"tool":"deepTools bamCoverage","bin_size":25,"normalization":"CPM","strand":"forward"}
+GCA_000000001.1	test-release	run_3	run	coverage_reverse	source/run_3.reverse.bw	source/run_3.bam	complete	stub	deepTools	{"tool":"deepTools bamCoverage","bin_size":25,"normalization":"CPM","strand":"reverse"}
+GCA_000000001.1	test-release	run_3	run	splice_junction	source/run_3.splice.bb	source/run_3.sj.out.tab	complete	stub	STAR/UCSC	not_applicable
