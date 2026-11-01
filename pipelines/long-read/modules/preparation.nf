@@ -73,12 +73,13 @@ process VALIDATE_FASTQ {
     task.ext.when == null || task.ext.when
     script:
     """
-    test -s ${reads}
-    if file ${reads} | grep -q 'gzip compressed'; then
-        gzip -t ${reads}
-        gzip -cd ${reads} | awk 'NR % 4 == 1 && substr(\$0,1,1) != "@" { exit 1 } NR % 4 == 3 && substr(\$0,1,1) != "+" { exit 1 }'
+    set -euo pipefail
+    test -s "${reads}"
+    if [ "\$(od -An -tx1 -N2 "${reads}" | tr -d ' \\n')" = '1f8b' ]; then
+        gzip -t "${reads}"
+        gzip -cd "${reads}" | LC_ALL=C awk 'NR % 4 == 1 && substr(\$0,1,1) != "@" { exit 1 } NR % 4 == 3 && substr(\$0,1,1) != "+" { exit 1 }'
     else
-        awk 'NR % 4 == 1 && substr(\$0,1,1) != "@" { exit 1 } NR % 4 == 3 && substr(\$0,1,1) != "+" { exit 1 }' ${reads}
+        LC_ALL=C awk 'NR % 4 == 1 && substr(\$0,1,1) != "@" { exit 1 } NR % 4 == 3 && substr(\$0,1,1) != "+" { exit 1 }' "${reads}"
     fi
     printf 'id\\tstatus\\n%s\\tVALID\\n' '${meta.id}' > fastq.status.tsv
     cat > versions.yml <<VERSIONS
