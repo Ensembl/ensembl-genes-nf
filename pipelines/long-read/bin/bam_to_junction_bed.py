@@ -28,6 +28,8 @@ def main() -> None:
         source_handle = args.sam.open()
     junctions: Counter[tuple[str, int, int, str]] = Counter()
     for line in source_handle:
+        if not line.strip() or line.startswith("@"):
+            continue
         fields = line.split("\t")
         if len(fields) < 6:
             continue

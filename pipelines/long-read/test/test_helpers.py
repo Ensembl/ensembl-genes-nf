@@ -379,6 +379,10 @@ def test_bam_junction_extraction_excludes_non_primary_reads(tmp_path: Path):
     result = run_helper("bam_to_junction_bed.py", "--bam", str(DATA / "reads.bam"), "--output", str(junctions))
     assert result.returncode == 0, result.stderr
     assert junctions.read_text().splitlines() == ["chr1\t29\t39\tchr1:29-39\t1\t+"]
+    sam_junctions = tmp_path / "sam.junctions.bed"
+    sam_result = run_helper("bam_to_junction_bed.py", "--sam", str(DATA / "reads.sam"), "--output", str(sam_junctions))
+    assert sam_result.returncode == 0, sam_result.stderr
+    assert sam_junctions.read_text().splitlines() == ["chr1\t29\t39\tchr1:29-39\t1\t+"]
 
 
 def test_bam_reference_dictionary_must_match(tmp_path: Path):
@@ -404,6 +408,10 @@ def test_bam_to_alignment_gtf_preserves_splice_blocks_and_filters_flags(tmp_path
     spliced = [row for row in rows if 'transcript_id "read_spliced"' in row[8]]
     assert [(row[3], row[4]) for row in spliced] == [("20", "29"), ("40", "49")]
     assert not any('transcript_id "read_duplicate"' in row[8] for row in rows)
+    sam_gtf = tmp_path / "alignment.sam.gtf"
+    sam_result = run_helper("bam_to_alignment_gtf.py", "--sam", str(DATA / "reads.sam"), "--output", str(sam_gtf))
+    assert sam_result.returncode == 0, sam_result.stderr
+    assert 'transcript_id "read_spliced"' in sam_gtf.read_text()
 
 
 def test_invalid_bed12_is_rejected(tmp_path: Path):

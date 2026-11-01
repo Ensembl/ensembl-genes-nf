@@ -31,6 +31,8 @@ def main() -> None:
         source_handle = args.sam.open()
     with args.output.open("w") as handle:
         for line in source_handle:
+            if not line.strip() or line.startswith("@"):
+                continue
             fields = line.split("\t")
             if len(fields) < 6:
                 continue
