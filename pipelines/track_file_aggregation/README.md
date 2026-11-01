@@ -5,10 +5,12 @@ This DSL2 pipeline is an optional downstream stage for
 `track_manifest.tsv` plus an explicit aggregation manifest. It never discovers
 entities or infers sample/tissue membership from filenames or directories.
 
-The first implementation aggregates:
+The pipeline supports two explicit aggregation modes:
 
-- forward and reverse coverage BigWigs by equal-weight mean;
-- splice-junction BigBeds by summing unique and multimapping read counts.
+- `raw`: sum source coverage values and splice-junction read counts;
+- `equal_sample`: sum after assigning each contributing sample a weight of
+  `1/N`. Coverage values are scaled before BigWig conversion and junction
+  counts are rounded to integer support for the BigBed schema.
 
 Gene-model BigBeds are intentionally not aggregated. Combining annotations
 requires a separate merge and deduplication policy.
@@ -19,19 +21,23 @@ The aggregation manifest has one row per source entity and these required
 columns:
 
 ```text
-aggregate_id  aggregate_type  source_entity_id  source_entity_type
+aggregate_id  aggregate_type  source_entity_id  source_entity_type  aggregation_method
 ```
 
-Optional columns are `gca_accession`, `aggregate_label`, `coverage_method`,
-`splice_method`, and `metadata_json`. `coverage_method=mean` and
-`splice_method=sum_counts` are currently supported. One assembly is required
-per invocation. Use two invocations for runs-to-samples followed by
+Optional columns are `gca_accession`, `aggregate_label`, and `metadata_json`.
+`aggregation_method` is `raw` or `equal_sample`; the latter requires
+`source_entity_type=sample`. Aggregate types are `sample`, `tissue`, and
+`global`. Tissue membership is explicit: callers must assign missing tissue
+metadata to an aggregate such as `uncharacterized`; the workflow does not
+infer tissue from `organism_part` or other source attributes. One assembly is
+required per invocation. Use two invocations for runs-to-samples followed by
 samples-to-tissues.
 
-Coverage aggregation averages existing normalized BigWigs; it does not pool
+Coverage aggregation operates on existing normalized BigWigs; it does not pool
 reads or recalculate coverage from BAMs. The preparation manifest must contain
 machine-readable JSON in `normalization_parameters` so incompatible bin sizes
-or normalization methods are rejected.
+or normalization methods are rejected. Aggregate manifests preserve this
+metadata so sample-level outputs can be consumed by a later tissue-level run.
 
 ## Example
 

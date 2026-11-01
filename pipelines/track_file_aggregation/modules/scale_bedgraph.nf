@@ -12,7 +12,7 @@ process SCALE_BEDGRAPH {
 
     script:
     """
-    awk -v divisor=${meta.source_count} 'BEGIN { OFS="\\t" } NF == 4 { \$4 = \$4 / divisor; print }' ${bedgraph} > ${meta.safe_id}.${meta.coverage_strand}.scaled.bedGraph
+    awk -v divisor=${meta.weight_divisor} 'BEGIN { OFS="\\t" } NF == 4 { \$4 = \$4 / divisor; print }' ${bedgraph} > ${meta.safe_id}.${meta.coverage_strand}.scaled.bedGraph
     test -s ${meta.safe_id}.${meta.coverage_strand}.scaled.bedGraph || { echo 'Scaled BigWig bedGraph is empty' >&2; exit 1; }
     printf '"%s":\\n    awk: repository-shell\\n' '${task.process}' > ${meta.safe_id}.${meta.coverage_strand}.scale.versions.yml
     """

@@ -14,7 +14,7 @@ process AGGREGATE_JUNCTIONS {
 
     script:
     """
-    python3 ${aggregator} --inputs ${beds.join(' ')} --output ${meta.safe_id}.junctions.bed
+    python3 ${aggregator} --inputs ${beds.join(' ')} --output ${meta.safe_id}.junctions.bed --weight-divisor ${meta.weight_divisor}
     printf 'aggregate_id\\tsource_count\\taggregation_method\\n${meta.aggregate_id}\\t${meta.source_count}\\t${meta.aggregation_method}\\n' > ${meta.safe_id}.splice.provenance.tsv
     printf '"%s":\\n    aggregate_splice_junctions: pipeline\\n' '${task.process}' > ${meta.safe_id}.splice.versions.yml
     """

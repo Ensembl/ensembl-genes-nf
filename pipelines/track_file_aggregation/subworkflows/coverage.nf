@@ -53,11 +53,24 @@ workflow AGGREGATE_COVERAGE_TRACKS {
             def source_ids = metas.collect { source_meta -> source_meta.source_entity_id }.unique().sort()
             def source_paths = metas.collect { source_meta -> source_meta.source_path }.unique().sort()
             def normalization = [
-                aggregation: first.aggregation_method,
-                source_normalization: first.normalization_signature,
+                aggregation_method: first.aggregation_method,
+                source_normalization_parameters: first.normalization_parameters,
                 source_count: tracks.size(),
                 strand: first.coverage_strand,
             ]
+            try {
+                def source_parameters = new groovy.json.JsonSlurper().parseText(first.normalization_parameters)
+                if (source_parameters instanceof Map) {
+                    ['bin_size', 'normalization'].each { key ->
+                        if (source_parameters.containsKey(key)) {
+                            normalization[key] = source_parameters[key]
+                        }
+                    }
+                }
+            } catch (Exception _ignored) {
+                // Legacy manifests may contain opaque normalization metadata.
+                // The validator records that compatibility mode explicitly.
+            }
             def group_meta = first + [
                 id: first.aggregate_id,
                 current_track: "coverage_${first.coverage_strand}",
@@ -66,12 +79,16 @@ workflow AGGREGATE_COVERAGE_TRACKS {
                 source_entity_ids: source_ids.join(','),
                 source_path: source_paths.join(','),
                 normalization_parameters: groovy.json.JsonOutput.toJson(normalization),
+                weight_divisor: first.aggregation_method == 'equal_sample' ? tracks.size() : 1,
             ]
             tuple(group_meta, tracks)
         }
     merged = MERGE_BIGWIGS(grouped)
-    scaled = SCALE_BEDGRAPH(merged.bedgraph)
-    bigwig_input = scaled.scaled.map { meta, bedgraph -> tuple(meta, bedgraph, chrom_sizes) }
+    raw_bedgraphs = merged.bedgraph.filter { meta, _bedgraph -> meta.aggregation_method == 'raw' }
+    weighted_bedgraphs = merged.bedgraph.filter { meta, _bedgraph -> meta.aggregation_method == 'equal_sample' }
+    scaled = SCALE_BEDGRAPH(weighted_bedgraphs)
+    bedgraphs = raw_bedgraphs.mix(scaled.scaled)
+    bigwig_input = bedgraphs.map { meta, bedgraph -> tuple(meta, bedgraph, chrom_sizes) }
     bigwigs = BEDGRAPH_TO_BIGWIG(bigwig_input)
     output_meta = bigwigs.bigwig.map { meta, track -> tuple(meta + [current_track: "coverage_${meta.coverage_strand}"], track) }
     checksummed = CHECKSUM_TRACK(output_meta)

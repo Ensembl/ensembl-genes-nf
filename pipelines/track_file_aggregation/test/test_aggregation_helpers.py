@@ -39,6 +39,18 @@ class AggregationHelpersTests(unittest.TestCase):
             self.assertEqual(fields[6:9], ["1100", "5", "GT-AG"])
             self.assertEqual(fields[4], "1000")
 
+    def test_equal_sample_weights_support_and_rounds_to_bigbed_integers(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = root / "first.bed"
+            second = root / "second.bed"
+            output = root / "aggregate.bed"
+            first.write_text("chr1\t10\t20\tj1\t1000\t+\t5\t1\tGT-AG\n")
+            second.write_text("chr1\t10\t20\tj1\t1000\t+\t4\t2\tGT-AG\n")
+            AGGREGATOR.aggregate([first, second], output, AGGREGATOR.Decimal("2"))
+            fields = output.read_text().strip().split("\t")
+            self.assertEqual(fields[6:9], ["5", "2", "GT-AG"])
+
     def test_conflicting_motifs_are_detectable(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -68,6 +80,7 @@ class AggregationHelpersTests(unittest.TestCase):
         self.assertTrue(Path(coverage_row["track_path"]).is_absolute())
         self.assertEqual(coverage_row["source_path"], "source/run_1.bam")
         self.assertEqual(json.loads(unquote(coverage_row["metadata_json"])), {"tissue": "brain"})
+        self.assertEqual(coverage_row["aggregation_method"], "raw")
 
     def test_build_plan_rejects_incompatible_coverage_normalization(self) -> None:
         fixture_dir = ROOT / "test"
@@ -79,6 +92,33 @@ class AggregationHelpersTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "normalization differs"):
             VALIDATOR.build_plan(tracks, memberships, fixture_dir, {"coverage"}, False)
+
+    def test_equal_sample_accepts_sample_level_inputs(self) -> None:
+        fixture_dir = ROOT / "test"
+        tracks = [dict(row) for row in VALIDATOR.read_tsv(fixture_dir / "track_manifest.tsv")]
+        for row in tracks:
+            row["entity_id"] = f"sample_{row['entity_id'].split('_', 1)[1]}"
+            row["entity_type"] = "sample"
+        memberships = [
+            {
+                "aggregate_id": "brain",
+                "aggregate_type": "tissue",
+                "source_entity_id": f"sample_{index}",
+                "source_entity_type": "sample",
+                "aggregate_label": "Brain",
+                "aggregation_method": "equal_sample",
+                "metadata_json": '{"tissue":"brain"}',
+            }
+            for index in (1, 2, 3)
+        ]
+        plan, _metadata, _assemblies = VALIDATOR.build_plan(
+            tracks,
+            memberships,
+            fixture_dir,
+            {"coverage", "splice_junction"},
+            False,
+        )
+        self.assertEqual({row["aggregation_method"] for row in plan}, {"equal_sample"})
 
     def test_build_plan_honours_selected_track_type(self) -> None:
         fixture_dir = ROOT / "test"
@@ -101,6 +141,15 @@ class AggregationHelpersTests(unittest.TestCase):
         memberships[0]["aggregate_id"] = "sample/a"
         memberships[1]["aggregate_id"] = "sample_a"
         with self.assertRaisesRegex(ValueError, "collide after sanitization"):
+            VALIDATOR.build_plan(tracks, memberships, fixture_dir, {"coverage"}, False)
+
+    def test_equal_sample_requires_sample_sources(self) -> None:
+        fixture_dir = ROOT / "test"
+        tracks = VALIDATOR.read_tsv(fixture_dir / "track_manifest.tsv")
+        memberships = VALIDATOR.read_tsv(fixture_dir / "aggregation_manifest.tsv")
+        memberships[0] = dict(memberships[0])
+        memberships[0]["aggregation_method"] = "equal_sample"
+        with self.assertRaisesRegex(ValueError, "requires source_entity_type=sample"):
             VALIDATOR.build_plan(tracks, memberships, fixture_dir, {"coverage"}, False)
 
 

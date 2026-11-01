@@ -6,9 +6,16 @@ from __future__ import annotations
 import argparse
 from collections import defaultdict
 from pathlib import Path
+from decimal import Decimal, ROUND_HALF_UP
 
 
-def aggregate(inputs: list[Path], output: Path) -> None:
+def weighted_count(value: int, divisor: Decimal) -> int:
+    return int((Decimal(value) / divisor).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def aggregate(inputs: list[Path], output: Path, weight_divisor: Decimal = Decimal("1")) -> None:
+    if weight_divisor <= 0:
+        raise ValueError("weight divisor must be greater than zero")
     records: dict[tuple[str, int, int, str], dict[str, object]] = {}
     motifs: defaultdict[tuple[str, int, int, str], set[str]] = defaultdict(set)
     for path in inputs:
@@ -34,8 +41,8 @@ def aggregate(inputs: list[Path], output: Path) -> None:
         if len(known) > 1:
             raise ValueError(f"conflicting splice motifs for {chrom}:{start}-{end}:{strand}: {sorted(known)}")
         motif = next(iter(known), ".")
-        unique_reads = int(records[key]["unique_reads"])
-        multi_reads = int(records[key]["multi_reads"])
+        unique_reads = weighted_count(int(records[key]["unique_reads"]), weight_divisor)
+        multi_reads = weighted_count(int(records[key]["multi_reads"]), weight_divisor)
         name = f"{chrom}:{start + 1}-{end}:{strand}"
         output_rows.append((chrom, start, end, name, min(unique_reads, 1000), strand, unique_reads, multi_reads, motif))
 
@@ -48,8 +55,9 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--inputs", nargs="+", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--weight-divisor", type=Decimal, default=Decimal("1"))
     args = parser.parse_args()
-    aggregate(args.inputs, args.output)
+    aggregate(args.inputs, args.output, args.weight_divisor)
 
 
 if __name__ == "__main__":

@@ -61,6 +61,7 @@ workflow AGGREGATE_SPLICE_TRACKS {
                 source_entity_ids: source_ids.join(','),
                 source_path: source_paths.join(','),
                 normalization_parameters: 'not_applicable',
+                weight_divisor: first.aggregation_method == 'equal_sample' ? source_ids.size() : 1,
             ]
             tuple(group_meta, input_beds)
         }

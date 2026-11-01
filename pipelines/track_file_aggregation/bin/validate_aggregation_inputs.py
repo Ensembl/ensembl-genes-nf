@@ -29,7 +29,10 @@ AGGREGATION_FIELDS = {
     "aggregate_type",
     "source_entity_id",
     "source_entity_type",
+    "aggregation_method",
 }
+AGGREGATE_TYPES = {"sample", "tissue", "global"}
+AGGREGATION_METHODS = {"raw", "equal_sample"}
 TRACK_TYPES = {
     "coverage_forward",
     "coverage_reverse",
@@ -72,8 +75,33 @@ def normalization_signature(raw: str, track_type: str, allow_opaque: bool) -> st
         return f"opaque:{raw}"
     if not isinstance(value, dict):
         raise ValueError("coverage normalization_parameters must contain a JSON object")
-    comparable = {key: item for key, item in value.items() if key not in {"strand"}}
+
+    # Aggregate manifests retain the source preparation metadata under
+    # source_normalization_parameters so sample-level tracks can be consumed by
+    # a later tissue-level aggregation.
+    source_value = value
+    if "bin_size" not in source_value or "normalization" not in source_value:
+        source_value = value.get("source_normalization_parameters")
+        if isinstance(source_value, str):
+            try:
+                source_value = json.loads(source_value)
+            except json.JSONDecodeError:
+                if not allow_opaque:
+                    raise ValueError(
+                        "coverage source normalization_parameters must be JSON; "
+                        "regenerate the track manifest or set allow_opaque_normalization=true "
+                        "for a controlled compatibility test"
+                    )
+        if isinstance(source_value, str) and source_value.startswith("opaque:"):
+            return source_value
+    if not isinstance(source_value, dict):
+        if allow_opaque:
+            return f"opaque:{source_value}"
+        raise ValueError("coverage normalization_parameters must contain a JSON object")
+    comparable = {key: item for key, item in source_value.items() if key not in {"strand"}}
     if "bin_size" not in comparable or "normalization" not in comparable:
+        if allow_opaque and isinstance(value.get("source_normalization_parameters"), str):
+            return f"opaque:{value['source_normalization_parameters']}"
         raise ValueError("coverage normalization_parameters must include bin_size and normalization")
     return json.dumps(comparable, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
@@ -139,8 +167,20 @@ def build_plan(
         aggregate_type = row["aggregate_type"].strip()
         source_id = row["source_entity_id"].strip()
         source_type = row["source_entity_type"].strip()
-        if not aggregate_id or aggregate_type not in {"sample", "tissue"} or not source_id or not source_type:
+        aggregation_method = row["aggregation_method"].strip()
+        if (
+            not aggregate_id
+            or aggregate_type not in AGGREGATE_TYPES
+            or not source_id
+            or not source_type
+            or aggregation_method not in AGGREGATION_METHODS
+        ):
             raise ValueError(f"invalid aggregation membership row: {row}")
+        if aggregation_method == "equal_sample" and source_type != "sample":
+            raise ValueError(
+                "equal_sample aggregation requires source_entity_type=sample; "
+                "aggregate runs into samples with raw first"
+            )
         membership_key = (aggregate_id, source_id, source_type)
         if membership_key in seen_memberships:
             raise ValueError(f"duplicate aggregation membership: {membership_key}")
@@ -162,14 +202,9 @@ def build_plan(
         config = {
             "aggregate_type": aggregate_type,
             "aggregate_label": row.get("aggregate_label", "").strip() or aggregate_id,
-            "coverage_method": row.get("coverage_method", "mean").strip() or "mean",
-            "splice_method": row.get("splice_method", "sum_counts").strip() or "sum_counts",
+            "aggregation_method": aggregation_method,
             "metadata_json": canonical_json(row.get("metadata_json", ""), "metadata_json"),
         }
-        if config["coverage_method"] != "mean":
-            raise ValueError(f"unsupported coverage_method for {aggregate_id}: {config['coverage_method']}")
-        if config["splice_method"] != "sum_counts":
-            raise ValueError(f"unsupported splice_method for {aggregate_id}: {config['splice_method']}")
         if group_key in group_config and group_config[group_key] != config:
             raise ValueError(f"aggregate metadata or policy differs within group: {group_key}")
         group_config[group_key] = config
@@ -245,7 +280,7 @@ def build_plan(
                     "expected_sha256": row["sha256"],
                     "normalization_parameters": quote(row["normalization_parameters"], safe=""),
                     "normalization_signature": quote(signature, safe=""),
-                    "aggregation_method": config["coverage_method"] if row["track_type"].startswith("coverage_") else config["splice_method"],
+                    "aggregation_method": config["aggregation_method"],
                     "metadata_json": quote(config["metadata_json"], safe=""),
                 }
             )
@@ -258,8 +293,7 @@ def build_plan(
                 "source_entity_ids": source_ids,
                 "source_entity_type": entity_type,
                 "source_count": len(source_ids),
-                "coverage_method": config["coverage_method"],
-                "splice_method": config["splice_method"],
+                "aggregation_method": config["aggregation_method"],
                 "metadata": json.loads(config["metadata_json"]),
             }
         )
