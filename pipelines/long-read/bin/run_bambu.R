@@ -32,6 +32,9 @@ write_manifest <- function() {
     )
 }
 genome <- Biostrings::readDNAStringSet(reference)
+genome_names <- sub("[[:space:]].*$", "", names(genome))
+if (anyDuplicated(genome_names)) stop("reference FASTA has duplicate sequence IDs after header normalization")
+names(genome) <- genome_names
 empty_result <- FALSE
 result <- tryCatch(
     bambu::bambu(
