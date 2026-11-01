@@ -26,7 +26,7 @@ process SUMMARISE_STRUCTURAL_COMPARISON {
     stub:
     """
     printf 'pair_id\\tn_intron_comparisons\\tn_exact_intron_chains\\tn_partial_intron_chains\\tn_end_comparisons\\tn_ends_within_threshold\\tn_utr_comparisons\\tn_exact_utr_matches\\n' > structural_summary.tsv
-    printf 'pair_id\\tsource_a_transcript_id\\tsource_b_transcript_id\\tfeature\\tclassification\\n' > disagreement_loci.tsv
+    printf 'pair_id\\tlocus_id\\tsource_a_transcript_id\\tsource_b_transcript_id\\tfeature\\tclassification\\n' > disagreement_loci.tsv
     cat > versions.yml <<-END_VERSIONS
     "${task.process}":
         pairwise_qc: 1.0.0

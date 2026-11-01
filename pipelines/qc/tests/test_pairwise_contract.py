@@ -40,9 +40,16 @@ class PairwiseContractTest(unittest.TestCase):
                 check=True,
             )
             lines = output.read_text(encoding="utf-8").splitlines()
-            self.assertIn("source_format", lines[0])
-            self.assertIn("\tbed12\tvalid\t", lines[1])
-            self.assertTrue(lines[1].endswith("\t\t"))
+            header = lines[0].split("\t")
+            row = dict(zip(header, lines[1].split("\t")))
+            self.assertIn("transcript_id", header)
+            self.assertIn("gene_assignment_type", header)
+            self.assertIn("locus_id", header)
+            self.assertEqual(row["source_format"], "bed12")
+            self.assertEqual(row["model_status"], "valid")
+            self.assertEqual(row["original_gene_id"], "")
+            self.assertEqual(row["gene_assignment_type"], "unassigned")
+            self.assertEqual(row["cds_coordinates"], "")
 
     def test_bed12_conversion_marks_synthetic_gene_ids(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -76,6 +83,74 @@ class PairwiseContractTest(unittest.TestCase):
             text=True,
         )
         self.assertNotEqual(result.returncode, 0)
+
+    def _normalise(self, source, label, fmt, pair_id="p", assembly="fixture"):
+        with tempfile.NamedTemporaryFile(suffix=".tsv") as output:
+            subprocess.run(
+                [sys.executable, str(PAIRWISE_QC), "normalise", "--input", str(source),
+                 "--source", label, "--pair-id", pair_id, "--assembly", assembly,
+                 "--format", fmt, "--output", output.name], check=True,
+            )
+            return Path(output.name).read_text(encoding="utf-8")
+
+    def test_gff3_source_gene_ids_are_preserved(self):
+        text = self._normalise(TESTDATA / "source_a.gff3", "source_a", "gff3")
+        row = dict(zip(text.splitlines()[0].split("\t"), text.splitlines()[1].split("\t")))
+        self.assertEqual(row["original_gene_id"], "gene-a1")
+        self.assertEqual(row["gene_assignment_type"], "biological_source_gene")
+
+    def test_de_novo_loci_are_union_derived_and_deterministic(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            a, b = root / "a.tsv", root / "b.tsv"
+            subprocess.run([sys.executable, str(PAIRWISE_QC), "normalise", "--input", str(TESTDATA / "source_a.bed12"), "--source", "source_a", "--pair-id", "p", "--assembly", "fixture", "--format", "bed12", "--output", str(a)], check=True)
+            subprocess.run([sys.executable, str(PAIRWISE_QC), "normalise", "--input", str(TESTDATA / "source_b.bed12"), "--source", "source_b", "--pair-id", "p", "--assembly", "fixture", "--format", "bed12", "--output", str(b)], check=True)
+            outputs = []
+            for suffix in ("one", "two"):
+                out_a, out_b, summary = (root / f"a_{suffix}.tsv", root / f"b_{suffix}.tsv", root / f"summary_{suffix}.tsv")
+                subprocess.run([sys.executable, str(PAIRWISE_QC), "assign-loci", "--source-a", str(a), "--source-b", str(b), "--pair-id", "p", "--assembly", "fixture", "--output-a", str(out_a), "--output-b", str(out_b), "--summary", str(summary)], check=True)
+                outputs.append((out_a.read_text(), out_b.read_text()))
+            self.assertEqual(outputs[0], outputs[1])
+            self.assertIn("synthetic_locus", outputs[0][0])
+            self.assertIn("locus:fixture:chr1:+:000001", outputs[0][0])
+            self.assertIn("locus:fixture:chr1:+:000001", outputs[0][1])
+
+    def test_reference_assignment_is_distinct_from_source_gene_assignment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            a, b = root / "a.tsv", root / "b.tsv"
+            for source, label, fmt, output in ((TESTDATA / "source_ref.gtf", "source_a", "gtf", a), (TESTDATA / "source_a.bed12", "source_b", "bed12", b)):
+                subprocess.run([sys.executable, str(PAIRWISE_QC), "normalise", "--input", str(source), "--source", label, "--pair-id", "p", "--assembly", "fixture", "--format", fmt, "--output", str(output)], check=True)
+            out_a, out_b, summary = root / "ac.tsv", root / "bc.tsv", root / "summary.tsv"
+            subprocess.run([sys.executable, str(PAIRWISE_QC), "assign-loci", "--source-a", str(a), "--source-b", str(b), "--pair-id", "p", "--assembly", "fixture", "--reference", str(TESTDATA / "source_ref.gtf"), "--reference-format", "gtf", "--output-a", str(out_a), "--output-b", str(out_b), "--summary", str(summary)], check=True)
+            row_a = dict(zip(out_a.read_text().splitlines()[0].split("\t"), out_a.read_text().splitlines()[1].split("\t")))
+            row_b = dict(zip(out_b.read_text().splitlines()[0].split("\t"), out_b.read_text().splitlines()[1].split("\t")))
+            self.assertEqual(row_a["gene_assignment_type"], "biological_source_gene")
+            self.assertEqual(row_b["gene_assignment_type"], "reference_gene")
+            self.assertEqual(row_b["locus_id"], "reference:gene1")
+            summary_text = summary.read_text()
+            self.assertRegex(summary_text, r"[0-9a-f]{64}")
+
+    def test_synthetic_annotation_has_required_labels_and_no_cds(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            models = root / "models.tsv"
+            subprocess.run([sys.executable, str(PAIRWISE_QC), "normalise", "--input", str(TESTDATA / "source_a.bed12"), "--source", "source_a", "--pair-id", "p", "--assembly", "fixture", "--format", "bed12", "--output", str(models)], check=True)
+            assigned = root / "assigned.tsv"
+            subprocess.run([sys.executable, str(PAIRWISE_QC), "assign-loci", "--source-a", str(models), "--source-b", str(models), "--pair-id", "p", "--assembly", "fixture", "--output-a", str(assigned), "--output-b", str(root / "other.tsv"), "--summary", str(root / "summary.tsv")], check=True)
+            annotation = root / "annotation.gff3"
+            subprocess.run([sys.executable, str(PAIRWISE_QC), "render-synthetic", "--input", str(assigned), "--source", "source_a", "--output", str(annotation)], check=True)
+            text = annotation.read_text()
+            self.assertIn("synthetic_gene=true", text)
+            self.assertIn("source_transcript_id=lr_tx_1", text)
+            self.assertNotIn("\tCDS\t", text)
+
+    def test_metric_status_uses_explicit_capability_states(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "status.tsv"
+            subprocess.run([sys.executable, str(PAIRWISE_QC), "status", "--pair-id", "p", "--output", str(output), "--entry", "gene_presence", "not_applicable", "BED12", "--entry", "protein_validation", "missing_input", "no protein evidence"], check=True)
+            self.assertIn("not_applicable", output.read_text())
+            self.assertIn("missing_input", output.read_text())
 
 
 if __name__ == "__main__":

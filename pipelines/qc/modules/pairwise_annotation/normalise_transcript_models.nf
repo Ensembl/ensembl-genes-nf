@@ -28,7 +28,7 @@ process NORMALISE_TRANSCRIPT_MODELS {
 
     stub:
     """
-    printf 'pair_id\\tsource\\toriginal_gene_id\\toriginal_transcript_id\\tcontig\\tstrand\\ttranscript_start\\ttranscript_end\\texon_count\\texon_coordinates\\tintron_chain\\tfive_prime_end\\tthree_prime_end\\tassembly\\tsource_format\\tmodel_status\\tutr_coordinates\\tcds_coordinates\\n' > source_a.models.tsv
+    printf 'pair_id\\tsource\\tassembly\\tcontig\\tstrand\\ttranscript_id\\toriginal_transcript_id\\toriginal_gene_id\\ttranscript_start\\ttranscript_end\\texon_count\\texon_coordinates\\tintron_chain\\tfive_prime_end\\tthree_prime_end\\tsource_format\\tgene_assignment_type\\tlocus_id\\tlocus_assignment_method\\tmodel_status\\tutr_coordinates\\tcds_coordinates\\n' > source_a.models.tsv
     cp source_a.models.tsv source_b.models.tsv
     cat > versions.yml <<-END_VERSIONS
     "${task.process}":

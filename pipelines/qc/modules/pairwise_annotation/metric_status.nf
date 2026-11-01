@@ -23,8 +23,10 @@ process METRIC_STATUS {
     """
 
     stub:
+    def stubRows = status_entries.collect { metric, status, reason -> "${meta.pair_id}\\t${metric}\\t${status}\\t${reason}" }.join('\\n')
     """
     printf 'pair_id\\tmetric\\tstatus\\treason\\n' > metric_status.tsv
+    printf '${stubRows}\\n' >> metric_status.tsv
     cat > versions.yml <<-END_VERSIONS
     "${task.process}":
         pairwise_qc: 1.0.0

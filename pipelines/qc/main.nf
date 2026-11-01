@@ -29,6 +29,19 @@ workflow {
                 def report = row.assembly_report ?: ''
                 def evidenceA = row.evidence_a ?: ''
                 def evidenceB = row.evidence_b ?: ''
+                def referenceAnnotation = row.reference_annotation ?: row.reference_path ?: params.pairwise_reference_annotation ?: ''
+                def referenceFormat = (row.reference_format ?: params.pairwise_reference_format ?: 'auto').toLowerCase()
+                [sourceAPath, sourceBPath, report, evidenceA, evidenceB, referenceAnnotation].eachWithIndex { value, index ->
+                    if (value && !value.toString().matches('(?i)^(https?|ftp)://.*') && !value.toString().startsWith('/')) {
+                        def resolved = "${projectDir}/${value}"
+                        if (index == 0) sourceAPath = resolved
+                        if (index == 1) sourceBPath = resolved
+                        if (index == 2) report = resolved
+                        if (index == 3) evidenceA = resolved
+                        if (index == 4) evidenceB = resolved
+                        if (index == 5) referenceAnnotation = resolved
+                    }
+                }
                 if (!pairId || !sourceAPath || !sourceBPath)
                     error "Pairwise CSV requires pair_id, source_a_path and source_b_path (or legacy aliases)"
                 def meta = [
@@ -36,9 +49,10 @@ workflow {
                     source_a: sourceA, source_b: sourceB,
                     format_a: formatA.toLowerCase(), format_b: formatB.toLowerCase(),
                     source_a_assembly: row.source_a_assembly ?: '', source_b_assembly: row.source_b_assembly ?: '',
-                    evidence_a: evidenceA, evidence_b: evidenceB
+                    evidence_a: evidenceA, evidence_b: evidenceB,
+                    reference_annotation: referenceAnnotation, reference_format: referenceFormat
                 ]
-                tuple(meta, sourceAPath, sourceBPath, report, evidenceA, evidenceB)
+                tuple(meta, sourceAPath, sourceBPath, report, evidenceA, evidenceB, referenceAnnotation)
             }
             .set { pairwise_samples_ch }
         PAIRWISE_ANNOTATION_COMPARISON(pairwise_samples_ch)

@@ -177,6 +177,14 @@ Formats may be `gff3`, `gtf`, `bed12`, or `auto`. Evidence files are optional
 and, when supplied, must contain `transcript_id` plus any of `read_count`,
 `junction_support`, `full_length_support`, and `source_tool`.
 
+An optional `reference_annotation` column, or the global
+`--pairwise_reference_annotation` parameter, supplies a GTF/GFF3 reference for
+models without source gene IDs. Reference assignment records the annotation
+checksum and uses shared splice junctions or at least 10 bp and 10% reciprocal
+exonic overlap. Without a biological or reference assignment, both sources are
+clustered together using the union of the pair; components receive stable IDs
+such as `locus:GRCh38:chr1:+:000001`.
+
 ```bash
 nextflow run pipelines/qc/main.nf \
   --mode pairwise \
@@ -185,17 +193,21 @@ nextflow run pipelines/qc/main.nf \
 ```
 
 Canonical model rows retain pair/source identity, original IDs, coordinates,
-exon structure, intron chain, transcript ends, assembly, source format, and
-model status. BED12 contributes structural metrics only; gene/CDS metrics are
-recorded as `skipped` in `metric_status.tsv`. BED12-to-GTF conversion marks
-synthetic IDs as `synthetic_gene:<transcript_id>`.
+exon structure, intron chain, transcript ends, assembly, source format,
+assignment type, locus ID, assignment method, and model status. BED12
+contributes structural metrics only; biological gene, CDS, and protein claims
+are never inferred from it. Synthetic annotations contain only gene,
+transcript, and exon features and visibly carry `synthetic_gene=true`.
+`metric_status.tsv` uses `enabled`, `not_applicable`, `missing_input`, or
+`failed` for every declared metric.
 
 Pairwise outputs use:
 
 ```text
 <outdir>/qc/pairwise_annotation/<pair_id>/
-├── inputs/       # staged files, conversion audits, ID maps
-├── models/       # canonical source tables
+├── inputs/       # staged original files and conversion audits
+├── models/       # canonical source tables and locus assignments
+├── synthetic_annotation/ # synthetic GFF3 and ID maps
 ├── structural/  # chains, ends, UTR and summaries
 ├── gene_metrics/ # non-BED12 metrics
 ├── gffcompare/  # optional bidirectional comparison

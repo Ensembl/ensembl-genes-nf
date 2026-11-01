@@ -1,0 +1,2 @@
+pair_id,assembly,source_a,source_b,source_a_path,source_b_path,source_a_format,source_b_format,assembly_report,evidence_a,evidence_b
+missing_cds_pair,fixture_assembly,gtf_a,gtf_b,pipelines/qc/testdata/pairwise/source_ref.gtf,pipelines/qc/testdata/pairwise/source_ref.gtf,gtf,gtf,,,

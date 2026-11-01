@@ -1,7 +1,11 @@
 include { VALIDATE_PAIR_MANIFEST } from '../../modules/pairwise_annotation/validate_pair_manifest.nf'
 include { STAGE_ANNOTATION_PAIR } from '../../modules/pairwise_annotation/stage_annotation_pair.nf'
 include { NORMALISE_TRANSCRIPT_MODELS } from '../../modules/pairwise_annotation/normalise_transcript_models.nf'
+include { ASSIGN_TRANSCRIPT_LOCI } from '../../modules/pairwise_annotation/assign_transcript_loci.nf'
+include { AUDIT_LOCUS_ASSIGNMENT } from '../../modules/pairwise_annotation/audit_locus_assignment.nf'
+include { RENDER_SYNTHETIC_ANNOTATION } from '../../modules/pairwise_annotation/render_synthetic_annotation.nf'
 include { AUDIT_ANNOTATION_CONVERSION } from '../../modules/pairwise_annotation/audit_annotation_conversion.nf'
+include { SUMMARISE_MODEL_COUNTS } from '../../modules/pairwise_annotation/summarise_model_counts.nf'
 include { COMPARE_INTRON_CHAINS } from '../../modules/pairwise_annotation/compare_intron_chains.nf'
 include { COMPARE_TRANSCRIPT_ENDS } from '../../modules/pairwise_annotation/compare_transcript_ends.nf'
 include { COMPARE_UTR_STRUCTURE } from '../../modules/pairwise_annotation/compare_utr_structure.nf'
@@ -27,26 +31,44 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
     pairwise_samples_ch
 
     main:
-    // Public boundary: tuple(meta, source_a, source_b, assembly_report,
-    // evidence_a, evidence_b); every downstream channel retains meta.
+    // Public input: tuple(meta, source_a, source_b, assembly_report,
+    // evidence_a, evidence_b, reference_annotation).
     VALIDATE_PAIR_MANIFEST(pairwise_samples_ch)
     validated = VALIDATE_PAIR_MANIFEST.out.validated
-    STAGE_ANNOTATION_PAIR(validated.map { meta, a, b, report, evidence_a, evidence_b, _validated -> tuple(meta, a, b, report, evidence_a, evidence_b) }, params.pairwise_cache_dir)
+    STAGE_ANNOTATION_PAIR(validated.map { meta, a, b, report, evidence_a, evidence_b, reference, _validated -> tuple(meta, a, b, report, evidence_a, evidence_b, reference) }, params.pairwise_cache_dir)
     staged = STAGE_ANNOTATION_PAIR.out.staged
 
-    models_input = staged.map { meta, a, b, _report, _evidence_a, _evidence_b -> tuple(meta, a, b) }
+    models_input = staged.map { meta, a, b, _report, _evidence_a, _evidence_b, _reference -> tuple(meta, a, b) }
     NORMALISE_TRANSCRIPT_MODELS(models_input)
-    models = NORMALISE_TRANSCRIPT_MODELS.out.models
-    AUDIT_ANNOTATION_CONVERSION(models)
+    raw_models = NORMALISE_TRANSCRIPT_MODELS.out.models
 
-    models_keyed = models.map { meta, source_a_models, source_b_models -> tuple(meta.pair_id, meta, source_a_models, source_b_models) }
-    staged_keyed = staged.map { meta, _a, _b, _report, evidence_a, evidence_b -> tuple(meta.pair_id, meta, evidence_a, evidence_b) }
-    models_keyed.join(staged_keyed).filter { _pair_id, _models_meta, _a_models, _b_models, _staged_meta, _evidence_a, _evidence_b -> _models_meta.evidence_a && _models_meta.evidence_b }.flatMap { _pair_id, meta, a_models, b_models, _staged_meta, evidence_a, evidence_b -> [tuple(meta, 'source_a', a_models, evidence_a), tuple(meta, 'source_b', b_models, evidence_b)] }.set { evidence_inputs }
+    // The reference is staged as a value for every pair; an absent reference
+    // is an empty file, so the assignment process always has an explicit mode.
+    raw_keyed = raw_models.map { meta, a_models, b_models -> tuple(meta.pair_id, meta, a_models, b_models) }
+    reference_keyed = staged.map { meta, _a, _b, _report, _ea, _eb, reference -> tuple(meta.pair_id, meta, reference) }
+    models_with_reference = raw_keyed.join(reference_keyed).map { _pair_id, models_meta, a_models, b_models, _staged_meta, reference -> tuple(models_meta, a_models, b_models, reference) }
+    ASSIGN_TRANSCRIPT_LOCI(models_with_reference)
+    assigned = ASSIGN_TRANSCRIPT_LOCI.out.loci
+
+    canonical_models = assigned.map { meta, a_models, b_models, _a_loci, _b_loci, _assignment_summary -> tuple(meta, a_models, b_models) }
+    AUDIT_LOCUS_ASSIGNMENT(assigned.map { meta, a_models, b_models, _a_loci, _b_loci, assignment_summary -> tuple(meta, a_models, b_models, assignment_summary) })
+    SUMMARISE_MODEL_COUNTS(canonical_models)
+
+    RENDER_SYNTHETIC_ANNOTATION(assigned.flatMap { meta, a_models, b_models, _a_loci, _b_loci, _summary -> [tuple(meta, 'source_a', a_models), tuple(meta, 'source_b', b_models)] })
+    AUDIT_ANNOTATION_CONVERSION(assigned.map { meta, a_models, b_models, _a_loci, _b_loci, _summary -> tuple(meta, a_models, b_models) })
+
+    // Evidence joins to canonical transcript IDs and never to run-level files.
+    canonical_keyed = canonical_models.map { meta, a_models, b_models -> tuple(meta.pair_id, meta, a_models, b_models) }
+    evidence_keyed = staged.map { meta, _a, _b, _report, evidence_a, evidence_b, _reference -> tuple(meta.pair_id, meta, evidence_a, evidence_b) }
+    canonical_keyed.join(evidence_keyed)
+        .filter { _pair_id, joined_meta, _a_models, _b_models, _staged_meta, _evidence_a, _evidence_b -> joined_meta.evidence_a && joined_meta.evidence_b }
+        .flatMap { _pair_id, meta, a_models, b_models, _staged_meta, evidence_a, evidence_b -> [tuple(meta, 'source_a', a_models, evidence_a), tuple(meta, 'source_b', b_models, evidence_b)] }
+        .set { evidence_inputs }
     ANNOTATE_MODEL_EVIDENCE(evidence_inputs)
 
-    COMPARE_INTRON_CHAINS(models)
-    COMPARE_TRANSCRIPT_ENDS(models)
-    COMPARE_UTR_STRUCTURE(models)
+    COMPARE_INTRON_CHAINS(canonical_models)
+    COMPARE_TRANSCRIPT_ENDS(canonical_models)
+    COMPARE_UTR_STRUCTURE(canonical_models)
 
     intron_keyed = COMPARE_INTRON_CHAINS.out.results.map { meta, file -> tuple(meta.pair_id, meta, file) }
     ends_keyed = COMPARE_TRANSCRIPT_ENDS.out.results.map { meta, file -> tuple(meta.pair_id, meta, file) }
@@ -58,7 +80,7 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
     gffcompare_summary = channel.empty()
     gffcompare_versions = channel.empty()
     if (params.run_pairwise_gffcompare) {
-        PREPARE_GFFCOMPARE_INPUTS(models)
+        PREPARE_GFFCOMPARE_INPUTS(canonical_models)
         gffcompare_inputs = PREPARE_GFFCOMPARE_INPUTS.out.gtfs.flatMap { meta, source_a_gtf, source_b_gtf -> [
             tuple(meta, 'source_a_to_source_b', source_a_gtf, source_b_gtf),
             tuple(meta, 'source_b_to_source_a', source_b_gtf, source_a_gtf)
@@ -68,31 +90,38 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         gffcompare_classes = PARSE_GFFCOMPARE_TMAP.out.classes.map { meta, _direction, classes -> tuple(meta.pair_id, meta, classes) }.groupTuple().map { _pair_id, metas, classes -> tuple(metas[0], classes) }
         SUMMARISE_GFFCOMPARE_MODELS(gffcompare_classes)
         gffcompare_summary = SUMMARISE_GFFCOMPARE_MODELS.out.summary
-        gffcompare_versions = PREPARE_GFFCOMPARE_INPUTS.out.versions
-            .mix(GFFCOMPARE.out.versions)
-            .mix(PARSE_GFFCOMPARE_TMAP.out.versions)
-            .mix(SUMMARISE_GFFCOMPARE_MODELS.out.versions)
+        gffcompare_versions = PREPARE_GFFCOMPARE_INPUTS.out.versions.mix(GFFCOMPARE.out.versions).mix(PARSE_GFFCOMPARE_TMAP.out.versions).mix(SUMMARISE_GFFCOMPARE_MODELS.out.versions)
     }
 
-    status_input = pairwise_samples_ch.map { meta, _a, _b, _report, _ea, _eb ->
-        def bed12 = meta.format_a == 'bed12' || meta.format_b == 'bed12'
-        def entries = [
-            ['intron_chain', 'enabled', 'canonical model comparison'],
-            ['transcript_ends', 'enabled', 'canonical model comparison'],
-            ['utr_structure', 'enabled', 'available fields are reported per model'],
-            ['gene_presence', bed12 ? 'skipped' : 'enabled', bed12 ? 'BED12 has no biological gene contract' : 'annotation gene records'],
-            ['coding_integrity', bed12 ? 'skipped' : 'enabled', bed12 ? 'BED12 has no CDS contract' : 'annotation CDS records'],
-            ['gff_feature_metrics', bed12 ? 'skipped' : 'enabled', bed12 ? 'BED12 has no gene/CDS feature contract' : 'annotation feature records'],
-            ['gffcompare', params.run_pairwise_gffcompare ? 'enabled' : 'skipped', params.run_pairwise_gffcompare ? 'requested' : 'disabled by parameter'],
+    status_input = pairwise_samples_ch.map { meta, _a, _b, _report, _ea, _eb, _reference ->
+        def has_bed12 = meta.format_a == 'bed12' || meta.format_b == 'bed12'
+        def structural = [
+            ['transcript_counts', 'enabled', 'canonical transcript models'],
+            ['exon_counts', 'enabled', 'canonical transcript models'],
+            ['intron_chain', 'enabled', 'union-derived canonical loci'],
+            ['transcript_ends', 'enabled', 'canonical transcript models'],
+            ['utr_structure', 'enabled', 'structural UTR fields where available'],
+            ['locus_counts', 'enabled', 'source and pair locus summaries'],
+            ['gffcompare', params.run_pairwise_gffcompare ? 'enabled' : 'not_applicable', params.run_pairwise_gffcompare ? 'requested' : 'disabled by parameter']
         ]
-        tuple(meta, entries)
+        def biological = [
+            ['gene_presence', has_bed12 ? 'not_applicable' : 'enabled', has_bed12 ? 'BED12 has no biological gene contract' : 'biological annotation input'],
+            ['gene_rbh_pairing', has_bed12 ? 'not_applicable' : 'enabled', has_bed12 ? 'BED12 has no biological gene contract' : 'biological annotation input'],
+            ['cds_coding_integrity', has_bed12 ? 'not_applicable' : 'missing_input', has_bed12 ? 'BED12 has no CDS contract' : 'CDS evidence must be supplied explicitly'],
+            ['protein_validation', 'not_applicable', 'protein evidence is outside this component']
+        ]
+        tuple(meta, structural + biological)
     }
     METRIC_STATUS(status_input)
 
     pairwise_versions = VALIDATE_PAIR_MANIFEST.out.versions
         .mix(STAGE_ANNOTATION_PAIR.out.versions)
         .mix(NORMALISE_TRANSCRIPT_MODELS.out.versions)
+        .mix(ASSIGN_TRANSCRIPT_LOCI.out.versions)
+        .mix(AUDIT_LOCUS_ASSIGNMENT.out.versions)
+        .mix(RENDER_SYNTHETIC_ANNOTATION.out.versions)
         .mix(AUDIT_ANNOTATION_CONVERSION.out.versions)
+        .mix(SUMMARISE_MODEL_COUNTS.out.versions)
         .mix(COMPARE_INTRON_CHAINS.out.versions)
         .mix(COMPARE_TRANSCRIPT_ENDS.out.versions)
         .mix(COMPARE_UTR_STRUCTURE.out.versions)
@@ -104,37 +133,30 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         .collect()
     COLLECT_SOFTWARE_VERSIONS(pairwise_versions)
 
-    // Preserve established GFF3 metrics for non-BED12 pairs. Structural
-    // metrics above remain the only metrics enabled for BED12 inputs.
-    legacy = staged.filter { meta, _a, _b, _report, _ea, _eb -> meta.format_a != 'bed12' && meta.format_b != 'bed12' }
+    // Legacy biological metrics receive the original annotations only when
+    // both inputs are annotation formats with biological feature contracts.
+    legacy = staged.filter { meta, _a, _b, _report, _ea, _eb, _reference -> meta.format_a != 'bed12' && meta.format_b != 'bed12' }
     if (params.run_pairwise_legacy_metrics) {
-        PAIR_GENES(legacy.map { meta, a, b, report, _ea, _eb -> tuple(meta, a, b, report) })
-        rbh_inputs = legacy.map { meta, a, b, _report, _ea, _eb -> tuple(meta, a, b) }.join(PAIR_GENES.out.rbh)
-        if (params.run_pairwise_transcript_concordance) {
-            PAIRWISE_TRANSCRIPT_CONCORDANCE(rbh_inputs)
-        }
-        if (params.run_pairwise_coding_integrity) {
-            PAIRWISE_CODING_INTEGRITY(rbh_inputs)
-        }
-        if (params.run_pairwise_gene_presence) {
-            PAIRWISE_GENE_PRESENCE(legacy.map { meta, a, b, _report, _ea, _eb -> tuple(meta, a, b) }, '')
-        }
-        if (params.run_pairwise_multi_mapping) {
-            PAIRWISE_MULTI_MAPPING(PAIR_GENES.out.all_pairs)
-        }
-        if (params.run_pairwise_gff_feature_metrics) {
-            PAIRWISE_GFF_FEATURE_METRICS(legacy.map { meta, a, b, _report, _ea, _eb -> tuple(meta, a, b) })
-        }
-        if (params.run_pairwise_transcript_counts) {
-            PAIRWISE_COUNT_GFF_TRANSCRIPTS(legacy.flatMap { meta, a, b, _report, _ea, _eb -> [tuple(meta, 'source_a', a), tuple(meta, 'source_b', b)] })
-        }
+        PAIR_GENES(legacy.map { meta, a, b, report, _ea, _eb, _reference -> tuple(meta, a, b, report) })
+        rbh_inputs = legacy.map { meta, a, b, _report, _ea, _eb, _reference -> tuple(meta, a, b) }.join(PAIR_GENES.out.rbh)
+        if (params.run_pairwise_transcript_concordance) PAIRWISE_TRANSCRIPT_CONCORDANCE(rbh_inputs)
+        if (params.run_pairwise_coding_integrity) PAIRWISE_CODING_INTEGRITY(rbh_inputs)
+        if (params.run_pairwise_gene_presence) PAIRWISE_GENE_PRESENCE(legacy.map { meta, a, b, _report, _ea, _eb, _reference -> tuple(meta, a, b) }, '')
+        if (params.run_pairwise_multi_mapping) PAIRWISE_MULTI_MAPPING(PAIR_GENES.out.all_pairs)
+        if (params.run_pairwise_gff_feature_metrics) PAIRWISE_GFF_FEATURE_METRICS(legacy.map { meta, a, b, _report, _ea, _eb, _reference -> tuple(meta, a, b) })
+        if (params.run_pairwise_transcript_counts) PAIRWISE_COUNT_GFF_TRANSCRIPTS(legacy.flatMap { meta, a, b, _report, _ea, _eb, _reference -> [tuple(meta, 'source_a', a), tuple(meta, 'source_b', b)] })
     }
 
     emit:
     staged_inputs = staged
-    models = models
+    raw_models = raw_models
+    canonical_models = canonical_models
+    locus_assignments = assigned
+    locus_audit = AUDIT_LOCUS_ASSIGNMENT.out.audit
     conversion_audits = AUDIT_ANNOTATION_CONVERSION.out.audit
     id_maps = AUDIT_ANNOTATION_CONVERSION.out.id_map
+    synthetic_annotations = RENDER_SYNTHETIC_ANNOTATION.out.annotation
+    model_counts = SUMMARISE_MODEL_COUNTS.out.counts
     intron_chains = COMPARE_INTRON_CHAINS.out.results
     transcript_ends = COMPARE_TRANSCRIPT_ENDS.out.results
     utr_structure = COMPARE_UTR_STRUCTURE.out.results

@@ -3,6 +3,7 @@ process ASSEMBLE_PAIR_REPORT {
     label 'process_light'
     container 'https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1'
     publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/summary" }, mode: 'copy', pattern: 'pair_report.md'
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/summary" }, mode: 'copy', pattern: 'versions.yml'
 
     input:
     tuple val(meta), path(structural_summary)

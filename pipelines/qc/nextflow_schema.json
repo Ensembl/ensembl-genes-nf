@@ -55,6 +55,43 @@
       "format": "directory-path",
       "description": "Cache directory for remotely staged pairwise inputs."
     },
+    "pairwise_reference_annotation": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "description": "Optional reference GTF/GFF3 used for reference_gene assignment of models without source gene IDs."
+    },
+    "pairwise_reference_format": {
+      "type": "string",
+      "enum": ["auto", "gtf", "gff3"],
+      "default": "auto",
+      "description": "Format of the optional pairwise reference annotation."
+    },
+    "pairwise_locus_min_overlap_bp": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 10,
+      "description": "Minimum exonic overlap in bp for de novo locus assignment."
+    },
+    "pairwise_locus_min_reciprocal_overlap": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.1,
+      "description": "Minimum reciprocal exonic overlap for de novo locus assignment."
+    },
+    "pairwise_contig_normalization": {
+      "type": "string",
+      "default": "none",
+      "description": "Contig normalization policy for legacy biological metrics."
+    },
+    "pairwise_multi_mapping_min_overlap": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.1,
+      "description": "Minimum overlap used by legacy multi-mapping metrics."
+    },
     "pairwise_end_threshold": {
       "type": "integer",
       "minimum": 0,

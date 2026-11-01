@@ -6,14 +6,23 @@ process STAGE_ANNOTATION_PAIR {
 
     publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" },
         mode: 'copy',
-        pattern: "source_a.gff3|source_b.gff3|assembly_report.txt|evidence_a.tsv|evidence_b.tsv"
+        pattern: "source_a.gff3"
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" }, mode: 'copy', pattern: "source_b.gff3"
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" }, mode: 'copy', pattern: "assembly_report.txt"
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" }, mode: 'copy', pattern: "evidence_a.tsv"
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" }, mode: 'copy', pattern: "evidence_b.tsv"
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" }, mode: 'copy', pattern: "reference_annotation.gff3"
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" }, mode: 'copy', pattern: "source_a_original.*"
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" }, mode: 'copy', pattern: "source_b_original.*"
 
     input:
-        tuple val(meta), val(source_a_ref), val(source_b_ref), val(assembly_report_ref), val(evidence_a_ref), val(evidence_b_ref)
+        tuple val(meta), val(source_a_ref), val(source_b_ref), val(assembly_report_ref), val(evidence_a_ref), val(evidence_b_ref), val(reference_annotation_ref)
         val cache_dir
 
     output:
-        tuple val(meta), path("source_a.gff3"), path("source_b.gff3"), path("assembly_report.txt"), path("evidence_a.tsv"), path("evidence_b.tsv"), emit: staged
+        tuple val(meta), path("source_a.gff3"), path("source_b.gff3"), path("assembly_report.txt"), path("evidence_a.tsv"), path("evidence_b.tsv"), path("reference_annotation.gff3"), emit: staged
+        path "source_a_original.*", emit: source_a_original
+        path "source_b_original.*", emit: source_b_original
         path "versions.yml", emit: versions
 
     script:
@@ -46,6 +55,9 @@ process STAGE_ANNOTATION_PAIR {
         fetch_or_link "${assembly_report_ref}" assembly_report.txt
         fetch_or_link "${evidence_a_ref}" evidence_a.tsv
         fetch_or_link "${evidence_b_ref}" evidence_b.tsv
+        fetch_or_link "${reference_annotation_ref}" reference_annotation.gff3
+        ln -s "\$(readlink -f source_a.gff3)" "source_a_original.${meta.format_a}"
+        ln -s "\$(readlink -f source_b.gff3)" "source_b_original.${meta.format_b}"
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -60,6 +72,9 @@ process STAGE_ANNOTATION_PAIR {
         touch assembly_report.txt
         touch evidence_a.tsv
         touch evidence_b.tsv
+        touch reference_annotation.gff3
+        ln -s "\$(readlink -f source_a.gff3)" "source_a_original.${meta.format_a}"
+        ln -s "\$(readlink -f source_b.gff3)" "source_b_original.${meta.format_b}"
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
