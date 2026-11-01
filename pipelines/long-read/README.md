@@ -29,8 +29,8 @@ comma-separated CLI value, for example `--model_backends tama,stringtie3` or
 falling back to acquisition.
 
 The default Slurm fan-out is four concurrent shard tasks. Resource-sensitive
-failures (exit status 137/OOM or 143/termination) retry up to
-`resource_retry_max` times with linearly increased memory and wall time. Other
+failures (exit status 137/OOM or 143/termination) retry twice, as configured in
+`nextflow.config`, with linearly increased memory and wall time. Other
 tool, input, and validation failures terminate immediately. TAMA additionally
 uses the resource-class tiers produced by the shard planner (128/256/512 GB)
 and adds 64 GB and 12 hours on each TAMA retry, up to `tama_max_retries`.
