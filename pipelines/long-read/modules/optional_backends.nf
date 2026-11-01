@@ -253,17 +253,21 @@ process FINALIZE_FLAIR_GTF {
     input:
     tuple val(meta), val(shard_meta), path(flair_products)
     output:
-    tuple val(meta), val(shard_meta), val('flair'), path('native.gtf'), path('status.tsv'), emit: native_models
+    tuple val(meta), val(shard_meta), val('flair'), path('*.flair.gtf'), path('*.flair.status.tsv'), emit: native_models
     path 'versions.yml', emit: versions
     script:
+    def flair_gtf = "${meta.run_id}.${shard_meta.shard_id}.flair.gtf"
+    def flair_status = "${meta.run_id}.${shard_meta.shard_id}.flair.status.tsv"
     """
-    python3 ${projectDir}/bin/finalize_gtf.py --source flair.isoforms.gtf --output native.gtf --status status.tsv --backend flair --empty-message 'FLAIR produced no transcript models'
+    python3 ${projectDir}/bin/finalize_gtf.py --source flair.isoforms.gtf --output '${flair_gtf}' --status '${flair_status}' --backend flair --empty-message 'FLAIR produced no transcript models'
     printf '"%s":\\n    flair_gtf_finalizer: python\\n' '${task.process}' > versions.yml
     """
     stub:
+    def flair_gtf = "${meta.run_id}.${shard_meta.shard_id}.flair.gtf"
+    def flair_status = "${meta.run_id}.${shard_meta.shard_id}.flair.status.tsv"
     """
-    printf 'chr1\\tflair\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "flair.1";\\n' > native.gtf
-    printf 'flair\\tSUCCESS\\n' > status.tsv
+    printf 'chr1\\tflair\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "flair.1";\\n' > '${flair_gtf}'
+    printf 'flair\\tSUCCESS\\n' > '${flair_status}'
     printf '"%s":\\n    flair_gtf_finalizer: stub\\n' '${task.process}' > versions.yml
     """
 }
@@ -319,19 +323,23 @@ process FLAIR_EMPTY {
     input:
     tuple val(meta), val(shard_meta), path(junction_status)
     output:
-    tuple val(meta), val(shard_meta), val('flair'), path('native.gtf'), path('status.tsv'), emit: native_models
+    tuple val(meta), val(shard_meta), val('flair'), path('*.flair.gtf'), path('*.flair.status.tsv'), emit: native_models
     path 'native_products', emit: native_products
     path 'input_manifest.json', emit: manifest
     path 'versions.yml', emit: versions
     script:
+    def flair_gtf = "${meta.run_id}.${shard_meta.shard_id}.flair.gtf"
+    def flair_status = "${meta.run_id}.${shard_meta.shard_id}.flair.status.tsv"
     """
-    python3 ${projectDir}/bin/write_empty_flair.py --junction-status ${junction_status} --run-id '${meta.run_id}' --shard-id '${shard_meta.shard_id}' --gtf native.gtf --status status.tsv --manifest input_manifest.json --products native_products
+    python3 ${projectDir}/bin/write_empty_flair.py --junction-status ${junction_status} --run-id '${meta.run_id}' --shard-id '${shard_meta.shard_id}' --gtf '${flair_gtf}' --status '${flair_status}' --manifest input_manifest.json --products native_products
     printf '"%s":\\n    flair_empty: python\\n' '${task.process}' > versions.yml
     """
     stub:
+    def flair_gtf = "${meta.run_id}.${shard_meta.shard_id}.flair.gtf"
+    def flair_status = "${meta.run_id}.${shard_meta.shard_id}.flair.status.tsv"
     """
-    printf '# EMPTY: no splice junctions for shard %s\\n' '${shard_meta.shard_id}' > native.gtf
-    printf 'flair\\tEMPTY\\t%s\\n' '${shard_meta.shard_id}' > status.tsv
+    printf '# EMPTY: no splice junctions for shard %s\\n' '${shard_meta.shard_id}' > '${flair_gtf}'
+    printf 'flair\\tEMPTY\\t%s\\n' '${shard_meta.shard_id}' > '${flair_status}'
     mkdir -p native_products
     printf '{"backend":"flair","status":"EMPTY"}\\n' > input_manifest.json
     printf '"%s":\\n    flair_empty: stub\\n' '${task.process}' > versions.yml

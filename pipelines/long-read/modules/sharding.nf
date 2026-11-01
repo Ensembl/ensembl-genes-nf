@@ -94,18 +94,20 @@ process INDEX_CONTIG_SHARD {
     input:
     tuple val(meta), val(shard_meta), path(shard_bam)
     output:
-    tuple val(meta), val(shard_meta), path('*.shard.bam'), path('*.shard.bam.bai'), emit: indexed
+    tuple val(meta), val(shard_meta), path('*.indexed.shard.bam'), path('*.indexed.shard.bam.bai'), emit: indexed
     path 'versions.yml', emit: versions
     script:
+    def indexed_bam = "${meta.run_id}.${shard_meta.shard_id}.indexed.shard.bam"
     """
-    cp ${shard_bam} indexed.shard.bam
-    samtools index indexed.shard.bam indexed.shard.bam.bai
+    cp ${shard_bam} '${indexed_bam}'
+    samtools index '${indexed_bam}' '${indexed_bam}.bai'
     printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
     """
     stub:
+    def indexed_bam = "${meta.run_id}.${shard_meta.shard_id}.indexed.shard.bam"
     """
-    cp ${shard_bam} indexed.shard.bam
-    printf 'BAI\\n' > indexed.shard.bam.bai
+    cp ${shard_bam} '${indexed_bam}'
+    printf 'BAI\\n' > '${indexed_bam}.bai'
     printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
     """
 }
@@ -140,16 +142,18 @@ process COUNT_CONTIG_SHARD_COVERAGE {
     input:
     tuple val(meta), val(shard_meta), path(shard_bam)
     output:
-    tuple val(meta), val(shard_meta), path(shard_bam), path('shard_count.tsv'), emit: shard_count
+    tuple val(meta), val(shard_meta), path(shard_bam), path('*.shard_count.tsv'), emit: shard_count
     path 'versions.yml', emit: versions
     script:
+    def shard_count = "${meta.run_id}.${shard_meta.shard_id}.shard_count.tsv"
     """
-    samtools view -c -F 4 ${shard_bam} > shard_count.tsv
+    samtools view -c -F 4 ${shard_bam} > '${shard_count}'
     printf '"%s":\\n    shard_coverage: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
+    def shard_count = "${meta.run_id}.${shard_meta.shard_id}.shard_count.tsv"
     """
-    printf '2\\n' > shard_count.tsv
+    printf '2\\n' > '${shard_count}'
     printf '"%s":\\n    shard_coverage: stub\\n' '${task.process}' > versions.yml
     """
 }
