@@ -1,0 +1,2 @@
+id	cohort_id	run_id	technology	assembly_id	read_set_id	sample_id	library_id	read_representation	source_uri	input	bed12	backend	scope
+historical1	fixture	historical1	pacbio	fixture	set1	sample1	lib1	bam	reads.bam	reads.bam	retrospective.bed12	historical_tama	run

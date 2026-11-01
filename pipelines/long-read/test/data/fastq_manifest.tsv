@@ -1,0 +1,2 @@
+id	cohort_id	run_id	technology	assembly_id	read_set_id	sample_id	library_id	read_representation	source_uri	input
+run1	fixture	run1	pacbio	fixture	set1	sample1	lib1	fastq	reads.fastq	reads.fastq

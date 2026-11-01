@@ -1,0 +1,15 @@
+# Pinned deployment images. The final validation gate must verify each selected
+# image is pullable with Singularity/Apptainer on linux/amd64.
+minimap2: quay.io/biocontainers/minimap2@sha256:0c397895db3b494baa4f78de7110d516a1a57707d9c7df456634220bffd965ba
+samtools: quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5
+tama: docker.io/sguizard/tama@sha256:66a05355155f5ecef2f585736e7fe3d9d9ad38b566f1179437828ad2d7bfd123
+stringtie2: quay.io/biocontainers/stringtie@sha256:84207eb013dbcff90928d8ddc75902580d3885ce8edaa36b8fab7665a3dc2e3c
+stringtie3: quay.io/biocontainers/stringtie@sha256:1e2d08591607f70ee10b830a5fd17eaa3c1c34d25ca28cb224a73658053a1f31
+# The official v1.0 tmerge Perl entry point is vendored in bin/tmerge.
+tmerge: docker.io/library/perl@sha256:587c0c65838dca2fa760e0a0ab169f7260894f208e68f38535ca644f397470c7
+pbccs: quay.io/biocontainers/pbccs@sha256:6876708af8f1bd3af45740d86fa2f0479bea48e72bc97118240cb9f4fbd5e13b
+isoquant: quay.io/biocontainers/isoquant@sha256:5b922f8211cfe6f438b814f95d83f6d141cc5ad4fc0796c3667784f102c57454
+flair: quay.io/biocontainers/flair@sha256:a39894c1507c68241fba62ddbe1a931d5a6bfaacbcb6be24631d46b60e67ce84
+bambu: quay.io/biocontainers/bioconductor-bambu@sha256:90f2d83ffb099b90bcc5a1423b2c3d2455682d96e53412a0450bfb156c4409d6
+diamond: quay.io/biocontainers/diamond@sha256:c3d56ca63d8061357ba0375d8d636519155b5601f6e93b807a827aa988f7e1d8
+python_helper: docker.io/library/python@sha256:17b9724493d916f56565c131f389faff2597f46dec6ce09516f95125bc9f519f

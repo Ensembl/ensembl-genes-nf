@@ -1,0 +1,140 @@
+process INSPECT_BAM_WORKLOAD {
+    label 'process_low'
+    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
+    container params.use_containers ? params.tool_containers.samtools : null
+    publishDir "${params.outdir}/per_run", mode: 'copy', pattern: 'workload.tsv', saveAs: { filename -> "${task.tag}/shards/${filename}" }
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), path(bam), path(bai)
+    output:
+    tuple val(meta), path(bam), path(bai), path('workload.tsv'), emit: workload
+    path 'versions.yml', emit: versions
+    script:
+    """
+    samtools idxstats ${bam} > raw.idxstats.tsv
+    awk -F '\\t' 'BEGIN { print "contig\\treference_length\\tmapped_reads\\teligible\\tresource_class" } \$1 != "*" && NF >= 4 { print \$1 "\\t" \$2 "\\t" \$3 "\\t" (\$3 + 0 ? "true" : "false") "\\tunassigned"; count++ } END { if (count == 0) exit 1 }' raw.idxstats.tsv > workload.tsv
+    cat > versions.yml <<VERSIONS
+"${task.process}":
+    samtools: \$(samtools --version | head -n1)
+VERSIONS
+    """
+    stub:
+    """
+    printf 'contig\\treference_length\\tmapped_reads\\teligible\\tresource_class\\nchr1\\t1000\\t2\\ttrue\\tunassigned\\nchr2\\t500\\t0\\tfalse\\tunassigned\\n' > workload.tsv
+    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process PLAN_CONTIG_SHARDS {
+    label 'process_low'
+    publishDir "${params.outdir}/per_run", mode: 'copy', pattern: '*.shard_plan.tsv', saveAs: { filename -> "${task.tag}/shards/${filename}" }
+    publishDir "${params.outdir}/per_run", mode: 'copy', pattern: 'shard_status.tsv', saveAs: { filename -> "${task.tag}/shards/${filename}" }
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), path(bam), path(bai), path(workload)
+    val shard_mode
+    val large_threshold
+    val very_large_threshold
+    output:
+    tuple val(meta), path(bam), path(bai), path('*.shard_plan.tsv'), path('shard_plan_summary.tsv'), path('shard_status.tsv'), emit: plan
+    path 'versions.yml', emit: versions
+    script:
+    """
+    python3 ${projectDir}/bin/plan_contig_shards.py --workload ${workload} --mode ${shard_mode} --threshold ${large_threshold} --very-large-threshold ${very_large_threshold} --run-id '${meta.run_id}' --plan '${meta.run_id}.shard_plan.tsv'
+    eligible_count=\$(awk -F '\\t' 'NR > 1 && \$5 == "true" {n++} END {print n+0}' '${meta.run_id}.shard_plan.tsv')
+    printf 'run_id\\teligible_shards\\n%s\\t%s\\n' '${meta.run_id}' "\${eligible_count}" > shard_plan_summary.tsv
+    awk -F '\\t' 'BEGIN { print "shard_id\\tcontig\\tstatus" } NR > 1 { print \$1 "\\t" \$2 "\\t" (\$5 == "true" ? "PLANNED" : "EMPTY") }' '${meta.run_id}.shard_plan.tsv' > shard_status.tsv
+    cat > versions.yml <<VERSIONS
+"${task.process}":
+    shard_planner: pipeline
+VERSIONS
+    """
+    stub:
+    """
+    printf 'shard_id\\tcontig\\treference_length\\tmapped_reads\\teligible\\tresource_class\\tsource_run_id\\tshard_status\\n%s__chr1\\tchr1\\t1000\\t2\\ttrue\\tsmall\\t%s\\tPLANNED\\n%s__chr2\\tchr2\\t500\\t0\\tfalse\\tempty\\t%s\\tEMPTY\\n' '${meta.run_id}' '${meta.run_id}' '${meta.run_id}' '${meta.run_id}' > '${meta.run_id}.shard_plan.tsv'
+    printf 'run_id\\teligible_shards\\n%s\\t1\\n' '${meta.run_id}' > shard_plan_summary.tsv
+    printf 'shard_id\\tcontig\\tstatus\\n%s__chr1\\tchr1\\tPLANNED\\n%s__chr2\\tchr2\\tEMPTY\\n' '${meta.run_id}' '${meta.run_id}' > shard_status.tsv
+    printf '"%s":\\n    shard_planner: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process SPLIT_BAM_BY_CONTIG {
+    label 'process_high'
+    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
+    container params.use_containers ? params.tool_containers.samtools : null
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), val(shard_meta), path(bam), path(bai)
+    output:
+    tuple val(meta), val(shard_meta), path('*.shard.bam'), path('*.shard.bam.bai'), emit: shards
+    path 'shard_status.tsv', emit: status
+    path 'versions.yml', emit: versions
+    script:
+    """
+    shard_prefix='${meta.run_id}.${shard_meta.shard_id}'
+    if [[ '${shard_meta.contig}' == 'whole_bam' ]]; then
+        samtools view -b ${bam} > "\${shard_prefix}.shard.bam"
+    else
+        samtools view -b ${bam} '${shard_meta.contig}' > "\${shard_prefix}.shard.bam"
+    fi
+    samtools index "\${shard_prefix}.shard.bam" "\${shard_prefix}.shard.bam.bai"
+    printf 'shard_id\\tcontig\\tstatus\\n%s\\t%s\\tEMITTED\\n' '${shard_meta.shard_id}' '${shard_meta.contig}' > shard_status.tsv
+    cat > versions.yml <<VERSIONS
+"${task.process}":
+    samtools: \$(samtools --version | head -n1)
+VERSIONS
+    """
+    stub:
+    """
+    printf 'BAM\\n' > '${meta.run_id}.${shard_meta.shard_id}.shard.bam'; printf 'BAI\\n' > '${meta.run_id}.${shard_meta.shard_id}.shard.bam.bai'
+    printf 'shard_id\\tcontig\\tstatus\\n%s\\t%s\\tEMITTED\\n' '${shard_meta.shard_id}' '${shard_meta.contig}' > shard_status.tsv
+    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process VALIDATE_SHARD_COVERAGE {
+    label 'process_low'
+    publishDir "${params.outdir}/per_run", mode: 'copy', pattern: 'shard.coverage.tsv', saveAs: { filename -> "${task.tag}/shards/${filename}" }
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), path(source_bam), path(shard_plan), path(shard_bams)
+    output:
+    path 'shard.coverage.tsv', emit: coverage
+    path 'versions.yml', emit: versions
+    script:
+    """
+    source_count=\$(samtools view -c -F 4 ${source_bam})
+    shard_count=0
+    for shard in ${shard_bams}; do shard_count=\$((shard_count + \$(samtools view -c -F 4 "\${shard}"))); done
+    python3 ${projectDir}/bin/validate_shard_coverage.py --plan ${shard_plan} --source-count \${source_count} --shard-count \${shard_count} --shard-files ${shard_bams} --report shard.coverage.tsv
+    printf '"%s":\\n    shard_coverage: pipeline\\n' '${task.process}' > versions.yml
+    """
+    stub:
+    """
+    printf 'metric\\tvalue\\nplanned_eligible_shards\\t1\\nemitted_shards\\t1\\nsource_mapped_reads\\t2\\nplanned_mapped_reads\\t2\\nshard_mapped_reads\\t2\\nerrors\\t0\\n' > shard.coverage.tsv
+    printf '"%s":\\n    shard_coverage: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process VALIDATE_CONTIG_SHARDS {
+    label 'process_low'
+    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
+    container params.use_containers ? params.tool_containers.samtools : null
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), val(shard_meta), path(shard_bam), path(shard_bai)
+    output:
+    tuple val(meta), val(shard_meta), path(shard_bam), path(shard_bai), path('shard.validation.tsv'), emit: validated
+    path 'versions.yml', emit: versions
+    script:
+    """
+    samtools quickcheck -v ${shard_bam}
+    printf 'shard_id\\tstatus\\n%s\\tVALID\\n' '${shard_meta.shard_id}' > shard.validation.tsv
+    printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
+    """
+    stub:
+    """
+    printf 'shard_id\\tstatus\\n%s\\tVALID\\n' '${shard_meta.shard_id}' > shard.validation.tsv
+    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    """
+}

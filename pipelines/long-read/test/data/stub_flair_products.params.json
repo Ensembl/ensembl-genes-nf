@@ -1,0 +1,11 @@
+{
+  "mode": "bam",
+  "manifest": "pipelines/long-read/test/data/manifest.tsv",
+  "reference_fasta": "pipelines/long-read/test/data/reference.fa",
+  "cohort_id": "fixture",
+  "model_backends": ["flair"],
+  "backend_scopes": ["run"],
+  "publish_native_intermediates": true,
+  "use_containers": false,
+  "outdir": "/tmp/long-read-stub-flair-products"
+}

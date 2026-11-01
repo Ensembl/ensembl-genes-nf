@@ -1,0 +1,10 @@
+{
+  "mode": "bam",
+  "manifest": "pipelines/long-read/test/data/manifest.tsv",
+  "reference_metadata": "pipelines/long-read/test/data/reference_metadata.json",
+  "cohort_id": "fixture",
+  "model_backends": ["tmerge"],
+  "backend_scopes": ["run"],
+  "use_containers": false,
+  "outdir": "/tmp/long-read-stub-reference-metadata"
+}

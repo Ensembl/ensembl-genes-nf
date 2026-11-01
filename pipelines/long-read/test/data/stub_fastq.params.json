@@ -1,0 +1,10 @@
+{
+  "mode": "fastq",
+  "manifest": "pipelines/long-read/test/data/fastq_manifest.tsv",
+  "reference_fasta": "pipelines/long-read/test/data/reference.fa",
+  "cohort_id": "fixture",
+  "model_backends": ["tama"],
+  "backend_scopes": ["run"],
+  "use_containers": false,
+  "outdir": "/tmp/long-read-stub-fastq"
+}

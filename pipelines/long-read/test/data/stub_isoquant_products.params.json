@@ -1,0 +1,12 @@
+{
+  "mode": "bam",
+  "manifest": "pipelines/long-read/test/data/manifest.tsv",
+  "reference_fasta": "pipelines/long-read/test/data/reference.fa",
+  "cohort_id": "fixture",
+  "model_backends": ["isoquant"],
+  "backend_scopes": ["run"],
+  "isoquant_large_output": ["read_info", "read2transcripts", "read_assignments"],
+  "publish_native_intermediates": true,
+  "use_containers": false,
+  "outdir": "/tmp/long-read-stub-isoquant-products"
+}

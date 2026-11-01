@@ -1,0 +1,3 @@
+id	cohort_id	run_id	technology	assembly_id	read_set_id	sample_id	library_id	read_representation	source_uri	input
+run1	fixture	run1	pacbio	fixture	set1	sample1	lib1	bam	reads.bam	reads.bam
+run2	fixture	run2	pacbio	fixture	set2	sample2	lib2	bam	reads.bam	reads.bam

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Long-read evidence products",
+  "type": "object",
+  "required": ["dataset_id", "dependency_class", "compatibility_status", "compatibility_level", "matcher_policy"],
+  "properties": {
+    "dataset_id": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "dependency_class": {"type": "string"},
+    "compatibility_status": {"type": "string"},
+    "compatibility_level": {"type": "string"},
+    "matcher_policy": {"type": "object"}
+  }
+}

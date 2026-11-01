@@ -1,0 +1,12 @@
+{
+  "mode": "bam",
+  "manifest": "pipelines/long-read/test/data/manifest.tsv",
+  "reference_fasta": "pipelines/long-read/test/data/reference.fa",
+  "cohort_id": "fixture",
+  "model_backends": ["tama"],
+  "backend_scopes": ["run"],
+  "diamond_mode": "enabled",
+  "diamond_reference_proteins": "pipelines/long-read/test/data/proteins.fa",
+  "use_containers": false,
+  "outdir": "/tmp/long-read-stub-diamond"
+}
