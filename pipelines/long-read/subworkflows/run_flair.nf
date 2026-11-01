@@ -21,7 +21,7 @@ workflow RUN_FLAIR {
     flair_manifest_inputs = FINALIZE_FLAIR_GTF.out.native_models
         .join(COLLECT_FLAIR_PRODUCTS.out.products, by: [0, 1])
         .join(flair_nonempty.map { meta, shard_meta, bam, _bai, junctions -> tuple(meta, shard_meta, bam, junctions) }, by: [0, 1])
-        .map { meta, shard_meta, native_gtf, status, native_products, bam, junctions -> tuple(meta, shard_meta, native_products, status, bam, junctions) }
+        .map { meta, shard_meta, _backend, _native_gtf, status, native_products, bam, junctions -> tuple(meta, shard_meta, native_products, status, bam, junctions) }
     WRITE_FLAIR_MANIFEST(flair_manifest_inputs, reference, flair_args)
     FLAIR_EMPTY(flair_empty)
     flair_native = FINALIZE_FLAIR_GTF.out.native_models.mix(FLAIR_EMPTY.out.native_models)
