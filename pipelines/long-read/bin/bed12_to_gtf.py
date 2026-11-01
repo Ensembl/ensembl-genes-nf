@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Convert TAMA BED12 records to deterministic exon-level GTF."""
-from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import List, Tuple
 
 
 def main() -> None:
@@ -13,7 +13,7 @@ def main() -> None:
     parser.add_argument("--source", default="pipeline")
     args = parser.parse_args()
 
-    records: list[tuple[str, int, str, list[tuple[int, int]], str]] = []
+    records: List[Tuple[str, int, str, List[Tuple[int, int]], str]] = []
     with args.bed12.open() as handle:
         for line_number, line in enumerate(handle, 1):
             if not line.strip() or line.startswith("#"):

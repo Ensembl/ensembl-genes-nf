@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Classify a GTF-like product by the presence of exon records."""
-from __future__ import annotations
 
 import argparse
 from pathlib import Path
