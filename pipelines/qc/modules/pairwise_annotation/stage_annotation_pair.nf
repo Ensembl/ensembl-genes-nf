@@ -2,7 +2,7 @@ process STAGE_ANNOTATION_PAIR {
     tag { meta.id }
     label 'process_low'
 
-    container "https://depot.galaxyproject.org/singularity/curl:8.8.0--he654da7_1"
+    container "https://depot.galaxyproject.org/singularity/curl:7.80.0"
 
     publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" },
         mode: 'copy',
@@ -78,7 +78,7 @@ process STAGE_ANNOTATION_PAIR {
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            curl: 8.8.0
+            curl: 7.80.0
         END_VERSIONS
         """
 }
