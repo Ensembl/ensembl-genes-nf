@@ -57,6 +57,30 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
     RENDER_SYNTHETIC_ANNOTATION(assigned.flatMap { meta, a_models, b_models, _a_loci, _b_loci, _summary -> [tuple(meta, 'source_a', a_models), tuple(meta, 'source_b', b_models)] })
     AUDIT_ANNOTATION_CONVERSION(assigned.map { meta, a_models, b_models, _a_loci, _b_loci, _summary -> tuple(meta, a_models, b_models) })
 
+    // Synthetic GFFs are valid inputs for structural feature/count metrics.
+    // They must not be routed into biological gene, RBH, or CDS metrics.
+    synthetic_a = RENDER_SYNTHETIC_ANNOTATION.out.annotation
+        .filter { _meta, source_label, _gff -> source_label == 'source_a' }
+        .map { meta, _source_label, gff -> tuple(meta.pair_id, meta, gff) }
+    synthetic_b = RENDER_SYNTHETIC_ANNOTATION.out.annotation
+        .filter { _meta, source_label, _gff -> source_label == 'source_b' }
+        .map { meta, _source_label, gff -> tuple(meta.pair_id, meta, gff) }
+    synthetic_pairs = synthetic_a.join(synthetic_b)
+        .map { _pair_id, meta_a, source_a_gff, _meta_b, source_b_gff -> tuple(meta_a, source_a_gff, source_b_gff) }
+
+    gff_feature_versions = channel.empty()
+    transcript_count_versions = channel.empty()
+    if (params.run_pairwise_gff_feature_metrics) {
+        PAIRWISE_GFF_FEATURE_METRICS(synthetic_pairs)
+        gff_feature_versions = PAIRWISE_GFF_FEATURE_METRICS.out.versions
+    }
+    if (params.run_pairwise_transcript_counts) {
+        PAIRWISE_COUNT_GFF_TRANSCRIPTS(synthetic_pairs.flatMap { meta, source_a_gff, source_b_gff -> [
+            tuple(meta, 'source_a', source_a_gff), tuple(meta, 'source_b', source_b_gff)
+        ] })
+        transcript_count_versions = PAIRWISE_COUNT_GFF_TRANSCRIPTS.out.versions
+    }
+
     // Evidence joins to canonical transcript IDs and never to run-level files.
     canonical_keyed = canonical_models.map { meta, a_models, b_models -> tuple(meta.pair_id, meta, a_models, b_models) }
     evidence_keyed = staged.map { meta, _a, _b, _report, evidence_a, evidence_b, _reference -> tuple(meta.pair_id, meta, evidence_a, evidence_b) }
@@ -129,6 +153,8 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         .mix(METRIC_STATUS.out.versions)
         .mix(ASSEMBLE_PAIR_REPORT.out.versions)
         .mix(ANNOTATE_MODEL_EVIDENCE.out.versions)
+        .mix(gff_feature_versions)
+        .mix(transcript_count_versions)
         .mix(gffcompare_versions)
         .collect()
     COLLECT_SOFTWARE_VERSIONS(pairwise_versions)
@@ -143,8 +169,6 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         if (params.run_pairwise_coding_integrity) PAIRWISE_CODING_INTEGRITY(rbh_inputs)
         if (params.run_pairwise_gene_presence) PAIRWISE_GENE_PRESENCE(legacy.map { meta, a, b, _report, _ea, _eb, _reference -> tuple(meta, a, b) }, '')
         if (params.run_pairwise_multi_mapping) PAIRWISE_MULTI_MAPPING(PAIR_GENES.out.all_pairs)
-        if (params.run_pairwise_gff_feature_metrics) PAIRWISE_GFF_FEATURE_METRICS(legacy.map { meta, a, b, _report, _ea, _eb, _reference -> tuple(meta, a, b) })
-        if (params.run_pairwise_transcript_counts) PAIRWISE_COUNT_GFF_TRANSCRIPTS(legacy.flatMap { meta, a, b, _report, _ea, _eb, _reference -> [tuple(meta, 'source_a', a), tuple(meta, 'source_b', b)] })
     }
 
     emit:

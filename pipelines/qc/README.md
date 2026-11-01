@@ -209,7 +209,7 @@ Pairwise outputs use:
 ├── models/       # canonical source tables and locus assignments
 ├── synthetic_annotation/ # synthetic GFF3 and ID maps
 ├── structural/  # chains, ends, UTR and summaries
-├── gene_metrics/ # non-BED12 metrics
+├── gene_metrics/ # structural feature/count metrics and applicable biological metrics
 ├── gffcompare/  # optional bidirectional comparison
 ├── evidence/    # optional evidence joins
 └── summary/     # metric status, disagreements and report
