@@ -7,6 +7,12 @@ import shutil
 from pathlib import Path
 
 
+def copy_if_needed(source: Path, destination: Path) -> None:
+    if destination.exists() and source.samefile(destination):
+        return
+    shutil.copyfile(source, destination)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--gtf", required=True, type=Path)
@@ -18,8 +24,8 @@ def main() -> None:
     args = parser.parse_args()
     if not args.gtf.is_file() or args.gtf.stat().st_size == 0:
         raise SystemExit(f"{args.backend} GTF is missing or empty: {args.gtf}")
-    shutil.copyfile(args.gtf, args.output_gtf)
-    shutil.copyfile(args.status, args.output_status)
+    copy_if_needed(args.gtf, args.output_gtf)
+    copy_if_needed(args.status, args.output_status)
     status_rows = [line for line in args.status.read_text().splitlines() if line.strip()]
     state = status_rows[-1].split("\t")[-1] if status_rows else "EMPTY"
     args.audit.write_text(f"backend\tstatus\n{args.backend}\t{state}\n")

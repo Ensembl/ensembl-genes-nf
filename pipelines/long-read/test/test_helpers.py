@@ -141,6 +141,36 @@ def test_validate_fastq_handles_gzip_without_materialising_input(tmp_path: Path)
     assert "run1\tVALID\t1" in status.read_text()
 
 
+def test_normalize_gtf_allows_in_place_outputs(tmp_path: Path):
+    gtf = tmp_path / "native.gtf"
+    status = tmp_path / "status.tsv"
+    gtf.write_text("chr1\tsource\texon\t1\t10\t.\t+\t.\tgene_id \\\"g1\\\";\n")
+    status.write_text("isoquant\tSUCCESS\n")
+    result = run_helper(
+        "normalize_gtf.py", "--gtf", str(gtf), "--status", str(status),
+        "--output-gtf", str(gtf), "--output-status", str(status),
+        "--backend", "isoquant", "--empty-message", "no models",
+    )
+    assert result.returncode == 0, result.stderr
+    assert "\texon\t" in gtf.read_text()
+    assert status.read_text() == "isoquant\tSUCCESS\n"
+
+
+def test_audit_gtf_allows_in_place_outputs(tmp_path: Path):
+    gtf = tmp_path / "native.gtf"
+    status = tmp_path / "status.tsv"
+    audit = tmp_path / "audit.tsv"
+    gtf.write_text("chr1\tsource\texon\t1\t10\t.\t+\t.\tgene_id \\\"g1\\\";\n")
+    status.write_text("isoquant\tSUCCESS\n")
+    result = run_helper(
+        "audit_gtf.py", "--gtf", str(gtf), "--status", str(status),
+        "--output-gtf", str(gtf), "--output-status", str(status),
+        "--backend", "isoquant", "--audit", str(audit),
+    )
+    assert result.returncode == 0, result.stderr
+    assert audit.read_text() == "backend\tstatus\nisoquant\tSUCCESS\n"
+
+
 def test_merge_filelist_is_sorted_and_checksum_bearing(tmp_path: Path):
     first = tmp_path / "z.gtf"
     second = tmp_path / "a.gtf"

@@ -17,6 +17,12 @@ def has_exon(path: Path) -> bool:
     )
 
 
+def copy_if_needed(source: Path, destination: Path) -> None:
+    if destination.exists() and source.samefile(destination):
+        return
+    shutil.copyfile(source, destination)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--gtf", required=True, type=Path)
@@ -27,8 +33,8 @@ def main() -> None:
     parser.add_argument("--empty-message", required=True)
     args = parser.parse_args()
     if has_exon(args.gtf):
-        shutil.copyfile(args.gtf, args.output_gtf)
-        shutil.copyfile(args.status, args.output_status)
+        copy_if_needed(args.gtf, args.output_gtf)
+        copy_if_needed(args.status, args.output_status)
     else:
         args.output_gtf.write_text(f"# EMPTY: {args.empty_message}\n")
         args.output_status.write_text(f"{args.backend}\tEMPTY\n")
