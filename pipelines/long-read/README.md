@@ -28,10 +28,13 @@ comma-separated CLI value, for example `--model_backends tama,stringtie3` or
 `fastq_cache_dir` to resolve `classification/MD5/basename` cache entries before
 falling back to acquisition.
 
-The default Slurm fan-out is four concurrent shard tasks. TAMA uses the
-resource-class tiers produced by the shard planner (128/256/512 GB) and adds
-64 GB and 12 hours on each resource retry, up to `tama_max_retries`; exhausted
-required tasks terminate the run rather than being silently ignored.
+The default Slurm fan-out is four concurrent shard tasks. Resource-sensitive
+failures (exit status 137/OOM or 143/termination) retry up to
+`resource_retry_max` times with linearly increased memory and wall time. Other
+tool, input, and validation failures terminate immediately. TAMA additionally
+uses the resource-class tiers produced by the shard planner (128/256/512 GB)
+and adds 64 GB and 12 hours on each TAMA retry, up to `tama_max_retries`.
+Exhausted required tasks terminate the run rather than being silently ignored.
 
 ## Legacy capability disposition
 

@@ -283,6 +283,7 @@ workflow {
         shard_contig_reads: params.shard_contig_reads,
         shard_very_large_reads: params.shard_very_large_reads,
         shard_max_concurrent: params.shard_max_concurrent,
+        resource_retry_max: params.resource_retry_max,
         minimap2_preset: params.minimap2_preset,
         secondary_mode: params.secondary_mode,
         alignment_qc: params.alignment_qc,

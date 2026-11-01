@@ -27,6 +27,7 @@
     "tama_memory_large": {"type": "string", "pattern": "^[0-9]+\\.(KB|MB|GB|TB)$"},
     "tama_memory_very_large": {"type": "string", "pattern": "^[0-9]+\\.(KB|MB|GB|TB)$"},
     "tama_max_retries": {"type": "integer", "minimum": 0, "maximum": 5},
+    "resource_retry_max": {"type": "integer", "minimum": 0, "maximum": 5, "default": 2},
     "publish_native_intermediates": {"type": "boolean", "default": false},
     "alignment_qc": {"type": "boolean", "default": true},
     "ccs_mode": {"type": "string", "enum": ["disabled", "pbccs"], "default": "disabled"},
