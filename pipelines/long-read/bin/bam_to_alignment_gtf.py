@@ -18,14 +18,19 @@ EXCLUDED_FLAGS = 4 + 256 + 512 + 1024 + 2048
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bam", required=True, type=Path)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--bam", type=Path)
+    source.add_argument("--sam", type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    if shutil.which("samtools") is None:
-        raise SystemExit("samtools is required for BAM-to-GTF conversion")
-    result = subprocess.run(["samtools", "view", "-F", str(EXCLUDED_FLAGS), str(args.bam)], check=True, text=True, capture_output=True)
+    if args.bam is not None:
+        if shutil.which("samtools") is None:
+            raise SystemExit("--bam requires samtools; use --sam in the Python-only process")
+        source_handle = subprocess.Popen(["samtools", "view", "-F", str(EXCLUDED_FLAGS), str(args.bam)], stdout=subprocess.PIPE, text=True).stdout
+    else:
+        source_handle = args.sam.open()
     with args.output.open("w") as handle:
-        for line in result.stdout.splitlines():
+        for line in source_handle:
             fields = line.split("\t")
             if len(fields) < 6:
                 continue
@@ -51,9 +56,7 @@ def main() -> None:
                 handle.write(f'{chrom}\tpipeline\texon\t{exon_start + 1}\t{reference_position}\t.\t{strand}\t.\tgene_id "{read_id}"; transcript_id "{read_id}"; exon_number "{exon_number}";\n')
             if exon_number == 0:
                 continue
-    if args.output.stat().st_size == 0:
-        raise SystemExit("BAM produced no convertible alignments")
-
-
+    if args.bam is not None:
+        source_handle.close()
 if __name__ == "__main__":
     main()

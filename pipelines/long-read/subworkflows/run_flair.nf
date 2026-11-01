@@ -1,3 +1,4 @@
+include { SAMTOOLS_VIEW_SHARD } from '../modules/models.nf'
 include { FLAIR_JUNCTIONS; FLAIR_TRANSCRIPTOME; FLAIR_EMPTY; FLAIR_COMBINE } from '../modules/optional_backends.nf'
 
 workflow RUN_FLAIR {
@@ -8,7 +9,8 @@ workflow RUN_FLAIR {
     flair_args
 
     main:
-    FLAIR_JUNCTIONS(shards)
+    SAMTOOLS_VIEW_SHARD(shards)
+    FLAIR_JUNCTIONS(SAMTOOLS_VIEW_SHARD.out.sam)
     flair_evidence = FLAIR_JUNCTIONS.out.junctions.join(FLAIR_JUNCTIONS.out.status, by: [0, 1])
     flair_inputs = flair_evidence.join(shards, by: [0, 1]).map { meta, shard_meta, junctions, junction_status, bam, bai -> tuple(meta, shard_meta, bam, bai, junctions, junction_status) }
     flair_nonempty = flair_inputs.filter { _meta, _shard_meta, _bam, _bai, _junctions, junction_status -> junction_status.text.contains('HAS_JUNCTION') }.map { meta, shard_meta, bam, bai, junctions, _junction_status -> tuple(meta, shard_meta, bam, bai, junctions) }
@@ -26,5 +28,5 @@ workflow RUN_FLAIR {
     combined = FLAIR_COMBINE.out.native_models.map { meta, backend, product, status ->
         tuple(meta, [backend: backend, scope: 'run', run_id_or_cohort_id: meta.run_id, shard_id_or_merged: 'merged', native_format: 'gtf', model_count: 0, status: status.text.contains('EMPTY') ? 'EMPTY' : 'SUCCESS'], product, status)
     }
-    versions = FLAIR_JUNCTIONS.out.versions.mix(FLAIR_TRANSCRIPTOME.out.versions).mix(FLAIR_EMPTY.out.versions).mix(FLAIR_COMBINE.out.versions)
+    versions = SAMTOOLS_VIEW_SHARD.out.versions.mix(FLAIR_JUNCTIONS.out.versions).mix(FLAIR_TRANSCRIPTOME.out.versions).mix(FLAIR_EMPTY.out.versions).mix(FLAIR_COMBINE.out.versions)
 }

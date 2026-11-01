@@ -1,18 +1,16 @@
 process INSPECT_BAM_WORKLOAD {
     label 'process_low'
-    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
-    container params.use_containers ? params.tool_containers.samtools : null
+    container params.use_containers ? params.tool_containers.python_helper : null
     publishDir "${params.outdir}/per_run", mode: 'copy', pattern: 'workload.tsv', saveAs: { filename -> "${task.tag}/shards/${filename}" }
     tag "${meta.run_id}"
     input:
-    tuple val(meta), path(bam), path(bai)
+    tuple val(meta), path(bam), path(bai), path(idxstats)
     output:
     tuple val(meta), path(bam), path(bai), path('workload.tsv'), emit: workload
     path 'versions.yml', emit: versions
     script:
     """
-    samtools idxstats ${bam} > raw.idxstats.tsv
-    awk -F '\\t' 'BEGIN { print "contig\\treference_length\\tmapped_reads\\teligible\\tresource_class" } \$1 != "*" && NF >= 4 { print \$1 "\\t" \$2 "\\t" \$3 "\\t" (\$3 + 0 ? "true" : "false") "\\tunassigned"; count++ } END { if (count == 0) exit 1 }' raw.idxstats.tsv > workload.tsv
+    python3 ${projectDir}/bin/inspect_bam_workload.py --idxstats ${idxstats} --output workload.tsv
     cat > versions.yml <<VERSIONS
 "${task.process}":
     samtools: \$(samtools --version | head -n1)
@@ -40,10 +38,7 @@ process PLAN_CONTIG_SHARDS {
     path 'versions.yml', emit: versions
     script:
     """
-    python3 ${projectDir}/bin/plan_contig_shards.py --workload ${workload} --mode ${shard_mode} --threshold ${large_threshold} --very-large-threshold ${very_large_threshold} --run-id '${meta.run_id}' --plan '${meta.run_id}.shard_plan.tsv'
-    eligible_count=\$(awk -F '\\t' 'NR > 1 && \$5 == "true" {n++} END {print n+0}' '${meta.run_id}.shard_plan.tsv')
-    printf 'run_id\\teligible_shards\\n%s\\t%s\\n' '${meta.run_id}' "\${eligible_count}" > shard_plan_summary.tsv
-    awk -F '\\t' 'BEGIN { print "shard_id\\tcontig\\tstatus" } NR > 1 { print \$1 "\\t" \$2 "\\t" (\$5 == "true" ? "PLANNED" : "EMPTY") }' '${meta.run_id}.shard_plan.tsv' > shard_status.tsv
+    python3 ${projectDir}/bin/plan_contig_shards.py --workload ${workload} --mode ${shard_mode} --threshold ${large_threshold} --very-large-threshold ${very_large_threshold} --run-id '${meta.run_id}' --plan '${meta.run_id}.shard_plan.tsv' --summary shard_plan_summary.tsv --status shard_status.tsv
     cat > versions.yml <<VERSIONS
 "${task.process}":
     shard_planner: pipeline

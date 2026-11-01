@@ -1,3 +1,4 @@
+include { SAMTOOLS_IDXSTATS } from '../modules/alignment.nf'
 include { INSPECT_BAM_WORKLOAD; PLAN_CONTIG_SHARDS; SPLIT_BAM_BY_CONTIG; VALIDATE_CONTIG_SHARDS; VALIDATE_SHARD_COVERAGE } from '../modules/sharding.nf'
 
 workflow PREPARE_CONTIG_SHARDS {
@@ -8,7 +9,8 @@ workflow PREPARE_CONTIG_SHARDS {
     shard_very_large_reads
 
     main:
-    INSPECT_BAM_WORKLOAD(alignment)
+    SAMTOOLS_IDXSTATS(alignment)
+    INSPECT_BAM_WORKLOAD(SAMTOOLS_IDXSTATS.out.idxstats)
     PLAN_CONTIG_SHARDS(INSPECT_BAM_WORKLOAD.out.workload, shard_mode, shard_contig_reads, shard_very_large_reads)
     plan_rows = PLAN_CONTIG_SHARDS.out.plan.flatMap { meta, bam, bai, plan, _summary, _status ->
         plan.readLines().drop(1).findAll { line -> line.trim() && line.split('\\t', -1)[4] == 'true' }.collect { line ->
@@ -31,5 +33,5 @@ workflow PREPARE_CONTIG_SHARDS {
     summaries = PLAN_CONTIG_SHARDS.out.plan.map { meta, _bam, _bai, _plan, summary, _status -> tuple(meta, summary.readLines()[1].split('\\t')[1].toInteger()) }
     shards = VALIDATE_CONTIG_SHARDS.out.validated.map { meta, shard_meta, bam, bai, validation -> tuple(meta, shard_meta, bam, bai) }
     status = SPLIT_BAM_BY_CONTIG.out.status
-    versions = INSPECT_BAM_WORKLOAD.out.versions.mix(PLAN_CONTIG_SHARDS.out.versions).mix(SPLIT_BAM_BY_CONTIG.out.versions).mix(VALIDATE_CONTIG_SHARDS.out.versions).mix(VALIDATE_SHARD_COVERAGE.out.versions)
+    versions = SAMTOOLS_IDXSTATS.out.versions.mix(INSPECT_BAM_WORKLOAD.out.versions).mix(PLAN_CONTIG_SHARDS.out.versions).mix(SPLIT_BAM_BY_CONTIG.out.versions).mix(VALIDATE_CONTIG_SHARDS.out.versions).mix(VALIDATE_SHARD_COVERAGE.out.versions)
 }

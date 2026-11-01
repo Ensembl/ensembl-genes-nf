@@ -12,10 +12,8 @@ process MERGE_BACKEND_MODELS {
     path 'versions.yml', emit: versions
     script:
     """
-    for input_gtf in \$(printf '%s\\n' ${gtfs} | sort); do cat "\${input_gtf}"; done > merged.gtf
-    if awk -F '\\t' '\$3 == "exon" { found=1 } END { exit(found ? 0 : 1) }' merged.gtf; then state=COMPLETE; printf 'input\\tstatus\\n' > merge_skipped_inputs.tsv; else printf '# EMPTY: no native exon records\\n' > merged.gtf; state=EMPTY; printf 'input\\tstatus\\n%s\\tSKIPPED_EMPTY\\n' '${backend}' > merge_skipped_inputs.tsv; fi
-    python3 ${projectDir}/bin/merge_filelist.py --inputs ${gtfs} --file-list merge_filelist.txt --checksum merge_filelist.sha256 --manifest merge_manifest.json --backend '${backend}' --scope '${scope}' --status "\${state}"
-    printf 'backend\\tscope\\tstatus\\n%s\\t%s\\t%s\\n' '${backend}' '${scope}' "\${state}" > merge_status.tsv
+    python3 ${projectDir}/bin/merge_gtfs.py --inputs ${gtfs} --output merged.gtf --backend '${backend}' --status merge_gtf.status.tsv --skipped merge_skipped_inputs.tsv --merge-status merge_status.tsv --scope '${scope}'
+    python3 ${projectDir}/bin/merge_filelist.py --inputs ${gtfs} --file-list merge_filelist.txt --checksum merge_filelist.sha256 --manifest merge_manifest.json --backend '${backend}' --scope '${scope}' --status-file merge_gtf.status.tsv
     printf '"%s":\\n    merge: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:

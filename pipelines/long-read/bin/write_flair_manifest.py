@@ -29,9 +29,16 @@ def main() -> None:
     parser.add_argument("--run-id", default="")
     parser.add_argument("--shard-id", default="")
     parser.add_argument("--status", required=True)
+    parser.add_argument("--status-file", type=Path)
     parser.add_argument("--args", default="")
     parser.add_argument("--input", nargs="*", default=[])
     args = parser.parse_args()
+
+    if args.status_file:
+        rows = [line for line in args.status_file.read_text().splitlines() if line.strip()]
+        if not rows:
+            raise SystemExit(f"status file is empty: {args.status_file}")
+        args.status = rows[-1].split("\t")[-1]
 
     inputs = []
     for value in sorted(args.input):

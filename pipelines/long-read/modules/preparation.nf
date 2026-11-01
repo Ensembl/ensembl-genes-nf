@@ -63,6 +63,7 @@ process FINALIZE_PREPARED_MANIFEST {
 
 process VALIDATE_FASTQ {
     label 'process_light'
+    container params.use_containers ? params.tool_containers.python_helper : null
     tag "${meta.id}"
     input:
     tuple val(meta), path(reads)
@@ -73,18 +74,10 @@ process VALIDATE_FASTQ {
     task.ext.when == null || task.ext.when
     script:
     """
-    set -euo pipefail
-    test -s "${reads}"
-    if [ "\$(od -An -tx1 -N2 "${reads}" | tr -d ' \\n')" = '1f8b' ]; then
-        gzip -t "${reads}"
-        gzip -cd "${reads}" | LC_ALL=C awk 'NR % 4 == 1 && substr(\$0,1,1) != "@" { exit 1 } NR % 4 == 3 && substr(\$0,1,1) != "+" { exit 1 }'
-    else
-        LC_ALL=C awk 'NR % 4 == 1 && substr(\$0,1,1) != "@" { exit 1 } NR % 4 == 3 && substr(\$0,1,1) != "+" { exit 1 }' "${reads}"
-    fi
-    printf 'id\\tstatus\\n%s\\tVALID\\n' '${meta.id}' > fastq.status.tsv
+    python3 ${projectDir}/bin/validate_fastq.py --reads ${reads} --run-id '${meta.id}' --status fastq.status.tsv
     cat > versions.yml <<VERSIONS
 "${task.process}":
-    fastq_validator: embedded
+    fastq_validator: python
 VERSIONS
     """
     stub:
@@ -97,6 +90,7 @@ VERSIONS
 
 process AUDIT_FASTQ {
     label 'process_light'
+    container params.use_containers ? params.tool_containers.python_helper : null
     tag "${meta.id}"
     input:
     tuple val(meta), path(reads), path(status)
@@ -106,9 +100,8 @@ process AUDIT_FASTQ {
     path 'versions.yml', emit: versions
     script:
     """
-    test -s ${reads}
-    printf 'id\tstatus\tbytes\n%s\tVALID\t%s\n' '${meta.id}' "\$(wc -c < ${reads})" > fastq.audit.tsv
-    printf '"%s":\n    fastq_audit: pipeline\n' '${task.process}' > versions.yml
+    python3 ${projectDir}/bin/audit_fastq.py --reads ${reads} --run-id '${meta.id}' --audit fastq.audit.tsv
+    printf '"%s":\n    fastq_audit: python\n' '${task.process}' > versions.yml
     """
     stub:
     """
@@ -235,11 +228,7 @@ process ACQUIRE_FASTQ {
     path 'versions.yml', emit: versions
     script:
     """
-    if [[ '${source_uri}' == file://* ]]; then cp "\$(printf '%s' '${source_uri}' | sed 's#^file://##')" acquired.fastq.gz; \
-    elif [[ '${source_uri}' == http://* || '${source_uri}' == https://* || '${source_uri}' == ftp://* ]]; then curl --fail --location --retry 2 --output acquired.fastq.gz '${source_uri}'; \
-    else cp '${source_uri}' acquired.fastq.gz; fi
-    test -s acquired.fastq.gz
-    printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tacquired.fastq.gz\\t%s\\t\\t\\n' '${meta.id}' "\$(sha256sum acquired.fastq.gz | cut -d' ' -f1)" > acquired_input.tsv
+    python3 ${projectDir}/bin/acquire_input.py --uri '${source_uri}' --output acquired.fastq.gz --run-id '${meta.id}' --metadata acquired_input.tsv
     printf '"%s":\\n    acquisition: curl_or_copy\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -260,16 +249,7 @@ process ACQUIRE_BAM {
     path 'versions.yml', emit: versions
     script:
     """
-    if [[ '${source_uri}' == file://* ]]; then cp "\$(printf '%s' '${source_uri}' | sed 's#^file://##')" acquired.bam; \
-    elif [[ '${source_uri}' == http://* || '${source_uri}' == https://* || '${source_uri}' == ftp://* ]]; then curl --fail --location --retry 2 --output acquired.bam '${source_uri}'; \
-    else cp '${source_uri}' acquired.bam; fi
-    test -s acquired.bam
-    index_uri='${meta.source_index_uri}'
-    if [[ "\$index_uri" == file://* ]]; then cp "\$(printf '%s' "\$index_uri" | sed 's#^file://##')" acquired.bam.bai; \
-    elif [[ "\$index_uri" == http://* || "\$index_uri" == https://* || "\$index_uri" == ftp://* ]]; then curl --fail --location --retry 2 --output acquired.bam.bai "\$index_uri"; \
-    else cp "\$index_uri" acquired.bam.bai; fi
-    test -s acquired.bam.bai
-    printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tacquired.bam\\t%s\\tacquired.bam.bai\\t%s\\n' '${meta.id}' "\$(sha256sum acquired.bam | cut -d' ' -f1)" "\$(sha256sum acquired.bam.bai | cut -d' ' -f1)" > acquired_input.tsv
+    python3 ${projectDir}/bin/acquire_input.py --uri '${source_uri}' --output acquired.bam --index-uri '${meta.source_index_uri}' --index-output acquired.bam.bai --run-id '${meta.id}' --metadata acquired_input.tsv
     printf '"%s":\\n    acquisition: curl_or_copy\\n' '${task.process}' > versions.yml
     """
     stub:

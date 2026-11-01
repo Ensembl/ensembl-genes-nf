@@ -21,15 +21,10 @@ process ISOQUANT_ANNOTATION_FREE {
     script:
     def args = task.ext.args ?: isoquant_args
     """
-    isoquant_exit=0
-    isoquant.py --reference ${reference} --bam ${bam} --data_type '${data_type}' ${high_memory ? '--threads ' + task.cpus : ''} --output output ${args} || isoquant_exit=\$?
-    if [[ "\${isoquant_exit}" -ne 0 ]]; then printf 'IsoQuant failed with exit %s\n' "\${isoquant_exit}" >&2; exit "\${isoquant_exit}"; fi
-    isoquant_model=\$(find output -type f -name '*transcript_models.gtf' -print -quit 2>/dev/null || true)
-    if test -z "\${isoquant_model}"; then printf 'IsoQuant did not produce a transcript model file (exit %s)\\n' "\${isoquant_exit}" >&2; exit "\${isoquant_exit}"; fi
-    if test -s "\${isoquant_model}"; then cp "\${isoquant_model}" native.gtf; state=SUCCESS; else printf '# EMPTY: IsoQuant produced no transcript models\\n' > native.gtf; state=EMPTY; fi
-    printf 'isoquant\\t%s\\n' "\${state}" > status.tsv
+    isoquant.py --reference ${reference} --bam ${bam} --data_type '${data_type}' ${high_memory ? '--threads ' + task.cpus : ''} --output output ${args}
+    python3 ${projectDir}/bin/finalize_gtf.py --source-dir output --pattern '*transcript_models.gtf' --output native.gtf --status status.tsv --backend isoquant --empty-message 'IsoQuant produced no transcript models' --require-source
     mkdir -p native_products
-    for product in output/*read_info* output/*read_assignments* output/*transcript_model_reads* output/*corrected_reads* output/*allinfo* output/*tagged.bam output/*deduplicated.bam; do test -e "\${product}" && cp "\${product}" native_products/; done
+    python3 ${projectDir}/bin/collect_products.py --source output --destination native_products --patterns '*read_info*' '*read_assignments*' '*transcript_model_reads*' '*corrected_reads*' '*allinfo*' '*tagged.bam' '*deduplicated.bam'
     python3 ${projectDir}/bin/write_isoquant_manifest.py --reference ${reference} --bam ${bam} --data-type '${data_type}' --analysis ${analysis.join(' ')} --large-output ${large_output.join(' ')} --args '${args}' --output input_manifest.json
     printf '"%s":\\n    isoquant: %s\\n' '${task.process}' "\$(isoquant.py --version 2>&1 | head -n1)" > versions.yml
     """
@@ -67,15 +62,10 @@ process ISOQUANT_REFERENCE_GUIDED {
     script:
     def args = task.ext.args ?: isoquant_args
     """
-    isoquant_exit=0
-    isoquant.py --reference ${reference} --genedb ${genedb} --bam ${bam} --data_type '${data_type}' ${high_memory ? '--threads ' + task.cpus : ''} --output output ${args} || isoquant_exit=\$?
-    if [[ "\${isoquant_exit}" -ne 0 ]]; then printf 'IsoQuant failed with exit %s\n' "\${isoquant_exit}" >&2; exit "\${isoquant_exit}"; fi
-    isoquant_model=\$(find output -type f -name '*transcript_models.gtf' -print -quit 2>/dev/null || true)
-    if test -z "\${isoquant_model}"; then printf 'IsoQuant did not produce a transcript model file (exit %s)\\n' "\${isoquant_exit}" >&2; exit "\${isoquant_exit}"; fi
-    if test -s "\${isoquant_model}"; then cp "\${isoquant_model}" native.gtf; state=SUCCESS; else printf '# EMPTY: IsoQuant produced no transcript models\\n' > native.gtf; state=EMPTY; fi
-    printf 'isoquant\\t%s\\n' "\${state}" > status.tsv
+    isoquant.py --reference ${reference} --genedb ${genedb} --bam ${bam} --data_type '${data_type}' ${high_memory ? '--threads ' + task.cpus : ''} --output output ${args}
+    python3 ${projectDir}/bin/finalize_gtf.py --source-dir output --pattern '*transcript_models.gtf' --output native.gtf --status status.tsv --backend isoquant --empty-message 'IsoQuant produced no transcript models' --require-source
     mkdir -p native_products
-    for product in output/*read_info* output/*read_assignments* output/*transcript_model_reads* output/*corrected_reads* output/*allinfo* output/*tagged.bam output/*deduplicated.bam; do test -e "\${product}" && cp "\${product}" native_products/; done
+    python3 ${projectDir}/bin/collect_products.py --source output --destination native_products --patterns '*read_info*' '*read_assignments*' '*transcript_model_reads*' '*corrected_reads*' '*allinfo*' '*tagged.bam' '*deduplicated.bam'
     python3 ${projectDir}/bin/write_isoquant_manifest.py --reference ${reference} --genedb ${genedb} --bam ${bam} --data-type '${data_type}' --analysis ${analysis.join(' ')} --large-output ${large_output.join(' ')} --args '${args}' --output input_manifest.json
     printf '"%s":\\n    isoquant: %s\\n' '${task.process}' "\$(isoquant.py --version 2>&1 | head -n1)" > versions.yml
     """
@@ -99,14 +89,7 @@ process NORMALISE_ISOQUANT_OUTPUTS {
     path 'versions.yml', emit: versions
     script:
     """
-    test -s ${gtf}
-    if ! awk -F '\\t' '\$3 == "exon" { found=1 } END { exit(found ? 0 : 1) }' ${gtf}; then
-        printf '# EMPTY: IsoQuant produced no transcript models\\n' > native.gtf
-        printf 'isoquant\\tEMPTY\\n' > status.tsv
-    else
-        if [[ '${gtf}' != 'native.gtf' ]]; then cp ${gtf} native.gtf; fi
-        if [[ '${status}' != 'status.tsv' ]]; then cp ${status} status.tsv; fi
-    fi
+    python3 ${projectDir}/bin/normalize_gtf.py --gtf ${gtf} --status ${status} --output-gtf native.gtf --output-status status.tsv --backend isoquant --empty-message 'IsoQuant produced no transcript models'
     printf '"%s":\\n    isoquant_normaliser: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -128,10 +111,7 @@ process AUDIT_ISOQUANT_OUTPUTS {
     path 'versions.yml', emit: versions
     script:
     """
-    test -s ${gtf}
-    if [[ '${gtf}' != 'native.gtf' ]]; then cp ${gtf} native.gtf; fi
-    if [[ '${status}' != 'status.tsv' ]]; then cp ${status} status.tsv; fi
-    printf 'backend\\tstatus\\nisoquant\\t%s\\n' "\$(awk -F '\\t' 'NR == 1 {print \$2}' ${status})" > isoquant.audit.tsv
+    python3 ${projectDir}/bin/audit_gtf.py --gtf ${gtf} --status ${status} --backend isoquant --output-gtf native.gtf --output-status status.tsv --audit isoquant.audit.tsv
     printf '"%s":\\n    isoquant_audit: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -145,47 +125,18 @@ process AUDIT_ISOQUANT_OUTPUTS {
 
 process FLAIR_JUNCTIONS {
     label 'process_medium'
-    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
-    container params.use_containers ? params.tool_containers.samtools : null
+    container params.use_containers ? params.tool_containers.python_helper : null
     input:
-    tuple val(meta), val(shard_meta), path(bam), path(bai)
+    tuple val(meta), val(shard_meta), path(alignment_sam)
     output:
     tuple val(meta), val(shard_meta), path('junctions.bed'), emit: junctions
     tuple val(meta), val(shard_meta), path('junction_status.tsv'), emit: status
     path 'versions.yml', emit: versions
     script:
     """
-    samtools view -F 3844 ${bam} | awk '
-    function emit_junction(chrom, start, end, strand, key, name) {
-        key = chrom SUBSEP start SUBSEP end SUBSEP strand
-        support[key]++
-        junction_chrom[key] = chrom
-        junction_start[key] = start
-        junction_end[key] = end
-        junction_strand[key] = strand
-    }
-    {
-        chrom = \$3
-        position = \$4 - 1
-        strand = (and(\$2, 16) ? "-" : "+")
-        cigar = \$6
-        length_text = ""
-        for (i = 1; i <= length(cigar); i++) {
-            operation = substr(cigar, i, 1)
-            if (operation ~ /[0-9]/) {
-                length_text = length_text operation
-                continue
-            }
-            length_value = length_text + 0
-            if (operation == "N") emit_junction(chrom, position, position + length_value, strand)
-            if (operation ~ /[MDN=X]/) position += length_value
-            length_text = ""
-        }
-    }
-    END {
-        for (key in support) printf "%s\\t%d\\t%d\\t%s:%d-%d\\t%d\\t%s\\n", junction_chrom[key], junction_start[key], junction_end[key], junction_chrom[key], junction_start[key], junction_end[key], support[key], junction_strand[key]
-    }' | sort -k1,1 -k2,2n -k3,3n -k4,4 > junctions.bed
-    if test -s junctions.bed; then state=HAS_JUNCTION; else state=EMPTY; fi
+    python3 ${projectDir}/bin/bam_to_junction_bed.py --sam ${alignment_sam} --output junctions.bed
+    state=HAS_JUNCTION
+    if [[ ! -s junctions.bed ]]; then state=EMPTY; fi
     printf 'run_id\\tshard_id\\tstatus\\n%s\\t%s\\t%s\\n' '${meta.run_id}' '${shard_meta.shard_id}' "\${state}" > junction_status.tsv
     printf '"%s":\\n    junction_extractor: pipeline\\n' '${task.process}' > versions.yml
     """
@@ -216,10 +167,9 @@ process FLAIR_TRANSCRIPTOME {
     def args = task.ext.args ?: flair_args
     """
     flair transcriptome -g ${reference} --sample_name '${meta.run_id}_${shard_meta.shard_id}' --junction_bed ${junctions} --junction_support 1 -b ${bam} -o flair --threads ${flair_threads ?: task.cpus} ${args}
-    if test -s flair.isoforms.gtf; then cp flair.isoforms.gtf native.gtf; state=SUCCESS; else printf '# EMPTY: FLAIR produced no transcript models\\n' > native.gtf; state=EMPTY; fi
-    printf 'flair\\t%s\\n' "\${state}" > status.tsv
+    python3 ${projectDir}/bin/finalize_gtf.py --source flair.isoforms.gtf --output native.gtf --status status.tsv --backend flair --empty-message 'FLAIR produced no transcript models'
     mkdir -p native_products
-    while IFS= read -r -d '' product; do cp "\${product}" native_products/; done < <(find . -maxdepth 1 -type f -name 'flair*' -print0)
+    python3 ${projectDir}/bin/collect_products.py --source . --destination native_products --patterns 'flair*'
     python3 ${projectDir}/bin/write_flair_manifest.py --output input_manifest.json --native-products native_products --run-id '${meta.run_id}' --shard-id '${shard_meta.shard_id}' --status "\${state}" --args '${args}' --input ${reference} ${bam} ${junctions}
     printf '"%s":\\n    flair: %s\\n' '${task.process}' "\$(flair --version 2>&1 | head -n1)" > versions.yml
     """
@@ -249,7 +199,7 @@ process FLAIR_EMPTY {
     path 'versions.yml', emit: versions
     script:
     """
-    awk -F '\\t' '\$3 == "EMPTY" { found=1 } END { exit(found ? 0 : 1) }' ${junction_status}
+    python3 ${projectDir}/bin/require_status.py --status ${junction_status} --value EMPTY
     printf '# EMPTY: no splice junctions for shard %s\\n' '${shard_meta.shard_id}' > native.gtf
     printf 'flair\\tEMPTY\\t%s\\n' '${shard_meta.shard_id}' > status.tsv
     mkdir -p native_products
@@ -278,20 +228,17 @@ process FLAIR_COMBINE {
     path 'versions.yml', emit: versions
     script:
     """
-    cat ${gtfs} > native.gtf
-    if awk -F '\\t' '\$3 == "exon" { found=1 } END { exit(found ? 0 : 1) }' native.gtf; then state=SUCCESS; else printf '# EMPTY: FLAIR produced no combined transcript models\\n' > native.gtf; state=EMPTY; fi
-    printf 'flair\\t%s\\n' "\${state}" > status.tsv
+    python3 ${projectDir}/bin/merge_gtfs.py --inputs ${gtfs} --output native.gtf --backend flair --status status.tsv
     mkdir -p native_products
-    for product in ${gtfs}; do cp "\${product}" native_products/; done
-    python3 ${projectDir}/bin/write_flair_manifest.py --output input_manifest.json --native-products native_products --run-id '${meta.run_id}' --status "\${state}" --input ${gtfs}
+    python3 ${projectDir}/bin/copy_products.py --inputs ${gtfs} --destination native_products
+    python3 ${projectDir}/bin/write_flair_manifest.py --output input_manifest.json --native-products native_products --run-id '${meta.run_id}' --status SUCCESS --status-file status.tsv --input ${gtfs}
     printf '"%s":\\n    flair_combine: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
-    cat ${gtfs} > native.gtf
-    printf 'flair\\tSUCCESS\\n' > status.tsv
+    python3 ${projectDir}/bin/merge_gtfs.py --inputs ${gtfs} --output native.gtf --backend flair --status status.tsv
     mkdir -p native_products
-    for product in ${gtfs}; do cp "\${product}" native_products/; done
+    python3 ${projectDir}/bin/copy_products.py --inputs ${gtfs} --destination native_products
     python3 ${projectDir}/bin/write_flair_manifest.py --output input_manifest.json --native-products native_products --run-id '${meta.run_id}' --status SUCCESS
     printf '"%s":\\n    flair_combine: stub\\n' '${task.process}' > versions.yml
     """
@@ -316,8 +263,7 @@ process BAMBU_DISCOVERY {
     script:
     """
     Rscript ${projectDir}/bin/run_bambu.R ${bam} ${reference} native.gtf bambu.rds read_assignments.tsv ${track_reads} ${quantify} input_manifest.json
-    if awk -F '\\t' '\$3 == "exon" { found=1 } END { exit(found ? 0 : 1) }' native.gtf; then state=SUCCESS; else state=EMPTY; fi
-    printf 'bambu\\t%s\\n' "\${state}" > status.tsv
+    python3 ${projectDir}/bin/gtf_status.py --gtf native.gtf --backend bambu --status status.tsv --empty-message 'Bambu produced no transcript models'
     printf '"%s":\\n    bambu: pinned-runtime\\n' '${task.process}' > versions.yml
     """
     stub:

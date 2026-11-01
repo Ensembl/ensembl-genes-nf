@@ -1,17 +1,19 @@
 process TAMA_PREPARE_SAM {
     label 'process_low'
-    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
-    container params.use_containers ? params.tool_containers.samtools : null
+    container params.use_containers ? params.tool_containers.python_helper : null
     tag "${shard_meta.shard_id}"
     input:
-    tuple val(meta), val(shard_meta), path(shard_bam), path(shard_bai)
+    tuple val(meta), val(shard_meta), path(shard_bam), path(shard_bai), path(alignment_sam)
     output:
     tuple val(meta), val(shard_meta), path(shard_bam), path(shard_bai), path('shard.sam'), emit: prepared
     path 'versions.yml', emit: versions
     script:
     """
-    samtools view -h -F 3844 ${shard_bam} | awk '!/^@PG/' > shard.sam
-    printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
+    python3 ${projectDir}/bin/filter_sam.py --input ${alignment_sam} --output shard.sam
+    cat > versions.yml <<VERSIONS
+"${task.process}":
+    sam_filter: python
+VERSIONS
     """
     stub:
     """
@@ -41,14 +43,11 @@ process TAMA_COLLAPSE {
     """
     tama_collapse.py -s ${shard_sam} -f ${reference} -p tama -m 10 ${args}
     if test -s tama.bed; then
-        awk -f ${projectDir}/bin/bed12_to_gtf.awk tama.bed > native.gtf
+        python3 ${projectDir}/bin/bed12_to_gtf.py --bed12 tama.bed --gtf native.gtf --source tama
     else
         printf '# EMPTY: TAMA produced no models for shard %s\\n' '${shard_meta.shard_id}' > native.gtf
     fi
-    test -s native.gtf
-    if grep -q '^# EMPTY:' native.gtf; then state=EMPTY; else state=SUCCESS; fi
-    printf 'backend\\tstatus\\tshard_id\\n' > status.tsv
-    printf 'tama\\t%s\\t%s\\n' "\${state}" '${shard_meta.shard_id}' >> status.tsv
+    python3 ${projectDir}/bin/gtf_status.py --gtf native.gtf --backend tama --status status.tsv --empty-message 'TAMA produced no models for shard ${shard_meta.shard_id}'
     sha256sum ${shard_bam} ${shard_bai} ${shard_sam} > input_checksums.tsv
     cat > versions.yml <<VERSIONS
 "${task.process}":
@@ -81,9 +80,7 @@ process STRINGTIE2_COLLAPSE {
     def args = task.ext.args ?: ''
     """
     stringtie ${shard_bam} -o native.gtf ${args}
-    test -s native.gtf
-    if awk -F '\\t' '\$3 == "exon" { found=1 } END { exit(found ? 0 : 1) }' native.gtf; then state=SUCCESS; else printf '# EMPTY: StringTie2 produced no models for shard %s\\n' '${shard_meta.shard_id}' > native.gtf; state=EMPTY; fi
-    printf 'stringtie2\\t%s\\t%s\\n' "\${state}" '${shard_meta.shard_id}' > status.tsv
+    python3 ${projectDir}/bin/gtf_status.py --gtf native.gtf --backend stringtie2 --status status.tsv --empty-message 'StringTie2 produced no models for shard ${shard_meta.shard_id}'
     sha256sum ${shard_bam} ${shard_bai} > input_checksums.tsv
     printf '"%s":\\n    stringtie: %s\\n' '${task.process}' "\$(stringtie --version 2>&1 | head -n1)" > versions.yml
     """
@@ -112,9 +109,7 @@ process STRINGTIE3_COLLAPSE {
     """
     stringtie --version > /dev/null
     stringtie ${shard_bam} -o native.gtf
-    test -s native.gtf
-    if awk -F '\\t' '\$3 == "exon" { found=1 } END { exit(found ? 0 : 1) }' native.gtf; then state=SUCCESS; else printf '# EMPTY: StringTie3 produced no models for shard %s\\n' '${shard_meta.shard_id}' > native.gtf; state=EMPTY; fi
-    printf 'stringtie3\\t%s\\t%s\\n' "\${state}" '${shard_meta.shard_id}' > status.tsv; sha256sum ${shard_bam} ${shard_bai} > input_checksums.tsv
+    python3 ${projectDir}/bin/gtf_status.py --gtf native.gtf --backend stringtie3 --status status.tsv --empty-message 'StringTie3 produced no models for shard ${shard_meta.shard_id}'; sha256sum ${shard_bam} ${shard_bai} > input_checksums.tsv
     printf '"%s":\\n    stringtie: %s\\n' '${task.process}' "\$(stringtie --version 2>&1 | head -n1)" > versions.yml
     """
     stub:
@@ -125,53 +120,46 @@ process STRINGTIE3_COLLAPSE {
     """
 }
 
-process BAM_TO_ALIGNMENT_GTF {
+process SAMTOOLS_VIEW_SHARD {
     label 'process_medium'
     // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
     container params.use_containers ? params.tool_containers.samtools : null
-    tag "${meta.run_id}"
+    tag "${meta.run_id}:${shard_meta.shard_id}"
     input:
     tuple val(meta), val(shard_meta), path(shard_bam), path(shard_bai)
+    output:
+    tuple val(meta), val(shard_meta), path('alignment.sam'), emit: sam
+    path 'versions.yml', emit: versions
+    script:
+    """
+    samtools view -h -F 3844 ${shard_bam} > alignment.sam
+    cat > versions.yml <<VERSIONS
+"${task.process}":
+    samtools: \$(samtools --version | head -n1)
+VERSIONS
+    """
+    stub:
+    """
+    touch alignment.sam
+    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process BAM_TO_ALIGNMENT_GTF {
+    label 'process_medium'
+    container params.use_containers ? params.tool_containers.python_helper : null
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), val(shard_meta), path(alignment_sam)
     output:
     tuple val(meta), val(shard_meta), path('alignment.gtf'), emit: alignment_gtf
     path 'versions.yml', emit: versions
     script:
     """
-    samtools view -F 3844 ${shard_bam} | awk -F '\\t' '
-        BEGIN { OFS = "\\t" }
-        {
-            read_id = \$1; flag = \$2 + 0; chrom = \$3; reference_position = \$4 - 1
-            strand = (int(flag / 16) % 2 ? "-" : "+")
-            exon_start = reference_position; exon_number = 0; cigar = \$6; rest = cigar
-            while (match(rest, /[0-9]+[MIDNSHP=X]/)) {
-                token = substr(rest, RSTART, RLENGTH)
-                length_bp = token + 0; operation = substr(token, length(token), 1)
-                if (operation ~ /[M=X]/) {
-                    reference_position += length_bp
-                } else if (operation == "N") {
-                    if (reference_position > exon_start) {
-                        exon_number++
-                        printf "%s\\tpipeline\\texon\\t%d\\t%d\\t.\\t%s\\t.\\tgene_id \\\"%s\\\"; transcript_id \\\"%s\\\"; exon_number \\\"%d\\\";\\n", chrom, exon_start + 1, reference_position, strand, read_id, read_id, exon_number
-                        written++
-                    }
-                    reference_position += length_bp; exon_start = reference_position
-                } else if (operation == "D") {
-                    reference_position += length_bp
-                }
-                rest = substr(rest, RSTART + RLENGTH)
-            }
-            if (reference_position > exon_start) {
-                exon_number++
-                printf "%s\\tpipeline\\texon\\t%d\\t%d\\t.\\t%s\\t.\\tgene_id \\\"%s\\\"; transcript_id \\\"%s\\\"; exon_number \\\"%d\\\";\\n", chrom, exon_start + 1, reference_position, strand, read_id, read_id, exon_number
-                written++
-            }
-        }
-        END { if (written == 0) exit 1 }
-    ' > alignment.gtf
-    test -s alignment.gtf
+    python3 ${projectDir}/bin/bam_to_alignment_gtf.py --sam ${alignment_sam} --output alignment.gtf
     cat > versions.yml <<VERSIONS
 "${task.process}":
-    converter: pipeline
+    converter: python
 VERSIONS
     """
     stub:

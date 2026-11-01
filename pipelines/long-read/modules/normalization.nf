@@ -77,10 +77,7 @@ process VALIDATE_BACKEND_SHARD_PLAN {
     path 'versions.yml', emit: versions
     script:
     """
-    test -s ${audit}
-    errors=\$(grep -c '^# error[[:space:]]' ${audit} || true)
-    printf 'status\\tvalue\\nVALID\\t%s\\nerrors\\t%s\\n' "\$([ "\${errors}" -eq 0 ] && echo true || echo false)" "\${errors}" > backend_shard_plan.validation.tsv
-    test "\${errors}" -eq 0
+    python3 ${projectDir}/bin/validate_backend_plan.py --audit ${audit} --output backend_shard_plan.validation.tsv
     printf '"%s":\\n    backend_plan_validation: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -131,8 +128,7 @@ process CANONICALISE_COMBINED_MODELS {
     path 'versions.yml', emit: versions
     script:
     """
-    sort -k1,1 -k2,2n -k3,3n -k4,4 ${bed12} > '${backend}.${scope}.canonical.bed12'
-    cp ${model_manifest} '${backend}.${scope}.canonical.manifest.json'
+    python3 ${projectDir}/bin/canonicalise_bed12.py --bed12 ${bed12} --manifest ${model_manifest} --output-bed12 '${backend}.${scope}.canonical.bed12' --output-manifest '${backend}.${scope}.canonical.manifest.json'
     printf '"%s":\\n    canonicaliser: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -190,7 +186,7 @@ process AUDIT_NATIVE_MODELS {
     script:
     def summary_name = "model.${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.model_summary.tsv"
     """
-    printf 'backend\\tscope\\tmodels\\n%s\\t%s\\t%s\\n' '${backend}' '${scope}' \$(awk -F '\\t' '\$1 == "models" {print \$2}' ${validation_report}) > '${summary_name}'
+    python3 ${projectDir}/bin/audit_model.py --backend '${backend}' --scope '${scope}' --validation-report ${validation_report} --output '${summary_name}'
     printf '"%s":\\n    native_model_audit: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -214,17 +210,7 @@ process COMPARE_NORMALIZED_MODELS {
     path 'versions.yml', emit: versions
     script:
     """
-    cat > records.json <<'JSON'
-${records_json}
-JSON
-    python3 - <<'PY'
-import json
-records = json.load(open('records.json'))
-with open('model_comparison.tsv', 'w') as handle:
-    handle.write('cohort_id\\tbackend\\tscope\\tmodel_path\\tstatus\\n')
-    for row in sorted(records, key=lambda item: (item['backend'], item['scope'], item['model_path'])):
-        handle.write(f"{row['cohort_id']}\\t{row['backend']}\\t{row['scope']}\\t{row['model_path']}\\tVALIDATED\\n")
-PY
+    python3 ${projectDir}/bin/compare_models.py --records-json '${records_json}' --output model_comparison.tsv
     printf '"%s":\\n    model_comparison: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:

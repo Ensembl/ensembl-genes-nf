@@ -15,19 +15,19 @@ EXCLUDED_FLAGS = 4 + 256 + 512 + 1024 + 2048
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--bam", required=True, type=Path)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--bam", type=Path)
+    source.add_argument("--sam", type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    if shutil.which("samtools") is None:
-        raise SystemExit("samtools is required for BAM junction extraction")
-    result = subprocess.run(
-        ["samtools", "view", "-F", str(EXCLUDED_FLAGS), str(args.bam)],
-        check=True,
-        text=True,
-        capture_output=True,
-    )
+    if args.bam is not None:
+        if shutil.which("samtools") is None:
+            raise SystemExit("--bam requires samtools; use --sam in the Python-only process")
+        source_handle = subprocess.Popen(["samtools", "view", "-F", str(EXCLUDED_FLAGS), str(args.bam)], stdout=subprocess.PIPE, text=True).stdout
+    else:
+        source_handle = args.sam.open()
     junctions: Counter[tuple[str, int, int, str]] = Counter()
-    for line in result.stdout.splitlines():
+    for line in source_handle:
         fields = line.split("\t")
         if len(fields) < 6:
             continue
@@ -41,6 +41,8 @@ def main() -> None:
                 reference_position += length
             elif operation in "MD=X":
                 reference_position += length
+    if args.bam is not None:
+        source_handle.close()
 
     with args.output.open("w") as handle:
         for (chrom, start, end, strand), support in sorted(junctions.items()):

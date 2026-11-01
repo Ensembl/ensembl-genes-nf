@@ -19,37 +19,13 @@ process FINALIZE_RUN_MANIFEST {
     path 'publication_checksum_verification.tsv', emit: checksum_verification
     script:
     """
-    python3 - <<'PY'
-import hashlib, json
-from pathlib import Path
-def digest(path):
-    h = hashlib.sha256()
-    with open(path, 'rb') as f:
-        for block in iter(lambda: f.read(1048576), b''): h.update(block)
-    return h.hexdigest()
-config = json.loads('''${run_configuration}''')
-status = json.loads('''${stage_status}''')
-model_publications = json.loads('''${model_publications}''')
-merge_provenance = json.loads('''${merge_provenance}''')
-status['evidence'] = '${evidence_status}'
-status['finalization'] = 'COMPLETE'
-with open('${normalized_manifest}', newline='') as handle:
-    import csv
-    rows = list(csv.DictReader(handle, delimiter='\t'))
-run_ids = sorted({row.get('run_id') for row in rows if row.get('run_id')})
-cohort_ids = sorted({row.get('cohort_id') for row in rows if row.get('cohort_id')})
-rows = []
-for record in model_publications:
-    source = Path('model_reports') / record['source_path']
-    if not source.is_file():
-        raise FileNotFoundError(f'model publication source was not staged: {source}')
-    rows.append((record['published_path'], str(source), digest(source)))
-Path('final_model_checksums.tsv').write_text(
-    'path\\tsource_path\\tsha256\\n'
-    + ''.join(f'{published}\\t{source}\\t{checksum}\\n' for published, source, checksum in sorted(rows))
-)
-Path('run_manifest.json').write_text(json.dumps({'pipeline': 'long-read', 'configuration': config, 'run_ids': run_ids, 'cohort_ids': cohort_ids, 'reference': {'path': '${reference_fasta}', 'sha256': digest('${reference_fasta}'), 'identity_sha256': digest('reference_identity.json')}, 'normalized_manifest': digest('${normalized_manifest}'), 'input_checksums': digest('${input_checksums}'), 'preparation_status': digest('${preparation_status}'), 'shard_plan_files': [{'path': str(p), 'sha256': digest(p)} for p in sorted(Path('shard_plans').glob('*'))], 'merge_provenance': merge_provenance, 'stage_status': status, 'final_product_checksum_file': digest('final_model_checksums.tsv')}, indent=2) + '\\n')
-PY
+    python3 ${projectDir}/bin/finalize_run_manifest.py \
+        --configuration '${run_configuration}' --stage-status '${stage_status}' \
+        --model-publications '${model_publications}' --evidence-status '${evidence_status}' \
+        --merge-provenance '${merge_provenance}' --normalized-manifest ${normalized_manifest} \
+        --input-checksums ${input_checksums} --preparation-status ${preparation_status} \
+        --reference-fasta ${reference_fasta} --reference-identity reference_identity.json \
+        --model-reports model_reports --run-manifest run_manifest.json --checksums final_model_checksums.tsv
     python3 ${projectDir}/bin/verify_publication_checksums.py --root . --checksums final_model_checksums.tsv --report publication_checksum_verification.tsv
     """
     stub:
@@ -89,7 +65,7 @@ process EXTRACT_COMBINED_TRANSCRIPTS {
     path 'versions.yml', emit: versions
     script:
     """
-    awk -F '\\t' '{print ">"\$4"\\nNNNN"}' ${bed12} > transcripts.fa
+    python3 ${projectDir}/bin/extract_transcripts.py --bed12 ${bed12} --output transcripts.fa
     printf '"%s":\\n    transcript_extractor: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -108,7 +84,7 @@ process PREDICT_LONGEST_ATG_ORFS {
     path 'versions.yml', emit: versions
     script:
     """
-    awk '/^>/{print; next} {print "M" substr(\$0,2)}' ${transcripts} > orfs.fa
+    python3 ${projectDir}/bin/predict_orfs.py --transcripts ${transcripts} --output orfs.fa
     printf '"%s":\\n    orf_predictor: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -199,7 +175,7 @@ process REPORT_COMBINED_DIAMOND_MODELS {
     path 'versions.yml', emit: versions
     script:
     """
-    printf 'status\\tmodels\\nCOMPLETE\\t%s\\n' \$(wc -l < ${hits}) > diamond_model_report.tsv
+    python3 ${projectDir}/bin/count_model_records.py --hits ${hits} --hits-only --report diamond_model_report.tsv
     printf '"%s":\\n    diamond_report: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -220,9 +196,7 @@ process COMPARE_CANDIDATE_MODELS {
     path 'versions.yml', emit: versions
     script:
     """
-    models=\$(awk 'END {print NR}' ${bed12})
-    hits=\$(awk -F '\\t' 'NR > 1 {n++} END {print n+0}' ${diamond_report})
-    printf 'backend\\tscope\\tmodels\\tdiamond_hits\\tclassification_policy\\n%s\\t%s\\t%s\\t%s\\tlongest_atg_orf\\n' '${backend}' '${scope}' "\${models}" "\${hits}" > candidate_model_comparison.tsv
+    python3 ${projectDir}/bin/count_model_records.py --models ${bed12} --hits ${diamond_report} --backend '${backend}' --scope '${scope}' --report candidate_model_comparison.tsv
     printf '"%s":\\n    candidate_comparison: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
