@@ -4,7 +4,7 @@ process PAIRWISE_GFF_TO_GTF {
 
     container "quay.io/biocontainers/gffread:0.12.7--hd03093a_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation",
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/gffcompare" },
         mode: 'copy',
         pattern: "*"
 

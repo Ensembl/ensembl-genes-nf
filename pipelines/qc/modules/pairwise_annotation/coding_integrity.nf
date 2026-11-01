@@ -4,7 +4,7 @@ process PAIRWISE_CODING_INTEGRITY {
 
     container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation",
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/gene_metrics" },
         mode: 'copy',
         pattern: "*_coding_integrity.tsv"
 
@@ -29,9 +29,6 @@ process PAIRWISE_CODING_INTEGRITY {
             --output ${meta.id}_coding_integrity.tsv \\
             --assembly-accession ${meta.id} \\
             --sample-name ${meta.id}
-
-        normalise_pairwise_tsv.py --input ${meta.id}_coding_integrity.tsv --output ${meta.id}_coding_integrity.normalised.tsv
-        mv ${meta.id}_coding_integrity.normalised.tsv ${meta.id}_coding_integrity.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

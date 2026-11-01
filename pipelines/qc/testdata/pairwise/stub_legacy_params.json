@@ -1,0 +1,6 @@
+{
+  "mode": "pairwise",
+  "run_pairwise_legacy_metrics": true,
+  "pairwise_csv": "pipelines/qc/testdata/pairwise/pairs.csv",
+  "outdir": "/tmp/qc-pairwise-legacy-stub"
+}

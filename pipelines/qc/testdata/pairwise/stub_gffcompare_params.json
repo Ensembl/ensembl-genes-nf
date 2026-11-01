@@ -1,0 +1,7 @@
+{
+  "mode": "pairwise",
+  "run_pairwise_legacy_metrics": false,
+  "run_pairwise_gffcompare": true,
+  "pairwise_csv": "pipelines/qc/testdata/pairwise/pairs.csv",
+  "outdir": "/tmp/qc-pairwise-gffcompare-stub"
+}

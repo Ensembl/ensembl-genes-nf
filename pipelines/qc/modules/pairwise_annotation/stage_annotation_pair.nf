@@ -4,16 +4,16 @@ process STAGE_ANNOTATION_PAIR {
 
     container "https://depot.galaxyproject.org/singularity/curl:8.8.0--he654da7_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation",
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/inputs" },
         mode: 'copy',
-        pattern: "*"
+        pattern: "source_a.gff3|source_b.gff3|assembly_report.txt|evidence_a.tsv|evidence_b.tsv"
 
     input:
-        tuple val(meta), val(source_a_ref), val(source_b_ref), val(assembly_report_ref)
+        tuple val(meta), val(source_a_ref), val(source_b_ref), val(assembly_report_ref), val(evidence_a_ref), val(evidence_b_ref)
         val cache_dir
 
     output:
-        tuple val(meta), path("source_a.gff3"), path("source_b.gff3"), path("assembly_report.txt"), emit: staged
+        tuple val(meta), path("source_a.gff3"), path("source_b.gff3"), path("assembly_report.txt"), path("evidence_a.tsv"), path("evidence_b.tsv"), emit: staged
         path "versions.yml", emit: versions
 
     script:
@@ -44,6 +44,8 @@ process STAGE_ANNOTATION_PAIR {
         fetch_or_link "${source_a_ref}" source_a.gff3
         fetch_or_link "${source_b_ref}" source_b.gff3
         fetch_or_link "${assembly_report_ref}" assembly_report.txt
+        fetch_or_link "${evidence_a_ref}" evidence_a.tsv
+        fetch_or_link "${evidence_b_ref}" evidence_b.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
@@ -56,6 +58,8 @@ process STAGE_ANNOTATION_PAIR {
         touch source_a.gff3
         touch source_b.gff3
         touch assembly_report.txt
+        touch evidence_a.tsv
+        touch evidence_b.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

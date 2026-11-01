@@ -1,0 +1,3 @@
+transcript_id	read_count	junction_support	full_length_support	source_tool
+lr_tx_1	10	7	4	generic_fixture
+lr_tx_2	3	0	1	generic_fixture

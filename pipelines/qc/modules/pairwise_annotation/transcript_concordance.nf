@@ -4,7 +4,7 @@ process PAIRWISE_TRANSCRIPT_CONCORDANCE {
 
     container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation",
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/gene_metrics" },
         mode: 'copy',
         pattern: "*_transcript_concordance.tsv"
 
@@ -29,9 +29,6 @@ process PAIRWISE_TRANSCRIPT_CONCORDANCE {
             --output ${meta.id}_transcript_concordance.tsv \\
             --assembly-accession ${meta.id} \\
             --sample-name ${meta.id}
-
-        normalise_pairwise_tsv.py --input ${meta.id}_transcript_concordance.tsv --output ${meta.id}_transcript_concordance.normalised.tsv
-        mv ${meta.id}_transcript_concordance.normalised.tsv ${meta.id}_transcript_concordance.tsv
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

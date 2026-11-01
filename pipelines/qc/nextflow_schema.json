@@ -13,7 +13,7 @@
     },
     "mode": {
       "type": "string",
-      "enum": ["agat", "interproscan", "diamond", "combined"],
+      "enum": ["agat", "interproscan", "diamond", "combined", "pairwise"],
       "description": "QC analysis to run. combined runs all available analyses."
     },
     "database": {
@@ -44,6 +44,39 @@
       "exists": true,
       "description": "Existing Diamond database file. When supplied, the reference protein FASTA is not used."
     },
+    "pairwise_csv": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "description": "Pairwise CSV with pair_id, assembly, source_a_path, source_b_path and optional format/evidence fields."
+    },
+    "pairwise_cache_dir": {
+      "type": "string",
+      "format": "directory-path",
+      "description": "Cache directory for remotely staged pairwise inputs."
+    },
+    "pairwise_end_threshold": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 50,
+      "description": "Maximum transcript-end distance in bp classified as within threshold."
+    },
+    "run_pairwise_legacy_metrics": {
+      "type": "boolean",
+      "default": true,
+      "description": "Run established gene/CDS metrics when both sources are not BED12."
+    },
+    "run_pairwise_gffcompare": {
+      "type": "boolean",
+      "default": false,
+      "description": "Run bidirectional GffCompare on convertible transcript models."
+    },
+    "run_pairwise_transcript_concordance": { "type": "boolean", "default": true },
+    "run_pairwise_coding_integrity": { "type": "boolean", "default": true },
+    "run_pairwise_gene_presence": { "type": "boolean", "default": true },
+    "run_pairwise_multi_mapping": { "type": "boolean", "default": true },
+    "run_pairwise_gff_feature_metrics": { "type": "boolean", "default": true },
+    "run_pairwise_transcript_counts": { "type": "boolean", "default": true },
     "outdir": {
       "type": "string",
       "default": "./results",
@@ -54,8 +87,21 @@
       "description": "Directory for Nextflow execution reports and trace files."
     }
   },
-  "required": ["input_csv", "mode"],
+  "required": ["mode"],
   "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "pairwise" } }, "required": ["mode"] },
+      "then": {
+        "oneOf": [
+          { "required": ["pairwise_csv"] },
+          { "required": ["input_csv"] }
+        ]
+      }
+    },
+    {
+      "if": { "properties": { "mode": { "enum": ["agat", "interproscan", "diamond", "combined"] } }, "required": ["mode"] },
+      "then": { "required": ["input_csv"] }
+    },
     {
       "if": {
         "properties": {"mode": {"enum": ["interproscan", "combined"]}},

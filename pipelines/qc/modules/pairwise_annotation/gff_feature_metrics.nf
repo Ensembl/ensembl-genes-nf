@@ -4,7 +4,7 @@ process PAIRWISE_GFF_FEATURE_METRICS {
 
     container "https://depot.galaxyproject.org/singularity/pyranges:0.1.2--pyhdfd78af_1"
 
-    publishDir "${params.outdir}/qc/pairwise_annotation",
+    publishDir { "${params.outdir}/qc/pairwise_annotation/${meta.pair_id}/gene_metrics" },
         mode: 'copy',
         pattern: "*.tsv"
 
@@ -30,11 +30,6 @@ process PAIRWISE_GFF_FEATURE_METRICS {
             --output-dir . \\
             --assembly-accession ${meta.id} \\
             --sample-name ${meta.id}
-
-        for table in feature_counts.tsv gene_metrics.tsv tx_metrics.tsv; do
-            normalise_pairwise_tsv.py --input "\$table" --output "\$table.normalised"
-            mv "\$table.normalised" "\$table"
-        done
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

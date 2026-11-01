@@ -162,3 +162,48 @@ In short: **the schema validates configuration; workflow code resolves that
 configuration into behaviour.** This keeps reusable subworkflows independent
 of pipeline-specific parameter names and prevents one universal sample sheet
 from accumulating unrelated future inputs.
+
+## Pairwise annotation QC
+
+Set `--mode pairwise` to compare reconstructed transcript models. The
+pairwise manifest accepts GFF3, GTF, or BED12 and keeps source labels generic:
+
+```csv
+pair_id,assembly,source_a,source_b,source_a_path,source_b_path,source_a_format,source_b_format,assembly_report,evidence_a,evidence_b
+pair_1,GRCh38,reference,long_read,/path/reference.gff3,/path/models.bed12,gff3,bed12,,/path/evidence_a.tsv,/path/evidence_b.tsv
+```
+
+Formats may be `gff3`, `gtf`, `bed12`, or `auto`. Evidence files are optional
+and, when supplied, must contain `transcript_id` plus any of `read_count`,
+`junction_support`, `full_length_support`, and `source_tool`.
+
+```bash
+nextflow run pipelines/qc/main.nf \
+  --mode pairwise \
+  --pairwise_csv /path/to/pairs.csv \
+  --outdir results
+```
+
+Canonical model rows retain pair/source identity, original IDs, coordinates,
+exon structure, intron chain, transcript ends, assembly, source format, and
+model status. BED12 contributes structural metrics only; gene/CDS metrics are
+recorded as `skipped` in `metric_status.tsv`. BED12-to-GTF conversion marks
+synthetic IDs as `synthetic_gene:<transcript_id>`.
+
+Pairwise outputs use:
+
+```text
+<outdir>/qc/pairwise_annotation/<pair_id>/
+├── inputs/       # staged files, conversion audits, ID maps
+├── models/       # canonical source tables
+├── structural/  # chains, ends, UTR and summaries
+├── gene_metrics/ # non-BED12 metrics
+├── gffcompare/  # optional bidirectional comparison
+├── evidence/    # optional evidence joins
+└── summary/     # metric status, disagreements and report
+```
+
+GffCompare is disabled by default. When enabled it runs both directions and
+does not hide tool failures. Pairwise tasks use pinned references for curl,
+gffread, GffCompare, and Python/PyRanges; the exact values are recorded in
+the module files.
