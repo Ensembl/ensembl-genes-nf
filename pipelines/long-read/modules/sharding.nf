@@ -110,28 +110,68 @@ process INDEX_CONTIG_SHARD {
     """
 }
 
-process COUNT_SHARD_COVERAGE {
+process COUNT_SOURCE_COVERAGE {
     label 'process_medium'
     // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
     container params.use_containers ? params.tool_containers.samtools : null
     tag "${meta.run_id}"
     input:
-    tuple val(meta), path(source_bam), path(shard_plan), path(shard_bams)
+    tuple val(meta), path(source_bam), path(shard_plan)
     output:
-    tuple val(meta), path(shard_plan), path('coverage_counts.tsv'), emit: counts
+    tuple val(meta), path(shard_plan), path('source_count.tsv'), emit: source_count
     path 'versions.yml', emit: versions
     script:
     """
-    source_count=\$(samtools view -c -F 4 ${source_bam})
-    shard_count=0
-    for shard in ${shard_bams}; do shard_count=\$((shard_count + \$(samtools view -c -F 4 "\${shard}"))); done
-    printf 'source_mapped_reads\\t%s\\nshard_mapped_reads\\t%s\\n' "\${source_count}" "\${shard_count}" > coverage_counts.tsv
+    samtools view -c -F 4 ${source_bam} > source_count.tsv
     printf '"%s":\\n    shard_coverage: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
-    printf 'source_mapped_reads\\t2\\nshard_mapped_reads\\t2\\n' > coverage_counts.tsv
+    printf '2\\n' > source_count.tsv
     printf '"%s":\\n    shard_coverage: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process COUNT_CONTIG_SHARD_COVERAGE {
+    label 'process_medium'
+    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
+    container params.use_containers ? params.tool_containers.samtools : null
+    tag "${meta.run_id}:${shard_meta.shard_id}"
+    input:
+    tuple val(meta), val(shard_meta), path(shard_bam)
+    output:
+    tuple val(meta), val(shard_meta), path(shard_bam), path('shard_count.tsv'), emit: shard_count
+    path 'versions.yml', emit: versions
+    script:
+    """
+    samtools view -c -F 4 ${shard_bam} > shard_count.tsv
+    printf '"%s":\\n    shard_coverage: pipeline\\n' '${task.process}' > versions.yml
+    """
+    stub:
+    """
+    printf '2\\n' > shard_count.tsv
+    printf '"%s":\\n    shard_coverage: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process COLLECT_SHARD_COVERAGE_COUNTS {
+    label 'process_low'
+    container params.use_containers ? params.tool_containers.python_helper : null
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), path(shard_plan), path(source_count), path(shard_counts), path(shard_bams)
+    output:
+    tuple val(meta), path(shard_plan), path(shard_bams), path('coverage_counts.tsv'), emit: counts
+    path 'versions.yml', emit: versions
+    script:
+    """
+    python3 ${projectDir}/bin/collect_shard_coverage_counts.py --source-count ${source_count} --shard-counts ${shard_counts} --output coverage_counts.tsv
+    printf '"%s":\\n    shard_coverage_counts: python\\n' '${task.process}' > versions.yml
+    """
+    stub:
+    """
+    printf 'source_mapped_reads\\t2\\nshard_mapped_reads\\t2\\n' > coverage_counts.tsv
+    printf '"%s":\\n    shard_coverage_counts: stub\\n' '${task.process}' > versions.yml
     """
 }
 

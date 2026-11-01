@@ -1,5 +1,5 @@
 include { SAMTOOLS_IDXSTATS } from '../modules/alignment.nf'
-include { INSPECT_BAM_WORKLOAD; PLAN_CONTIG_SHARDS; SPLIT_BAM_BY_CONTIG; INDEX_CONTIG_SHARD; VALIDATE_CONTIG_SHARDS; COUNT_SHARD_COVERAGE; VALIDATE_SHARD_COVERAGE } from '../modules/sharding.nf'
+include { INSPECT_BAM_WORKLOAD; PLAN_CONTIG_SHARDS; SPLIT_BAM_BY_CONTIG; INDEX_CONTIG_SHARD; VALIDATE_CONTIG_SHARDS; COUNT_SOURCE_COVERAGE; COUNT_CONTIG_SHARD_COVERAGE; COLLECT_SHARD_COVERAGE_COUNTS; VALIDATE_SHARD_COVERAGE } from '../modules/sharding.nf'
 
 workflow PREPARE_CONTIG_SHARDS {
     take:
@@ -26,12 +26,15 @@ workflow PREPARE_CONTIG_SHARDS {
         .map { meta, bam, _bai, plan, _summary, _status -> tuple(meta.run_id, meta, bam, plan) }
         .join(VALIDATE_CONTIG_SHARDS.out.validated.map { meta, _shard_meta, bam, _bai, _validation -> tuple(meta.run_id, bam) }.groupTuple(), by: 0)
         .map { _run_id, meta, source_bam, plan, shard_bams -> tuple(meta, source_bam, plan, shard_bams) }
-    COUNT_SHARD_COVERAGE(coverage_inputs)
-    coverage_counts = COUNT_SHARD_COVERAGE.out.counts
-        .map { meta, plan, counts -> tuple(meta.run_id, meta, plan, counts) }
+    COUNT_SOURCE_COVERAGE(coverage_inputs.map { meta, source_bam, plan, _shard_bams -> tuple(meta, source_bam, plan) })
+    COUNT_CONTIG_SHARD_COVERAGE(VALIDATE_CONTIG_SHARDS.out.validated.map { meta, shard_meta, bam, _bai, _validation -> tuple(meta, shard_meta, bam) })
+    coverage_counts = COUNT_SOURCE_COVERAGE.out.source_count
+        .map { meta, plan, source_count -> tuple(meta.run_id, meta, plan, source_count) }
+        .join(COUNT_CONTIG_SHARD_COVERAGE.out.shard_count.map { meta, _shard_meta, _bam, count -> tuple(meta.run_id, count) }.groupTuple(), by: 0)
         .join(VALIDATE_CONTIG_SHARDS.out.validated.map { meta, _shard_meta, bam, _bai, _validation -> tuple(meta.run_id, bam) }.groupTuple(), by: 0)
-        .map { _run_id, meta, plan, counts, shard_bams -> tuple(meta, plan, shard_bams, counts) }
-    VALIDATE_SHARD_COVERAGE(coverage_counts)
+        .map { _run_id, meta, plan, source_count, shard_counts, shard_bams -> tuple(meta, plan, source_count, shard_counts, shard_bams) }
+    COLLECT_SHARD_COVERAGE_COUNTS(coverage_counts)
+    VALIDATE_SHARD_COVERAGE(COLLECT_SHARD_COVERAGE_COUNTS.out.counts)
 
     emit:
     workload = INSPECT_BAM_WORKLOAD.out.workload
@@ -39,5 +42,5 @@ workflow PREPARE_CONTIG_SHARDS {
     summaries = PLAN_CONTIG_SHARDS.out.plan.map { meta, _bam, _bai, _plan, summary, _status -> tuple(meta, summary.readLines()[1].split('\\t')[1].toInteger()) }
     shards = VALIDATE_CONTIG_SHARDS.out.validated.map { meta, shard_meta, bam, bai, validation -> tuple(meta, shard_meta, bam, bai) }
     status = SPLIT_BAM_BY_CONTIG.out.status
-    versions = SAMTOOLS_IDXSTATS.out.versions.mix(INSPECT_BAM_WORKLOAD.out.versions).mix(PLAN_CONTIG_SHARDS.out.versions).mix(SPLIT_BAM_BY_CONTIG.out.versions).mix(INDEX_CONTIG_SHARD.out.versions).mix(VALIDATE_CONTIG_SHARDS.out.versions).mix(COUNT_SHARD_COVERAGE.out.versions).mix(VALIDATE_SHARD_COVERAGE.out.versions)
+    versions = SAMTOOLS_IDXSTATS.out.versions.mix(INSPECT_BAM_WORKLOAD.out.versions).mix(PLAN_CONTIG_SHARDS.out.versions).mix(SPLIT_BAM_BY_CONTIG.out.versions).mix(INDEX_CONTIG_SHARD.out.versions).mix(VALIDATE_CONTIG_SHARDS.out.versions).mix(COUNT_SOURCE_COVERAGE.out.versions).mix(COUNT_CONTIG_SHARD_COVERAGE.out.versions).mix(COLLECT_SHARD_COVERAGE_COUNTS.out.versions).mix(VALIDATE_SHARD_COVERAGE.out.versions)
 }
