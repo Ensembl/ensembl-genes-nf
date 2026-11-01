@@ -1,9 +1,4 @@
-include { TAMA_MERGE_ACCESSION as TAMA_MERGE_RUN; TAMA_MERGE as TAMA_MERGE_COHORT } from '../modules/merge.nf'
-include { STRINGTIE2_MERGE as STRINGTIE2_MERGE_RUN; STRINGTIE2_MERGE as STRINGTIE2_MERGE_COHORT } from '../modules/merge.nf'
-include { STRINGTIE3_MERGE as STRINGTIE3_MERGE_RUN; STRINGTIE3_MERGE as STRINGTIE3_MERGE_COHORT } from '../modules/merge.nf'
-include { TMERGE_MERGE_ACCESSION as TMERGE_MERGE_RUN; TMERGE_NATIVE_MERGE as TMERGE_MERGE_COHORT } from '../modules/merge.nf'
-include { MERGE_BACKEND_MODELS as MERGE_OTHER_RUN } from '../modules/merge_generic.nf'
-include { MERGE_BACKEND_MODELS as MERGE_OTHER_COHORT } from '../modules/merge_generic.nf'
+include { PREPARE_BACKEND_MERGE; MERGE_DIRECT_GTF; STRINGTIE2_MERGE; STRINGTIE3_MERGE; TMERGE_MERGE; EMIT_EMPTY_MERGED_GTF; WRITE_MERGE_FILELIST } from '../modules/merge.nf'
 
 workflow MERGE_LONG_READ_MODELS {
     take:
@@ -16,72 +11,65 @@ workflow MERGE_LONG_READ_MODELS {
 
     main:
     run_grouped = native_models
-            .map { meta, backend_meta, native_product, _status_report -> tuple(meta.run_id, backend_meta.backend, native_product) }
-            .groupTuple(by: [0, 1])
-            .map { run_id, backend, products -> tuple([id: run_id, run_id: run_id, cohort_id: cohort_id], backend, products) }
-            .filter { _meta, backend, _products -> scope_policy[backend].contains('run') }
+        .map { meta, backend_meta, native_product, _status_report -> tuple(meta.run_id, backend_meta.backend, native_product) }
+        .groupTuple(by: [0, 1])
+        .map { run_id, backend, products -> tuple([id: run_id, run_id: run_id, cohort_id: cohort_id], backend, products) }
+        .filter { _meta, backend, _products -> scope_policy[backend].contains('run') }
     cohort_grouped = native_models
-            .map { _meta, backend_meta, native_product, _status_report -> tuple(backend_meta.backend, native_product) }
-            .groupTuple(by: 0)
-            .map { backend, products -> tuple([id: cohort_id, cohort_id: cohort_id], backend, products) }
-            .filter { _meta, backend, _products -> scope_policy[backend].contains('cohort') }
+        .map { _meta, backend_meta, native_product, _status_report -> tuple(backend_meta.backend, native_product) }
+        .groupTuple(by: 0)
+        .map { backend, products -> tuple([id: cohort_id, cohort_id: cohort_id], backend, products) }
+        .filter { _meta, backend, _products -> scope_policy[backend].contains('cohort') }
 
-    run_others = run_grouped.filter { _meta, backend, _products -> !(backend in ['tama', 'stringtie2', 'stringtie3', 'tmerge']) }
-        .map { meta, backend, products -> tuple(meta, backend, products, 'run') }
-    cohort_others = cohort_grouped.filter { _meta, backend, _products -> !(backend in ['tama', 'stringtie2', 'stringtie3', 'tmerge']) }
-        .map { meta, backend, products -> tuple(meta, backend, products, 'cohort') }
+    merge_inputs = run_grouped
+        .map { meta, backend, products -> tuple(meta, backend, 'run', products, backend == 'tmerge' ? 'coordinates' : 'name') }
+        .mix(cohort_grouped.map { meta, backend, products -> tuple(meta, backend, 'cohort', products, backend == 'tmerge' ? 'coordinates' : 'name') })
+    PREPARE_BACKEND_MERGE(merge_inputs)
+    prepared = PREPARE_BACKEND_MERGE.out.prepared
 
-    run_tama = run_grouped.filter { _meta, backend, _products -> backend == 'tama' }
-    cohort_tama = cohort_grouped.filter { _meta, backend, _products -> backend == 'tama' }
-    run_stringtie2 = run_grouped.filter { _meta, backend, _products -> backend == 'stringtie2' }
-        .map { meta, backend, products -> tuple(meta, backend, 'run', products) }
-    cohort_stringtie2 = cohort_grouped.filter { _meta, backend, _products -> backend == 'stringtie2' }
-        .map { meta, backend, products -> tuple(meta, backend, 'cohort', products) }
-    run_stringtie3 = run_grouped.filter { _meta, backend, _products -> backend == 'stringtie3' }
-        .map { meta, backend, products -> tuple(meta, backend, 'run', products) }
-    cohort_stringtie3 = cohort_grouped.filter { _meta, backend, _products -> backend == 'stringtie3' }
-        .map { meta, backend, products -> tuple(meta, backend, 'cohort', products) }
-    run_tmerge = run_grouped.filter { _meta, backend, _products -> backend == 'tmerge' }
-    cohort_tmerge = cohort_grouped.filter { _meta, backend, _products -> backend == 'tmerge' }
+    direct_inputs = prepared
+        .filter { _meta, backend, _scope, _gtfs, _merge_input, _status, _merge_status, _skipped -> !(backend in ['stringtie2', 'stringtie3', 'tmerge']) }
+        .map { meta, backend, scope, _gtfs, merge_input, status, merge_status, skipped -> tuple(meta, backend, scope, merge_input, status, merge_status, skipped) }
+    MERGE_DIRECT_GTF(direct_inputs)
 
-    merged = channel.empty()
-    versions = channel.empty()
-    if (scope_policy.values().any { it.contains('run') }) {
-        TAMA_MERGE_RUN(run_tama)
-        STRINGTIE2_MERGE_RUN(run_stringtie2, stringtie2_merge_args)
-        STRINGTIE3_MERGE_RUN(run_stringtie3, stringtie3_merge_args)
-        TMERGE_MERGE_RUN(run_tmerge, tmerge_args)
-        MERGE_OTHER_RUN(run_others)
-        merged = merged.mix(TAMA_MERGE_RUN.out.merged)
-            .mix(STRINGTIE2_MERGE_RUN.out.merged)
-            .mix(STRINGTIE3_MERGE_RUN.out.merged)
-            .mix(TMERGE_MERGE_RUN.out.merged)
-            .mix(MERGE_OTHER_RUN.out.merged)
-        versions = versions.mix(TAMA_MERGE_RUN.out.versions)
-            .mix(STRINGTIE2_MERGE_RUN.out.versions)
-            .mix(STRINGTIE3_MERGE_RUN.out.versions)
-            .mix(TMERGE_MERGE_RUN.out.versions)
-            .mix(MERGE_OTHER_RUN.out.versions)
-    }
-    if (scope_policy.values().any { it.contains('cohort') }) {
-        TAMA_MERGE_COHORT(cohort_tama)
-        STRINGTIE2_MERGE_COHORT(cohort_stringtie2, stringtie2_merge_args)
-        STRINGTIE3_MERGE_COHORT(cohort_stringtie3, stringtie3_merge_args)
-        TMERGE_MERGE_COHORT(cohort_tmerge, tmerge_args)
-        MERGE_OTHER_COHORT(cohort_others)
-        merged = merged.mix(TAMA_MERGE_COHORT.out.merged)
-            .mix(STRINGTIE2_MERGE_COHORT.out.merged)
-            .mix(STRINGTIE3_MERGE_COHORT.out.merged)
-            .mix(TMERGE_MERGE_COHORT.out.merged)
-            .mix(MERGE_OTHER_COHORT.out.merged)
-        versions = versions.mix(TAMA_MERGE_COHORT.out.versions)
-            .mix(STRINGTIE2_MERGE_COHORT.out.versions)
-            .mix(STRINGTIE3_MERGE_COHORT.out.versions)
-            .mix(TMERGE_MERGE_COHORT.out.versions)
-            .mix(MERGE_OTHER_COHORT.out.versions)
-    }
+    stringtie2_inputs = prepared
+        .filter { _meta, backend, _scope, _gtfs, _merge_input, status, _merge_status, _skipped -> backend == 'stringtie2' && status.text.contains('COMPLETE') }
+        .map { meta, backend, scope, gtfs, merge_input, status, _merge_status, _skipped -> tuple(meta, backend, scope, gtfs, merge_input, status) }
+    STRINGTIE2_MERGE(stringtie2_inputs, stringtie2_merge_args)
+
+    stringtie3_inputs = prepared
+        .filter { _meta, backend, _scope, _gtfs, _merge_input, status, _merge_status, _skipped -> backend == 'stringtie3' && status.text.contains('COMPLETE') }
+        .map { meta, backend, scope, gtfs, merge_input, status, _merge_status, _skipped -> tuple(meta, backend, scope, gtfs, merge_input, status) }
+    STRINGTIE3_MERGE(stringtie3_inputs, stringtie3_merge_args)
+
+    tmerge_inputs = prepared
+        .filter { _meta, backend, _scope, _gtfs, _merge_input, status, _merge_status, _skipped -> backend == 'tmerge' && status.text.contains('COMPLETE') }
+        .map { meta, backend, scope, _gtfs, merge_input, status, _merge_status, _skipped -> tuple(meta, backend, scope, merge_input, status) }
+    TMERGE_MERGE(tmerge_inputs, tmerge_args)
+
+    empty_inputs = prepared
+        .filter { _meta, _backend, _scope, _gtfs, _merge_input, status, _merge_status, _skipped -> status.text.contains('EMPTY') }
+        .map { meta, backend, scope, _gtfs, merge_input, status, merge_status, skipped -> tuple(meta, backend, scope, merge_input, status, merge_status, skipped) }
+    EMIT_EMPTY_MERGED_GTF(empty_inputs)
+
+    WRITE_MERGE_FILELIST(prepared.map { meta, backend, scope, gtfs, _merge_input, status, _merge_status, _skipped -> tuple(meta, backend, scope, gtfs, status) })
+
+    merged_gtfs = MERGE_DIRECT_GTF.out.merged
+        .mix(STRINGTIE2_MERGE.out.merged)
+        .mix(STRINGTIE3_MERGE.out.merged)
+        .mix(TMERGE_MERGE.out.merged)
+        .mix(EMIT_EMPTY_MERGED_GTF.out.merged)
+    merged = merged_gtfs
+        .join(WRITE_MERGE_FILELIST.out.filelist, by: [0, 1, 2])
+        .map { meta, backend, scope, merged_gtf, filelist, checksum -> tuple(meta, backend, scope, merged_gtf, filelist, checksum) }
 
     emit:
     merged
-    versions
+    versions = PREPARE_BACKEND_MERGE.out.versions
+        .mix(MERGE_DIRECT_GTF.out.versions)
+        .mix(STRINGTIE2_MERGE.out.versions)
+        .mix(STRINGTIE3_MERGE.out.versions)
+        .mix(TMERGE_MERGE.out.versions)
+        .mix(EMIT_EMPTY_MERGED_GTF.out.versions)
+        .mix(WRITE_MERGE_FILELIST.out.versions)
 }

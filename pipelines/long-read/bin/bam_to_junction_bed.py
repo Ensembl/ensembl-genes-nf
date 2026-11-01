@@ -19,6 +19,9 @@ def main() -> None:
     source.add_argument("--bam", type=Path)
     source.add_argument("--sam", type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--status", type=Path)
+    parser.add_argument("--run-id", default="")
+    parser.add_argument("--shard-id", default="")
     args = parser.parse_args()
     if args.bam is not None:
         if shutil.which("samtools") is None:
@@ -50,6 +53,9 @@ def main() -> None:
         for (chrom, start, end, strand), support in sorted(junctions.items()):
             name = f"{chrom}:{start}-{end}"
             handle.write(f"{chrom}\t{start}\t{end}\t{name}\t{support}\t{strand}\n")
+    if args.status:
+        state = "HAS_JUNCTION" if junctions else "EMPTY"
+        args.status.write_text(f"run_id\tshard_id\tstatus\n{args.run_id}\t{args.shard_id}\t{state}\n")
 
 
 if __name__ == "__main__":

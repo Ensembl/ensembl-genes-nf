@@ -11,6 +11,7 @@ def main() -> None:
     parser.add_argument("--bed12", required=True, type=Path)
     parser.add_argument("--gtf", required=True, type=Path)
     parser.add_argument("--source", default="pipeline")
+    parser.add_argument("--allow-empty", action="store_true")
     args = parser.parse_args()
 
     records: List[Tuple[str, int, str, List[Tuple[int, int]], str]] = []
@@ -58,7 +59,7 @@ def main() -> None:
                 ]
                 handle.write("\t".join(map(str, fields)) + "\n")
 
-    if not records:
+    if not records and not args.allow_empty:
         raise SystemExit("TAMA BED12 contains no transcript records")
 
 

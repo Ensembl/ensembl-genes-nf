@@ -93,17 +93,13 @@ process SORT_FASTQ_ALIGNMENT {
     val preset
     val secondary_mode
     output:
-    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), emit: alignment
-    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), path('alignment_input'), emit: manifest_input
+    tuple val(meta), path('*.sorted.bam'), path('alignment_input'), emit: raw
     path 'versions.yml', emit: versions
     script:
     def secondary_json = secondary_mode ? 'true' : 'false'
     """
     samtools sort -o aligned.bam ${sam}
-    samtools index aligned.bam aligned.bam.bai
-    samtools quickcheck -v aligned.bam
     mv aligned.bam '${meta.run_id}.sorted.bam'
-    mv aligned.bam.bai '${meta.run_id}.sorted.bam.bai'
     cp ${sam} alignment_input
     printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
     """
@@ -126,16 +122,12 @@ process SORT_INPUT_BAM {
     tuple val(meta), path(bam)
     path reference
     output:
-    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), emit: alignment
-    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), path('alignment_input'), emit: manifest_input
+    tuple val(meta), path('*.sorted.bam'), path('alignment_input'), emit: raw
     path 'versions.yml', emit: versions
     script:
     """
     samtools sort -o aligned.bam ${bam}
-    samtools index aligned.bam aligned.bam.bai
-    samtools quickcheck -v aligned.bam
     mv aligned.bam '${meta.run_id}.sorted.bam'
-    mv aligned.bam.bai '${meta.run_id}.sorted.bam.bai'
     cp ${bam} alignment_input
     printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
     """
@@ -144,6 +136,60 @@ process SORT_INPUT_BAM {
     printf 'BAM\\n' > '${meta.run_id}.sorted.bam'
     printf 'BAI\\n' > '${meta.run_id}.sorted.bam.bai'
     touch alignment_input
+    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process INDEX_SORTED_ALIGNMENT {
+    label 'process_medium'
+    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
+    container params.use_containers ? params.tool_containers.samtools : null
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), path(sorted_bam), path(alignment_input)
+    output:
+    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), path('alignment_input'), emit: indexed
+    path 'versions.yml', emit: versions
+    script:
+    """
+    cp ${sorted_bam} indexed.sorted.bam
+    if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
+    samtools index indexed.sorted.bam
+    printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
+    """
+    stub:
+    """
+    cp ${sorted_bam} indexed.sorted.bam
+    if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
+    printf 'BAI\\n' > indexed.sorted.bam.bai
+    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process VALIDATE_SORTED_ALIGNMENT {
+    label 'process_low'
+    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
+    container params.use_containers ? params.tool_containers.samtools : null
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), path(sorted_bam), path(sorted_bai), path(alignment_input)
+    output:
+    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), emit: alignment
+    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), path('alignment_input'), emit: manifest_input
+    path 'versions.yml', emit: versions
+    script:
+    """
+    cp ${sorted_bam} validated.sorted.bam
+    cp ${sorted_bai} validated.sorted.bam.bai
+    if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
+    samtools quickcheck -v validated.sorted.bam
+    printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
+    """
+    stub:
+    """
+    cp ${sorted_bam} validated.sorted.bam
+    cp ${sorted_bai} validated.sorted.bam.bai
+    if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
     printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
     """
 }
@@ -176,7 +222,7 @@ VERSIONS
     """
 }
 
-process ALIGNMENT_QC {
+process SAMTOOLS_FLAGSTAT {
     label 'process_medium'
     // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
     container params.use_containers ? params.tool_containers.samtools : null
@@ -185,14 +231,11 @@ process ALIGNMENT_QC {
     input:
     tuple val(meta), path(bam), path(bai)
     output:
-    tuple val(meta), path('flagstat.txt'), path('idxstats.txt'), path('quickcheck.tsv'), path('alignment_summary.tsv'), emit: qc
+    tuple val(meta), path('flagstat.txt'), emit: flagstat
     path 'versions.yml', emit: versions
     script:
     """
     samtools flagstat ${bam} > flagstat.txt
-    samtools idxstats ${bam} > idxstats.txt
-    samtools quickcheck -v ${bam} && printf 'run_id\\tstatus\\n%s\\tVALID\\n' '${meta.run_id}' > quickcheck.tsv
-    printf 'run_id\\tbam\\n%s\\t%s\\n' '${meta.run_id}' '${bam}' > alignment_summary.tsv
     cat > versions.yml <<VERSIONS
 "${task.process}":
     samtools: \$(samtools --version | head -n1)
@@ -200,7 +243,30 @@ VERSIONS
     """
     stub:
     """
-    printf 'stub\\n' > flagstat.txt; printf 'chr1\\t1000\\t2\\t0\\nchr2\\t500\\t0\\t0\\n' > idxstats.txt
+    printf 'stub\\n' > flagstat.txt
+    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process SAMTOOLS_QC_SUMMARY {
+    label 'process_low'
+    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
+    container params.use_containers ? params.tool_containers.samtools : null
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), path(bam), path(bai), path(idxstats)
+    output:
+    tuple val(meta), path('quickcheck.tsv'), path('alignment_summary.tsv'), emit: qc
+    path 'versions.yml', emit: versions
+    script:
+    """
+    samtools quickcheck -v ${bam}
+    printf 'run_id\\tstatus\\n%s\\tVALID\\n' '${meta.run_id}' > quickcheck.tsv
+    printf 'run_id\\tbam\\n%s\\t%s\\n' '${meta.run_id}' '${bam}' > alignment_summary.tsv
+    printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
+    """
+    stub:
+    """
     printf 'run_id\\tstatus\\n%s\\tVALID\\n' '${meta.run_id}' > quickcheck.tsv
     printf 'run_id\\tbam\\n%s\\taligned.bam\\n' '${meta.run_id}' > alignment_summary.tsv
     printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
@@ -296,7 +362,7 @@ process VALIDATE_ALIGNMENT_REFERENCE {
     script:
     """
     python3 ${projectDir}/bin/validate_bam_reference.py --idxstats ${idxstats} --reference-dictionary ${reference_dictionary} --report reference.validation.tsv
-    printf '"%s":\\n    samtools: %s\\n    reference_validation: pipeline\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
+    printf '"%s":\\n    reference_validation: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """

@@ -1,4 +1,4 @@
-include { COLLECT_LONG_READ_EVIDENCE } from '../modules/evidence.nf'
+include { WRITE_MODEL_RECORDS; PACKAGE_LONG_READ_EVIDENCE; VERIFY_LONG_READ_EVIDENCE } from '../modules/evidence.nf'
 
 workflow COLLECT_LONG_READ_EVIDENCE_PRODUCTS {
     take:
@@ -17,9 +17,11 @@ workflow COLLECT_LONG_READ_EVIDENCE_PRODUCTS {
     manifest = normalized_manifest.map { normalized, _checksum, _input_checksums, _status -> normalized }
     alignment_files = alignment_manifests
     reference = reference_identity
-    COLLECT_LONG_READ_EVIDENCE(beds, manifest, alignment_files, reference, model_records_json, cohort_id)
+    WRITE_MODEL_RECORDS(model_records_json, cohort_id)
+    PACKAGE_LONG_READ_EVIDENCE(beds, manifest, alignment_files, reference, WRITE_MODEL_RECORDS.out.records, cohort_id)
+    VERIFY_LONG_READ_EVIDENCE(PACKAGE_LONG_READ_EVIDENCE.out.evidence, cohort_id)
 
     emit:
-    evidence = COLLECT_LONG_READ_EVIDENCE.out.evidence
-    versions = COLLECT_LONG_READ_EVIDENCE.out.versions
+    evidence = VERIFY_LONG_READ_EVIDENCE.out.evidence
+    versions = WRITE_MODEL_RECORDS.out.versions.mix(PACKAGE_LONG_READ_EVIDENCE.out.versions).mix(VERIFY_LONG_READ_EVIDENCE.out.versions)
 }

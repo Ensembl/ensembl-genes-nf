@@ -355,12 +355,26 @@ def test_gtf_to_bed12_and_validation(tmp_path: Path):
     gtf = tmp_path / "models.gtf"
     gtf.write_text('chr1\tpipeline\texon\t1\t10\t.\t+\t.\tgene_id "g"; transcript_id "tx";\nchr1\tpipeline\texon\t21\t30\t.\t+\t.\tgene_id "g"; transcript_id "tx";\n')
     bed = tmp_path / "models.bed12"
-    result = run_helper("gtf_to_bed12.py", "--gtf", str(gtf), "--bed12", str(bed), "--backend", "tama", "--scope", "run")
+    normalization_report = tmp_path / "normalization.tsv"
+    model_manifest = tmp_path / "model_manifest.json"
+    result = run_helper(
+        "gtf_to_bed12.py", "--gtf", str(gtf), "--bed12", str(bed), "--backend", "tama", "--scope", "run",
+        "--report", str(normalization_report), "--manifest", str(model_manifest),
+    )
     assert result.returncode == 0, result.stderr
+    assert "errors\t0" in normalization_report.read_text()
+    assert json.loads(model_manifest.read_text())["models"] == 1
     report = tmp_path / "validation.tsv"
-    result = run_helper("validate_bed12.py", "--bed12", str(bed), "--report", str(report))
+    validated_bed = tmp_path / "validated.bed12"
+    validated_manifest = tmp_path / "validated.manifest.json"
+    result = run_helper(
+        "validate_bed12.py", "--bed12", str(bed), "--manifest", str(model_manifest), "--report", str(report),
+        "--output-bed12", str(validated_bed), "--output-manifest", str(validated_manifest),
+    )
     assert result.returncode == 0, result.stderr
     assert "errors\t0" in report.read_text()
+    assert validated_bed.read_text() == bed.read_text()
+    assert validated_manifest.read_text() == model_manifest.read_text()
 
 
 def test_bed12_to_gtf_preserves_strand_and_exon_blocks(tmp_path: Path):
@@ -376,9 +390,11 @@ def test_bed12_to_gtf_preserves_strand_and_exon_blocks(tmp_path: Path):
 
 def test_bam_junction_extraction_excludes_non_primary_reads(tmp_path: Path):
     junctions = tmp_path / "junctions.bed"
-    result = run_helper("bam_to_junction_bed.py", "--bam", str(DATA / "reads.bam"), "--output", str(junctions))
+    status = tmp_path / "junction_status.tsv"
+    result = run_helper("bam_to_junction_bed.py", "--bam", str(DATA / "reads.bam"), "--output", str(junctions), "--status", str(status), "--run-id", "run1", "--shard-id", "shard1")
     assert result.returncode == 0, result.stderr
     assert junctions.read_text().splitlines() == ["chr1\t29\t39\tchr1:29-39\t1\t+"]
+    assert "HAS_JUNCTION" in status.read_text()
     sam_junctions = tmp_path / "sam.junctions.bed"
     sam_result = run_helper("bam_to_junction_bed.py", "--sam", str(DATA / "reads.sam"), "--output", str(sam_junctions))
     assert sam_result.returncode == 0, sam_result.stderr

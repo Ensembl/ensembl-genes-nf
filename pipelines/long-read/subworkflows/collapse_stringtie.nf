@@ -1,4 +1,4 @@
-include { STRINGTIE2_COLLAPSE; STRINGTIE3_COLLAPSE } from '../modules/models.nf'
+include { STRINGTIE2_COLLAPSE; STRINGTIE3_COLLAPSE; CLASSIFY_NATIVE_GTF as CLASSIFY_STRINGTIE2; CLASSIFY_NATIVE_GTF as CLASSIFY_STRINGTIE3; WRITE_MODEL_INPUT_CHECKSUMS as CHECKSUM_STRINGTIE2; WRITE_MODEL_INPUT_CHECKSUMS as CHECKSUM_STRINGTIE3 } from '../modules/models.nf'
 
 workflow COLLAPSE_STRINGTIE {
     take:
@@ -13,13 +13,17 @@ workflow COLLAPSE_STRINGTIE {
     stringtie3_versions = channel.empty()
     if (backends.contains('stringtie2')) {
         STRINGTIE2_COLLAPSE(shards, reference)
-        stringtie2_native_models = STRINGTIE2_COLLAPSE.out.native_models
-        stringtie2_versions = STRINGTIE2_COLLAPSE.out.versions
+        CLASSIFY_STRINGTIE2(STRINGTIE2_COLLAPSE.out.raw.map { meta, shard_meta, _bam, _bai, native_gtf -> tuple(meta, shard_meta, 'stringtie2', native_gtf) }, 'StringTie2 produced no models')
+        CHECKSUM_STRINGTIE2(STRINGTIE2_COLLAPSE.out.raw.map { meta, shard_meta, bam, bai, _gtf -> tuple(meta, shard_meta, 'stringtie2', [bam, bai]) })
+        stringtie2_native_models = CLASSIFY_STRINGTIE2.out.native_models
+        stringtie2_versions = STRINGTIE2_COLLAPSE.out.versions.mix(CLASSIFY_STRINGTIE2.out.versions).mix(CHECKSUM_STRINGTIE2.out.versions)
     }
     if (backends.contains('stringtie3')) {
         STRINGTIE3_COLLAPSE(shards, reference)
-        stringtie3_native_models = STRINGTIE3_COLLAPSE.out.native_models
-        stringtie3_versions = STRINGTIE3_COLLAPSE.out.versions
+        CLASSIFY_STRINGTIE3(STRINGTIE3_COLLAPSE.out.raw.map { meta, shard_meta, _bam, _bai, native_gtf -> tuple(meta, shard_meta, 'stringtie3', native_gtf) }, 'StringTie3 produced no models')
+        CHECKSUM_STRINGTIE3(STRINGTIE3_COLLAPSE.out.raw.map { meta, shard_meta, bam, bai, _gtf -> tuple(meta, shard_meta, 'stringtie3', [bam, bai]) })
+        stringtie3_native_models = CLASSIFY_STRINGTIE3.out.native_models
+        stringtie3_versions = STRINGTIE3_COLLAPSE.out.versions.mix(CLASSIFY_STRINGTIE3.out.versions).mix(CHECKSUM_STRINGTIE3.out.versions)
     }
 
     emit:

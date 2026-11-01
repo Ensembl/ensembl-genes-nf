@@ -16,7 +16,6 @@ process FINALIZE_RUN_MANIFEST {
     output:
     path 'run_manifest.json', emit: run_manifest
     path 'final_model_checksums.tsv', emit: checksums
-    path 'publication_checksum_verification.tsv', emit: checksum_verification
     script:
     """
     python3 ${projectDir}/bin/finalize_run_manifest.py \
@@ -26,13 +25,36 @@ process FINALIZE_RUN_MANIFEST {
         --input-checksums ${input_checksums} --preparation-status ${preparation_status} \
         --reference-fasta ${reference_fasta} --reference-identity reference_identity.json \
         --model-reports model_reports --run-manifest run_manifest.json --checksums final_model_checksums.tsv
-    python3 ${projectDir}/bin/verify_publication_checksums.py --root . --checksums final_model_checksums.tsv --report publication_checksum_verification.tsv
     """
     stub:
     """
     printf '{"pipeline":"long-read","configuration":${run_configuration},"stage_status":${stage_status},"stub":true}\\n' > run_manifest.json
     printf 'path\\tsource_path\\tsha256\\n' > final_model_checksums.tsv
+    """
+}
+
+process VERIFY_PUBLICATION_CHECKSUMS {
+    label 'process_low'
+    container params.use_containers ? params.tool_containers.python_helper : null
+    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
+    input:
+    tuple path(normalized_manifest), path(input_checksums), path(preparation_status)
+    path shard_plans, stageAs: 'shard_plans/*'
+    path model_reports, stageAs: 'model_reports/*'
+    path reference_fasta
+    path reference_identity, stageAs: 'reference_identity.json'
+    path final_checksums
+    output:
+    path 'publication_checksum_verification.tsv', emit: checksum_verification
+    path 'versions.yml', emit: versions
+    script:
+    """
+    python3 ${projectDir}/bin/verify_publication_checksums.py --root . --checksums ${final_checksums} --report publication_checksum_verification.tsv
+    """
+    stub:
+    """
     printf 'path\\tsource_path\\texpected_sha256\\tactual_sha256\\tstatus\\n# errors\\t0\\n' > publication_checksum_verification.tsv
+    printf '"%s":\\n    publication_checksum_verifier: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -44,11 +66,9 @@ process COLLECT_SOFTWARE_VERSIONS {
     output:
     path 'software_versions.yml', emit: software_versions
     script:
+    def encoded_versions = versions_text.bytes.encodeBase64().toString()
     """
-    cat > versions.input.yml <<'VERSIONS'
-${versions_text}
-VERSIONS
-    cp versions.input.yml software_versions.yml
+    python3 ${projectDir}/bin/write_text.py --base64 '${encoded_versions}' --output software_versions.yml
     """
     stub:
     """
@@ -126,18 +146,37 @@ process PREP_DIAMOND_DB {
     path proteins
     output:
     path 'reference.dmnd', emit: database
-    path 'database_identity.json', emit: identity
     path 'versions.yml', emit: versions
     script:
     """
     diamond makedb --in ${proteins} --db reference
-    sha256sum ${proteins} > database_identity.json
     printf '"%s":\\n    diamond: %s\\n' '${task.process}' "\$(diamond version | head -n1)" > versions.yml
     """
     stub:
     """
-    printf 'stub\\n' > reference.dmnd; printf '{"stub":true}\\n' > database_identity.json
+    printf 'stub\\n' > reference.dmnd
     printf '"%s":\\n    diamond: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process WRITE_DIAMOND_DATABASE_IDENTITY {
+    label 'process_low'
+    container params.use_containers ? params.tool_containers.python_helper : null
+    input:
+    path input_file
+    val label
+    output:
+    path 'database_identity.json', emit: identity
+    path 'versions.yml', emit: versions
+    script:
+    """
+    python3 ${projectDir}/bin/write_file_identity.py --input ${input_file} --label '${label}' --output database_identity.json
+    printf '"%s":\\n    database_identity: python\\n' '${task.process}' > versions.yml
+    """
+    stub:
+    """
+    printf '{"label":"%s","stub":true}\\n' '${label}' > database_identity.json
+    printf '"%s":\\n    database_identity: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -150,18 +189,15 @@ process DIAMOND_BLASTP {
     path database
     output:
     tuple val(meta), val(backend), val(scope), path('diamond.tsv'), emit: hits
-    path 'database_identity.tsv', emit: database_identity
     path 'versions.yml', emit: versions
     script:
     """
     diamond blastp --query ${orfs} --db ${database.simpleName} --out diamond.tsv --outfmt 6
-    sha256sum ${database} > database_identity.tsv
     printf '"%s":\\n    diamond: %s\\n' '${task.process}' "\$(diamond version | head -n1)" > versions.yml
     """
     stub:
     """
     printf 'query\\ttarget\\tscore\\n' > diamond.tsv
-    printf 'stub\\n' > database_identity.tsv
     printf '"%s":\\n    diamond: stub\\n' '${task.process}' > versions.yml
     """
 }

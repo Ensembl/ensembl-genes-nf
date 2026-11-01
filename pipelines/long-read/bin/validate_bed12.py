@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import shutil
 from pathlib import Path
 
 
@@ -11,6 +12,9 @@ def main() -> None:
     parser.add_argument("--bed12", required=True, type=Path)
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument("--reference-dictionary", type=Path)
+    parser.add_argument("--output-bed12", type=Path)
+    parser.add_argument("--output-manifest", type=Path)
+    parser.add_argument("--manifest", type=Path)
     args = parser.parse_args()
     contigs = {}
     if args.reference_dictionary:
@@ -50,6 +54,12 @@ def main() -> None:
             handle.write(f"error\t{error}\n")
     if errors:
         raise SystemExit("invalid BED12: " + "; ".join(errors[:3]))
+    if args.output_bed12:
+        shutil.copyfile(args.bed12, args.output_bed12)
+    if args.output_manifest:
+        if not args.manifest:
+            raise SystemExit("--manifest is required with --output-manifest")
+        shutil.copyfile(args.manifest, args.output_manifest)
 
 
 if __name__ == "__main__":

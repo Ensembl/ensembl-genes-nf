@@ -105,9 +105,7 @@ process GTF_TO_BED12 {
     path 'versions.yml', emit: versions
     script:
     """
-    python3 ${projectDir}/bin/gtf_to_bed12.py --gtf ${gtf} --bed12 models.bed12 --backend '${backend}' --scope '${scope}'
-    sha256sum models.bed12 > '${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.normalization_report.tsv'
-    printf '{"backend":"%s","scope":"%s","source":"%s"}\\n' '${backend}' '${scope}' '${gtf}' > model_manifest.json
+    python3 ${projectDir}/bin/gtf_to_bed12.py --gtf ${gtf} --bed12 models.bed12 --backend '${backend}' --scope '${scope}' --report '${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.normalization_report.tsv' --manifest model_manifest.json
     printf '"%s":\\n    gtf_to_bed12: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
@@ -156,9 +154,7 @@ process VALIDATE_LONG_READ_MODELS {
     path 'versions.yml', emit: versions
     script:
     """
-    python3 ${projectDir}/bin/validate_bed12.py --bed12 ${bed12} --report "model.${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.validation.tsv" --reference-dictionary ${reference_dictionary}
-    cp ${bed12} "model.${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.validated.bed12"
-    cp ${model_manifest} "model.${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.validated.manifest.json"
+    python3 ${projectDir}/bin/validate_bed12.py --bed12 ${bed12} --manifest ${model_manifest} --report "model.${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.validation.tsv" --reference-dictionary ${reference_dictionary} --output-bed12 "model.${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.validated.bed12" --output-manifest "model.${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.validated.manifest.json"
     printf '"%s":\\n    bed12_validator: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:

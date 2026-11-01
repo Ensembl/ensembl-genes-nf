@@ -13,7 +13,7 @@ process INSPECT_BAM_WORKLOAD {
     python3 ${projectDir}/bin/inspect_bam_workload.py --idxstats ${idxstats} --output workload.tsv
     cat > versions.yml <<VERSIONS
 "${task.process}":
-    samtools: \$(samtools --version | head -n1)
+    workload_inspector: python
 VERSIONS
     """
     stub:
@@ -61,7 +61,7 @@ process SPLIT_BAM_BY_CONTIG {
     input:
     tuple val(meta), val(shard_meta), path(bam), path(bai)
     output:
-    tuple val(meta), val(shard_meta), path('*.shard.bam'), path('*.shard.bam.bai'), emit: shards
+    tuple val(meta), val(shard_meta), path('*.shard.bam'), emit: shards
     path 'shard_status.tsv', emit: status
     path 'versions.yml', emit: versions
     script:
@@ -72,7 +72,6 @@ process SPLIT_BAM_BY_CONTIG {
     else
         samtools view -b ${bam} '${shard_meta.contig}' > "\${shard_prefix}.shard.bam"
     fi
-    samtools index "\${shard_prefix}.shard.bam" "\${shard_prefix}.shard.bam.bai"
     printf 'shard_id\\tcontig\\tstatus\\n%s\\t%s\\tEMITTED\\n' '${shard_meta.shard_id}' '${shard_meta.contig}' > shard_status.tsv
     cat > versions.yml <<VERSIONS
 "${task.process}":
@@ -81,27 +80,74 @@ VERSIONS
     """
     stub:
     """
-    printf 'BAM\\n' > '${meta.run_id}.${shard_meta.shard_id}.shard.bam'; printf 'BAI\\n' > '${meta.run_id}.${shard_meta.shard_id}.shard.bam.bai'
+    printf 'BAM\\n' > '${meta.run_id}.${shard_meta.shard_id}.shard.bam'
     printf 'shard_id\\tcontig\\tstatus\\n%s\\t%s\\tEMITTED\\n' '${shard_meta.shard_id}' '${shard_meta.contig}' > shard_status.tsv
     printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
     """
 }
 
-process VALIDATE_SHARD_COVERAGE {
-    label 'process_low'
-    publishDir "${params.outdir}/per_run", mode: 'copy', pattern: 'shard.coverage.tsv', saveAs: { filename -> "${task.tag}/shards/${filename}" }
+process INDEX_CONTIG_SHARD {
+    label 'process_medium'
+    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
+    container params.use_containers ? params.tool_containers.samtools : null
+    tag "${meta.run_id}:${shard_meta.shard_id}"
+    input:
+    tuple val(meta), val(shard_meta), path(shard_bam)
+    output:
+    tuple val(meta), val(shard_meta), path('*.shard.bam'), path('*.shard.bam.bai'), emit: indexed
+    path 'versions.yml', emit: versions
+    script:
+    """
+    cp ${shard_bam} indexed.shard.bam
+    samtools index indexed.shard.bam indexed.shard.bam.bai
+    printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
+    """
+    stub:
+    """
+    cp ${shard_bam} indexed.shard.bam
+    printf 'BAI\\n' > indexed.shard.bam.bai
+    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process COUNT_SHARD_COVERAGE {
+    label 'process_medium'
+    // audit container 'quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5'
+    container params.use_containers ? params.tool_containers.samtools : null
     tag "${meta.run_id}"
     input:
     tuple val(meta), path(source_bam), path(shard_plan), path(shard_bams)
     output:
-    path 'shard.coverage.tsv', emit: coverage
+    tuple val(meta), path(shard_plan), path('coverage_counts.tsv'), emit: counts
     path 'versions.yml', emit: versions
     script:
     """
     source_count=\$(samtools view -c -F 4 ${source_bam})
     shard_count=0
     for shard in ${shard_bams}; do shard_count=\$((shard_count + \$(samtools view -c -F 4 "\${shard}"))); done
-    python3 ${projectDir}/bin/validate_shard_coverage.py --plan ${shard_plan} --source-count \${source_count} --shard-count \${shard_count} --shard-files ${shard_bams} --report shard.coverage.tsv
+    printf 'source_mapped_reads\\t%s\\nshard_mapped_reads\\t%s\\n' "\${source_count}" "\${shard_count}" > coverage_counts.tsv
+    printf '"%s":\\n    shard_coverage: pipeline\\n' '${task.process}' > versions.yml
+    """
+    stub:
+    """
+    printf 'source_mapped_reads\\t2\\nshard_mapped_reads\\t2\\n' > coverage_counts.tsv
+    printf '"%s":\\n    shard_coverage: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process VALIDATE_SHARD_COVERAGE {
+    label 'process_low'
+    container params.use_containers ? params.tool_containers.python_helper : null
+    publishDir "${params.outdir}/per_run", mode: 'copy', pattern: 'shard.coverage.tsv', saveAs: { filename -> "${task.tag}/shards/${filename}" }
+    tag "${meta.run_id}"
+    input:
+    tuple val(meta), path(shard_plan), path(shard_bams), path(coverage_counts)
+    output:
+    path 'shard.coverage.tsv', emit: coverage
+    path 'versions.yml', emit: versions
+    script:
+    """
+    python3 ${projectDir}/bin/validate_shard_coverage.py --plan ${shard_plan} --counts ${coverage_counts} --shard-files ${shard_bams} --report shard.coverage.tsv
     printf '"%s":\\n    shard_coverage: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:

@@ -1,4 +1,4 @@
-include { BAMBU_DISCOVERY } from '../modules/optional_backends.nf'
+include { BAMBU_DISCOVERY; BAMBU_STATUS } from '../modules/optional_backends.nf'
 
 workflow RUN_BAMBU {
     take:
@@ -9,7 +9,8 @@ workflow RUN_BAMBU {
 
     main:
     BAMBU_DISCOVERY(alignment, reference, track_reads, quantify)
+    BAMBU_STATUS(BAMBU_DISCOVERY.out.raw)
     emit:
-    native_models = BAMBU_DISCOVERY.out.native_models.map { meta, backend, product, status -> tuple(meta, [backend: backend, scope: 'run', run_id_or_cohort_id: meta.run_id, shard_id_or_merged: 'merged', native_format: 'gtf', model_count: 0, status: status.text.contains('EMPTY') ? 'EMPTY' : 'SUCCESS'], product, status) }
-    versions = BAMBU_DISCOVERY.out.versions
+    native_models = BAMBU_STATUS.out.native_models.map { meta, backend, product, status -> tuple(meta, [backend: backend, scope: 'run', run_id_or_cohort_id: meta.run_id, shard_id_or_merged: 'merged', native_format: 'gtf', model_count: 0, status: status.text.contains('EMPTY') ? 'EMPTY' : 'SUCCESS'], product, status) }
+    versions = BAMBU_DISCOVERY.out.versions.mix(BAMBU_STATUS.out.versions)
 }

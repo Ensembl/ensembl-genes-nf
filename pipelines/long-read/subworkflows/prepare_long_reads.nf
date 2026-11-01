@@ -1,4 +1,4 @@
-include { VALIDATE_INPUT_MANIFEST; FINALIZE_PREPARED_MANIFEST; VALIDATE_FASTQ; AUDIT_FASTQ; VALIDATE_BAM_INPUT; STAGE_VALIDATED_INPUT; STAGE_VALIDATED_FASTQ; DISCOVER_LONG_READ_DATA; RESOLVE_LONG_READ_METADATA; ACQUIRE_FASTQ; ACQUIRE_BAM; RUN_PBCCS; BAM_TO_FASTQ } from '../modules/preparation.nf'
+include { VALIDATE_INPUT_MANIFEST; FINALIZE_PREPARED_MANIFEST; VALIDATE_FASTQ; AUDIT_FASTQ; VALIDATE_BAM_INPUT; STAGE_VALIDATED_INPUT; STAGE_VALIDATED_FASTQ; DISCOVER_LONG_READ_DATA; RESOLVE_LONG_READ_METADATA; ACQUIRE_FASTQ; ACQUIRE_BAM; RUN_PBCCS; INDEX_PBCCS; BAM_TO_FASTQ } from '../modules/preparation.nf'
 
 workflow PREPARE_LONG_READS {
     take:
@@ -58,6 +58,7 @@ workflow PREPARE_LONG_READS {
         .filter { meta, _bam, _bai, _status -> meta.read_representation == 'raw_subreads' && ccs_mode == 'pbccs' }
         .map { meta, bam, bai, _status -> tuple(meta, bam, bai) }
     RUN_PBCCS(ccs_runs)
+    INDEX_PBCCS(RUN_PBCCS.out.ccs)
     validated_bam = preparation_stages.contains('bam_to_fastq')
         ? channel.empty()
         : VALIDATE_BAM_INPUT.out.bam.filter { meta, _bam, _bai, _status -> meta.read_representation == 'bam' }
@@ -65,7 +66,7 @@ workflow PREPARE_LONG_READS {
     validated_ccs = preparation_stages.contains('bam_to_fastq')
         ? channel.empty()
         : ccs_mode == 'pbccs'
-            ? RUN_PBCCS.out.ccs.map { meta, bam, _pbi -> tuple(meta, bam) }
+            ? INDEX_PBCCS.out.ccs.map { meta, bam, _pbi -> tuple(meta, bam) }
             : VALIDATE_BAM_INPUT.out.bam.filter { meta, _bam, _bai, _status -> meta.read_representation == 'ccs' }
                 .map { meta, bam, _bai, _status -> tuple(meta, bam) }
     STAGE_VALIDATED_INPUT(validated_bam.mix(validated_ccs))
@@ -84,6 +85,7 @@ workflow PREPARE_LONG_READS {
         .mix(VALIDATE_FASTQ.out.versions)
         .mix(AUDIT_FASTQ.out.versions)
         .mix(RUN_PBCCS.out.versions)
+        .mix(INDEX_PBCCS.out.versions)
         .mix(STAGE_VALIDATED_FASTQ.out.versions)
         .mix(STAGE_VALIDATED_INPUT.out.versions)
     if (preparation_stages.contains('discover')) versions = versions.mix(DISCOVER_LONG_READ_DATA.out.versions)

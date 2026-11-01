@@ -1,4 +1,4 @@
-include { EXTRACT_COMBINED_TRANSCRIPTS; PREDICT_LONGEST_ATG_ORFS; PUBLISH_ORF_PRODUCTS; PREP_DIAMOND_DB; DIAMOND_BLASTP; REPORT_COMBINED_DIAMOND_MODELS; COMPARE_CANDIDATE_MODELS } from '../modules/finalization.nf'
+include { EXTRACT_COMBINED_TRANSCRIPTS; PREDICT_LONGEST_ATG_ORFS; PUBLISH_ORF_PRODUCTS; PREP_DIAMOND_DB; WRITE_DIAMOND_DATABASE_IDENTITY as WRITE_PROTEIN_IDENTITY; WRITE_DIAMOND_DATABASE_IDENTITY as WRITE_DATABASE_IDENTITY; DIAMOND_BLASTP; REPORT_COMBINED_DIAMOND_MODELS; COMPARE_CANDIDATE_MODELS } from '../modules/finalization.nf'
 
 workflow RUN_DIAMOND_QC {
     take:
@@ -27,10 +27,12 @@ workflow RUN_DIAMOND_QC {
     } else if (diamond_enabled) {
         PREP_DIAMOND_DB(reference_proteins)
         database = PREP_DIAMOND_DB.out.database
-        database_versions = PREP_DIAMOND_DB.out.versions
+        WRITE_PROTEIN_IDENTITY(reference_proteins, 'reference_proteins')
+        database_versions = PREP_DIAMOND_DB.out.versions.mix(WRITE_PROTEIN_IDENTITY.out.versions)
     }
     if (diamond_enabled) {
         DIAMOND_BLASTP(PREDICT_LONGEST_ATG_ORFS.out.orfs, database)
+        WRITE_DATABASE_IDENTITY(database, 'diamond_database')
         REPORT_COMBINED_DIAMOND_MODELS(DIAMOND_BLASTP.out.hits)
         comparison_inputs = validated_models
             .map { meta, backend, scope, bed12, _manifest, _validation -> tuple(meta.run_id ?: meta.cohort_id ?: meta.id, backend, scope, meta, bed12) }
@@ -39,7 +41,7 @@ workflow RUN_DIAMOND_QC {
         COMPARE_CANDIDATE_MODELS(comparison_inputs)
         diamond_reports = REPORT_COMBINED_DIAMOND_MODELS.out.report
         comparisons = COMPARE_CANDIDATE_MODELS.out.comparison
-        diamond_versions = DIAMOND_BLASTP.out.versions.mix(REPORT_COMBINED_DIAMOND_MODELS.out.versions).mix(COMPARE_CANDIDATE_MODELS.out.versions)
+        diamond_versions = DIAMOND_BLASTP.out.versions.mix(WRITE_DATABASE_IDENTITY.out.versions).mix(REPORT_COMBINED_DIAMOND_MODELS.out.versions).mix(COMPARE_CANDIDATE_MODELS.out.versions)
     }
     emit:
     report = diamond_reports.mix(comparisons)

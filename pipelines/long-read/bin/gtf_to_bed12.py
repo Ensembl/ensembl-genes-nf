@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
+import json
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -17,6 +19,8 @@ def main() -> None:
     parser.add_argument("--bed12", required=True, type=Path)
     parser.add_argument("--backend", required=True)
     parser.add_argument("--scope", required=True)
+    parser.add_argument("--report", type=Path)
+    parser.add_argument("--manifest", type=Path)
     args = parser.parse_args()
     transcripts = defaultdict(list)
     with args.gtf.open() as handle:
@@ -37,6 +41,7 @@ def main() -> None:
     if not transcripts:
         if any(line.startswith("# EMPTY") for line in args.gtf.read_text().splitlines()):
             args.bed12.touch()
+            write_auxiliary_outputs(args, 0)
             return
         raise SystemExit("GTF contains no exon records")
     with args.bed12.open("w", newline="") as handle:
@@ -48,6 +53,15 @@ def main() -> None:
             starts = ",".join(str(start - chrom_start) for start, _end in exons) + ","
             name = f"{args.backend}.{args.scope}.model_{index:06d}.{tid}"
             writer.writerow([chrom, chrom_start, chrom_end, name, 0, strand, chrom_start, chrom_end, 0, len(exons), sizes, starts])
+    write_auxiliary_outputs(args, len(transcripts))
+
+
+def write_auxiliary_outputs(args: argparse.Namespace, model_count: int) -> None:
+    if args.report:
+        checksum = hashlib.sha256(args.bed12.read_bytes()).hexdigest()
+        args.report.write_text(f"metric\tvalue\nmodels\t{model_count}\nerrors\t0\nsha256\t{checksum}\n")
+    if args.manifest:
+        args.manifest.write_text(json.dumps({"backend": args.backend, "scope": args.scope, "source": str(args.gtf), "models": model_count}, sort_keys=True) + "\n")
 
 
 if __name__ == "__main__":

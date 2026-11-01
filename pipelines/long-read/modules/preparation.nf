@@ -267,16 +267,38 @@ process RUN_PBCCS {
     input:
     tuple val(meta), path(subreads), path(subreads_index)
     output:
-    tuple val(meta), path('ccs.bam'), path('ccs.bam.pbi'), emit: ccs
+    tuple val(meta), path('ccs.bam'), emit: ccs
     path 'versions.yml', emit: versions
     script:
     """
     ccs ${subreads} ccs.bam
-    pbindex ccs.bam
     cat > versions.yml <<VERSIONS
 "${task.process}":
     ccs: \$(ccs --version 2>&1 | head -n1)
 VERSIONS
+    """
+}
+
+process INDEX_PBCCS {
+    label 'process_medium'
+    // audit container 'quay.io/biocontainers/pbccs@sha256:6876708af8f1bd3af45740d86fa2f0479bea48e72bc97118240cb9f4fbd5e13b'
+    container params.use_containers ? params.tool_containers.pbccs : null
+    tag "${meta.id}"
+    input:
+    tuple val(meta), path(ccs_bam)
+    output:
+    tuple val(meta), path('ccs.bam'), path('ccs.bam.pbi'), emit: ccs
+    path 'versions.yml', emit: versions
+    script:
+    """
+    pbindex ${ccs_bam}
+    printf '"%s":\\n    pbindex: pinned-runtime\\n' '${task.process}' > versions.yml
+    """
+    stub:
+    """
+    cp ${ccs_bam} ccs.bam
+    touch ccs.bam.pbi
+    printf '"%s":\\n    pbindex: stub\\n' '${task.process}' > versions.yml
     """
 }
 
