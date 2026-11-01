@@ -1,6 +1,10 @@
 #!/usr/bin/env Rscript
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 5) stop("usage: run_bambu.R <input-bam> <reference-fasta> <output-gtf> <output-rds> <output-assignments.tsv> [track-reads] [quantify]")
+script_args <- commandArgs(trailingOnly = FALSE)
+script_file <- sub("^--file=", "", script_args[grepl("^--file=", script_args)])
+if (length(script_file) != 1) stop("run_bambu.R must be executed as an R script")
+source(file.path(dirname(normalizePath(script_file)), "serialize_bambu_assignments.R"))
 suppressPackageStartupMessages(library(bambu))
 bam <- normalizePath(args[[1]], mustWork = TRUE)
 reference <- normalizePath(args[[2]], mustWork = TRUE)
@@ -78,10 +82,5 @@ if (quantify) {
 assignments <- NULL
 if (quantify && track_reads && "readToTranscriptMaps" %in% names(S4Vectors::metadata(result)))
     assignments <- S4Vectors::metadata(result)$readToTranscriptMaps
-if (is.null(assignments)) {
-    writeLines("read\\ttranscript", output_assignments)
-} else {
-    if (is.list(assignments)) assignments <- do.call(rbind, lapply(assignments, as.data.frame))
-    utils::write.table(assignments, output_assignments, sep = "\\t", quote = FALSE, row.names = FALSE)
-}
+write_bambu_assignments(assignments, output_assignments)
 write_manifest()

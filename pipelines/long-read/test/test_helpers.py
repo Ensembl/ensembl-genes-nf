@@ -4,6 +4,7 @@ import csv
 import gzip
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -293,6 +294,25 @@ def test_container_smoke_builds_docker_argv():
     )
     assert argv[:5] == ["docker", "run", "--rm", "--platform", "linux/amd64"]
     assert argv[-3:] == ["sh", "-lc", "tool --version"]
+
+
+def test_bambu_assignment_serializer_flattens_list_columns(tmp_path: Path):
+    rscript = shutil.which("Rscript")
+    if not rscript:
+        return
+    helper = (BIN / "serialize_bambu_assignments.R").as_posix()
+    output = (tmp_path / "assignments.tsv").as_posix()
+    expression = (
+        f'source("{helper}"); '
+        'assignments <- data.frame(read=c("read1", "read2"), stringsAsFactors=FALSE); '
+        'assignments$transcript <- I(list(c("tx1", "tx2"), character(0))); '
+        f'write_bambu_assignments(assignments, "{output}")'
+    )
+    result = subprocess.run([rscript, "--vanilla", "-e", expression], text=True, capture_output=True)
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "assignments.tsv").read_text().splitlines() == [
+        "read\ttranscript", "read1\ttx1,tx2", "read2\t"
+    ]
 
 
 def test_bambu_manifest_records_content_checksums(tmp_path: Path):
