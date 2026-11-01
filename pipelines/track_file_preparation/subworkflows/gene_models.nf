@@ -4,6 +4,7 @@ include { GENEPRED_TO_BED12 } from '../modules/genepred_to_bed12.nf'
 include { SORT_GENE_MODELS } from '../modules/sort_bed12.nf'
 include { BED12_TO_BIGBED } from '../modules/bed12_to_bigbed.nf'
 include { VALIDATE_GENE_BIGBED } from '../modules/validate_gene_bigbed.nf'
+include { SCALLOP } from '../modules/scallop.nf'
 include { CHECKSUM_TRACK } from '../../../modules/track/checksum_track.nf'
 include { WRITE_TRACK_RECORD } from '../modules/write_track_record.nf'
 
@@ -27,4 +28,17 @@ workflow PREPARE_GENE_MODEL_TRACKS {
     emit:
     results = records.results
     versions = checksummed.versions.mix(records.versions)
+}
+
+workflow PREPARE_SCALLOP_GENE_MODEL_TRACKS {
+    take:
+    scallop_entities // tuple [meta, bam, bai, chrom_sizes]
+
+    main:
+    assembled = SCALLOP(scallop_entities)
+    prepared = PREPARE_GENE_MODEL_TRACKS(assembled.gtf)
+
+    emit:
+    results = prepared.results
+    versions = assembled.versions.mix(prepared.versions)
 }

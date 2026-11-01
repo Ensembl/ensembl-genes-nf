@@ -6,6 +6,7 @@ include { STAGE_LTS_INPUTS } from './subworkflows/stage_lts_inputs.nf'
 include { PREPARE_COVERAGE_TRACKS } from './subworkflows/coverage.nf'
 include { INDEX_BAM } from './modules/index_bam.nf'
 include { PREPARE_GENE_MODEL_TRACKS } from './subworkflows/gene_models.nf'
+include { PREPARE_SCALLOP_GENE_MODEL_TRACKS } from './subworkflows/gene_models.nf'
 include { PREPARE_SPLICE_TRACKS } from './subworkflows/splice.nf'
 include { ASSEMBLE_TRACK_SETS } from './subworkflows/reporting.nf'
 
@@ -68,6 +69,10 @@ def derive_junctions_enabled() {
     params.derive_junctions == true || params.derive_junctions?.toString()?.toBoolean()
 }
 
+def scallop_gene_models_enabled() {
+    params.gene_model_source?.toString() == 'scallop'
+}
+
 def manifest_entities(manifest, base_dir, override) {
     def manifest_file = new File(manifest.toString()).getAbsoluteFile()
     def manifest_base = base_dir ?: manifest_file.getParentFile()
@@ -101,8 +106,11 @@ def manifest_entities(manifest, base_dir, override) {
         def selected = override ? parse_track_selection(override) : parse_track_selection(row.track_types)
         if (derive_junctions_enabled() && 'splice_junction' in selected)
             error "BAM-derived splice junctions cannot satisfy the nine-column output contract (separate unique/multimapping counts and splice motif); provide STAR SJ.out.tab for ${row.entity_id}"
-        def bam = resolve_manifest_path(row.bam, manifest_base, 'coverage' in selected || derive_junctions_enabled(), row_number + 2)
-        def gtf = resolve_manifest_path(row.gtf, manifest_base, 'gene_model' in selected, row_number + 2)
+        def bam_required = 'coverage' in selected || derive_junctions_enabled() ||
+            ('gene_model' in selected && scallop_gene_models_enabled())
+        def bam = resolve_manifest_path(row.bam, manifest_base, bam_required, row_number + 2)
+        def gtf_required = 'gene_model' in selected && !scallop_gene_models_enabled()
+        def gtf = resolve_manifest_path(row.gtf, manifest_base, gtf_required, row_number + 2)
         def sj = resolve_manifest_path(row.sj_out_tab, manifest_base, 'splice_junction' in selected && !derive_junctions_enabled(), row_number + 2)
         def supplied_bai = resolve_manifest_path(row.bai, manifest_base, false, row_number + 2)
         def bai = resolve_current_bam_index(bam, supplied_bai, row.entity_id)
@@ -112,7 +120,9 @@ def manifest_entities(manifest, base_dir, override) {
                     sample_id: row.sample_id ?: '', track_types: selected,
                     coverage_bin_size: params.coverage_bin_size,
                     coverage_normalization: params.coverage_normalization,
-                    derive_junctions: derive_junctions_enabled(), contains_lts_path: contains_lts_path]
+                    derive_junctions: derive_junctions_enabled(), contains_lts_path: contains_lts_path,
+                    gene_model_source: params.gene_model_source,
+                    scallop_library_type: params.scallop_library_type]
         records << tuple(meta, bam, gtf, sj, bai)
     }
     records
@@ -155,14 +165,18 @@ workflow {
 
     bam_index_entities = entities
         .filter { meta, bam, _gtf, _sj, bai ->
-            bam && !bai && ('coverage' in meta.track_types || (meta.derive_junctions && 'splice_junction' in meta.track_types))
+            bam && !bai && ('coverage' in meta.track_types ||
+                (meta.derive_junctions && 'splice_junction' in meta.track_types) ||
+                ('gene_model' in meta.track_types && meta.gene_model_source == 'scallop'))
         }
         .map { meta, bam, _gtf, _sj, _bai -> tuple(meta, bam) }
     generated_indexes = INDEX_BAM(bam_index_entities)
 
     supplied_index_entities = entities
         .filter { meta, bam, _gtf, _sj, bai ->
-            bam && bai && ('coverage' in meta.track_types || (meta.derive_junctions && 'splice_junction' in meta.track_types))
+            bam && bai && ('coverage' in meta.track_types ||
+                (meta.derive_junctions && 'splice_junction' in meta.track_types) ||
+                ('gene_model' in meta.track_types && meta.gene_model_source == 'scallop'))
         }
         .map { meta, bam, _gtf, _sj, bai -> tuple(meta, bam, bai) }
     indexed_entities = supplied_index_entities.mix(generated_indexes.indexed)
@@ -172,8 +186,17 @@ workflow {
         .map { meta, bam, bai -> tuple("${meta.gca_accession}\t${meta.id}", meta, bam, bai) }
         .join(entity_reference_sizes)
         .map { _key, meta, bam, bai, compatible_chrom_sizes -> tuple(meta, bam, bai, compatible_chrom_sizes) }
-    gene_entities = entities.filter { meta, _bam, _gtf, _sj, _bai -> 'gene_model' in meta.track_types }
+    gene_entities = entities.filter { meta, _bam, _gtf, _sj, _bai ->
+        'gene_model' in meta.track_types && meta.gene_model_source == 'manifest'
+    }
         .map { meta, _bam, gtf, _sj, _bai -> tuple(meta, gtf, chrom_sizes) }
+    scallop_entities = indexed_entities
+        .filter { meta, _bam, _bai ->
+            'gene_model' in meta.track_types && meta.gene_model_source == 'scallop'
+        }
+        .map { meta, bam, bai -> tuple("${meta.gca_accession}\t${meta.id}", meta, bam, bai) }
+        .join(entity_reference_sizes)
+        .map { _key, meta, bam, bai, compatible_chrom_sizes -> tuple(meta, bam, bai, compatible_chrom_sizes) }
     splice_entities = entities.filter { meta, _bam, _gtf, _sj, _bai -> 'splice_junction' in meta.track_types }
         .map { meta, bam, _gtf, sj, _bai -> tuple("${meta.gca_accession}\t${meta.id}", meta, derive_junctions_enabled() ? bam : sj, bam ?: sj) }
         .join(entity_reference_sizes)
@@ -181,16 +204,19 @@ workflow {
 
     coverage = PREPARE_COVERAGE_TRACKS(coverage_entities)
     genes = PREPARE_GENE_MODEL_TRACKS(gene_entities)
+    scallop_genes = PREPARE_SCALLOP_GENE_MODEL_TRACKS(scallop_entities)
     splice = PREPARE_SPLICE_TRACKS(splice_entities)
 
     result_channels = coverage.results.map { _meta, _artifact, result, _provenance, _exception -> result }
         .mix(genes.results.map { _meta, _artifact, result, _provenance, _exception -> result })
+        .mix(scallop_genes.results.map { _meta, _artifact, result, _provenance, _exception -> result })
         .mix(splice.results.map { _meta, _artifact, result, _provenance, _exception -> result })
     version_channels = PREFLIGHT_TRACK_INPUTS.out.versions
         .mix(STAGE_LTS_INPUTS.out.versions)
         .mix(coverage.versions)
         .mix(generated_indexes.versions)
         .mix(genes.versions)
+        .mix(scallop_genes.versions)
         .mix(splice.versions)
     ASSEMBLE_TRACK_SETS(result_channels, version_channels,
         file("${workflow.launchDir}/pipelines/track_file_preparation/bin/assemble_track_reports.py", checkIfExists: true))

@@ -38,6 +38,8 @@ The implemented generator accepts one layout per invocation:
 --base-dir <directory>
 --entity <optional run accession or directory below base-dir>
 --track-types <comma-delimited tracks>
+--gene-model-source manifest|scallop
+--output-manifest <single manifest> | --output-dir <per-GCA directory>
 ```
 
 `main` discovers BAM/SJ files under `rnaseq/output` or `rnaseq/outputs` and
@@ -46,12 +48,19 @@ files under `star_output` and matching GTFs under `scallop_output`. Both default
 to coverage, gene-model, and splice-junction tracks.
 
 `gdm` accepts either one species/taxon directory or the entire `gdm_data`
-directory. It recursively discovers accession-named STAR BAMs beneath
-`alignment/`, matches adjacent SJ files, and infers GCA from a canonical GCA
-path component or a species directory such as
-`sus_scrofa_gca000003025v6`. Its default tracks are coverage and
-splice-junction because manifests are run-level; tissue GTFs are intentionally
-out of scope.
+directory. It reads the authoritative `report.csv`/`readme.csv` inventories,
+resolves `assembly_accession`, `run_accession`, `bam_file`, and
+`splice_junction_file`, and emits one run row per assembly. Its default tracks
+remain coverage and splice-junction for backwards compatibility. Set
+`--gene-model-source scallop --track-types coverage,gene_model,splice_junction`
+to make the manifest require BAMs for the run-level Scallop stage while leaving
+the GTF column empty.
+
+With `--output-dir`, the generator writes one `GCA_*/run_manifest.tsv` and its
+audit, exceptions, and summary files per assembly, plus a top-level
+`gdm_manifest_index.tsv`. This is the recommended mode for the whole backlog,
+because the track-preparation pipeline takes one assembly-specific
+`chrom.sizes` file per invocation.
 
 For repeated GDM run IDs within one assembly, the default
 `--gdm-duplicate-policy newest` selects the unique candidate with the latest
@@ -223,7 +232,9 @@ No unresolved row enters the production manifest.
 ## Track dependencies
 
 - `coverage` requires BAM; an absent index is valid because Nextflow creates it.
-- `gene_model` requires GTF.
+- `gene_model` requires GTF when `--gene-model-source manifest` is selected;
+  with `--gene-model-source scallop`, it requires BAM and the pipeline creates
+  the GTF before entering the existing GTF-to-BigBed chain.
 - `splice_junction` requires STAR SJ input. The current BAM derivation path
   cannot provide separate unique/multimapping read counts and motif values for
   the declared nine-column output contract.
@@ -256,9 +267,10 @@ Exception classes should include:
 
 ```text
 unreadable_root
+unreadable_directory
 missing_bam
 missing_gtf
-missing_sj
+missing_splice_junction
 ambiguous_match
 duplicate_entity
 assembly_mismatch

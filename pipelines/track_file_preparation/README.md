@@ -20,8 +20,9 @@ unique and multimapping counts plus the splice motif. Supply the matching STAR
 
 Run-level manifests can be discovered with the standalone generator. `main`
 and `anno` default to all three tracks; `gdm` defaults to coverage and
-splice-junction because GDM input is handled at run level and tissue GTFs are
-out of scope.
+splice-junction for backwards compatibility. For the backlog, run-level GTFs
+can be generated with Scallop and then use the same gene-model BigBed chain as
+supplied GTFs; see `TRACK_SCHEMAS.md`.
 
 ```bash
 python3 pipelines/track_file_preparation/bin/generate_manifest.py \
@@ -33,15 +34,20 @@ python3 pipelines/track_file_preparation/bin/generate_manifest.py \
   --mode gdm \
   --base-dir /lts/production/fergal/genebuild/gdm_data \
   --gdm-duplicate-policy newest \
-  --output-manifest /path/to/manifests/gdm_runs.tsv
+  --gene-model-source scallop \
+  --track-types coverage,gene_model,splice_junction \
+  --output-dir /hps/nobackup/flicek/ensembl/genebuild/jackt/expression_tracks/gdm_manifests \
+  --no-strict
 ```
 
-`gdm` searches for accession-named STAR BAMs below `alignment/` and matches
-their adjacent SJ files. Its base can be a single species/taxon directory or
-the whole `gdm_data` tree; GCA accessions are read from canonical GCA path
-components or species directory names such as `sus_scrofa_gca000003025v6`. For
-a multi-species root, omit `--assembly-release` so each row defaults to its own
-GCA release.
+`gdm` reads the authoritative `report.csv`/`readme.csv` inventories throughout
+the base directory and resolves their `assembly_accession`, `run_accession`,
+`bam_file`, and `splice_junction_file` columns. Its base can be a single
+species/taxon directory or the whole `gdm_data` tree. `--output-dir` writes one
+`<GCA>/run_manifest.tsv` plus audit, exception, and summary files per assembly,
+and `gdm_manifest_index.tsv` provides the complete inventory. Use
+`--no-strict` only when you want accessible assemblies published while keeping
+permission or missing-file exceptions visible in the diagnostics.
 GDM manifests contain run entities only. Tissue GTFs are intentionally not
 processed by this workflow.
 

@@ -25,7 +25,7 @@ AUDIT_FIELDS = [
     "source_id", "source_type", "entity_id", "entity_type", "gca_accession", "source_path",
     "bam", "bai", "gtf", "sj_out_tab", "matching_rule", "status", "warning",
 ]
-EXCEPTION_FIELDS = ["source_id", "source_type", "entity_id", "exception_class", "path", "detail"]
+EXCEPTION_FIELDS = ["source_id", "source_type", "entity_id", "gca_accession", "exception_class", "path", "detail"]
 GCA_RE = re.compile(r"GCA_[0-9]+\.[0-9]+")
 RUN_RE = re.compile(r"(?:ERR|SRR|DRR)[0-9]+")
 BAM_SUFFIX = "_Aligned.sortedByCoord.out.bam"
@@ -35,6 +35,7 @@ GTF_SUFFIXES = (
     ".stringtie.gtf",
     ".gtf",
 )
+GDM_IGNORED_ROOTS = {"cache", "ncbi_dataset", "nfs", "pipeline_info"}
 
 
 def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
@@ -47,11 +48,16 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     parser.add_argument("--assembly-release", help="Assembly release; defaults to --gca")
     parser.add_argument("--gdm-duplicate-policy", choices=("error", "newest"), default="newest",
                         help="How to resolve repeated GDM run BAMs (default: newest unique mtime within assembly)")
+    parser.add_argument("--gene-model-source", choices=("manifest", "scallop"), default="manifest",
+                        help="Use manifest GTFs or create run-level GTFs with Scallop")
     parser.add_argument(
         "--track-types",
-        help="Comma-delimited tracks; defaults to all for main/anno and coverage,splice_junction for gdm",
+        help="Comma-delimited tracks; defaults to all for main/anno, or coverage+splice_junction for gdm (all three with --gene-model-source scallop)",
     )
-    parser.add_argument("--output-manifest", type=Path, required=True)
+    output = parser.add_mutually_exclusive_group(required=True)
+    output.add_argument("--output-manifest", type=Path)
+    output.add_argument("--output-dir", type=Path,
+                        help="Write one manifest and diagnostics per GCA under this directory")
     parser.add_argument("--output-audit", type=Path)
     parser.add_argument("--output-exceptions", type=Path)
     parser.add_argument("--output-summary", type=Path)
@@ -61,13 +67,17 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
-def normalise_tracks(raw: Optional[str], mode: str) -> List[str]:
+def normalise_tracks(raw: Optional[str], mode: str, gene_model_source: str = "manifest") -> List[str]:
     if raw is None or not raw.strip():
-        raw = "coverage,splice_junction" if mode == "gdm" else "all"
+        raw = ("coverage,gene_model,splice_junction"
+               if mode == "gdm" and gene_model_source == "scallop"
+               else ("coverage,splice_junction" if mode == "gdm" else "all"))
     selected = [part.strip() for part in raw.split(",") if part.strip()]
     if not selected:
         selected = (
-            ["coverage", "splice_junction"]
+            (["coverage", "gene_model", "splice_junction"]
+             if mode == "gdm" and gene_model_source == "scallop"
+             else ["coverage", "splice_junction"])
             if mode == "gdm"
             else ["coverage", "gene_model", "splice_junction"]
         )
@@ -219,8 +229,10 @@ def collapse_gdm_candidates(args: argparse.Namespace, candidates: Sequence[Path]
 
 def make_row(args: argparse.Namespace, bam: Optional[Path], gtf: Optional[Path], sj: Optional[Path],
              bai: Optional[Path], run_id: str, gca: str) -> Dict[str, str]:
-    tracks = normalise_tracks(args.track_types, args.mode)
-    required = {"coverage": bam, "gene_model": gtf, "splice_junction": sj}
+    tracks = normalise_tracks(args.track_types, args.mode, args.gene_model_source)
+    required = {"coverage": bam,
+                "gene_model": True if args.gene_model_source == "scallop" else gtf,
+                "splice_junction": sj}
     missing = [name for name in tracks if required[name] is None]
     if missing:
         raise ValueError("missing required " + ", ".join(missing))
@@ -238,8 +250,184 @@ def make_row(args: argparse.Namespace, bam: Optional[Path], gtf: Optional[Path],
     return values
 
 
+def gdm_inventory_files(base: Path) -> Tuple[List[Path], List[Dict[str, str]]]:
+    """Find GDM report/readme inventories while retaining permission failures."""
+    files: List[Path] = []
+    exceptions: List[Dict[str, str]] = []
+
+    def onerror(error: OSError) -> None:
+        exceptions.append({
+            "source_id": base.name,
+            "source_type": "gdm_inventory",
+            "entity_id": "",
+            "gca_accession": "",
+            "exception_class": "unreadable_directory",
+            "path": str(error.filename or base),
+            "detail": str(error),
+        })
+
+    for root, directories, names in os.walk(base, onerror=onerror):
+        directories[:] = sorted(name for name in directories if name not in GDM_IGNORED_ROOTS)
+        for name in sorted(names):
+            if name in {"readme.csv", "report.csv"}:
+                files.append(Path(root) / name)
+    return sorted(files), exceptions
+
+
+def gdm_species_root(inventory: Path, base: Path) -> Path:
+    for parent in (inventory.parent, *inventory.parents):
+        if re.search(r"(?i)_gca[0-9]+v[0-9]+$", parent.name):
+            return parent
+        if parent == base:
+            break
+    return inventory.parent
+
+
+def resolve_gdm_inventory_path(raw: str, inventory: Path, base: Path) -> Optional[Path]:
+    if not raw or not raw.strip():
+        return None
+    candidate = Path(raw)
+    if candidate.is_absolute():
+        return candidate if candidate.is_file() else None
+    species_root = gdm_species_root(inventory, base)
+    candidates = [species_root / candidate, inventory.parent / candidate, base / candidate]
+    for path in candidates:
+        if path.is_file():
+            return path
+    return None
+
+
+def gdm_exception(args: argparse.Namespace, inventory: Path, entity_id: str,
+                  gca: str, exception_class: str, detail: str, path: Optional[Path] = None) -> Dict[str, str]:
+    return {
+        "source_id": inventory.parent.name,
+        "source_type": "gdm_inventory",
+        "entity_id": entity_id,
+        "gca_accession": gca,
+        "exception_class": exception_class,
+        "path": str(path or inventory),
+        "detail": detail,
+    }
+
+
+def discover_gdm_inventory(args: argparse.Namespace, base: Path, inventory_files: Sequence[Path],
+                           scan_exceptions: Sequence[Dict[str, str]]) -> Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
+    rows: List[Dict[str, str]] = []
+    audit: List[Dict[str, str]] = []
+    exceptions: List[Dict[str, str]] = list(scan_exceptions)
+    candidates: List[Dict[str, object]] = []
+
+    for inventory in inventory_files:
+        try:
+            with inventory.open(newline="", encoding="utf-8") as handle:
+                reader = csv.DictReader(handle)
+                required = {"assembly_accession", "run_accession", "bam_file", "splice_junction_file"}
+                missing = sorted(required - set(reader.fieldnames or []))
+                if missing:
+                    exceptions.append(gdm_exception(
+                        args, inventory, "", "", "invalid_inventory",
+                        "missing columns: " + ", ".join(missing)))
+                    continue
+                for line_number, record in enumerate(reader, start=2):
+                    run_id = (record.get("run_accession") or "").strip()
+                    gca = (record.get("assembly_accession") or "").strip()
+                    if not RUN_RE.fullmatch(run_id):
+                        exceptions.append(gdm_exception(
+                            args, inventory, run_id, gca, "invalid_run_accession",
+                            f"line {line_number} has an invalid run_accession", inventory))
+                        continue
+                    if not GCA_RE.fullmatch(gca):
+                        exceptions.append(gdm_exception(
+                            args, inventory, run_id, gca, "assembly_mismatch",
+                            f"line {line_number} has an invalid assembly_accession", inventory))
+                        continue
+                    if args.gca and args.gca != gca:
+                        continue
+                    if args.entity and not (absolute(args.base_dir) / args.entity).is_dir() and args.entity != run_id:
+                        continue
+                    bam = resolve_gdm_inventory_path(record.get("bam_file", ""), inventory, base)
+                    sj = resolve_gdm_inventory_path(record.get("splice_junction_file", ""), inventory, base)
+                    if bam is None:
+                        exceptions.append(gdm_exception(args, inventory, run_id, gca, "missing_bam",
+                                                         f"line {line_number} bam_file was not found"))
+                        continue
+                    if sj is None:
+                        exceptions.append(gdm_exception(args, inventory, run_id, gca, "missing_splice_junction",
+                                                         f"line {line_number} splice_junction_file was not found", bam))
+                        continue
+                    bai = Path(str(bam) + ".bai") if Path(str(bam) + ".bai").is_file() else None
+                    if bai is None and Path(str(bam) + ".csi").is_file():
+                        bai = Path(str(bam) + ".csi")
+                    candidates.append({
+                        "inventory": inventory, "run_id": run_id, "gca": gca,
+                        "bam": bam, "sj": sj, "bai": bai, "line_number": line_number,
+                    })
+        except OSError as exc:
+            exceptions.append(gdm_exception(args, inventory, "", "", "unreadable_inventory", str(exc)))
+
+    grouped: Dict[Tuple[str, str], List[Dict[str, object]]] = {}
+    for candidate in candidates:
+        grouped.setdefault((str(candidate["gca"]), str(candidate["run_id"])), []).append(candidate)
+
+    for (gca, run_id), group in sorted(grouped.items()):
+        unique: Dict[str, Dict[str, object]] = {str(item["bam"]): item for item in group}
+        warning = ""
+        if len(unique) > 1:
+            if args.gdm_duplicate_policy == "error":
+                exceptions.append(gdm_exception(
+                    args, group[0]["inventory"], run_id, gca, "duplicate_entity",
+                    f"{len(unique)} distinct BAM paths resolve to this run", group[0]["bam"]))
+                continue
+            ordered = sorted(unique.values(), key=lambda item: (Path(str(item["bam"])).stat().st_mtime_ns, str(item["bam"])))
+            newest = ordered[-1]
+            if len(ordered) > 1 and Path(str(ordered[-2]["bam"])).stat().st_mtime_ns == Path(str(newest["bam"])).stat().st_mtime_ns:
+                exceptions.append(gdm_exception(
+                    args, newest["inventory"], run_id, gca, "duplicate_entity",
+                    "duplicate BAM candidates have tied modification times", newest["bam"]))
+                continue
+            selected = newest
+            warning = f"selected newest of {len(unique)} candidate BAM paths by mtime"
+        else:
+            selected = next(iter(unique.values()))
+            if len(group) > 1:
+                warning = f"collapsed {len(group)} duplicate inventory rows pointing to the same BAM"
+
+        inventory = selected["inventory"]
+        try:
+            row = make_row(args, selected["bam"], None, selected["sj"], selected["bai"], run_id, gca)
+        except ValueError as exc:
+            detail = str(exc)
+            exception_class = "missing_" + detail[len("missing required "):].split(",", 1)[0] \
+                if detail.startswith("missing required ") else "invalid_inventory"
+            exceptions.append(gdm_exception(args, inventory, run_id, gca, exception_class, detail, selected["bam"]))
+            continue
+        rows.append(row)
+        audit.append({
+            "source_id": inventory.parent.name,
+            "source_type": "gdm_inventory",
+            "entity_id": run_id,
+            "entity_type": "run",
+            "gca_accession": gca,
+            "source_path": str(absolute(inventory)),
+            "bam": row["bam"], "bai": row["bai"], "gtf": row["gtf"], "sj_out_tab": row["sj_out_tab"],
+            "matching_rule": inventory.name,
+            "status": "resolved", "warning": warning,
+        })
+
+    rows.sort(key=lambda row: (row["gca_accession"], row["entity_id"]))
+    audit.sort(key=lambda row: (row["gca_accession"], row["entity_id"]))
+    if not rows and not exceptions:
+        exceptions.append(gdm_exception(args, base / "report.csv", "", "", "unsupported_layout",
+                                        "GDM inventories contained no resolvable run rows", base))
+    return rows, audit, exceptions
+
+
 def discover(args: argparse.Namespace) -> Tuple[List[Dict[str, str]], List[Dict[str, str]], List[Dict[str, str]]]:
     base, annotation = mode_roots(args)
+    if args.mode == "gdm":
+        inventory_files, scan_exceptions = gdm_inventory_files(base)
+        if inventory_files:
+            return discover_gdm_inventory(args, base, inventory_files, scan_exceptions)
     exceptions: List[Dict[str, str]] = []
     audit: List[Dict[str, str]] = []
     rows: List[Dict[str, str]] = []
@@ -317,30 +505,92 @@ def write_tsv(path: Path, fields: Sequence[str], rows: Sequence[Dict[str, str]])
         writer.writerows(rows)
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
-    args = parse_args(argv)
-    try:
-        normalise_tracks(args.track_types, args.mode)
-    except ValueError as exc:
-        print(str(exc), file=sys.stderr)
-        return 2
-    rows, audit, exceptions = discover(args)
-    output_audit = args.output_audit or args.output_manifest.with_name("manifest_audit.tsv")
-    output_exceptions = args.output_exceptions or args.output_manifest.with_name("manifest_exceptions.tsv")
-    output_summary = args.output_summary or args.output_manifest.with_name("manifest_summary.json")
+def write_single_output(args: argparse.Namespace, rows: Sequence[Dict[str, str]],
+                        audit: Sequence[Dict[str, str]], exceptions: Sequence[Dict[str, str]]) -> None:
+    assert args.output_manifest is not None
+    output_manifest = args.output_manifest
+    output_audit = args.output_audit or output_manifest.with_name("manifest_audit.tsv")
+    output_exceptions = args.output_exceptions or output_manifest.with_name("manifest_exceptions.tsv")
+    output_summary = args.output_summary or output_manifest.with_name("manifest_summary.json")
     write_tsv(output_audit, AUDIT_FIELDS, audit)
     write_tsv(output_exceptions, EXCEPTION_FIELDS, exceptions)
     summary = {"mode": args.mode, "base_dir": str(absolute(args.base_dir)),
                "gca_accessions": sorted({row["gca_accession"] for row in rows}),
                "manifest_rows": len(rows), "audit_rows": len(audit),
                "exception_rows": len(exceptions), "strict": args.strict, "dry_run": args.dry_run,
+               "gene_model_source": args.gene_model_source,
                "published": bool(rows and not exceptions and not args.dry_run)}
     output_summary.parent.mkdir(parents=True, exist_ok=True)
     output_summary.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    if not args.dry_run and not (args.strict and exceptions):
+        write_tsv(output_manifest, MANIFEST_FIELDS, rows)
+
+
+def write_split_outputs(args: argparse.Namespace, rows: Sequence[Dict[str, str]],
+                        audit: Sequence[Dict[str, str]], exceptions: Sequence[Dict[str, str]]) -> None:
+    assert args.output_dir is not None
+    output_dir = args.output_dir
+    output_dir.mkdir(parents=True, exist_ok=True)
+    global_exceptions = output_dir / "manifest_exceptions.tsv"
+    write_tsv(global_exceptions, EXCEPTION_FIELDS, exceptions)
+    can_publish = not args.dry_run and not (args.strict and exceptions)
+    index_rows = []
+    gca_values = sorted({row["gca_accession"] for row in rows})
+    for gca in gca_values:
+        gca_dir = output_dir / gca
+        gca_rows = [row for row in rows if row["gca_accession"] == gca]
+        gca_audit = [item for item in audit if item["gca_accession"] == gca]
+        gca_exceptions = [item for item in exceptions if item.get("gca_accession") == gca]
+        manifest = gca_dir / "run_manifest.tsv"
+        audit_path = gca_dir / "manifest_audit.tsv"
+        exceptions_path = gca_dir / "manifest_exceptions.tsv"
+        summary_path = gca_dir / "manifest_summary.json"
+        write_tsv(audit_path, AUDIT_FIELDS, gca_audit)
+        write_tsv(exceptions_path, EXCEPTION_FIELDS, gca_exceptions)
+        summary = {"mode": args.mode, "base_dir": str(absolute(args.base_dir)),
+                   "gca_accessions": [gca], "manifest_rows": len(gca_rows),
+                   "audit_rows": len(gca_audit), "exception_rows": len(gca_exceptions),
+                   "strict": args.strict, "dry_run": args.dry_run,
+                   "gene_model_source": args.gene_model_source,
+                   "published": bool(gca_rows and can_publish and not gca_exceptions)}
+        summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+        if can_publish:
+            write_tsv(manifest, MANIFEST_FIELDS, gca_rows)
+        index_rows.append({
+            "gca_accession": gca,
+            "manifest": str(manifest),
+            "audit": str(audit_path),
+            "exceptions": str(exceptions_path),
+            "manifest_rows": str(len(gca_rows)),
+            "exception_rows": str(len(gca_exceptions)),
+        })
+    write_tsv(output_dir / "gdm_manifest_index.tsv",
+              ["gca_accession", "manifest", "audit", "exceptions", "manifest_rows", "exception_rows"],
+              index_rows)
+    summary = {"mode": args.mode, "base_dir": str(absolute(args.base_dir)),
+               "gca_accessions": gca_values, "manifest_rows": len(rows),
+               "audit_rows": len(audit), "exception_rows": len(exceptions),
+               "strict": args.strict, "dry_run": args.dry_run,
+               "gene_model_source": args.gene_model_source,
+               "published": bool(rows and can_publish and not exceptions),
+               "output_dir": str(absolute(output_dir))}
+    (output_dir / "manifest_summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    args = parse_args(argv)
+    try:
+        normalise_tracks(args.track_types, args.mode, args.gene_model_source)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    rows, audit, exceptions = discover(args)
+    if args.output_dir:
+        write_split_outputs(args, rows, audit, exceptions)
+    else:
+        write_single_output(args, rows, audit, exceptions)
     if exceptions and args.strict:
         return 2
-    if not args.dry_run:
-        write_tsv(args.output_manifest, MANIFEST_FIELDS, rows)
     return 0
 
 
