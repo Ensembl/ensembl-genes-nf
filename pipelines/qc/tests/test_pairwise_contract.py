@@ -9,6 +9,7 @@ from pathlib import Path
 SCRIPT = Path(__file__).parents[1] / "bin" / "normalise_pairwise_tsv.py"
 PAIRWISE_QC = Path(__file__).parents[1] / "bin" / "pairwise_qc.py"
 BENCHMARK_PRODUCTS = Path(__file__).parents[1] / "bin" / "build_benchmark_products.py"
+EXTRACT_BENCHMARK = Path(__file__).parents[1] / "bin" / "extract_pairwise_benchmark.py"
 TESTDATA = Path(__file__).parents[1] / "testdata" / "pairwise"
 
 
@@ -236,6 +237,14 @@ class PairwiseContractTest(unittest.TestCase):
             self.assertIn("Long-read transcript reconstruction benchmark report", report)
             self.assertIn("Pairwise concordance is not recall", report)
             self.assertIn("not_applicable", (root / "metric_status_long.tsv").read_text(encoding="utf-8"))
+            bundle = root / "bundle"
+            subprocess.run(
+                [sys.executable, str(EXTRACT_BENCHMARK), "--results-dir", str(root),
+                 "--output-dir", str(bundle), "--pair-id", "p"], check=True,
+            )
+            self.assertIn("false", (bundle / "bundle_manifest.json").read_text(encoding="utf-8"))
+            self.assertTrue((bundle / "model_inventory_summary.tsv").is_file())
+            self.assertTrue((bundle / "details" / "models.tsv.gz").is_file())
 
 
 if __name__ == "__main__":

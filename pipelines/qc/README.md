@@ -239,6 +239,12 @@ separate truth-set analysis is supplied. They must not be interpreted as
 biological recall. Read-derived junction/intron-chain/end evidence or a defined
 reference truth set is required for recall, precision and F1 estimates.
 
+For iterative plotting and exploration, use
+`pipelines/qc/bin/extract_pairwise_benchmark.py` and
+`pipelines/qc/analysis/pairwise_benchmark_analysis.ipynb`. They can consume
+completed per-pair benchmark directories before the aggregate process finishes,
+and export only compact summaries or explicitly selected pair-level detail.
+
 GffCompare is disabled by default. When enabled it runs both directions and
 does not hide tool failures. Pairwise tasks use pinned references for curl,
 gffread, GffCompare, and Python/PyRanges; the exact values are recorded in
