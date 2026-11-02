@@ -13,7 +13,7 @@ def main() -> None:
     args = parser.parse_args()
     if not args.audit.is_file() or args.audit.stat().st_size == 0:
         raise SystemExit(f"backend audit is missing or empty: {args.audit}")
-    errors = sum(1 for line in args.audit.read_text().splitlines() if line.startswith("# error"))
+    errors = sum(1 for line in args.audit.read_text().splitlines() if line.startswith("# error\t"))
     args.output.write_text(f"status\tvalue\nVALID\t{'true' if errors == 0 else 'false'}\nerrors\t{errors}\n")
     if errors:
         raise SystemExit(f"backend audit contains {errors} errors")

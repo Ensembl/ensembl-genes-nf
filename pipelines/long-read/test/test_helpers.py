@@ -441,6 +441,15 @@ def test_backend_shard_audit_reports_skipped_and_attempted_shards(tmp_path: Path
     assert "run1__chr2\tSKIPPED\tNO\tSKIPPED" in report.read_text()
 
 
+def test_backend_plan_validator_does_not_count_error_summary_as_error(tmp_path: Path):
+    audit = tmp_path / "backend_shard_plan.tsv"
+    report = tmp_path / "backend_shard_plan.validation.tsv"
+    audit.write_text("backend\tshard_id\tplanned\tattempted\tstatus\n# errors\t0\n")
+    result = run_helper("validate_backend_plan.py", "--audit", str(audit), "--output", str(report))
+    assert result.returncode == 0, result.stderr
+    assert report.read_text() == "status\tvalue\nVALID\ttrue\nerrors\t0\n"
+
+
 def test_gtf_to_bed12_and_validation(tmp_path: Path):
     gtf = tmp_path / "models.gtf"
     gtf.write_text('chr1\tpipeline\texon\t1\t10\t.\t+\t.\tgene_id "g"; transcript_id "tx";\nchr1\tpipeline\texon\t21\t30\t.\t+\t.\tgene_id "g"; transcript_id "tx";\n')
