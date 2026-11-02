@@ -132,6 +132,45 @@ def test_finalize_prepared_manifest_replaces_input_checksum(tmp_path: Path):
     assert row["input_sha256"] == "a" * 64
 
 
+def test_finalize_run_manifest_reads_merge_provenance_from_jsonl(tmp_path: Path):
+    normalized = tmp_path / "normalized.tsv"
+    normalized.write_text("id\trun_id\tcohort_id\nrun1\trun1\tfixture\n")
+    (tmp_path / "input_checksums.tsv").write_text("path\tsha256\n")
+    (tmp_path / "preparation_status.tsv").write_text("id\tstatus\nrun1\tCOMPLETE\n")
+    reference = tmp_path / "reference.fa"
+    reference.write_text(">chr1\nAAAA\n")
+    reference_identity = tmp_path / "reference_identity.json"
+    reference_identity.write_text("{}\n")
+    (tmp_path / "shard_plans").mkdir()
+    (tmp_path / "model_reports").mkdir()
+    model_publications = tmp_path / "model_publications.jsonl"
+    model_publications.write_text("")
+    merge_provenance = tmp_path / "merge_provenance.jsonl"
+    merge_provenance.write_text(
+        '{"backend":"tama","scope":"run","inputs":["a.gtf"]}\n'
+        '{"backend":"tmerge","scope":"cohort","inputs":["b.gtf"]}\n'
+    )
+    result = run_helper(
+        "finalize_run_manifest.py",
+        "--configuration", '{"mode":"test"}',
+        "--stage-status", '{"preparation":"COMPLETE"}',
+        "--model-publications", str(model_publications),
+        "--evidence-status", "DISABLED",
+        "--merge-provenance", str(merge_provenance),
+        "--normalized-manifest", str(normalized),
+        "--input-checksums", str(tmp_path / "input_checksums.tsv"),
+        "--preparation-status", str(tmp_path / "preparation_status.tsv"),
+        "--reference-fasta", str(reference),
+        "--reference-identity", str(reference_identity),
+        "--model-reports", str(tmp_path / "model_reports"),
+        "--run-manifest", str(tmp_path / "run_manifest.json"),
+        "--checksums", str(tmp_path / "final_model_checksums.tsv"),
+    )
+    assert result.returncode == 0, result.stderr
+    manifest = json.loads((tmp_path / "run_manifest.json").read_text())
+    assert [record["backend"] for record in manifest["merge_provenance"]] == ["tama", "tmerge"]
+
+
 def test_validate_fastq_handles_gzip_without_materialising_input(tmp_path: Path):
     reads = tmp_path / "reads.fastq.gz"
     with gzip.open(reads, "wt") as handle:

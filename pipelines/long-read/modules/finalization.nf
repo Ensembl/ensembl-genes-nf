@@ -11,8 +11,8 @@ process FINALIZE_RUN_MANIFEST {
     val run_configuration
     val stage_status
     val evidence_status
-    val model_publications
-    val merge_provenance
+    path model_publications
+    path merge_provenance
     output:
     path 'run_manifest.json', emit: run_manifest
     path 'final_model_checksums.tsv', emit: checksums
@@ -20,8 +20,8 @@ process FINALIZE_RUN_MANIFEST {
     """
     python3 ${projectDir}/bin/finalize_run_manifest.py \
         --configuration '${run_configuration}' --stage-status '${stage_status}' \
-        --model-publications '${model_publications}' --evidence-status '${evidence_status}' \
-        --merge-provenance '${merge_provenance}' --normalized-manifest ${normalized_manifest} \
+        --model-publications ${model_publications} --evidence-status '${evidence_status}' \
+        --merge-provenance ${merge_provenance} --normalized-manifest ${normalized_manifest} \
         --input-checksums ${input_checksums} --preparation-status ${preparation_status} \
         --reference-fasta ${reference_fasta} --reference-identity reference_identity.json \
         --model-reports model_reports --run-manifest run_manifest.json --checksums final_model_checksums.tsv

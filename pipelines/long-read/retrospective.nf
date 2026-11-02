@@ -34,5 +34,6 @@ workflow {
     stage_status = groovy.json.JsonOutput.toJson([preparation: 'COMPLETE', alignment: 'NOT_APPLICABLE', sharding: 'NOT_APPLICABLE', reconstruction: 'NOT_APPLICABLE', merge: 'NOT_APPLICABLE', normalization: 'NOT_APPLICABLE', validation: 'COMPLETE', orf: 'DISABLED', diamond: 'DISABLED', evidence: 'COMPLETE', finalization: 'COMPLETE'])
     evidence_status = COLLECT_RETROSPECTIVE_EVIDENCE.out.evidence.map { _evidence -> 'COMPLETE' }
     normalized_pair = VALIDATE_RETROSPECTIVE_INPUT.out.normalized.map { normalized, checksum, input_checksums, status -> tuple(normalized, input_checksums, status) }
-    FINALIZE_LONG_READ_PIPELINE(normalized_pair, retrospective_artifact, retrospective_artifact, reference, COLLECT_RETROSPECTIVE_EVIDENCE.out.reference_identity, VALIDATE_RETROSPECTIVE_INPUT.out.versions.mix(COLLECT_RETROSPECTIVE_EVIDENCE.out.versions), configuration, stage_status, evidence_status, channel.of('[]'), channel.of('[]'))
+    empty_records = channel.of(file("${projectDir}/resources/empty_jsonl.jsonl", checkIfExists: true))
+    FINALIZE_LONG_READ_PIPELINE(normalized_pair, retrospective_artifact, retrospective_artifact, reference, COLLECT_RETROSPECTIVE_EVIDENCE.out.reference_identity, VALIDATE_RETROSPECTIVE_INPUT.out.versions.mix(COLLECT_RETROSPECTIVE_EVIDENCE.out.versions), configuration, stage_status, evidence_status, empty_records, empty_records)
 }

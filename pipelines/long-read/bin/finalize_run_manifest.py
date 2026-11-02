@@ -17,13 +17,17 @@ def digest(path: Path) -> str:
     return value.hexdigest()
 
 
+def read_jsonl(path: Path) -> list[dict]:
+    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--configuration", required=True)
     parser.add_argument("--stage-status", required=True)
-    parser.add_argument("--model-publications", required=True)
+    parser.add_argument("--model-publications", required=True, type=Path)
     parser.add_argument("--evidence-status", required=True)
-    parser.add_argument("--merge-provenance", required=True)
+    parser.add_argument("--merge-provenance", required=True, type=Path)
     parser.add_argument("--normalized-manifest", required=True, type=Path)
     parser.add_argument("--input-checksums", required=True, type=Path)
     parser.add_argument("--preparation-status", required=True, type=Path)
@@ -38,8 +42,8 @@ def main() -> None:
     status["evidence"] = args.evidence_status
     status["finalization"] = "COMPLETE"
     config = json.loads(args.configuration)
-    model_publications = json.loads(args.model_publications)
-    merge_provenance = json.loads(args.merge_provenance)
+    model_publications = read_jsonl(args.model_publications)
+    merge_provenance = read_jsonl(args.merge_provenance)
     with args.normalized_manifest.open(newline="") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
     run_ids = sorted({row.get("run_id") for row in rows if row.get("run_id")})

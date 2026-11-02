@@ -332,9 +332,11 @@ workflow {
         def identity = scope == 'run' ? meta.run_id : meta.cohort_id
         def root = scope == 'run' ? "per_run/${meta.run_id}" : "per_cohort/${meta.cohort_id}"
         [source_path: summary.name, published_path: "${root}/models/${backend}/normalized/${identity}.${backend}.${scope}.model_summary.tsv"]
-    }).collect().map { records -> groovy.json.JsonOutput.toJson(records) }
+    }).map { record -> groovy.json.JsonOutput.toJson(record) }
+      .collectFile(name: 'model_publications.jsonl', newLine: true)
     merge_provenance = MERGE_LONG_READ_MODELS.out.merged.map { meta, backend, scope, _gtf, filelist, filelist_checksum ->
         [backend: backend, scope: scope, run_id: meta.run_id, cohort_id: meta.cohort_id, inputs: filelist.text.readLines().findAll { it }, file_list_sha256: filelist_checksum.text.trim().split(/\s+/)[0]]
-    }.collect().map { records -> groovy.json.JsonOutput.toJson(records) }
+    }.map { record -> groovy.json.JsonOutput.toJson(record) }
+     .collectFile(name: 'merge_provenance.jsonl', newLine: true)
     FINALIZE_LONG_READ_PIPELINE(normalized_pair, PREPARE_CONTIG_SHARDS.out.plans.map { _meta, _bam, _bai, plan -> plan }.collect(), NORMALIZE_VALIDATE_MODELS.out.reports.mix(validated_artifacts).mix(summary_artifacts).collect(), reference_file, ALIGN_LONG_READS.out.reference_identity, versions.collect(), configuration, stage_status, evidence_status, model_publications, merge_provenance)
 }
