@@ -181,6 +181,32 @@ def test_validate_fastq_handles_gzip_without_materialising_input(tmp_path: Path)
     assert "run1\tVALID\t1" in status.read_text()
 
 
+def test_prepare_diamond_query_normalizes_blank_fasta(tmp_path: Path):
+    query = tmp_path / "orfs.fa"
+    query.write_text("\n>tx2\nMPEP\n\n>tx1\nMSEQ\n")
+    output = tmp_path / "diamond_query.fa"
+    status = tmp_path / "status.tsv"
+    result = run_helper(
+        "prepare_diamond_query.py", "--input", str(query), "--output", str(output), "--status", str(status)
+    )
+    assert result.returncode == 0, result.stderr
+    assert output.read_text() == ">tx2\nMPEP\n>tx1\nMSEQ\n"
+    assert status.read_text().endswith("query\tVALID\n")
+
+
+def test_prepare_diamond_query_emits_empty_state_for_no_records(tmp_path: Path):
+    query = tmp_path / "orfs.fa"
+    query.write_text("\n\n")
+    output = tmp_path / "diamond_query.fa"
+    status = tmp_path / "status.tsv"
+    result = run_helper(
+        "prepare_diamond_query.py", "--input", str(query), "--output", str(output), "--status", str(status)
+    )
+    assert result.returncode == 0, result.stderr
+    assert output.read_text() == ""
+    assert status.read_text().endswith("query\tEMPTY\n")
+
+
 def test_normalize_gtf_allows_in_place_outputs(tmp_path: Path):
     gtf = tmp_path / "native.gtf"
     status = tmp_path / "status.tsv"
