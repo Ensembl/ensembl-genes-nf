@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """Run TAMA while making empty or unrepresentable shards explicit."""
-from __future__ import annotations
-
 import argparse
 import shlex
 import shutil
@@ -28,7 +26,7 @@ def has_usable_alignment(path: Path) -> bool:
     return False
 
 
-def is_known_empty_locus_failure(result: subprocess.CompletedProcess[str]) -> bool:
+def is_known_empty_locus_failure(result) -> bool:
     output = f"{result.stdout}\n{result.stderr}"
     return result.returncode != 0 and "IndexError: list index out of range" in output
 
@@ -60,7 +58,12 @@ def main() -> None:
         "-m", "10",
         *shlex.split(args.args),
     ]
-    result = subprocess.run(command, text=True, capture_output=True)
+    result = subprocess.run(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
     if result.stdout:
         print(result.stdout, end="")
     if result.stderr:
