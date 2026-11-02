@@ -293,11 +293,150 @@ def merge_tsv(paths: list[str], output: str) -> list[dict[str, str]]:
     return rows
 
 
+def markdown(value: str | int | None) -> str:
+    return str(value or "").replace("|", "\\|").replace("\n", " ")
+
+
+def benchmark_report(
+    models: list[dict[str, str]],
+    whole_models: list[dict[str, str]],
+    summaries: list[dict[str, str]],
+    grouped: list[dict[str, str]],
+    statuses: list[dict[str, str]],
+) -> str:
+    """Render a conservative run-level report from the aggregate products."""
+    tools = sorted({row.get("tool", "") for row in models if row.get("tool")})
+    technologies = sorted({row.get("technology", "") for row in models if row.get("technology")})
+    samples = sorted({row.get("sample", "") for row in summaries if row.get("sample")})
+    assignment_counts: defaultdict[str, int] = defaultdict(int)
+    for row in models:
+        assignment_counts[row.get("gene_assignment_type", "unassigned")] += 1
+    class_counts: defaultdict[str, int] = defaultdict(int)
+    for row in whole_models:
+        class_counts[row.get("whole_model_class", "")] += 1
+    evidence_models = sum(row.get("evidence_available") == "true" for row in models)
+    status_counts: defaultdict[str, int] = defaultdict(int)
+    for row in statuses:
+        status_counts[row.get("status", "")] += 1
+
+    lines = [
+        "# Long-read transcript reconstruction benchmark report",
+        "",
+        "## Executive summary",
+        "",
+        f"This run contains **{len(summaries)} completed pairwise comparisons**, "
+        f"{len(models)} canonical transcript models, and {len(whole_models)} "
+        "whole-model comparison records.",
+        "",
+        "The primary results are **pairwise concordance** between reconstruction "
+        "tools. They show how model inventories and structures differ, but they "
+        "do not establish recall, precision, F1, biological correctness, or a "
+        "best tool without a declared truth set.",
+        "",
+        "## Scope and provenance",
+        "",
+        f"- Tools represented: {', '.join(markdown(value) for value in tools) or 'not declared'}",
+        f"- Technologies represented: {', '.join(markdown(value) for value in technologies) or 'not declared'}",
+        f"- Samples represented: {', '.join(markdown(value) for value in samples) or 'not declared'}",
+        "- Loci: constructed from the union of both models in each pair, preserving the same assignment for both sources.",
+        "- Model identity: original transcript IDs are retained in the canonical and benchmark tables.",
+        "",
+        "## Tool and technology comparisons",
+        "",
+        "The following rows are the directly analysable comparison strata. Counts are summed across completed pairs; concordance is weighted by the number of comparisons.",
+        "",
+        "| Technology A | Tool A | Technology B | Tool B | Pairs | Models A | Models B | Intron concordance | End concordance | UTR concordance | Whole-model concordance |",
+        "|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for row in grouped:
+        lines.append(
+            "| " + " | ".join([
+                markdown(row.get("technology_a")), markdown(row.get("tool_a")),
+                markdown(row.get("technology_b")), markdown(row.get("tool_b")),
+                markdown(row.get("n_pairs")), markdown(row.get("total_models_a")),
+                markdown(row.get("total_models_b")),
+                markdown(row.get("intron_chain_concordance")),
+                markdown(row.get("end_concordance")),
+                markdown(row.get("utr_concordance")),
+                markdown(row.get("whole_model_concordance")),
+            ]) + " |"
+        )
+    if not grouped:
+        lines.append("| No completed comparison strata | | | | 0 | 0 | 0 | | | | |")
+
+    lines.extend([
+        "",
+        "## Model production and locus assignment",
+        "",
+        "The model tables support model-count, exon-count, locus-count, transcript-structure, and evidence-support analyses. Synthetic loci are labels for structural grouping and are not biological gene annotations.",
+        "",
+        "| Assignment type | Canonical models |",
+        "|---|---:|",
+    ])
+    for assignment, count in sorted(assignment_counts.items()):
+        lines.append(f"| {markdown(assignment)} | {count} |")
+    lines.extend([
+        "",
+        f"Models with a transcript-level evidence join: **{evidence_models} / {len(models)}**.",
+        "Evidence fields are only interpreted when joined by canonical transcript ID; run-level totals are not treated as transcript evidence.",
+        "",
+        "## Whole-model classes",
+        "",
+        "Whole-model classes combine intron-chain and transcript-end agreement, with UTR-complete agreement reported separately where UTR fields exist.",
+        "",
+        "| Class | Models |",
+        "|---|---:|",
+    ])
+    for model_class, count in sorted(class_counts.items()):
+        lines.append(f"| {markdown(model_class)} | {count} |")
+    if not class_counts:
+        lines.append("| No completed whole-model comparisons | 0 |")
+
+    lines.extend([
+        "",
+        "## Metric capability and run status",
+        "",
+        "The specification requires explicit distinction between enabled, not applicable, missing input, and failed metrics. The aggregate status counts below summarise the per-pair `metric_status.tsv` files.",
+        "",
+        "| Status | Entries |",
+        "|---|---:|",
+    ])
+    for status, count in sorted(status_counts.items()):
+        lines.append(f"| {markdown(status)} | {count} |")
+    if not status_counts:
+        lines.append("| No metric-status files supplied | 0 |")
+
+    lines.extend([
+        "",
+        "The report follows the capability policy: transcript/exon/locus counts, intron-chain comparison, transcript-end comparison, and structural UTR comparison are valid for canonical and synthetic-locus inputs. Biological gene presence, gene pairing, CDS/coding integrity, protein support, and NMD claims require the corresponding biological inputs and are not inferred from BED12 or synthetic annotations.",
+        "",
+        "## Interpretation limits and required next analysis",
+        "",
+        "1. Pairwise concordance is not recall. To estimate intron-chain, whole-model, UTR, or boundary recall, supply a declared read-derived truth table or independent reference truth set.",
+        "2. Tool comparisons must be stratified by technology, sample, depth/coverage, and protocol before attributing differences to the reconstruction algorithm.",
+        "3. Model count differences should be reported alongside structural agreement and evidence support; model count alone is not a quality measure.",
+        "4. Any missing or failed metric-status entries must be resolved or disclosed before using the results for tool-selection decisions.",
+        "",
+        "## Reproducible products",
+        "",
+        "- `models_long.tsv`: canonical model inventory with provenance and optional transcript-level evidence.",
+        "- `structural_comparisons_long.tsv`: intron-chain, transcript-end, and UTR comparisons.",
+        "- `whole_model_comparisons.tsv`: combined structural model classes.",
+        "- `benchmark_manifest.tsv`: one summary row per completed pair.",
+        "- `tool_technology_summary.tsv`: comparison strata used in this report.",
+        "- `metric_status_long.tsv`: per-pair metric applicability and failures.",
+        "- `metric_definitions.tsv`: metric denominators and truth-set requirements.",
+        "",
+    ])
+    return "\n".join(lines)
+
+
 def aggregate(args: argparse.Namespace) -> None:
     models = merge_tsv(args.models, "models_long.tsv")
     comparisons = merge_tsv(args.comparisons, "structural_comparisons_long.tsv")
     whole_models = merge_tsv(args.whole_models, "whole_model_comparisons.tsv")
     summaries = merge_tsv(args.summaries, "benchmark_manifest.tsv")
+    statuses = merge_tsv(args.status, "metric_status_long.tsv")
     groups: dict[tuple[str, str, str, str], list[dict[str, str]]] = defaultdict(list)
     for row in summaries:
         groups[(row.get("technology_a", ""), row.get("tool_a", ""), row.get("technology_b", ""), row.get("tool_b", ""))].append(row)
@@ -335,6 +474,10 @@ def aggregate(args: argparse.Namespace) -> None:
         {"metric": "utr_concordance", "scope": "pairwise_concordance", "numerator": "exact UTR matches", "denominator": "UTR comparisons", "truth_required": "yes for recall", "description": "Exact UTR-field agreement where UTR fields are available."},
         {"metric": "whole_model_concordance", "scope": "pairwise_concordance", "numerator": "intron-chain plus boundary matches", "denominator": "whole-model comparisons", "truth_required": "yes for recall", "description": "Combined structural model agreement; UTR-complete matches are labelled separately."},
     ])
+    Path("benchmark_report.md").write_text(
+        benchmark_report(models, whole_models, summaries, summary_rows, statuses),
+        encoding="utf-8",
+    )
     Path("benchmark_products_complete.txt").write_text(
         f"models={len(models)}\ncomparisons={len(comparisons)}\nwhole_models={len(whole_models)}\npairs={len(summaries)}\n",
         encoding="utf-8",
@@ -365,6 +508,7 @@ def parser() -> argparse.ArgumentParser:
     combined.add_argument("--comparisons", nargs="+", required=True)
     combined.add_argument("--whole-models", nargs="+", required=True)
     combined.add_argument("--summaries", nargs="+", required=True)
+    combined.add_argument("--status", nargs="+", required=True)
     combined.set_defaults(function=aggregate)
     return root
 

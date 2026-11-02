@@ -118,28 +118,6 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         .join(evidence_keyed)
         .map { _pair_id, meta, source_a_models, source_b_models, intron, ends, utr, structural, disagreements, _evidence_meta, evidence_a, evidence_b -> tuple(meta, source_a_models, source_b_models, intron, ends, utr, structural, disagreements, evidence_a, evidence_b) }
     EXPORT_BENCHMARK_PAIR(benchmark_inputs)
-    AGGREGATE_PAIRWISE_BENCHMARK(
-        EXPORT_BENCHMARK_PAIR.out.models.map { _meta, file -> file }.collect(),
-        EXPORT_BENCHMARK_PAIR.out.comparisons.map { _meta, file -> file }.collect(),
-        EXPORT_BENCHMARK_PAIR.out.whole_models.map { _meta, file -> file }.collect(),
-        EXPORT_BENCHMARK_PAIR.out.summary.map { _meta, file -> file }.collect()
-    )
-
-    gffcompare_summary = channel.empty()
-    gffcompare_versions = channel.empty()
-    if (params.run_pairwise_gffcompare) {
-        PREPARE_GFFCOMPARE_INPUTS(canonical_models)
-        gffcompare_inputs = PREPARE_GFFCOMPARE_INPUTS.out.gtfs.flatMap { meta, source_a_gtf, source_b_gtf -> [
-            tuple(meta, 'source_a_to_source_b', source_a_gtf, source_b_gtf),
-            tuple(meta, 'source_b_to_source_a', source_b_gtf, source_a_gtf)
-        ] }
-        GFFCOMPARE(gffcompare_inputs)
-        PARSE_GFFCOMPARE_TMAP(GFFCOMPARE.out.tmap)
-        gffcompare_classes = PARSE_GFFCOMPARE_TMAP.out.classes.map { meta, _direction, classes -> tuple(meta.pair_id, meta, classes) }.groupTuple().map { _pair_id, metas, classes -> tuple(metas[0], classes) }
-        SUMMARISE_GFFCOMPARE_MODELS(gffcompare_classes)
-        gffcompare_summary = SUMMARISE_GFFCOMPARE_MODELS.out.summary
-        gffcompare_versions = PREPARE_GFFCOMPARE_INPUTS.out.versions.mix(GFFCOMPARE.out.versions).mix(PARSE_GFFCOMPARE_TMAP.out.versions).mix(SUMMARISE_GFFCOMPARE_MODELS.out.versions)
-    }
 
     status_input = pairwise_samples_ch.map { meta, _a, _b, _report, _ea, _eb, _reference ->
         def has_bed12 = meta.format_a == 'bed12' || meta.format_b == 'bed12'
@@ -161,6 +139,30 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
         tuple(meta, structural + biological)
     }
     METRIC_STATUS(status_input)
+
+    AGGREGATE_PAIRWISE_BENCHMARK(
+        EXPORT_BENCHMARK_PAIR.out.models.map { _meta, file -> file }.collect(),
+        EXPORT_BENCHMARK_PAIR.out.comparisons.map { _meta, file -> file }.collect(),
+        EXPORT_BENCHMARK_PAIR.out.whole_models.map { _meta, file -> file }.collect(),
+        EXPORT_BENCHMARK_PAIR.out.summary.map { _meta, file -> file }.collect(),
+        METRIC_STATUS.out.status.map { _meta, file -> file }.collect()
+    )
+
+    gffcompare_summary = channel.empty()
+    gffcompare_versions = channel.empty()
+    if (params.run_pairwise_gffcompare) {
+        PREPARE_GFFCOMPARE_INPUTS(canonical_models)
+        gffcompare_inputs = PREPARE_GFFCOMPARE_INPUTS.out.gtfs.flatMap { meta, source_a_gtf, source_b_gtf -> [
+            tuple(meta, 'source_a_to_source_b', source_a_gtf, source_b_gtf),
+            tuple(meta, 'source_b_to_source_a', source_b_gtf, source_a_gtf)
+        ] }
+        GFFCOMPARE(gffcompare_inputs)
+        PARSE_GFFCOMPARE_TMAP(GFFCOMPARE.out.tmap)
+        gffcompare_classes = PARSE_GFFCOMPARE_TMAP.out.classes.map { meta, _direction, classes -> tuple(meta.pair_id, meta, classes) }.groupTuple().map { _pair_id, metas, classes -> tuple(metas[0], classes) }
+        SUMMARISE_GFFCOMPARE_MODELS(gffcompare_classes)
+        gffcompare_summary = SUMMARISE_GFFCOMPARE_MODELS.out.summary
+        gffcompare_versions = PREPARE_GFFCOMPARE_INPUTS.out.versions.mix(GFFCOMPARE.out.versions).mix(PARSE_GFFCOMPARE_TMAP.out.versions).mix(SUMMARISE_GFFCOMPARE_MODELS.out.versions)
+    }
 
     pairwise_versions = VALIDATE_PAIR_MANIFEST.out.versions
         .mix(STAGE_ANNOTATION_PAIR.out.versions)
@@ -218,6 +220,8 @@ workflow PAIRWISE_ANNOTATION_COMPARISON {
     benchmark_manifest = AGGREGATE_PAIRWISE_BENCHMARK.out.manifest
     benchmark_summary = AGGREGATE_PAIRWISE_BENCHMARK.out.summary
     benchmark_definitions = AGGREGATE_PAIRWISE_BENCHMARK.out.definitions
+    benchmark_metric_status = AGGREGATE_PAIRWISE_BENCHMARK.out.metric_status
+    benchmark_report = AGGREGATE_PAIRWISE_BENCHMARK.out.report
     metric_status = METRIC_STATUS.out.status
     pair_report = ASSEMBLE_PAIR_REPORT.out.report
     evidence = ANNOTATE_MODEL_EVIDENCE.out.annotated

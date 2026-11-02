@@ -230,6 +230,8 @@ whole_model_comparisons.tsv        # intron-chain/end/UTR combined classificatio
 benchmark_manifest.tsv             # one provenance/summary row per pair
 tool_technology_summary.tsv        # grouped tool/technology concordance
 metric_definitions.tsv             # denominator and truth-use definitions
+metric_status_long.tsv              # per-pair metric capability and failure states
+benchmark_report.md                 # conservative run-level interpretation report
 ```
 
 These products report `pairwise_concordance` and `truth_source=none` unless a

@@ -217,14 +217,25 @@ class PairwiseContractTest(unittest.TestCase):
             summary_text = output_summary.read_text(encoding="utf-8")
             self.assertIn("pairwise_concordance", summary_text)
             self.assertIn("none", summary_text)
+            status = root / "status.tsv"
+            status.write_text(
+                "pair_id\tmetric\tstatus\treason\n"
+                "p\tintron_chain\tenabled\tcanonical models\n"
+                "p\tgene_presence\tnot_applicable\tBED12\n",
+                encoding="utf-8",
+            )
             subprocess.run(
                 [sys.executable, str(BENCHMARK_PRODUCTS), "aggregate", "--models", str(output_models),
                  "--comparisons", str(output_comparisons), "--whole-models", str(output_whole_models),
-                 "--summaries", str(output_summary)], cwd=root, check=True,
+                 "--summaries", str(output_summary), "--status", str(status)], cwd=root, check=True,
             )
             self.assertIn("Bambu", (root / "models_long.tsv").read_text(encoding="utf-8"))
             self.assertIn("whole_model_structure_only", (root / "whole_model_comparisons.tsv").read_text(encoding="utf-8"))
             self.assertIn("intron_chain_concordance", (root / "tool_technology_summary.tsv").read_text(encoding="utf-8"))
+            report = (root / "benchmark_report.md").read_text(encoding="utf-8")
+            self.assertIn("Long-read transcript reconstruction benchmark report", report)
+            self.assertIn("Pairwise concordance is not recall", report)
+            self.assertIn("not_applicable", (root / "metric_status_long.tsv").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
