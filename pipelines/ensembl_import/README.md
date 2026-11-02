@@ -27,8 +27,8 @@ GCF_000001405.40,Homo sapiens
 GCA_900184115.1,Example species
 ```
 
-The `gcf` value must be a RefSeq accession in the form `GCA_#########.#` or
-`GCF_#########.##`. The `species` value must be a binomial name consisting of
+The `gcf` value must be a RefSeq accession in the form `GCF_#########.##`. The
+`species` value must be a binomial name consisting of
 two words.
 
 The row schema is defined in
@@ -59,6 +59,7 @@ The pipeline entrypoint is `main.nf`. From the repository root:
 nextflow run pipelines/ensembl_import/main.nf \
   --input_csv /path/to/assemblies.csv \
   --server_settings /path/to/server_settings.json \
+  --genebuilder automated \
   --outdir /path/to/results
 ```
 
@@ -83,6 +84,7 @@ The workflow is structured as:
 ```text
 main.nf
   workflows/import_refseq.nf
+    REGISTRY_TRACKER_START
     subworkflows/import_refseq_to_core.nf
       FETCH_REFSEQ
       LOAD_REFSEQ
@@ -94,24 +96,30 @@ main.nf
       GET_SAMPLE_GENE
       ADD_STATIC_METAKEYS
       LOAD_TAXONOMY
+    REGISTRY_TRACKER_COMPLETE
     PREPARE_STATS_INPUT
 ```
 
 Each assembly is processed independently.
 
-1. `FETCH_REFSEQ` downloads and prepares the RefSeq GFF3, FASTA, and assembly
+1. `REGISTRY_TRACKER_START` checks the registry and records the import as
+   `in_progress`. The pipeline stops if the current GCF already has an
+   import-status record.
+2. `FETCH_REFSEQ` downloads and prepares the RefSeq GFF3, FASTA, and assembly
    report files.
-2. `LOAD_REFSEQ` creates the Ensembl core database with `gff_cli.py`.
-3. `DOWNLOAD_REPEATMASKER` downloads the RefSeq RepeatMasker output with
+3. `LOAD_REFSEQ` creates the Ensembl core database with `gff_cli.py`.
+4. `DOWNLOAD_REPEATMASKER` downloads the RefSeq RepeatMasker output with
    `gff-loader refseq download-repeatmasker`.
-4. `CONVERT_REPEATMASKER` converts the downloaded output to GTF using the
+5. `CONVERT_REPEATMASKER` converts the downloaded output to GTF using the
    assembly report.
-5. `LOAD_REPEATMASKER` loads the GTF with analysis name `repeatmasker`.
-6. `GET_SAMPLE_GENE` selects and inserts sample gene metadata.
-7. `ADD_STATIC_METAKEYS` inserts configured static metadata keys.
-8. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
+6. `LOAD_REPEATMASKER` loads the GTF with analysis name `repeatmasker`.
+7. `GET_SAMPLE_GENE` selects and inserts sample gene metadata.
+8. `ADD_STATIC_METAKEYS` inserts configured static metadata keys.
+9. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
    core database.
-9. `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
+10. `REGISTRY_TRACKER_COMPLETE` marks the registry row as `completed` after
+    the per-assembly import and metadata work has succeeded.
+11. `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
 
 ## Outputs
 
@@ -147,7 +155,23 @@ The parameter schema is in
 [`nextflow_schema.json`](nextflow_schema.json), and the sample-sheet schema is
 in [`assets/schema_input.json`](assets/schema_input.json).
 
-The registry update modules are not part of the runnable import workflow yet.
+The registry tracker can be called from a future Nextflow module:
+
+```bash
+# List current assemblies which have never been imported
+python bin/registry_tracker.py pending
+
+# Reserve an assembly before starting the pipeline; capture the printed id
+status_id=$(python bin/registry_tracker.py start --accession GCF_000001405.40)
+
+# Call this only after the import has completed successfully
+python bin/registry_tracker.py complete --import-status-id "$status_id"
+```
+
+`start` refuses to create a row when any import history already exists for the
+current assembly. The Nextflow pipeline uses `automated` for `genebuilder` by
+default. Direct calls to `registry_tracker.py` must provide
+`--genebuilder NAME`.
 
 ## Next steps
 Run the statistics pipeline on the output CSV to generate statistics for handover.

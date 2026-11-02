@@ -3,6 +3,8 @@ include { IMPORT_REPEATMASKER } from '../subworkflows/import_repeatmasker.nf'
 include { GET_METADATA_CORE } from '../subworkflows/get_metadata_core.nf'
 include { PREPARE_STATS_INPUT } from '../modules/prepare_stats_input.nf'
 include { COMBINE_STATS_INPUT } from '../modules/combine_stats_input.nf'
+include { REGISTRY_TRACKER_START } from '../modules/registry_tracker_start.nf'
+include { REGISTRY_TRACKER_COMPLETE } from '../modules/registry_tracker_complete.nf'
 
 workflow IMPORT_REFSEQ {
 
@@ -17,7 +19,14 @@ workflow IMPORT_REFSEQ {
 
     main:
 
-        IMPORT_REFSEQ_TO_CORE(samples_ch, db_config_ch)
+        REGISTRY_TRACKER_START(samples_ch)
+
+        samples_with_registry_status_ch = REGISTRY_TRACKER_START.out.started
+            .map { meta, import_status_file ->
+                meta + [registry_import_status_id: import_status_file.text.trim()]
+            }
+
+        IMPORT_REFSEQ_TO_CORE(samples_with_registry_status_ch, db_config_ch)
 
         IMPORT_REPEATMASKER(
             IMPORT_REFSEQ_TO_CORE.out.loaded_refseq,
@@ -30,6 +39,10 @@ workflow IMPORT_REFSEQ {
             db_config_ch
         )
 
+        REGISTRY_TRACKER_COMPLETE(
+            GET_METADATA_CORE.out.taxonomy_loaded.map { meta, _taxonomy_marker -> meta }
+        )
+
         PREPARE_STATS_INPUT(
             IMPORT_REFSEQ_TO_CORE.out.genome
         )
@@ -40,6 +53,8 @@ workflow IMPORT_REFSEQ {
             .mix(GET_METADATA_CORE.out.versions)
             .mix(PREPARE_STATS_INPUT.out.versions)
             .mix(COMBINE_STATS_INPUT.out.versions)
+            .mix(REGISTRY_TRACKER_START.out.versions)
+            .mix(REGISTRY_TRACKER_COMPLETE.out.versions)
 
     emit:
         loaded_refseq = IMPORT_REFSEQ_TO_CORE.out.loaded_refseq

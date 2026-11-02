@@ -15,6 +15,11 @@
       "format": "file-path",
       "description": "Path to the server settings file"
     },
+    "genebuilder": {
+      "type": "string",
+      "default": "automated",
+      "description": "Registry genebuilder recorded for the import"
+    },
     "outdir": {
       "type": "string",
       "default": "./results",
