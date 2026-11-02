@@ -39,10 +39,10 @@ process TAMA_COLLAPSE {
     script:
     def args = task.ext.args ?: "-x ${cap_mode} -e ${end_mode} -rm ${run_mode}"
     """
-    tama_collapse.py -s ${shard_sam} -f ${reference} -p tama -m 10 ${args}
+    python3 ${projectDir}/bin/run_tama.py --sam ${shard_sam} --reference ${reference} --output tama.bed --prefix tama --args '${args}'
     cat > versions.yml <<VERSIONS
 "${task.process}":
-    tama: \$(tama_collapse.py -v 1 2>&1 | head -n1)
+    tama: pinned-runtime
 VERSIONS
     """
     stub:

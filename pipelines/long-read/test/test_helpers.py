@@ -332,6 +332,46 @@ def test_bambu_manifest_records_content_checksums(tmp_path: Path):
     assert record["quantify"] is False
 
 
+def test_tama_runner_emits_empty_bed_for_unmapped_sam(tmp_path: Path):
+    sam = tmp_path / "reads.sam"
+    reference = tmp_path / "reference.fa"
+    output = tmp_path / "tama.bed"
+    sam.write_text("@HD\tVN:1.6\nread1\t4\t*\t0\t0\t*\t*\t0\t0\tACGT\t!!!!\n")
+    reference.write_text(">chr1\nAAAA\n")
+    result = run_helper(
+        "run_tama.py", "--sam", str(sam), "--reference", str(reference),
+        "--output", str(output), "--prefix", "tama",
+        "--tama-executable", "/does/not/exist",
+    )
+    assert result.returncode == 0, result.stderr
+    assert output.read_text() == ""
+    assert "no usable mapped alignments" in result.stderr
+
+
+def test_tama_runner_converts_known_empty_locus_failure(tmp_path: Path):
+    sam = tmp_path / "reads.sam"
+    reference = tmp_path / "reference.fa"
+    output = tmp_path / "tama.bed"
+    fake_tama = tmp_path / "fake_tama.py"
+    sam.write_text("@HD\tVN:1.6\nread1\t0\tchr1\t1\t60\t4M\t*\t0\t0\tACGT\t!!!!\n")
+    reference.write_text(">chr1\nAAAA\n")
+    fake_tama.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('IndexError: list index out of range', file=sys.stderr)\n"
+        "raise SystemExit(1)\n"
+    )
+    fake_tama.chmod(0o755)
+    result = run_helper(
+        "run_tama.py", "--sam", str(sam), "--reference", str(reference),
+        "--output", str(output), "--prefix", "tama",
+        "--tama-executable", str(fake_tama),
+    )
+    assert result.returncode == 0, result.stderr
+    assert output.read_text() == ""
+    assert "empty transcript locus" in result.stderr
+
+
 def test_publication_checksum_verifier_detects_tampering(tmp_path: Path):
     product = tmp_path / "model.bed12"
     product.write_text("chr1\t0\t10\ttx\n")
