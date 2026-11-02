@@ -28,7 +28,7 @@ workflow MERGE_LONG_READ_MODELS {
     prepared = PREPARE_BACKEND_MERGE.out.prepared
 
     direct_inputs = prepared
-        .filter { _meta, backend, _scope, _gtfs, _merge_input, _status, _merge_status, _skipped -> !(backend in ['stringtie2', 'stringtie3', 'tmerge']) }
+        .filter { _meta, backend, _scope, _gtfs, _merge_input, status, _merge_status, _skipped -> !(backend in ['stringtie2', 'stringtie3', 'tmerge']) && status.text.contains('COMPLETE') }
         .map { meta, backend, scope, _gtfs, merge_input, status, merge_status, skipped -> tuple(meta, backend, scope, merge_input, status, merge_status, skipped) }
     MERGE_DIRECT_GTF(direct_inputs)
 
