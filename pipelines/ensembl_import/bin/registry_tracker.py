@@ -25,7 +25,7 @@ REGISTRY_PORT = 4527
 REGISTRY_USER = "ensadmin"
 REGISTRY_PASSWORD = "ensembl"
 REGISTRY_DB = "refseq_assembly_test"
-GENEBUILD_VERSION = "IMP01"
+GENEBUILD_VERSION = "EXT01"
 GCF_ACCESSION_PATTERN = re.compile(r"GCF_\d+\.\d+")
 
 
