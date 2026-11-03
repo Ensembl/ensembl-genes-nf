@@ -14,6 +14,8 @@ from bisect import bisect_right
 import csv
 import gzip
 import hashlib
+import heapq
+from itertools import islice
 import re
 import sys
 from collections import Counter, defaultdict
@@ -72,7 +74,12 @@ def parse_coord(value: str) -> tuple[int, int] | None:
 
 
 def intervals(row: dict[str, str], field: str = "exon_coordinates") -> list[tuple[int, int]]:
-    return sorted(coord for coord in (parse_coord(x) for x in row.get(field, "").split(";")) if coord)
+    if field == "exon_coordinates" and "_parsed_exons" in row:
+        return row["_parsed_exons"]
+    parsed = sorted(coord for coord in (parse_coord(x) for x in row.get(field, "").split(";")) if coord)
+    if field == "exon_coordinates":
+        row["_parsed_exons"] = parsed
+    return parsed
 
 
 def chain(exons: list[tuple[int, int]]) -> str:
@@ -81,7 +88,11 @@ def chain(exons: list[tuple[int, int]]) -> str:
 
 
 def junctions(row: dict[str, str]) -> set[str]:
-    return {x for x in row.get("intron_chain", "").split(";") if x}
+    if "_parsed_junctions" in row:
+        return row["_parsed_junctions"]
+    parsed = {x for x in row.get("intron_chain", "").split(";") if x}
+    row["_parsed_junctions"] = parsed
+    return parsed
 
 
 def infer_format(path: str, requested: str | None = None) -> str:
@@ -153,7 +164,10 @@ def indexed_candidates(row: dict[str, str], index: dict[tuple[str, str, str], tu
     if bucket is None:
         return
     starts, entries = bucket
-    for start, end, row_index in entries[:bisect_right(starts, span[1])]:
+    # Do not materialise a slice for every query. Large BED12 inputs can
+    # contain millions of models, and the slice itself becomes a substantial
+    # allocation even when only a few entries overlap the query span.
+    for start, end, row_index in islice(entries, bisect_right(starts, span[1])):
         if end >= span[0]:
             yield row_index
 
@@ -396,39 +410,72 @@ def assign_loci(source_a: list[dict[str, str]], source_b: list[dict[str, str]], 
             row["locus_assignment_method"] = "reference_splice_or_reciprocal_exon_overlap"
 
     synthetic = [row for row in all_rows if not row["locus_id"] and row.get("model_status") in {"valid", "no_exon_records"}]
-    synthetic_index = build_interval_index(synthetic)
-    components: list[list[dict[str, str]]] = []
-    unseen = set(range(len(synthetic)))
-    while unseen:
-        seed = min(unseen, key=lambda index: (
+    # Build connected components with a sweep-line over overlapping spans.
+    # The previous implementation repeatedly scanned all prior interval
+    # entries for each model and selected each seed with min(unseen); both
+    # become quadratic for millions of independent models. Shared junctions
+    # are caught by the same sweep because transcripts sharing a junction also
+    # have overlapping transcript spans.
+    synthetic_order = sorted(range(len(synthetic)), key=lambda index: (
             synthetic[index].get("assembly", assembly), synthetic[index].get("contig", ""),
             synthetic[index].get("strand", "."), safe_int(synthetic[index].get("transcript_start")),
             synthetic[index].get("transcript_id", "")))
-        unseen.remove(seed)
-        component = [synthetic[seed]]
-        frontier = [seed]
-        while frontier:
-            current = frontier.pop()
-            neighbours = [index for index in indexed_candidates(synthetic[current], synthetic_index)
-                          if index in unseen and related(synthetic[current], synthetic[index], minimum_bp, reciprocal)]
-            for index in neighbours:
-                unseen.remove(index)
-                frontier.append(index)
-                component.append(synthetic[index])
-        components.append(component)
+    parent = list(range(len(synthetic)))
+    component_size = [1] * len(synthetic)
 
-    components.sort(key=lambda component: (
-        component[0].get("assembly", assembly), component[0].get("contig", ""),
-        component[0].get("strand", "."), min(safe_int(row.get("transcript_start")) for row in component),
-        min(row.get("transcript_id", "") for row in component),
-    ))
-    for index, component in enumerate(components, 1):
-        first = min(component, key=lambda row: (safe_int(row.get("transcript_start")), row.get("transcript_id", "")))
-        locus = f"locus:{assembly}:{first.get('contig', '')}:{first.get('strand', '.')}:" + f"{index:06d}"
-        for row in component:
-            row["gene_assignment_type"] = "synthetic_locus"
-            row["locus_id"] = locus
-            row["locus_assignment_method"] = "de_novo_union_junction_or_reciprocal_exon_overlap"
+    def find(index: int) -> int:
+        while parent[index] != index:
+            parent[index] = parent[parent[index]]
+            index = parent[index]
+        return index
+
+    def union(left: int, right: int) -> None:
+        left_root, right_root = find(left), find(right)
+        if left_root == right_root:
+            return
+        if component_size[left_root] < component_size[right_root]:
+            left_root, right_root = right_root, left_root
+        parent[right_root] = left_root
+        component_size[left_root] += component_size[right_root]
+
+    active: set[int] = set()
+    expiry: list[tuple[int, int]] = []
+    active_key: tuple[str, str, str] | None = None
+    for index in synthetic_order:
+        row = synthetic[index]
+        span = coordinate_span(row)
+        key = (row.get("assembly", assembly), row.get("contig", ""), row.get("strand", "."))
+        if key != active_key:
+            active.clear()
+            expiry.clear()
+            active_key = key
+        if span is None:
+            continue
+        start, end = span
+        while expiry and expiry[0][0] < start:
+            _expired_end, expired = heapq.heappop(expiry)
+            active.discard(expired)
+        for candidate in active:
+            if related(row, synthetic[candidate], minimum_bp, reciprocal):
+                union(index, candidate)
+        active.add(index)
+        heapq.heappush(expiry, (end, index))
+
+    # The first row encountered for a component is its minimum deterministic
+    # sort key, matching the component ordering used by the old implementation.
+    root_loci: dict[int, str] = {}
+    locus_number = 0
+    for seed in synthetic_order:
+        root = find(seed)
+        locus = root_loci.get(root)
+        if locus is None:
+            locus_number += 1
+            first = synthetic[seed]
+            locus = f"locus:{assembly}:{first.get('contig', '')}:{first.get('strand', '.')}:" + f"{locus_number:06d}"
+            root_loci[root] = locus
+        synthetic[seed]["gene_assignment_type"] = "synthetic_locus"
+        synthetic[seed]["locus_id"] = locus
+        synthetic[seed]["locus_assignment_method"] = "de_novo_union_junction_or_reciprocal_exon_overlap"
 
     for row in all_rows:
         if not row["locus_id"]:

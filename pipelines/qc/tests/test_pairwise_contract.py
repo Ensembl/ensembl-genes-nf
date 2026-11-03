@@ -118,6 +118,53 @@ class PairwiseContractTest(unittest.TestCase):
             self.assertIn("locus:fixture:chr1:+:000001", outputs[0][0])
             self.assertIn("locus:fixture:chr1:+:000001", outputs[0][1])
 
+    def test_locus_assignment_scales_with_many_independent_models(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            header = [
+                "pair_id", "source", "assembly", "contig", "strand",
+                "transcript_id", "original_transcript_id", "original_gene_id",
+                "transcript_start", "transcript_end", "exon_count",
+                "exon_coordinates", "intron_chain", "five_prime_end",
+                "three_prime_end", "source_format", "gene_assignment_type",
+                "locus_id", "locus_assignment_method", "model_status",
+                "utr_coordinates", "cds_coordinates",
+            ]
+
+            def model(source, index):
+                start = index * 1000 + 1
+                end = start + 99
+                transcript = f"{source}_{index}"
+                return [
+                    "p", source, "fixture", "chr1", "+", transcript, transcript,
+                    "", str(start), str(end), "1", f"{start}-{end}", "",
+                    str(start), str(end), "bed12", "unassigned", "", "", "valid",
+                    "", "",
+                ]
+            for source in ("source_a", "source_b"):
+                (root / f"{source}.tsv").write_text(
+                    "\t".join(header) + "\n"
+                    + "\n".join("\t".join(model(source, index)) for index in range(6000))
+                    + "\n",
+                    encoding="utf-8",
+                )
+            output_a, output_b, summary = (root / name for name in ("a.tsv", "b.tsv", "summary.tsv"))
+            subprocess.run(
+                [
+                    sys.executable, str(PAIRWISE_QC), "assign-loci",
+                    "--source-a", str(root / "source_a.tsv"),
+                    "--source-b", str(root / "source_b.tsv"),
+                    "--pair-id", "p", "--assembly", "fixture",
+                    "--output-a", str(output_a), "--output-b", str(output_b),
+                    "--summary", str(summary),
+                ],
+                check=True,
+                timeout=20,
+            )
+            self.assertEqual(len(output_a.read_text(encoding="utf-8").splitlines()), 6001)
+            self.assertEqual(len(output_b.read_text(encoding="utf-8").splitlines()), 6001)
+            self.assertIn("synthetic_locus", summary.read_text(encoding="utf-8"))
+
     def test_reference_assignment_is_distinct_from_source_gene_assignment(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
