@@ -94,12 +94,18 @@ def _acquire_assembly_lock(cursor: pymysql.cursors.Cursor, assembly_id: int) -> 
     """Serialize start operations for one assembly on this MySQL server."""
     lock_name = f"ensembl_import:{assembly_id}"
     cursor.execute("SELECT GET_LOCK(%s, 30)", (lock_name,))
-    if cursor.fetchone()[0] != 1:
+    lock_result = cursor.fetchone()
+    if not lock_result or next(iter(lock_result.values())) != 1:
         raise RegistryTrackerError(f"Could not acquire registry lock for assembly {assembly_id}")
     return lock_name
 
 
-def start_import(config: RegistryConfig, refseq_accession: str, genebuilder: str) -> int:
+def start_import(
+    config: RegistryConfig,
+    refseq_accession: str,
+    genebuilder: str,
+    skip_start_check: bool = False,
+) -> int:
     """Create an in-progress row and return its id."""
     if not GCF_ACCESSION_PATTERN.fullmatch(refseq_accession):
         raise RegistryTrackerError(
@@ -124,13 +130,47 @@ def start_import(config: RegistryConfig, refseq_accession: str, genebuilder: str
             )
             existing = cursor.fetchall()
             if existing:
-                details = ", ".join(
-                    f"id={row['import_status_id']} status={row['import_status']} builder={row['genebuilder']}"
-                    for row in existing
+                if not skip_start_check:
+                    details = ", ".join(
+                        f"id={row['import_status_id']} status={row['import_status']} builder={row['genebuilder']}"
+                        for row in existing
+                    )
+                    raise ExistingImportError(
+                        f"Import already recorded for {refseq_accession}; refusing to start another ({details})"
+                    )
+
+                if len(existing) != 1:
+                    raise ExistingImportError(
+                        f"Cannot reuse import status for {refseq_accession}; "
+                        f"found {len(existing)} existing records"
+                    )
+
+                existing_record = existing[0]
+                if existing_record["genebuilder"] != genebuilder:
+                    raise ExistingImportError(
+                        f"Cannot reuse import status for {refseq_accession}; "
+                        f"existing genebuilder is {existing_record['genebuilder']}, requested {genebuilder}"
+                    )
+
+                cursor.execute(
+                    """
+                    UPDATE import_status
+                       SET import_status = 'in_progress',
+                           date_started = CURRENT_DATE,
+                           date_status_update = CURRENT_DATE,
+                           genebuild_version = %s
+                     WHERE import_status_id = %s
+                    """,
+                    (GENEBUILD_VERSION, existing_record["import_status_id"]),
                 )
-                raise ExistingImportError(
-                    f"Import already recorded for {refseq_accession}; refusing to start another ({details})"
+                status_id = existing_record["import_status_id"]
+                conn.commit()
+                LOGGER.info(
+                    "Restarted import %s with import_status_id=%s",
+                    refseq_accession,
+                    status_id,
                 )
+                return int(status_id)
 
             cursor.execute(
                 """
@@ -187,6 +227,11 @@ def parse_args() -> argparse.Namespace:
     start = subparsers.add_parser("start", help="record an import start")
     start.add_argument("--accession", required=True, dest="refseq_accession", help="current GCF accession")
     start.add_argument("--genebuilder", required=True, help="registry genebuilder")
+    start.add_argument(
+        "--skip-start-check",
+        action="store_true",
+        help="reuse the existing record when its genebuilder matches",
+    )
     complete = subparsers.add_parser("complete", help="record a successful import")
     complete.add_argument("--import-status-id", required=True, type=int)
     return parser.parse_args()
@@ -196,12 +241,26 @@ def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args = parse_args()
     config = RegistryConfig(args.host, args.port, args.user, args.password, args.database)
-    if args.operation == "pending":
-        print(json.dumps(list_pending(config), default=str, indent=2))
-    elif args.operation == "start":
-        print(start_import(config, args.refseq_accession, args.genebuilder))
-    else:
-        complete_import(config, args.import_status_id)
+    try:
+        if args.operation == "pending":
+            print(json.dumps(list_pending(config), default=str, indent=2))
+        elif args.operation == "start":
+            print(
+                start_import(
+                    config,
+                    args.refseq_accession,
+                    args.genebuilder,
+                    args.skip_start_check,
+                )
+            )
+        else:
+            complete_import(config, args.import_status_id)
+    except RegistryTrackerError as error:
+        LOGGER.error("Registry tracker failed: %s", error)
+        raise SystemExit(1) from None
+    except pymysql.MySQLError as error:
+        LOGGER.error("Registry database error: %s", error)
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":

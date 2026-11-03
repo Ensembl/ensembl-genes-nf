@@ -11,10 +11,13 @@ process REGISTRY_TRACKER_START {
     path 'versions.yml', emit: versions
 
     script:
+    def skipStartCheck = params.skip_start_check == 'true' ? '--skip-start-check' : ''
+
     """
     registry_tracker.py start \
         --accession ${meta.id} \
         --genebuilder '${params.genebuilder}' \
+        ${skipStartCheck} \
         > import_status_id.txt
 
     cat <<-END_VERSIONS > versions.yml

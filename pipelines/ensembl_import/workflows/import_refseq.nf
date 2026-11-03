@@ -35,7 +35,7 @@ workflow IMPORT_REFSEQ {
         )
 
         GET_METADATA_CORE(
-            IMPORT_REPEATMASKER.out.loaded,
+            IMPORT_REFSEQ_TO_CORE.out.loaded_refseq,
             db_config_ch
         )
 

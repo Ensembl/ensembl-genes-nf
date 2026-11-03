@@ -60,6 +60,7 @@ nextflow run pipelines/ensembl_import/main.nf \
   --input_csv /path/to/assemblies.csv \
   --server_settings /path/to/server_settings.json \
   --genebuilder automated \
+  --skip_start_check false \
   --outdir /path/to/results
 ```
 
@@ -108,15 +109,18 @@ Each assembly is processed independently.
 2. `FETCH_REFSEQ` downloads and prepares the RefSeq GFF3, FASTA, and assembly
    report files.
 3. `LOAD_REFSEQ` creates the Ensembl core database with `gff_cli.py`.
-4. `DOWNLOAD_REPEATMASKER` downloads the RefSeq RepeatMasker output with
-   `gff-loader refseq download-repeatmasker`.
+4. `DOWNLOAD_REPEATMASKER` attempts to download the RefSeq RepeatMasker output
+   with `gff-loader refseq download-repeatmasker`. A 404 is recorded as a
+   missing optional file and does not fail the import.
 5. `CONVERT_REPEATMASKER` converts the downloaded output to GTF using the
-   assembly report.
-6. `LOAD_REPEATMASKER` loads the GTF with analysis name `repeatmasker`.
+   assembly report when the file is available.
+6. `LOAD_REPEATMASKER` loads the GTF with analysis name `repeatmasker` when
+   conversion produced one.
 7. `GET_SAMPLE_GENE` selects and inserts sample gene metadata.
 8. `ADD_STATIC_METAKEYS` inserts configured static metadata keys.
 9. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
-   core database.
+   core database. Requests are serialized and transient NCBI rate-limit or
+   network errors are retried with backoff.
 10. `REGISTRY_TRACKER_COMPLETE` marks the registry row as `completed` after
     the per-assembly import and metadata work has succeeded.
 11. `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
@@ -172,6 +176,12 @@ python bin/registry_tracker.py complete --import-status-id "$status_id"
 current assembly. The Nextflow pipeline uses `automated` for `genebuilder` by
 default. Direct calls to `registry_tracker.py` must provide
 `--genebuilder NAME`.
+
+By default, an existing import-status record stops the pipeline. Set
+`--skip_start_check true` (or the bare `--skip_start_check` flag) to reuse that
+record, but only when its
+`genebuilder` matches the requested value. Reuse resets the record to
+`in_progress` and updates its start and status-update dates.
 
 ## Next steps
 Run the statistics pipeline on the output CSV to generate statistics for handover.

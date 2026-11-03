@@ -19,6 +19,9 @@ workflow IMPORT_REPEATMASKER {
         DOWNLOAD_REPEATMASKER(loaded_refseq)
 
         repeatmasker_with_report = DOWNLOAD_REPEATMASKER.out.repeatmasker
+            .map { meta, repeatmasker, repeatmasker_status ->
+                tuple(meta, repeatmasker, repeatmasker_status.text.trim() == 'available')
+            }
             .join(assembly_report)
 
         CONVERT_REPEATMASKER(repeatmasker_with_report)
