@@ -13,8 +13,8 @@
     },
     "mode": {
       "type": "string",
-      "enum": ["agat", "interproscan", "diamond", "combined", "pairwise"],
-      "description": "QC analysis to run. combined runs all available analyses."
+      "enum": ["agat", "interproscan", "diamond", "combined", "pairwise", "pairwise_transcripts"],
+      "description": "QC analysis to run. pairwise compares full annotations; pairwise_transcripts compares transcript models without gene assignment or transcript pairing."
     },
     "database": {
       "type": "string",
@@ -127,7 +127,7 @@
   "required": ["mode"],
   "allOf": [
     {
-      "if": { "properties": { "mode": { "const": "pairwise" } }, "required": ["mode"] },
+      "if": { "properties": { "mode": { "enum": ["pairwise", "pairwise_transcripts"] } }, "required": ["mode"] },
       "then": {
         "oneOf": [
           { "required": ["pairwise_csv"] },

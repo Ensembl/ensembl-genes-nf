@@ -16,11 +16,14 @@ import gzip
 import hashlib
 import heapq
 from itertools import islice
+import shutil
 import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
+from urllib.parse import urlparse
 from urllib.parse import unquote
+from urllib.request import urlopen
 
 
 MODEL_HEADER = [
@@ -40,7 +43,9 @@ VALID_FORMATS = {"gff3", "gtf", "bed12", "auto"}
 
 def open_text(path: str | Path):
     path = str(path)
-    return gzip.open(path, "rt", encoding="utf-8") if path.endswith(".gz") else open(path, encoding="utf-8")
+    with open(path, "rb") as probe:
+        compressed = probe.read(2) == b"\x1f\x8b"
+    return gzip.open(path, "rt", encoding="utf-8") if compressed or path.endswith(".gz") else open(path, encoding="utf-8")
 
 
 def attrs(text: str) -> dict[str, str]:
@@ -315,9 +320,15 @@ def parse_models(path: str, source: str, pair_id: str, assembly: str,
     return sorted(rows, key=lambda row: (row["contig"], safe_int(row["transcript_start"]), row["transcript_id"])), warnings
 
 
-def read_tsv(path: str | Path) -> list[dict[str, str]]:
+def iter_tsv(path: str | Path):
+    if not path or not Path(path).is_file() or Path(path).stat().st_size == 0:
+        return
     with open(path, newline="", encoding="utf-8") as handle:
-        return list(csv.DictReader(handle, delimiter="\t"))
+        yield from csv.DictReader(handle, delimiter="\t")
+
+
+def read_tsv(path: str | Path) -> list[dict[str, str]]:
+    return list(iter_tsv(path))
 
 
 def write_tsv(path: str | Path, header: list[str], rows: list[dict | list]) -> None:
@@ -326,6 +337,187 @@ def write_tsv(path: str | Path, header: list[str], rows: list[dict | list]) -> N
         writer.writerow(header)
         for row in rows:
             writer.writerow([row.get(column, "") for column in header] if isinstance(row, dict) else row)
+
+
+def stage_input(value: str | None, destination: str | Path, cache_dir: str | Path) -> None:
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() or destination.is_symlink():
+        destination.unlink()
+    if not value or value.lower() in {"na", "null"}:
+        destination.touch()
+        return
+    if re.match(r"(?i)^(https?|ftp)://", value):
+        cache = Path(cache_dir)
+        cache.mkdir(parents=True, exist_ok=True)
+        suffix = Path(urlparse(value).path).suffix
+        cached = cache / f"{hashlib.sha256(value.encode('utf-8')).hexdigest()}{suffix}"
+        if not cached.is_file() or cached.stat().st_size == 0:
+            with urlopen(value) as response, open(cached, "wb") as handle:
+                shutil.copyfileobj(response, handle)
+        shutil.copyfile(cached, destination)
+        return
+    source = Path(value)
+    if not source.is_file():
+        raise SystemExit(f"input does not exist: {value}")
+    shutil.copyfile(source, destination)
+
+
+def ordered_exons(row: dict[str, str]) -> list[tuple[int, int]]:
+    exons = intervals(row)
+    return list(reversed(exons)) if row.get("strand") == "-" else exons
+
+
+def feature_signature(row: dict[str, str]) -> dict[str, object]:
+    exons = intervals(row)
+    ordered = ordered_exons(row)
+    contig = row.get("contig", "")
+    strand = row.get("strand", ".")
+    exon_keys = [f"{contig}|{strand}|{start}-{end}" for start, end in exons]
+    genomic_junctions = [
+        f"{right}-{next_left}"
+        for (_, right), (next_left, _) in zip(exons, exons[1:])
+    ]
+    chain_keys = list(genomic_junctions if strand != "-" else reversed(genomic_junctions))
+    chain_key = f"{contig}|{strand}|{';'.join(chain_keys)}" if chain_keys else ""
+    model_key = f"{contig}|{strand}|{';'.join(f'{start}-{end}' for start, end in exons)}"
+    five = ordered[0] if ordered else None
+    three = ordered[-1] if ordered else None
+    five_key = f"5p|{contig}|{strand}|{five[0]}-{five[1]}" if five else ""
+    three_key = f"3p|{contig}|{strand}|{three[0]}-{three[1]}" if three else ""
+    return {
+        "model": model_key if exons else "",
+        "exons": exon_keys,
+        "introns": [f"{contig}|{strand}|{junction}" for junction in genomic_junctions],
+        "intron_chain": chain_key,
+        "five_prime_exon": five_key,
+        "three_prime_exon": three_key,
+    }
+
+
+def add_example(mapping: defaultdict[str, list[str]], key: str, value: str, limit: int = 5) -> None:
+    if key and len(mapping[key]) < limit and value not in mapping[key]:
+        mapping[key].append(value)
+
+
+def build_feature_index(path: str | Path) -> dict[str, object]:
+    index = {
+        "features": defaultdict(Counter),
+        "examples": defaultdict(list),
+        "chain_terminals": defaultdict(set),
+        "model_count": 0,
+    }
+    for row in iter_tsv(path):
+        signature = feature_signature(row)
+        transcript_id = row.get("transcript_id", row.get("original_transcript_id", ""))
+        index["model_count"] += 1
+        for feature_type, key in (("model", signature["model"]), ("intron_chain", signature["intron_chain"])):
+            if key:
+                index["features"][feature_type][key] += 1
+                add_example(index["examples"], key, transcript_id)
+        for feature_type in ("exons", "introns"):
+            for key in signature[feature_type]:
+                index["features"][feature_type[:-1]][key] += 1
+                add_example(index["examples"], key, transcript_id)
+        for feature_type, key in (("terminal_exon", signature["five_prime_exon"]), ("terminal_exon", signature["three_prime_exon"])):
+            if key:
+                index["features"][feature_type][key] += 1
+                add_example(index["examples"], key, transcript_id)
+        if signature["intron_chain"]:
+            index["chain_terminals"][signature["intron_chain"]].add((signature["five_prime_exon"], signature["three_prime_exon"]))
+    return index
+
+
+def classify_model_difference(signature: dict[str, object], other: dict[str, object]) -> tuple[str, int, int, int, int]:
+    model_key = signature["model"]
+    chain_key = signature["intron_chain"]
+    exact_models = other["features"]["model"].get(model_key, 0) if model_key else 0
+    same_chain_models = other["features"]["intron_chain"].get(chain_key, 0) if chain_key else 0
+    shared_introns = sum(1 for key in signature["introns"] if other["features"]["intron"].get(key, 0))
+    shared_exons = sum(1 for key in signature["exons"] if other["features"]["exon"].get(key, 0))
+    if exact_models:
+        classification = "exact_model"
+    elif same_chain_models:
+        terminals = other["chain_terminals"].get(chain_key, set())
+        same_five = any(pair[0] == signature["five_prime_exon"] for pair in terminals)
+        same_three = any(pair[1] == signature["three_prime_exon"] for pair in terminals)
+        if same_five and not same_three:
+            classification = "same_intron_chain_3prime_terminal_difference"
+        elif same_three and not same_five:
+            classification = "same_intron_chain_5prime_terminal_difference"
+        else:
+            classification = "same_intron_chain_terminal_difference"
+    elif shared_introns:
+        classification = "shared_introns_different_chain"
+    elif shared_exons:
+        classification = "shared_exons_only"
+    else:
+        classification = "no_shared_structure"
+    return classification, exact_models, same_chain_models, shared_introns, shared_exons
+
+
+def model_presence_rows(path: str | Path, other: dict[str, object], pair_id: str, source: str,
+                        evidence: dict[str, dict[str, str]]):
+    for row in iter_tsv(path):
+        signature = feature_signature(row)
+        tx = row.get("transcript_id", row.get("original_transcript_id", ""))
+        ev = evidence.get(tx, {})
+        classification, exact, same_chain, shared_introns, shared_exons = classify_model_difference(signature, other)
+        yield [
+            pair_id, source, tx, signature["model"], ev.get("full_length_support", ""),
+            "true" if ev else "false", str(exact), str(same_chain), str(shared_introns),
+            str(shared_exons), classification,
+        ]
+
+
+def write_model_presence(path: str | Path, pair_id: str, source_a: str | Path, source_b: str | Path,
+                         index_a: dict[str, object], index_b: dict[str, object], evidence_a: dict[str, dict[str, str]],
+                         evidence_b: dict[str, dict[str, str]]) -> None:
+    header = [
+        "pair_id", "source", "transcript_id", "model_signature", "full_length_support",
+        "evidence_available", "exact_model_matches", "same_intron_chain_models",
+        "shared_introns", "shared_exons", "classification",
+    ]
+    with open(path, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(header)
+        writer.writerows(model_presence_rows(source_a, index_b, pair_id, "source_a", evidence_a))
+        writer.writerows(model_presence_rows(source_b, index_a, pair_id, "source_b", evidence_b))
+
+
+def write_feature_presence(path: str | Path, pair_id: str, left: dict[str, object], right: dict[str, object]) -> None:
+    header = ["pair_id", "feature_type", "feature_signature", "source_a_count", "source_b_count", "classification", "source_a_examples", "source_b_examples"]
+    feature_types = ("exon", "intron", "intron_chain", "terminal_exon")
+    with open(path, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(header)
+        for feature_type in feature_types:
+            keys = sorted(set(left["features"][feature_type]) | set(right["features"][feature_type]))
+            for key in keys:
+                left_count = left["features"][feature_type].get(key, 0)
+                right_count = right["features"][feature_type].get(key, 0)
+                classification = "shared" if left_count and right_count else ("source_a_only" if left_count else "source_b_only")
+                writer.writerow([
+                    pair_id, feature_type, key, left_count, right_count, classification,
+                    ",".join(left["examples"].get(key, [])), ",".join(right["examples"].get(key, [])),
+                ])
+
+
+def write_terminal_comparison(path: str | Path, pair_id: str, left: dict[str, object], right: dict[str, object]) -> None:
+    header = ["pair_id", "side", "terminal_exon_signature", "source_a_count", "source_b_count", "classification", "source_a_examples", "source_b_examples"]
+    with open(path, "w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(header)
+        for side in ("5p", "3p"):
+            keys = sorted(key for key in set(left["features"]["terminal_exon"]) | set(right["features"]["terminal_exon"]) if key.startswith(f"{side}|"))
+            for key in keys:
+                left_count = left["features"]["terminal_exon"].get(key, 0)
+                right_count = right["features"]["terminal_exon"].get(key, 0)
+                classification = "shared" if left_count and right_count else ("source_a_only" if left_count else "source_b_only")
+                writer.writerow([
+                    pair_id, side, key, left_count, right_count, classification,
+                    ",".join(left["examples"].get(key, [])), ",".join(right["examples"].get(key, [])),
+                ])
 
 
 def exon_length(row: dict[str, str]) -> int:
@@ -532,6 +724,65 @@ def cmd_normalise(args: argparse.Namespace) -> None:
     write_tsv(args.output, MODEL_HEADER, rows)
     if warnings:
         Path(args.output + ".warnings").write_text("\n".join(warnings) + "\n", encoding="utf-8")
+
+
+def cmd_stage(args: argparse.Namespace) -> None:
+    for value, destination in (
+        (args.source_a, args.output_source_a),
+        (args.source_b, args.output_source_b),
+        (args.assembly_report, args.output_assembly_report),
+        (args.evidence_a, args.output_evidence_a),
+        (args.evidence_b, args.output_evidence_b),
+        (args.reference, args.output_reference),
+    ):
+        stage_input(value, destination, args.cache_dir)
+
+
+def cmd_normalise_pair(args: argparse.Namespace) -> None:
+    source_a, warnings_a = parse_models(args.source_a, "source_a", args.pair_id, args.assembly, args.format_a)
+    source_b, warnings_b = parse_models(args.source_b, "source_b", args.pair_id, args.assembly, args.format_b)
+    write_tsv(args.output_a, MODEL_HEADER, source_a)
+    write_tsv(args.output_b, MODEL_HEADER, source_b)
+    write_tsv(
+        args.audit,
+        ["pair_id", "source", "n_models", "n_warnings", "status"],
+        [
+            [args.pair_id, "source_a", len(source_a), len(warnings_a), "warning" if warnings_a else "ok"],
+            [args.pair_id, "source_b", len(source_b), len(warnings_b), "warning" if warnings_b else "ok"],
+        ],
+    )
+
+
+def load_evidence(path: str | Path) -> dict[str, dict[str, str]]:
+    return {
+        row.get("transcript_id", ""): row
+        for row in iter_tsv(path)
+        if row.get("transcript_id")
+    }
+
+
+def cmd_compare_features(args: argparse.Namespace) -> None:
+    source_a = build_feature_index(args.source_a)
+    source_b = build_feature_index(args.source_b)
+    evidence_a = load_evidence(args.evidence_a)
+    evidence_b = load_evidence(args.evidence_b)
+    write_model_presence(args.model_presence, args.pair_id, args.source_a, args.source_b, source_a, source_b, evidence_a, evidence_b)
+    write_feature_presence(args.feature_presence, args.pair_id, source_a, source_b)
+    write_terminal_comparison(args.terminal_exons, args.pair_id, source_a, source_b)
+
+    classifications_a = Counter()
+    classifications_b = Counter()
+    for row in iter_tsv(args.source_a):
+        classifications_a[classify_model_difference(feature_signature(row), source_b)[0]] += 1
+    for row in iter_tsv(args.source_b):
+        classifications_b[classify_model_difference(feature_signature(row), source_a)[0]] += 1
+    summary_rows = []
+    for source, index, classifications in (("source_a", source_a, classifications_a), ("source_b", source_b, classifications_b)):
+        for classification in sorted(classifications):
+            summary_rows.append([args.pair_id, source, "model", classification, classifications[classification]])
+        for feature_type in ("exon", "intron", "intron_chain", "terminal_exon"):
+            summary_rows.append([args.pair_id, source, feature_type, "distinct_features", len(index["features"][feature_type])])
+    write_tsv(args.summary, ["pair_id", "source", "feature_type", "classification", "count"], summary_rows)
 
 
 def cmd_assign(args: argparse.Namespace) -> None:
@@ -765,6 +1016,18 @@ def parser() -> argparse.ArgumentParser:
     v.add_argument("--reference-annotation", default=""); v.add_argument("--output", required=True); v.set_defaults(func=cmd_validate)
     n = sub.add_parser("normalise")
     n.add_argument("--input", required=True); n.add_argument("--source", required=True); n.add_argument("--pair-id", required=True); n.add_argument("--assembly", required=True); n.add_argument("--format", required=True); n.add_argument("--output", required=True); n.set_defaults(func=cmd_normalise)
+    stg = sub.add_parser("stage")
+    stg.add_argument("--source-a", default=""); stg.add_argument("--source-b", default="")
+    stg.add_argument("--assembly-report", default=""); stg.add_argument("--evidence-a", default=""); stg.add_argument("--evidence-b", default=""); stg.add_argument("--reference", default="")
+    stg.add_argument("--cache-dir", required=True)
+    stg.add_argument("--output-source-a", required=True); stg.add_argument("--output-source-b", required=True); stg.add_argument("--output-assembly-report", required=True)
+    stg.add_argument("--output-evidence-a", required=True); stg.add_argument("--output-evidence-b", required=True); stg.add_argument("--output-reference", required=True); stg.set_defaults(func=cmd_stage)
+    np = sub.add_parser("normalise-pair")
+    np.add_argument("--source-a", required=True); np.add_argument("--source-b", required=True); np.add_argument("--format-a", required=True); np.add_argument("--format-b", required=True)
+    np.add_argument("--pair-id", required=True); np.add_argument("--assembly", required=True); np.add_argument("--output-a", required=True); np.add_argument("--output-b", required=True); np.add_argument("--audit", required=True); np.set_defaults(func=cmd_normalise_pair)
+    cf = sub.add_parser("compare-features")
+    cf.add_argument("--source-a", required=True); cf.add_argument("--source-b", required=True); cf.add_argument("--evidence-a", default=""); cf.add_argument("--evidence-b", default=""); cf.add_argument("--pair-id", required=True)
+    cf.add_argument("--model-presence", required=True); cf.add_argument("--feature-presence", required=True); cf.add_argument("--terminal-exons", required=True); cf.add_argument("--summary", required=True); cf.set_defaults(func=cmd_compare_features)
     a = sub.add_parser("assign-loci")
     a.add_argument("--source-a", required=True); a.add_argument("--source-b", required=True); a.add_argument("--assembly", required=True); a.add_argument("--pair-id", required=True); a.add_argument("--reference", default=""); a.add_argument("--reference-format", default="auto"); a.add_argument("--minimum-overlap-bp", type=int, default=10); a.add_argument("--reciprocal-overlap", type=float, default=0.10); a.add_argument("--output-a", required=True); a.add_argument("--output-b", required=True); a.add_argument("--summary", required=True); a.set_defaults(func=cmd_assign)
     al = sub.add_parser("audit-loci")

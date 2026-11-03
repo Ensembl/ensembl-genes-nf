@@ -1,3 +1,4 @@
+import csv
 import json
 import subprocess
 import sys
@@ -201,6 +202,39 @@ class PairwiseContractTest(unittest.TestCase):
             subprocess.run([sys.executable, str(PAIRWISE_QC), "status", "--pair-id", "p", "--output", str(output), "--entry", "gene_presence", "not_applicable", "BED12", "--entry", "protein_validation", "missing_input", "no protein evidence"], check=True)
             self.assertIn("not_applicable", output.read_text())
             self.assertIn("missing_input", output.read_text())
+
+    def test_transcript_feature_comparison_separates_terminal_difference_from_chain(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_a = root / "a.bed12"
+            source_b = root / "b.bed12"
+            source_a.write_text("chr1\t100\t220\ta_tx\t0\t+\t100\t220\t0\t2\t40,50\t0,70\n", encoding="utf-8")
+            source_b.write_text("chr1\t100\t230\tb_tx\t0\t+\t100\t230\t0\t2\t40,60\t0,70\n", encoding="utf-8")
+            a_models, b_models = root / "a.tsv", root / "b.tsv"
+            subprocess.run([sys.executable, str(PAIRWISE_QC), "normalise-pair", "--source-a", str(source_a), "--source-b", str(source_b), "--format-a", "bed12", "--format-b", "bed12", "--pair-id", "p", "--assembly", "fixture", "--output-a", str(a_models), "--output-b", str(b_models), "--audit", str(root / "audit.tsv")], check=True)
+            output = root / "models.tsv"
+            subprocess.run([sys.executable, str(PAIRWISE_QC), "compare-features", "--source-a", str(a_models), "--source-b", str(b_models), "--pair-id", "p", "--model-presence", str(output), "--feature-presence", str(root / "features.tsv"), "--terminal-exons", str(root / "terminal.tsv"), "--summary", str(root / "summary.tsv")], check=True)
+            with output.open(newline="", encoding="utf-8") as handle:
+                rows = list(csv.DictReader(handle, delimiter="\t"))
+            self.assertEqual({row["classification"] for row in rows}, {"same_intron_chain_3prime_terminal_difference"})
+            self.assertEqual({row["same_intron_chain_models"] for row in rows}, {"1"})
+            self.assertNotIn("locus_id", rows[0])
+
+    def test_transcript_modules_use_one_command_without_printf_or_internal_versions(self):
+        module_dir = Path(__file__).parents[1] / "modules" / "pairwise_annotation"
+        for name in ("stage_transcript_inputs.nf", "normalise_transcript_pair.nf", "compare_transcript_features.nf"):
+            text = (module_dir / name).read_text(encoding="utf-8")
+            self.assertNotIn("printf", text)
+            self.assertEqual(text.count("pairwise_qc.py"), 2)
+            self.assertNotIn("versions.yml", text)
+
+    def test_transcript_mode_is_explicitly_wired(self):
+        main = (Path(__file__).parents[1] / "main.nf").read_text(encoding="utf-8")
+        schema = (Path(__file__).parents[1] / "nextflow_schema.json").read_text(encoding="utf-8")
+        subworkflow = (Path(__file__).parents[1] / "subworkflows" / "pairwise_annotation" / "pairwise_transcript_comparison.nf").read_text(encoding="utf-8")
+        self.assertIn("pairwise_transcripts", main)
+        self.assertIn("pairwise_transcripts", schema)
+        self.assertNotIn("ASSIGN_TRANSCRIPT_LOCI", subworkflow)
 
     def test_benchmark_products_preserve_provenance_and_pairwise_scope(self):
         with tempfile.TemporaryDirectory() as tmp:

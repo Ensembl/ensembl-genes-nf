@@ -3,12 +3,13 @@
 include { validateParameters; samplesheetToList } from 'plugin/nf-schema'
 include { QC } from './workflows/qc.nf'
 include { PAIRWISE_ANNOTATION_COMPARISON } from './subworkflows/pairwise_annotation/pairwise_annotation_comparison.nf'
+include { PAIRWISE_TRANSCRIPT_COMPARISON } from './subworkflows/pairwise_annotation/pairwise_transcript_comparison.nf'
 
 workflow {
     // nf-schema validates the parameter and annotation manifest contracts.
     validateParameters()
 
-    if (params.mode == 'pairwise') {
+    if (params.mode in ['pairwise', 'pairwise_transcripts']) {
         pair_csv = params.pairwise_csv ?: params.input_csv
         channel
             .fromPath(pair_csv, checkIfExists: true)
@@ -70,7 +71,12 @@ workflow {
                 tuple(meta, sourceAPath, sourceBPath, report, evidenceA, evidenceB, referenceAnnotation)
             }
             .set { pairwise_samples_ch }
-        PAIRWISE_ANNOTATION_COMPARISON(pairwise_samples_ch)
+        if (params.mode == 'pairwise_transcripts') {
+            PAIRWISE_TRANSCRIPT_COMPARISON(pairwise_samples_ch)
+        }
+        else {
+            PAIRWISE_ANNOTATION_COMPARISON(pairwise_samples_ch)
+        }
     }
     else {
 

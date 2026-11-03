@@ -1,0 +1,5 @@
+{
+  "mode": "pairwise_transcripts",
+  "pairwise_csv": "pipelines/qc/testdata/pairwise/pairs_transcripts.csv",
+  "outdir": "/tmp/qc-pairwise-transcripts-stub"
+}

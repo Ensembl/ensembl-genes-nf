@@ -165,7 +165,7 @@ from accumulating unrelated future inputs.
 
 ## Pairwise annotation QC
 
-Set `--mode pairwise` to compare reconstructed transcript models. The
+Set `--mode pairwise` for the full annotation comparison workflow. The
 pairwise manifest accepts GFF3, GTF, or BED12 and keeps source labels generic:
 
 ```csv
@@ -244,6 +244,53 @@ For iterative plotting and exploration, use
 `pipelines/qc/analysis/pairwise_benchmark_analysis.ipynb`. They can consume
 completed per-pair benchmark directories before the aggregate process finishes,
 and export only compact summaries or explicitly selected pair-level detail.
+
+### Transcript-model comparison
+
+Set `--mode pairwise_transcripts` when the inputs are BED12 or transcript-model
+GTF/GFF files and the desired analysis is structural rather than biological
+gene comparison. This mode deliberately does not assign synthetic loci and does
+not pair transcripts. It compares canonical feature signatures directly:
+
+- complete transcript models;
+- individual exons;
+- individual introns/junctions;
+- ordered intron chains; and
+- transcript-oriented 5' and 3' terminal exons.
+
+Each feature is classified as shared, source-A-only, or source-B-only. Each
+model also receives a directional structural classification such as
+`exact_model`, `same_intron_chain_3prime_terminal_difference`,
+`shared_introns_different_chain`, `shared_exons_only`, or
+`no_shared_structure`. A model can have multiple compatible structures in the
+other source; no one-to-one transcript pairing is assumed.
+
+Evidence files are optional. When supplied, `full_length_support` is retained
+on the model presence table so terminal-boundary differences can be stratified
+by full-length support. No biological gene, CDS, protein, precision, recall, or
+F1 claims are inferred in this mode.
+
+```bash
+nextflow run pipelines/qc/main.nf \
+  --mode pairwise_transcripts \
+  --pairwise_csv /path/to/transcript_pairs.csv \
+  --outdir results
+```
+
+Outputs are written to:
+
+```text
+<outdir>/qc/pairwise_transcripts/<pair_id>/
+├── inputs/              # staged source and optional evidence files
+├── models/              # canonical model tables and conversion audit
+└── comparison/         # model, feature, terminal-exon and summary tables
+```
+
+The main comparison outputs are `model_presence.tsv`,
+`feature_presence.tsv`, `terminal_exon_comparison.tsv`, and
+`structural_summary.tsv`. This mode is intentionally separate from the
+full-annotation `pairwise` workflow so transcript-only inputs do not enter
+gene/RBH/CDS analyses and large inputs do not pay for global locus clustering.
 
 GffCompare is disabled by default. When enabled it runs both directions and
 does not hide tool failures. Pairwise tasks use pinned references for curl,
