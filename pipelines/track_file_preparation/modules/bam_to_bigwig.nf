@@ -14,6 +14,15 @@ process BAM_TO_BIGWIG {
     def bin_size = task.ext.bin_size ?: params.coverage_bin_size
     def normalization = task.ext.normalization ?: params.coverage_normalization
     """
+    bam_basename="\$(basename '${bam}')"
+    bai_basename="\$(basename '${bai}')"
+    bai_suffix="\${bai_basename##*.}"
+    expected_index="\${bam_basename}.\${bai_suffix}"
+    test -s '${bai}' || { echo "BAM index is missing or empty: ${bai}" >&2; exit 1; }
+    if [ "\$bai_basename" != "\$expected_index" ]; then
+        ln -sfn "\$bai_basename" "\$expected_index"
+    fi
+    test -e "\$expected_index" || { echo "Unable to place BAM index beside \$bam_basename" >&2; exit 1; }
     bamCoverage --bam ${bam} --outFileName ${meta.safe_id}.forward.bw --filterRNAstrand forward --binSize ${bin_size} --normalizeUsing ${normalization} --numberOfProcessors ${task.cpus} --effectiveGenomeSize 0
     bamCoverage --bam ${bam} --outFileName ${meta.safe_id}.reverse.bw --filterRNAstrand reverse --binSize ${bin_size} --normalizeUsing ${normalization} --numberOfProcessors ${task.cpus} --effectiveGenomeSize 0
     test -s ${meta.safe_id}.forward.bw || { echo 'Forward coverage BigWig is empty' >&2; exit 1; }
