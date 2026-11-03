@@ -45,9 +45,12 @@ def resolve_manifest_path(String raw, base_dir, boolean must_exist, int row_numb
 }
 
 def resolve_current_bam_index(bam, supplied_index, String entity_id, boolean warn_on_stale = true) {
-    if (!bam) return null
+    // /lts paths are intentionally not visible to the launcher. Do not carry
+    // an unstatable manifest index into the staged entity: it may be stale and
+    // would prevent the INDEX_BAM branch from running.
+    if (!bam || !bam.toFile().exists()) return null
     def candidates = []
-    if (supplied_index) candidates << supplied_index
+    if (supplied_index && supplied_index.toFile().exists()) candidates << supplied_index
     [file("${bam}.bai"), file("${bam}.csi")].each { candidate ->
         if (candidate.exists() && !candidates.contains(candidate)) candidates << candidate
     }
