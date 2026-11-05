@@ -203,6 +203,12 @@ class PairwiseContractTest(unittest.TestCase):
             self.assertIn("not_applicable", output.read_text())
             self.assertIn("missing_input", output.read_text())
 
+    def test_metric_status_outputs_are_unique_for_run_level_aggregation(self):
+        module = (Path(__file__).parents[1] / "modules" / "pairwise_annotation" / "metric_status.nf").read_text(encoding="utf-8")
+        self.assertIn('path("${meta.pair_id}.metric_status.tsv"), emit: status', module)
+        self.assertIn('> \'${meta.pair_id}.metric_status.tsv\'', module)
+        self.assertNotIn("path('metric_status.tsv'), emit: status", module)
+
     def test_transcript_feature_comparison_separates_terminal_difference_from_chain(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

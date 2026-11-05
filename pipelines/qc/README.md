@@ -203,7 +203,7 @@ assignment type, locus ID, assignment method, and model status. BED12
 contributes structural metrics only; biological gene, CDS, and protein claims
 are never inferred from it. Synthetic annotations contain only gene,
 transcript, and exon features and visibly carry `synthetic_gene=true`.
-`metric_status.tsv` uses `enabled`, `not_applicable`, `missing_input`, or
+`<pair_id>.metric_status.tsv` uses `enabled`, `not_applicable`, `missing_input`, or
 `failed` for every declared metric.
 
 Pairwise outputs use:
