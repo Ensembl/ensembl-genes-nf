@@ -39,12 +39,26 @@ workflow IMPORT_REFSEQ {
             db_config_ch
         )
 
+        core_genome_ready = IMPORT_REFSEQ_TO_CORE.out.genome
+            .map { meta, genome -> tuple(meta.id, meta, genome) }
+
+        taxonomy_ready = GET_METADATA_CORE.out.taxonomy_loaded
+            .map { meta, taxonomy_marker -> tuple(meta.id, taxonomy_marker) }
+
+        repeatmasker_ready = IMPORT_REPEATMASKER.out.completed
+            .map { meta, repeatmasker_marker -> tuple(meta.id, repeatmasker_marker) }
+
+        import_ready = core_genome_ready
+            .join(taxonomy_ready)
+            .join(repeatmasker_ready)
+            .map { _id, meta, genome, _taxonomy_marker, _repeatmasker_marker -> tuple(meta, genome) }
+
         REGISTRY_TRACKER_COMPLETE(
-            GET_METADATA_CORE.out.taxonomy_loaded.map { meta, _taxonomy_marker -> meta }
+            import_ready.map { meta, _genome -> meta }
         )
 
         PREPARE_STATS_INPUT(
-            IMPORT_REFSEQ_TO_CORE.out.genome
+            import_ready
         )
         combined_stats_input = COMBINE_STATS_INPUT(PREPARE_STATS_INPUT.out.csv.collect())
 

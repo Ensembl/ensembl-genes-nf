@@ -51,7 +51,7 @@ PENDING_QUERY = """
       FROM refseq_assembly AS ra
       LEFT JOIN import_status AS s
         ON ra.refseq_assembly_id = s.refseq_assembly_id
-     WHERE ra.is_current = 1
+     WHERE ra.is_current = 'current'
        AND s.import_status IS NULL
 """
 
@@ -66,7 +66,7 @@ def _assembly_lookup(cursor: pymysql.cursors.Cursor, refseq_accession: str) -> d
           LEFT JOIN import_status AS s
             ON ra.refseq_assembly_id = s.refseq_assembly_id
          WHERE ra.refseq_accession = %s
-           AND ra.is_current = 1
+           AND ra.is_current = 'current'
         """,
         (refseq_accession,),
     )

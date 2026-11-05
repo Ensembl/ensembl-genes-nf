@@ -18,10 +18,14 @@ workflow IMPORT_REPEATMASKER {
     main:
         DOWNLOAD_REPEATMASKER(loaded_refseq)
 
-        repeatmasker_with_report = DOWNLOAD_REPEATMASKER.out.repeatmasker
+        repeatmasker_downloaded = DOWNLOAD_REPEATMASKER.out.repeatmasker
             .map { meta, repeatmasker, repeatmasker_status ->
-                tuple(meta, repeatmasker, repeatmasker_status.text.trim() == 'available')
+                tuple(meta.id, meta, repeatmasker, repeatmasker_status.text.trim() == 'available')
             }
+
+        repeatmasker_with_report = repeatmasker_downloaded
+            .filter { _key, _meta, _repeatmasker, has_repeatmasker -> has_repeatmasker }
+            .map { _key, meta, repeatmasker, _has_repeatmasker -> tuple(meta, repeatmasker) }
             .join(assembly_report)
 
         CONVERT_REPEATMASKER(repeatmasker_with_report)
@@ -35,11 +39,20 @@ workflow IMPORT_REPEATMASKER {
             db_write_config_ch
         )
 
+        repeatmasker_completed = LOAD_REPEATMASKER.out.loaded
+            .map { meta, _loaded_marker -> tuple(meta, 'loaded') }
+            .mix(
+                repeatmasker_downloaded
+                    .filter { _key, _meta, _repeatmasker, has_repeatmasker -> !has_repeatmasker }
+                    .map { _key, meta, _repeatmasker, _has_repeatmasker -> tuple(meta, 'missing') }
+            )
+
         versions_ch = DOWNLOAD_REPEATMASKER.out.versions
             .mix(CONVERT_REPEATMASKER.out.versions)
             .mix(LOAD_REPEATMASKER.out.versions)
 
     emit:
         loaded = LOAD_REPEATMASKER.out.loaded
+        completed = repeatmasker_completed
         versions = versions_ch
 }

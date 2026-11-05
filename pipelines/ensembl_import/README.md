@@ -121,9 +121,12 @@ Each assembly is processed independently.
 9. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
    core database. Requests are serialized and transient NCBI rate-limit or
    network errors are retried with backoff.
-10. `REGISTRY_TRACKER_COMPLETE` marks the registry row as `completed` after
-    the per-assembly import and metadata work has succeeded.
-11. `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
+10. After core loading, metadata/taxonomy, and RepeatMasker loading (or a
+    recorded missing RepeatMasker file) have all completed,
+    `REGISTRY_TRACKER_COMPLETE` marks the registry row as `completed` and
+    `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
+11. `COMBINE_STATS_INPUT` combines the per-assembly statistics inputs after all
+    assemblies have reached that point.
 
 ## Outputs
 

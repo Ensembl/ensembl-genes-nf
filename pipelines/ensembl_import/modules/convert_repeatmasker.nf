@@ -5,14 +5,14 @@ process CONVERT_REPEATMASKER {
     publishDir { "${params.outdir}/refseq/${meta.id}/repeatmasker" }, mode: 'copy', overwrite: true
 
     input:
-    tuple val(meta), path(repeatmasker), val(has_repeatmasker), path(assembly_report)
+    tuple val(meta), path(repeatmasker), path(assembly_report)
 
     output:
     tuple val(meta), path("${meta.id}.repeatmasker.gtf"), emit: gtf
     path "versions.yml", emit: versions
 
     when:
-    (task.ext.when == null || task.ext.when) && has_repeatmasker
+    task.ext.when == null || task.ext.when
 
     script:
     def args = task.ext.args ?: ''
