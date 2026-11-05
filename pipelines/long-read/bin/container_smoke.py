@@ -27,6 +27,7 @@ COMMANDS = {
     "isoquant": "isoquant.py --version",
     "flair": "flair --version",
     "bambu": "Rscript -e 'cat(as.character(packageVersion(\"bambu\")), \"\\n\")'",
+    "transgram": "/TransGram/TransGram --version 2>&1 || test $? -eq 1",
     "diamond": "diamond version",
     "python_helper": "python3 --version",
 }
@@ -140,7 +141,8 @@ def build_argv(
     argv = [engine, "exec", "--cleanenv"]
     if disable_cache:
         argv.append("--disable-cache")
-    argv.extend([f"docker://{reference}", "sh", "-lc", command])
+    image = reference if reference.startswith(("http://", "https://")) else f"docker://{reference}"
+    argv.extend([image, "sh", "-lc", command])
     return argv
 
 

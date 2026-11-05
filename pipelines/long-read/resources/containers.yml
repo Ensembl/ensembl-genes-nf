@@ -11,5 +11,7 @@ pbccs: quay.io/biocontainers/pbccs@sha256:6876708af8f1bd3af45740d86fa2f0479bea48
 isoquant: quay.io/biocontainers/isoquant@sha256:5b922f8211cfe6f438b814f95d83f6d141cc5ad4fc0796c3667784f102c57454
 flair: quay.io/biocontainers/flair@sha256:a39894c1507c68241fba62ddbe1a931d5a6bfaacbcb6be24631d46b60e67ce84
 bambu: quay.io/biocontainers/bioconductor-bambu@sha256:90f2d83ffb099b90bcc5a1423b2c3d2455682d96e53412a0450bfb156c4409d6
+# The official project-provided SIF is version-pinned by its dated filename.
+transgram: https://downloads.sourceforge.net/project/transgram/Docker/trans_gram-20250912.sif
 diamond: quay.io/biocontainers/diamond@sha256:c3d56ca63d8061357ba0375d8d636519155b5601f6e93b807a827aa988f7e1d8
 python_helper: docker.io/library/python@sha256:17b9724493d916f56565c131f389faff2597f46dec6ce09516f95125bc9f519f

@@ -13,6 +13,7 @@ include { COLLAPSE_TMERGE } from './subworkflows/collapse_tmerge.nf'
 include { RUN_ISOQUANT } from './subworkflows/run_isoquant.nf'
 include { RUN_FLAIR } from './subworkflows/run_flair.nf'
 include { RUN_BAMBU } from './subworkflows/run_bambu.nf'
+include { RUN_TRANSGRAM } from './subworkflows/run_transgram.nf'
 include { MERGE_LONG_READ_MODELS } from './subworkflows/merge_long_read_models.nf'
 include { NORMALIZE_VALIDATE_MODELS } from './subworkflows/normalize_validate_models.nf'
 include { AUDIT_NATIVE_SHARDS } from './subworkflows/audit_native_shards.nf'
@@ -22,7 +23,7 @@ include { COLLECT_LONG_READ_EVIDENCE_PRODUCTS } from './subworkflows/evidence_co
 include { RUN_DIAMOND_QC } from './subworkflows/run_diamond_qc.nf'
 
 def selected_backends(value) {
-    def supported = ['tama', 'stringtie2', 'stringtie3', 'tmerge', 'isoquant', 'flair', 'bambu']
+    def supported = ['tama', 'stringtie2', 'stringtie3', 'tmerge', 'isoquant', 'flair', 'bambu', 'transgram']
     def requested = value instanceof List ? value : value.toString().split(',').collect { it.trim() }
     if (!requested || requested.size() != requested.toSet().size())
         error '--model_backends must be non-empty and contain no duplicates'
@@ -43,6 +44,8 @@ def validate_runtime_options() {
         error '--manifest is required for fastq and bam modes'
     if (!(params.ccs_mode in ['disabled', 'pbccs']))
         error '--ccs_mode must be disabled or pbccs'
+    if (!(params.transgram_data_type in ['auto', 'alpha', 'beta']))
+        error '--transgram_data_type must be auto, alpha, or beta'
     def stages = selected_preparation_stages(params.preparation_stages)
     if (stages.contains('bam_to_fastq') && params.mode == 'fastq')
         error '--preparation_stages bam_to_fastq requires bam or approved_manifest mode'
@@ -68,6 +71,7 @@ def validate_runtime_options() {
     if (params.isoquant_large_output.contains('none') && params.isoquant_large_output.size() > 1)
         error '--isoquant_large_output none cannot be combined with other output types'
     reject_pipeline_owned_args('flair_args', params.flair_args, ['genomealignedbam', 'output', 'threads', 'genome', 'gtf', 'manifest', 'junction_bed', 'sample_name'])
+    reject_pipeline_owned_args('transgram_args', params.transgram_args, ['bam', 'annotation', 'output_dir', 'specify_data_type'])
     if (params.model_backends instanceof List && params.model_backends.contains('all') && params.model_backends.size() != 1)
         error 'all must be the only value in --model_backends'
     [backends: backends, backend_scopes: backend_scopes, preparation_stages: stages]
@@ -230,6 +234,12 @@ workflow {
         native_models = native_models.mix(RUN_BAMBU.out.native_models)
         versions = versions.mix(RUN_BAMBU.out.versions)
     }
+    if (backends.contains('transgram')) {
+        transgram_annotation = params.transgram_annotation ? file(params.transgram_annotation, checkIfExists: true) : null
+        RUN_TRANSGRAM(ALIGN_LONG_READS.out.alignment, transgram_annotation, params.transgram_data_type, params.transgram_args, params.transgram_executable)
+        native_models = native_models.mix(RUN_TRANSGRAM.out.native_models)
+        versions = versions.mix(RUN_TRANSGRAM.out.versions)
+    }
 
     empty_native_inputs = PREPARE_CONTIG_SHARDS.out.summaries
         .filter { _meta, eligible_count -> eligible_count == 0 }
@@ -300,6 +310,7 @@ workflow {
         isoquant: [mode: params.isoquant_mode, scope: params.isoquant_scope, data_type: params.isoquant_data_type, analysis: params.isoquant_analysis, high_memory: params.isoquant_high_memory, large_output: params.isoquant_large_output, args: params.isoquant_args],
         flair: [threads: params.flair_threads, args: params.flair_args],
         bambu: [scope: params.bambu_scope, track_reads: params.bambu_track_reads, quantify: params.bambu_quantify],
+        transgram: [annotation: params.transgram_annotation, data_type: params.transgram_data_type, args: params.transgram_args, executable: params.transgram_executable],
         diamond_database: params.diamond_database,
         diamond_reference_proteins: params.diamond_reference_proteins,
         tool_containers: params.tool_containers

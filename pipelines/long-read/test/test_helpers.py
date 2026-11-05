@@ -326,7 +326,7 @@ def test_container_smoke_discovers_all_pinned_tools(tmp_path: Path):
     assert result.returncode == 0, result.stderr
     record = json.loads((tmp_path / "smoke.json").read_text())
     assert len(record["results"]) >= 11
-    assert {item["name"] for item in record["results"]} >= {"tama", "isoquant", "flair", "bambu", "python_helper"}
+    assert {item["name"] for item in record["results"]} >= {"tama", "isoquant", "flair", "bambu", "transgram", "python_helper"}
 
 
 def test_container_smoke_timeout_output_is_serializable(tmp_path: Path):

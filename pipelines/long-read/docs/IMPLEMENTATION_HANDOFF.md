@@ -21,7 +21,7 @@ model contract.
 ## Invariants and decision rules
 
 * Required stages terminate on failure; there is no `errorStrategy 'ignore'`.
-* `all` expands deterministically to the seven supported backends.
+* `all` expands deterministically to the eight supported backends.
 * Empty contigs remain in the shard plan and do not launch split tasks.
 * Raw PacBio subreads are the only input representation eligible for PBCCS;
   canonical CCS and ordinary BAM inputs are never silently converted.
@@ -52,6 +52,7 @@ and `retrospective_schema.json` for retrospective evidence collection.
 | TAMA/StringTie/tmerge | `tama_cap_mode`, `tama_end_mode`, `tama_run_mode`, `stringtie2_merge_args`, `stringtie3_merge_args`, `tmerge_args` |
 | IsoQuant | `isoquant_mode`, `isoquant_scope`, `isoquant_data_type`, `isoquant_genedb`, `isoquant_analysis`, `isoquant_high_memory`, `isoquant_args`, `isoquant_large_output` |
 | FLAIR/Bambu | `flair_args`, `flair_threads`, `bambu_scope`, `bambu_track_reads`, `bambu_quantify` |
+| TransGram | `transgram_annotation`, `transgram_data_type`, `transgram_args`, `transgram_executable` |
 | Evidence/annotation QC | `evidence_mode`, `orf_mode`, `diamond_mode`, `diamond_database`, `diamond_reference_proteins` |
 | Runtime registry | `tool_containers` |
 

@@ -20,6 +20,13 @@ are not converted. Normalized BED12 is the only cross-backend model contract.
 `fasta`, or `path` when `reference_fasta` is not supplied. ORF products can be
 published independently with `orf_mode=enabled`; DIAMOND QC consumes validated
 BED12 models and publishes backend/scope-separated reports when enabled.
+TransGram is an opt-in run-level backend selected with
+`--model_backends transgram` (or through `all`). It consumes each validated
+sorted BAM, preserves both TransGram GTF products before combining them for the
+common model contract, and supports optional annotation-guided reconstruction
+with `--transgram_annotation`. Its default runtime is the official project SIF
+dated `20250912`; sites may override `tool_containers.transgram` with an
+approved immutable local or OCI image reference.
 
 Backend selection accepts either a JSON array in a params file or a direct
 comma-separated CLI value, for example `--model_backends tama,stringtie3` or
@@ -45,7 +52,7 @@ Exhausted required tasks terminate the run rather than being silently ignored.
 | Minimap2 alignment, samtools QC, alignment features | Ported into `ALIGN_LONG_READS`; reference and artifact identities are recorded. |
 | Workload inspection, contig sharding, coverage/completeness audits | Ported into `PREPARE_CONTIG_SHARDS` with deterministic plans and explicit empty/skipped states. |
 | TAMA, StringTie2, StringTie3, tmerge | Ported as independent backend subworkflows with native status/checksum products. |
-| IsoQuant, FLAIR, Bambu | Ported as optional backend subworkflows with pinned runtime references and backend-specific manifests. |
+| IsoQuant, FLAIR, Bambu, TransGram | Ported as optional backend subworkflows with pinned runtime references and backend-specific products. |
 | Run/cohort merges and candidate comparison | Ported into merge, normalization, validation, and comparison subworkflows; run/cohort paths are isolated. |
 | Evidence graph and retrospective evidence | Ported with explicit IDs/relations and post-run Parquet/publication verification. |
 | ORF and DIAMOND annotation QC | Ported as optional downstream QC over validated normalized models. |

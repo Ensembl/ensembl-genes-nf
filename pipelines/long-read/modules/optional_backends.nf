@@ -463,3 +463,102 @@ process BAMBU_STATUS {
     printf '"%s":\\n    bambu_status: stub\\n' '${task.process}' > versions.yml
     """
 }
+process TRANSGRAM_ANNOTATION_FREE {
+    label 'process_high_memory'
+    // Official project-provided image: trans_gram-20250912.sif
+    container params.use_containers ? params.tool_containers.transgram : null
+    tag "${meta.id}"
+    input:
+    tuple val(meta), path(bam), path(bai)
+    val data_type
+    val transgram_args
+    val transgram_executable
+    output:
+    tuple val(meta), path('transgram_outdir'), emit: raw
+    path 'versions.yml', emit: versions
+    script:
+    def args = task.ext.args ?: transgram_args
+    def data_type_arg = data_type == 'auto' ? '' : "--specify_data_type ${data_type}"
+    def executable = task.ext.executable ?: transgram_executable
+    """
+    ${executable} --bam ${bam} --output_dir transgram_outdir ${data_type_arg} ${args}
+    test -f transgram_outdir/TransGram.gtf
+    test -f transgram_outdir/TransGram-singleExon.gtf
+    version_status=0
+    version_output=\$(${executable} --version 2>&1) || version_status=\$?
+    if [[ \${version_status} -ne 0 && \${version_status} -ne 1 ]]; then
+        echo "TransGram version check failed with exit status \${version_status}" >&2
+        exit \${version_status}
+    fi
+    printf '"%s":\\n    transgram: %s\\n' '${task.process}' "\${version_output}" > versions.yml
+    """
+    stub:
+    """
+    mkdir -p transgram_outdir
+    printf 'chr1\\tTransGram\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "transgram.1";\\n' > transgram_outdir/TransGram.gtf
+    printf 'chr1\\tTransGram\\texon\\t200\\t250\\t.\\t+\\t.\\tgene_id "g2"; transcript_id "transgram.single.1";\\n' > transgram_outdir/TransGram-singleExon.gtf
+    printf 'transcript\\tabundance\\ntransgram.1\\t1\\n' > transgram_outdir/TransGram-Abundance.tsv
+    touch versions.yml
+    """
+}
+
+process TRANSGRAM_ANNOTATION_GUIDED {
+    label 'process_high_memory'
+    // Official project-provided image: trans_gram-20250912.sif
+    container params.use_containers ? params.tool_containers.transgram : null
+    tag "${meta.id}"
+    input:
+    tuple val(meta), path(bam), path(bai)
+    path annotation
+    val data_type
+    val transgram_args
+    val transgram_executable
+    output:
+    tuple val(meta), path('transgram_outdir'), emit: raw
+    path 'versions.yml', emit: versions
+    script:
+    def args = task.ext.args ?: transgram_args
+    def data_type_arg = data_type == 'auto' ? '' : "--specify_data_type ${data_type}"
+    def executable = task.ext.executable ?: transgram_executable
+    """
+    ${executable} --bam ${bam} --annotation ${annotation} --output_dir transgram_outdir ${data_type_arg} ${args}
+    test -f transgram_outdir/TransGram.gtf
+    test -f transgram_outdir/TransGram-singleExon.gtf
+    version_status=0
+    version_output=\$(${executable} --version 2>&1) || version_status=\$?
+    if [[ \${version_status} -ne 0 && \${version_status} -ne 1 ]]; then
+        echo "TransGram version check failed with exit status \${version_status}" >&2
+        exit \${version_status}
+    fi
+    printf '"%s":\\n    transgram: %s\\n' '${task.process}' "\${version_output}" > versions.yml
+    """
+    stub:
+    """
+    mkdir -p transgram_outdir
+    printf 'chr1\\tTransGram\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "transgram.1";\\n' > transgram_outdir/TransGram.gtf
+    printf 'chr1\\tTransGram\\texon\\t200\\t250\\t.\\t+\\t.\\tgene_id "g2"; transcript_id "transgram.single.1";\\n' > transgram_outdir/TransGram-singleExon.gtf
+    printf 'transcript\\tabundance\\ntransgram.1\\t1\\n' > transgram_outdir/TransGram-Abundance.tsv
+    touch versions.yml
+    """
+}
+
+process FINALIZE_TRANSGRAM_GTF {
+    label 'process_low'
+    container params.use_containers ? params.tool_containers.python_helper : null
+    tag "${meta.id}"
+    input:
+    tuple val(meta), path(transgram_output)
+    output:
+    tuple val(meta), val('transgram'), path('native.gtf'), path('status.tsv'), emit: native_models
+    script:
+    """
+    test -f ${transgram_output}/TransGram.gtf
+    test -f ${transgram_output}/TransGram-singleExon.gtf
+    python3 ${projectDir}/bin/merge_gtfs.py --inputs ${transgram_output}/TransGram.gtf ${transgram_output}/TransGram-singleExon.gtf --output native.gtf --backend transgram --status status.tsv
+    """
+    stub:
+    """
+    printf 'chr1\\tTransGram\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "transgram.1";\\n' > native.gtf
+    printf 'backend\\tstatus\\ntransgram\\tCOMPLETE\\n' > status.tsv
+    """
+}

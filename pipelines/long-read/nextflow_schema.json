@@ -17,7 +17,7 @@
     "cohort_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
     "minimap2_preset": {"type": "string", "enum": ["splice:hq", "splice", "map-ont", "map-pb"]},
     "secondary_mode": {"type": "boolean", "default": false},
-    "model_backends": {"type": ["array", "string"], "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "isoquant", "flair", "bambu", "all"]}},
+    "model_backends": {"type": ["array", "string"], "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "isoquant", "flair", "bambu", "transgram", "all"]}},
     "backend_scopes": {"type": ["array", "string"], "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["run", "cohort"]}},
     "shard_mode": {"type": "string", "enum": ["contig", "none"], "default": "contig"},
     "shard_contig_reads": {"type": "integer", "minimum": 0, "default": 1000000},
@@ -54,11 +54,15 @@
     "bambu_scope": {"type": "string", "enum": ["run", "cohort", "both"]},
     "bambu_track_reads": {"type": "boolean"},
     "bambu_quantify": {"type": "boolean"},
+    "transgram_annotation": {"type": ["string", "null"], "format": "file-path", "exists": true},
+    "transgram_data_type": {"type": "string", "enum": ["auto", "alpha", "beta"], "default": "auto"},
+    "transgram_args": {"type": "string"},
+    "transgram_executable": {"type": "string", "minLength": 1},
     "diamond_database": {"type": ["string", "null"], "format": "file-path", "exists": true},
     "diamond_reference_proteins": {"type": ["string", "null"], "format": "file-path", "exists": true},
     "tool_containers": {
       "type": "object",
-      "required": ["minimap2", "samtools", "tama", "tmerge", "pbccs", "stringtie2", "stringtie3", "isoquant", "flair", "bambu", "diamond", "python_helper"],
+      "required": ["minimap2", "samtools", "tama", "tmerge", "pbccs", "stringtie2", "stringtie3", "isoquant", "flair", "bambu", "transgram", "diamond", "python_helper"],
       "properties": {
         "minimap2": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
         "samtools": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
@@ -70,6 +74,7 @@
         "isoquant": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
         "flair": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
         "bambu": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
+        "transgram": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$|^https://downloads\\.sourceforge\\.net/project/transgram/Docker/trans_gram-[0-9]{8}\\.sif$"},
         "diamond": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
         "python_helper": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"}
       },
