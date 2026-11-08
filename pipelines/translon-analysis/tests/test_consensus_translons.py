@@ -1,4 +1,5 @@
 import csv
+import json
 import subprocess
 import sys
 import tempfile
@@ -16,10 +17,10 @@ class ConsensusContractTest(unittest.TestCase):
             inputs = root / 'inputs'
             inputs.mkdir()
             (root / 'genome.fa').write_text('>chr1\nATGAAACCCGGGTAA\n')
-            header = 'sample_id\ttool\tchrom\tstart\tend\tstrand\tframe\n'
-            row = 'S1\t{tool}\tchr1\t0\t15\t+\t0\n'
-            (inputs / 'ribocode.tsv').write_text(header + row.format(tool='ribocode'))
-            (inputs / 'ribotricer.tsv').write_text(header + row.format(tool='ribotricer'))
+            header = 'sample_id\ttool\tchrom\tstart\tend\tstrand\tframe\ttranscript_id\textra_json\n'
+            row = 'S1\t{tool}\tchr1\t0\t15\t+\t0\ttx1\t' + json.dumps({'_blocks': [[0, 5], [7, 15]]}) + '\n'
+            (inputs / 'ribocode.tsv').write_text(header + row.replace('{tool}', 'ribocode'))
+            (inputs / 'ribotricer.tsv').write_text(header + row.replace('{tool}', 'ribotricer'))
 
             subprocess.run([
                 sys.executable, str(SCRIPT), '--input-dir', str(inputs),
@@ -38,6 +39,8 @@ class ConsensusContractTest(unittest.TestCase):
 
             self.assertEqual(candidate['status'], 'trusted')
             self.assertEqual(candidate['caller_count'], '2')
+            self.assertEqual(candidate['transcript_ids'], 'tx1')
+            self.assertEqual(json.loads(candidate['candidate_blocks_json'])[0]['blocks'], [[0, 5], [7, 15]])
             self.assertEqual(verdict['peptide_sequence'], 'MKPG*')
 
 

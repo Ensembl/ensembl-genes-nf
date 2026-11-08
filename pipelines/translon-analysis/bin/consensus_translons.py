@@ -2,6 +2,7 @@
 """Build a deterministic cross-caller candidate-translon contract."""
 import argparse
 import csv
+import json
 from collections import defaultdict
 from pathlib import Path
 
@@ -49,7 +50,8 @@ def peptide(row, genome):
 
 
 FIELDS = ["interval_id", "chrom", "start", "end", "strand", "frame",
-          "caller_count", "callers", "status"]
+          "caller_count", "callers", "status", "transcript_ids",
+          "candidate_blocks_json"]
 
 
 def read_rows(paths):
@@ -73,7 +75,27 @@ def read_rows(paths):
                     "sample_id": row.get("sample_id", "unknown"),
                     "orf_id": row.get("orf_id", ""),
                     "score": row.get("score", ""),
+                    "transcript_id": row.get("transcript_id") or row.get("transcript") or "",
+                    "blocks": _blocks(row.get("extra_json")),
                 }
+
+
+def _blocks(value):
+    if not value:
+        return []
+    try:
+        blocks = json.loads(value).get("_blocks", [])
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return []
+    result = []
+    for block in blocks:
+        try:
+            start, end = int(block[0]), int(block[1])
+        except (TypeError, ValueError, IndexError):
+            continue
+        if end > start:
+            result.append([start, end])
+    return result
 
 
 def main():
@@ -103,6 +125,11 @@ def main():
             "end": end, "strand": strand, "frame": frame,
             "caller_count": len(callers), "callers": ",".join(callers),
             "status": "trusted" if len(callers) >= args.min_caller_agreement else "candidate",
+            "transcript_ids": ",".join(sorted({r["transcript_id"] for r in rows if r["transcript_id"]})),
+            "candidate_blocks_json": json.dumps([
+                {"tool": r["tool"], "transcript_id": r["transcript_id"], "blocks": r["blocks"]}
+                for r in rows if r["transcript_id"] and r["blocks"]
+            ], sort_keys=True),
         })
 
     with args.candidates.open("w", newline="") as handle:
@@ -110,7 +137,8 @@ def main():
         writer.writeheader(); writer.writerows(consensus)
 
     with args.intervals.open("w", newline="") as handle:
-        interval_fields = ["interval_id", "chrom", "start", "end", "strand", "frame"]
+        interval_fields = ["interval_id", "chrom", "start", "end", "strand", "frame",
+                           "transcript_ids", "candidate_blocks_json"]
         writer = csv.DictWriter(handle, fieldnames=interval_fields, delimiter="\t")
         writer.writeheader()
         writer.writerows({field: row[field] for field in interval_fields}

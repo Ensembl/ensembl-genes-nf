@@ -13,6 +13,7 @@
     "tracedir": {"type":"string", "format":"directory-path", "description":"Directory for Nextflow execution reports and traces."},
     "tools_manifest": {"type":"string", "format":"file-path", "description":"Optional pinned tool/model/alignment manifest."},
     "reference_contract": {"type":"string", "format":"file-path", "description":"Pinned production reference and model contract."},
+    "evolutionary_candidates": {"type":"string", "format":"file-path", "description":"Optional read-only per-species candidate evidence (JSONL or TSV)."},
     "genome_fasta": {"type":"string", "format":"file-path"},
     "ucsc_container": {"type":"string", "description":"Pinned Biocontainers image containing bigBedToBed."},
     "whole_genome_alignment": {"type":"string", "format":"file-path"},

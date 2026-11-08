@@ -51,9 +51,17 @@ def parse_intervals(path):
             chrom = row.get('chrom') or row.get('seqid')
             if not chrom:
                 raise ValueError(f'missing chromosome on record {n}')
-            yield {'interval_id': row.get('interval_id') or row.get('name') or f'interval_{n}',
-                   'chrom': chrom, 'start': start, 'end': end,
-                   'strand': row.get('strand', '.'), 'frame': row.get('frame', '.')}
+            item = {'interval_id': row.get('interval_id') or row.get('name') or f'interval_{n}',
+                    'chrom': chrom, 'start': start, 'end': end,
+                    'strand': row.get('strand', '.'), 'frame': row.get('frame', '.')}
+            if row.get('transcript_ids'):
+                item['source_transcript_ids'] = [x for x in row['transcript_ids'].split(',') if x]
+            if row.get('candidate_blocks_json'):
+                try:
+                    item['source_candidate_blocks'] = json.loads(row['candidate_blocks_json'])
+                except (TypeError, ValueError, json.JSONDecodeError):
+                    item['source_candidate_blocks'] = []
+            yield item
         return
     with open_text(path) as handle:
         for n, line in enumerate(handle, 1):

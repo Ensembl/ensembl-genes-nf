@@ -16,6 +16,7 @@ and claim logic. Nextflow only composes files and commodity tools.
 | `MSA_REFERENCE_SETUP` | pinned MAF/index URL + SHA-256 manifest | verified chromosome MAF directory | prevents unversioned genome-alignment downloads from entering extraction |
 | `SUBSTRATE_TOPOLOGY` | intervals + GENCODE + genome | `[meta(instance), instance.json]`, unhosted calls | emits one transcript-contingent instance per compatible context |
 | `TRANSLATION_RECONCILIATION` | instances + TranslonScorer verdicts | reconciled instances | validates the trusted-frame agreement once |
+| `EVOLUTIONARY_HISTORY` | reconciled instances + optional candidate evidence | per-instance candidate/history axis | records CDS, leader, ORF, and translation statuses without scoring |
 | `INSTANCE_CONTEXT` | reconciled instances | regulatory and expression axis files | transcript-specific, peptide-independent work fans out |
 | `CONSTRAINT_AXES` | reconciled instances + alignment/variation references | MSA, PhyloCSF, ORBL, population, GPN axes | preserves independent evolutionary signals and GPU scheduling |
 | `PEPTIDE_PREPARATION` | reconciled instances | distinct `(interval, frame)` peptide tuples plus fan-back map | deduplicates peptide work without losing transcript parentage |
@@ -42,12 +43,24 @@ meta = [ id: run_id, peptide_id: ..., interval_id: ..., frame: ... ]
 `SUBSTRATE_TOPOLOGY` may emit a soft `translated-no-compatible-transcript`
 record. It is carried to adjudication, rather than dropped.
 
+`EVOLUTIONARY_HISTORY` is intentionally a non-scoring evidence stage. Its flat
+JSONL/TSV input has one row per species candidate and may be keyed by
+`instance_id` or `interval_id`. The output retains one-to-many candidates,
+records orthology/synteny/CDS/leader/ORF/translation statuses, and adds a
+basic source-path status when candidate coordinates are supplied. It adds a
+species-level summary (`present`, `ambiguous`, `absent`, or `unknown`) without
+selecting a path. The summary is descriptive only; the per-candidate rows are
+the authoritative evidence. It declares the ORBL denominator as unchanged.
+With no candidate file, the workflow emits an `uninformative` typed axis rather
+than inventing a negative result.
+
 ## Module ownership
 
-One module wraps one primary analysis: topology, translation join, regulatory
-geometry, expression, MSA extraction, PhyloCSF, ORBL, population constraint,
-GPN, peptide derivation, MMseqs2 uniqueness, peptide features, ESMFold,
-detectability, observed-evidence join, product clustering, or adjudication.
+One module wraps one primary analysis: topology, translation join, evolutionary
+candidate enumeration, regulatory geometry, expression, MSA extraction,
+PhyloCSF, ORBL, population constraint, GPN, peptide derivation, MMseqs2
+uniqueness, peptide features, ESMFold, detectability, observed-evidence join,
+product clustering, or adjudication.
 Each module emits a result channel and `versions.yml`; each has a real and
 faithful stub command. Tool arguments, container references, resources, and
 optional execution are configured in `nextflow.config`, not in subworkflows.

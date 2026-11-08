@@ -9,6 +9,7 @@ from pathlib import Path
 SCRIPT = Path(__file__).parents[1] / 'bin' / 'translon_characterise.py'
 PHYLOCSF = Path(__file__).parents[1] / 'bin' / 'phylocsf_axis.py'
 MSA_SETUP = Path(__file__).parents[1] / 'bin' / 'setup_maf_reference.py'
+HISTORY = Path(__file__).parents[1] / 'bin' / 'evolutionary_history.py'
 
 
 class CharacterisationContractTest(unittest.TestCase):
@@ -31,9 +32,9 @@ class CharacterisationContractTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / 'intervals.tsv').write_text(
-                'interval_id\tchrom\tstart\tend\tstrand\tframe\n'
-                'orf1\tchr1\t2\t8\t+\t0\n'
-                'orphan\tchr9\t1\t4\t+\t0\n')
+                'interval_id\tchrom\tstart\tend\tstrand\tframe\ttranscript_ids\tcandidate_blocks_json\n'
+                'orf1\tchr1\t2\t8\t+\t0\ttx1\t[{"transcript_id":"tx1","blocks":[[2,5],[5,8]]}]\n'
+                'orphan\tchr9\t1\t4\t+\t0\t\t\n')
             (root / 'gencode.gff3').write_text(
                 '##gff-version 3\nchr1\tGENCODE\tmRNA\t1\t20\t.\t+\t.\tID=transcript:tx1\n'
                 'chr1\tGENCODE\texon\t1\t10\t.\t+\t.\tID=exon:e1;Parent=transcript:tx1\n'
@@ -43,6 +44,8 @@ class CharacterisationContractTest(unittest.TestCase):
             instances = [json.loads(x) for x in (root / 'instances.jsonl').read_text().splitlines()]
             unhosted = [json.loads(x) for x in (root / 'unhosted.jsonl').read_text().splitlines()]
             self.assertEqual(instances[0]['class'], 'uORF')
+            self.assertEqual(instances[0]['source_transcript_ids'], ['tx1'])
+            self.assertEqual(instances[0]['source_candidate_blocks'][0]['transcript_id'], 'tx1')
             self.assertEqual(instances[0]['admissibility']['state'], 'positive')
             self.assertEqual(unhosted[0]['claim_hint'], 'translated-no-compatible-transcript')
             self.assertEqual(unhosted[0]['admissibility']['state'], 'unattributable')
@@ -65,6 +68,41 @@ class CharacterisationContractTest(unittest.TestCase):
             result = json.loads((root / 'axis.json').read_text())
             self.assertEqual(result['instance_id'], 'i1')
             self.assertEqual(result['axis']['phylocsf']['state'], 'positive')
+
+    def test_evolutionary_history_preserves_one_to_many_candidates_and_denominator(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'instances.jsonl').write_text(json.dumps({
+                'instance_id': 'i1', 'interval_id': 'orf1', 'transcript_id': 'tx1',
+                'class': 'uORF', 'chrom': 'chr1', 'start': 2, 'end': 8,
+                'strand': '+', 'frame': '0',
+            }) + '\n')
+            (root / 'candidates.jsonl').write_text('\n'.join([
+                json.dumps({'interval_id': 'orf1', 'species': 'mouse', 'candidate_gene': 'G1',
+                            'candidate_transcript': 'T1', 'orthology_status': 'one_to_many',
+                            'cds_status': 'aligned', 'leader_status': 'ambiguous',
+                            'orf_status': 'unknown', 'translation_status': 'untested',
+                            'chrom': 'chr1', 'start': 10, 'end': 20, 'strand': '+'}),
+                json.dumps({'interval_id': 'orf1', 'species': 'mouse', 'candidate_gene': 'G2',
+                            'candidate_transcript': 'T2', 'orthology_status': 'one_to_many',
+                            'cds_status': 'partial', 'leader_status': 'missing',
+                            'orf_status': 'not_observed', 'translation_status': 'untested',
+                            'chrom': 'chr1', 'start': 20, 'end': 10, 'strand': '+'}),
+            ]) + '\n')
+            subprocess.run([sys.executable, str(HISTORY), '--instances', str(root / 'instances.jsonl'),
+                            '--evidence', str(root / 'candidates.jsonl'), '--output', str(root / 'history.jsonl')], check=True)
+            result = json.loads((root / 'history.jsonl').read_text())
+            history = result['axes']['evolutionary_history']
+            self.assertEqual(result['transcript_id'], 'tx1')
+            self.assertEqual(history['state'], 'uninformative')
+            self.assertEqual(history['candidate_state'], 'enumerated')
+            self.assertEqual(history['summary']['candidate_count'], 2)
+            self.assertEqual(history['species'][0]['candidate_count'], 2)
+            self.assertEqual(history['summary']['species_states']['mouse']['gene'], 'ambiguous')
+            self.assertEqual(history['summary']['species_states']['mouse']['transcript'], 'ambiguous')
+            self.assertEqual(history['summary']['species_states']['mouse']['leader'], 'ambiguous')
+            self.assertEqual(history['summary']['species_states']['mouse']['path'], 'ambiguous')
+            self.assertFalse(history['denominator']['changed'])
 
     def test_phylocsf_batch_output_uses_explicit_identity_manifest(self):
         with tempfile.TemporaryDirectory() as tmp:

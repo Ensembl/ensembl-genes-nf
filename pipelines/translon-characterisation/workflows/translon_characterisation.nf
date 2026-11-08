@@ -1,6 +1,7 @@
 include { INPUT_PREPARATION } from '../subworkflows/input_preparation.nf'
 include { SUBSTRATE_TOPOLOGY_WORKFLOW } from '../subworkflows/substrate_topology.nf'
 include { TRANSLATION_RECONCILIATION } from '../subworkflows/translation_reconciliation.nf'
+include { EVOLUTIONARY_HISTORY_WORKFLOW } from '../subworkflows/evolutionary_history.nf'
 include { INSTANCE_CONTEXT } from '../subworkflows/instance_context.nf'
 include { CONSTRAINT_AXES } from '../subworkflows/constraint_axes.nf'
 include { PEPTIDE_PREPARATION } from '../subworkflows/peptide_preparation.nf'
@@ -21,6 +22,7 @@ workflow TRANSLON_CHARACTERISATION {
     INPUT_PREPARATION(intervals, gencode_gff3, translation_verdicts, proteome_fasta, genome_fasta)
     SUBSTRATE_TOPOLOGY_WORKFLOW(INPUT_PREPARATION.out.intervals, INPUT_PREPARATION.out.annotation, INPUT_PREPARATION.out.genome)
     TRANSLATION_RECONCILIATION(SUBSTRATE_TOPOLOGY_WORKFLOW.out.instances, INPUT_PREPARATION.out.verdicts)
+    EVOLUTIONARY_HISTORY_WORKFLOW(TRANSLATION_RECONCILIATION.out.instances)
 
     // Independent per-instance work: each subworkflow preserves the same meta tuple.
     INSTANCE_CONTEXT(TRANSLATION_RECONCILIATION.out.instances)
@@ -30,6 +32,7 @@ workflow TRANSLON_CHARACTERISATION {
     OBSERVED_EVIDENCE(PEPTIDE_PREPARATION.out.peptides)
 
     all_axes = INSTANCE_CONTEXT.out.axes
+        .concat(EVOLUTIONARY_HISTORY_WORKFLOW.out.axes)
         .concat(CONSTRAINT_AXES.out.axes)
         .concat(PEPTIDE_AXES.out.axes)
         .concat(OBSERVED_EVIDENCE.out.axes)
@@ -44,6 +47,7 @@ workflow TRANSLON_CHARACTERISATION {
     versions = SUBSTRATE_TOPOLOGY_WORKFLOW.out.versions
         .concat(INPUT_PREPARATION.out.versions)
         .concat(TRANSLATION_RECONCILIATION.out.versions)
+        .concat(EVOLUTIONARY_HISTORY_WORKFLOW.out.versions)
         .concat(INSTANCE_CONTEXT.out.versions)
         .concat(CONSTRAINT_AXES.out.versions)
         .concat(PEPTIDE_AXES.out.versions)

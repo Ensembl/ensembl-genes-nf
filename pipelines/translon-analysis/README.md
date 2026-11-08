@@ -189,8 +189,11 @@ native tables, scores, metadata, models, or auxiliary files.
 
 Consensus compares calls and retains per-tool provenance, coordinates,
 agreement status, and standardised score/p-value fields where available.
-Scores are not assumed to be comparable across callers; caller agreement is
-the primary cross-tool trust criterion.
+It also carries any caller-provided transcript IDs and exon/block sets in the
+`transcript_ids` and `candidate_blocks_json` columns so downstream
+characterisation can preserve transcript context. Scores are not assumed to be
+comparable across callers; caller agreement is the primary cross-tool trust
+criterion.
 
 Consensus and characterisation are optional. Characterisation requires both
 `--run_consensus true` and `--proteome_fasta`.
