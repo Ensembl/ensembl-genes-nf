@@ -558,7 +558,6 @@ def main() -> int:
                     sources.append(ncbi)
 
             for candidate in sources:
-                species_ref_dir = base / "references" / species
                 candidate_cache = base / "candidate_references" / species / accession / candidate["source"]
                 candidate_cache.mkdir(parents=True, exist_ok=True)
                 candidate_fasta = candidate_cache / "reference.fa"
@@ -595,6 +594,7 @@ def main() -> int:
         selected = best[0]
 
         ref_dir = base / "references" / species
+        ref_dir.mkdir(parents=True, exist_ok=True)
         reference = ref_dir / "reference.fa"
         shutil.copyfile(selected["candidate_fasta"], reference)
         ref_sq = fasta_dictionary(reference)
