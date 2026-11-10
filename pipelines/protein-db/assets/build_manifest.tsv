@@ -1,0 +1,15 @@
+build_id	source	scope	taxon_id	taxon_name	query_extra	include_isoforms
+felis_catus_uniprot	uniprot	species	9685	Felis_catus		false
+felis_catus_swissprot	swissprot	species	9685	Felis_catus		false
+canis_lupus_familiaris_uniprot	uniprot	species	9615	Canis_lupus_familiaris		false
+canis_lupus_familiaris_swissprot	swissprot	species	9615	Canis_lupus_familiaris		false
+rattus_norvegicus_uniprot	uniprot	species	10116	Rattus_norvegicus		false
+rattus_norvegicus_swissprot	swissprot	species	10116	Rattus_norvegicus		false
+ovis_aries_uniprot	uniprot	species	9940	Ovis_aries		false
+ovis_aries_swissprot	swissprot	species	9940	Ovis_aries		false
+sus_scrofa_uniprot	uniprot	species	9823	Sus_scrofa		false
+sus_scrofa_swissprot	swissprot	species	9823	Sus_scrofa		false
+danio_rerio_uniprot	uniprot	species	7955	Danio_rerio		false
+danio_rerio_swissprot	swissprot	species	7955	Danio_rerio		false
+gallus_gallus_uniprot	uniprot	species	9031	Gallus_gallus		false
+gallus_gallus_swissprot	swissprot	species	9031	Gallus_gallus		false

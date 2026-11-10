@@ -1,0 +1,3 @@
+build_id	source	scope	taxon_id	taxon_name	query_extra	include_isoforms
+cat_swissprot	swissprot	species	9685	Felis_catus		false
+mammals_uniprot	uniprot	clade	40674	Mammalia		false

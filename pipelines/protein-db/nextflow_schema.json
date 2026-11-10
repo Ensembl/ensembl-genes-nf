@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UniProt/Swiss-Prot protein database builder",
+  "description": "Download reproducible taxon-scoped UniProtKB protein FASTA files and build DIAMOND databases.",
+  "type": "object",
+  "properties": {
+    "build_manifest": {
+      "type": "string",
+      "format": "file-path",
+      "exists": true,
+      "description": "TSV manifest describing one or more UniProtKB/Swiss-Prot database builds."
+    },
+    "uniprot_api": {
+      "type": "string",
+      "format": "uri-reference",
+      "default": "https://rest.uniprot.org/uniprotkb/search",
+      "description": "UniProtKB search endpoint. Override only for a compatible mirror or test service."
+    },
+    "page_size": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 500,
+      "default": 500,
+      "description": "Number of FASTA records requested per paginated UniProt response."
+    },
+    "use_containers": {
+      "type": "boolean",
+      "default": true,
+      "description": "Run the downloader and DIAMOND builder in their configured containers."
+    },
+    "tool_containers": {
+      "type": "object",
+      "description": "Container references for the Python downloader and DIAMOND builder.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "outdir": {
+      "type": "string",
+      "default": "./results",
+      "description": "Output directory. Each build is written beneath databases/<build_id>/."
+    },
+    "tracedir": {
+      "type": "string",
+      "description": "Directory for Nextflow execution reports and trace files."
+    }
+  },
+  "required": ["build_manifest"]
+}
