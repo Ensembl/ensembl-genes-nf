@@ -22,9 +22,10 @@ runtime dependency.
 ## Existing aligned BAMs
 
 Use `--mode bam` with a tab-separated manifest to process BAMs that are already
-aligned to the supplied reference. Each BAM needs a `.bai` sidecar (either
-`sample.bam.bai` or `sample.bai`). Paths may be absolute or relative to the
-manifest. For example:
+aligned to the supplied reference. Each BAM needs an indexed sidecar: CSI is
+preferred for large contigs, with BAI also accepted for ordinary references.
+Accepted names are `sample.bam.csi`, `sample.csi`, `sample.bam.bai`, or
+`sample.bai`. Paths may be absolute or relative to the manifest. For example:
 
 ```tsv
 id	cohort_id	run_id	technology	minimap2_preset	isoquant_data_type	transgram_data_type	assembly_id	read_set_id	sample_id	library_id	read_representation	source_uri	bam

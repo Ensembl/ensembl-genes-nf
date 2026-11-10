@@ -217,8 +217,8 @@ workflow {
                 if (meta.read_representation in ['bam', 'ccs', 'raw_subreads']) {
                 if (meta.read_representation == 'raw_subreads' && params.ccs_mode != 'pbccs')
                     error "manifest row ${row_id} contains raw_subreads but --ccs_mode is not pbccs"
-                def index_suffixes = meta.read_representation == 'raw_subreads' && params.ccs_mode == 'pbccs' ? ['.pbi', '.bai'] : ['.bai']
-                def index_candidates = index_suffixes.collectMany { suffix -> [file("${input_file}${suffix}"), file(input_file.toString().replaceFirst(/\\.bam$/, suffix))] }
+                def index_suffixes = meta.read_representation == 'raw_subreads' && params.ccs_mode == 'pbccs' ? ['.pbi', '.csi', '.bai'] : ['.csi', '.bai']
+                def index_candidates = index_suffixes.collectMany { suffix -> [file("${input_file}${suffix}"), file(input_file.toString().replaceFirst(/\.bam$/, suffix))] }.unique()
                 def index_file = index_candidates.find { candidate -> candidate.exists() }
                 if (!index_file) error "manifest row ${row_id} requires an indexed BAM sidecar"
                 tuple(meta, input_file, index_file)

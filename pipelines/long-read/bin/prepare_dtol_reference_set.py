@@ -379,17 +379,22 @@ def stage_bam(source: Path, destination: Path, threads: int) -> None:
         destination.unlink()
     destination.symlink_to(source)
 
-    destination_index = Path(str(destination) + ".bai")
+    source_indexes = [
+        Path(str(source) + ".csi"),
+        source.with_suffix(".csi"),
+        Path(str(source) + ".bai"),
+        source.with_suffix(".bai"),
+    ]
+    source_index = next((path for path in source_indexes if path.exists()), None)
+    destination_suffix = ".csi" if source_index is None else source_index.suffix
+    destination_index = Path(str(destination) + destination_suffix)
     if destination_index.is_symlink() or destination_index.exists():
         destination_index.unlink()
-
-    source_indexes = [Path(str(source) + ".bai"), source.with_suffix(".bai")]
-    source_index = next((path for path in source_indexes if path.exists()), None)
     if source_index:
         destination_index.symlink_to(source_index)
     else:
         subprocess.run(
-            ["samtools", "index", "-@", str(threads), "-o", str(destination_index), str(source)],
+            ["samtools", "index", "-c", "-@", str(threads), "-o", str(destination_index), str(source)],
             check=True,
         )
     subprocess.run(["samtools", "quickcheck", "-v", str(destination)], check=True)

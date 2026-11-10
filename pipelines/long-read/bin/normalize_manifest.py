@@ -164,7 +164,7 @@ def main() -> None:
         if representation == "raw_subreads" and args.ccs_mode != "pbccs":
             raise SystemExit(f"row {row.get('id')} contains raw_subreads but --ccs-mode is not pbccs")
         if args.mode in {"bam", "approved_manifest", "retrospective"} and representation in BAM_REPRESENTATIONS and input_path.is_file():
-            suffixes = [".pbi", ".bai"] if representation == "raw_subreads" and args.ccs_mode == "pbccs" else [".bai"]
+            suffixes = [".pbi", ".csi", ".bai"] if representation == "raw_subreads" and args.ccs_mode == "pbccs" else [".csi", ".bai"]
             candidates = [input_path.with_name(input_path.name + suffix) for suffix in suffixes]
             candidates.extend(input_path.with_suffix(suffix) for suffix in suffixes)
             index_path = next((candidate for candidate in candidates if candidate.is_file()), None)

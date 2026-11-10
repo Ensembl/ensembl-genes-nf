@@ -210,16 +210,16 @@ process ACQUIRE_BAM {
     input:
     tuple val(meta), val(source_uri)
     output:
-    tuple val(meta), path('acquired.bam'), path('acquired.bam.bai'), emit: bam
+    tuple val(meta), path('acquired.bam'), path('acquired.bam.index'), emit: bam
     path 'acquired_input.tsv', emit: prepared
     script:
     """
-    python3 ${projectDir}/bin/acquire_input.py --uri '${source_uri}' --output acquired.bam --index-uri '${meta.source_index_uri}' --index-output acquired.bam.bai --run-id '${meta.id}' --metadata acquired_input.tsv
+    python3 ${projectDir}/bin/acquire_input.py --uri '${source_uri}' --output acquired.bam --index-uri '${meta.source_index_uri}' --index-output acquired.bam.index --run-id '${meta.id}' --metadata acquired_input.tsv
     """
     stub:
     """
-    touch acquired.bam acquired.bam.bai
-    printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tacquired.bam\\tSTUB\\tacquired.bam.bai\\tSTUB\\n' '${meta.id}' > acquired_input.tsv
+    touch acquired.bam acquired.bam.index
+    printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tacquired.bam\\tSTUB\\tacquired.bam.index\\tSTUB\\n' '${meta.id}' > acquired_input.tsv
     """
 }
 

@@ -55,6 +55,16 @@ def test_manifest_normalization_requires_and_records_bam_index(tmp_path: Path):
     assert "[index]" in (tmp_path / "checksums.tsv").read_text()
 
     bai.unlink()
+    csi = tmp_path / "reads.bam.csi"
+    csi.write_bytes(b"index")
+    csi_result = run_helper(
+        "normalize_manifest.py", "--manifest", str(manifest), "--mode", "bam", "--cohort-id", "fixture",
+        "--normalized", str(tmp_path / "normalized_csi.tsv"), "--manifest-checksum", str(tmp_path / "normalized_csi.sha256"),
+        "--checksums", str(tmp_path / "checksums_csi.tsv"), "--status", str(tmp_path / "status_csi.tsv")
+    )
+    assert csi_result.returncode == 0, csi_result.stderr
+
+    csi.unlink()
     failed = run_helper(
         "normalize_manifest.py", "--manifest", str(manifest), "--mode", "bam", "--cohort-id", "fixture",
         "--normalized", str(tmp_path / "normalized2.tsv"), "--manifest-checksum", str(tmp_path / "normalized2.sha256"),

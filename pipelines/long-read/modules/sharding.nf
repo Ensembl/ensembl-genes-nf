@@ -82,20 +82,20 @@ process INDEX_CONTIG_SHARD {
     input:
     tuple val(meta), val(shard_meta), path(shard_bam)
     output:
-    tuple val(meta), val(shard_meta), path('*.indexed.shard.bam'), path('*.indexed.shard.bam.bai'), emit: indexed
+    tuple val(meta), val(shard_meta), path('*.indexed.shard.bam'), path('*.indexed.shard.bam.csi'), emit: indexed
     path 'versions.yml', emit: versions
     script:
     def indexed_bam = "${meta.run_id}.${shard_meta.shard_id}.indexed.shard.bam"
     """
     cp ${shard_bam} '${indexed_bam}'
-    samtools index '${indexed_bam}' '${indexed_bam}.bai'
+    samtools index -c -o '${indexed_bam}.csi' '${indexed_bam}'
     printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
     """
     stub:
     def indexed_bam = "${meta.run_id}.${shard_meta.shard_id}.indexed.shard.bam"
     """
     cp ${shard_bam} '${indexed_bam}'
-    printf 'BAI\\n' > '${indexed_bam}.bai'
+    printf 'CSI\\n' > '${indexed_bam}.csi'
     touch versions.yml
     """
 }

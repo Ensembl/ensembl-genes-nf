@@ -104,7 +104,7 @@ process SORT_FASTQ_ALIGNMENT {
     stub:
     """
     printf 'BAM\\n' > '${meta.run_id}.sorted.bam'
-    printf 'BAI\\n' > '${meta.run_id}.sorted.bam.bai'
+    printf 'CSI\\n' > '${meta.run_id}.sorted.bam.csi'
     touch alignment_input
     touch versions.yml
     """
@@ -132,7 +132,7 @@ process SORT_INPUT_BAM {
     stub:
     """
     printf 'BAM\\n' > '${meta.run_id}.sorted.bam'
-    printf 'BAI\\n' > '${meta.run_id}.sorted.bam.bai'
+    printf 'CSI\\n' > '${meta.run_id}.sorted.bam.csi'
     touch alignment_input
     touch versions.yml
     """
@@ -146,20 +146,20 @@ process INDEX_SORTED_ALIGNMENT {
     input:
     tuple val(meta), path(sorted_bam), path(alignment_input)
     output:
-    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), path('alignment_input'), emit: indexed
+    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.csi'), path('alignment_input'), emit: indexed
     path 'versions.yml', emit: versions
     script:
     """
     cp ${sorted_bam} indexed.sorted.bam
     if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
-    samtools index indexed.sorted.bam
+    samtools index -c -o indexed.sorted.bam.csi indexed.sorted.bam
     printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
     """
     stub:
     """
     cp ${sorted_bam} indexed.sorted.bam
     if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
-    printf 'BAI\\n' > indexed.sorted.bam.bai
+    printf 'CSI\\n' > indexed.sorted.bam.csi
     touch versions.yml
     """
 }
@@ -172,13 +172,13 @@ process VALIDATE_SORTED_ALIGNMENT {
     input:
     tuple val(meta), path(sorted_bam), path(sorted_bai), path(alignment_input)
     output:
-    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), emit: alignment
-    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.bai'), path('alignment_input'), emit: manifest_input
+    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.csi'), emit: alignment
+    tuple val(meta), path('*.sorted.bam'), path('*.sorted.bam.csi'), path('alignment_input'), emit: manifest_input
     path 'versions.yml', emit: versions
     script:
     """
     cp ${sorted_bam} validated.sorted.bam
-    cp ${sorted_bai} validated.sorted.bam.bai
+    cp ${sorted_bai} validated.sorted.bam.csi
     if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
     samtools quickcheck -v validated.sorted.bam
     printf '"%s":\\n    samtools: %s\\n' '${task.process}' "\$(samtools --version | head -n1)" > versions.yml
@@ -186,7 +186,7 @@ process VALIDATE_SORTED_ALIGNMENT {
     stub:
     """
     cp ${sorted_bam} validated.sorted.bam
-    cp ${sorted_bai} validated.sorted.bam.bai
+    cp ${sorted_bai} validated.sorted.bam.csi
     if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
     touch versions.yml
     """
