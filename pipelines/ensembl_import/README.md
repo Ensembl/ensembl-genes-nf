@@ -1,9 +1,10 @@
 # Ensembl Import Pipeline
 
 This pipeline imports RefSeq assemblies into Ensembl core databases. For each
-assembly it fetches the RefSeq annotation, creates a core database, loads the
-RefSeq RepeatMasker features, adds sample gene metadata, loads taxonomy
-information from NCBI, and publishes an input CSV for the statistics pipeline.
+assembly it fetches the RefSeq annotation, creates a core database, optionally
+loads RefSeq RepeatMasker features, adds sample gene and static metadata, loads
+taxonomy information from NCBI, updates the registry, and publishes input CSVs
+for downstream processing.
 
 ## Requirements
 
@@ -24,7 +25,6 @@ one or more rows:
 ```csv
 gcf,species
 GCF_000001405.40,Homo sapiens
-GCA_900184115.1,Example species
 ```
 
 The `gcf` value must be a RefSeq accession in the form `GCF_#########.##`. The
@@ -44,12 +44,19 @@ Pass a JSON file with `--server_settings`:
     "db_port": 3306,
     "db_user": "writeuser",
     "db_password": "secret",
-    "db_read_user": "readuser"
+    "db_read_user": "readuser",
+    "registry_host": "mysql.registry.example.org",
+    "registry_port": 4527,
+    "registry_user": "registryuser",
+    "registry_password": "registry-secret",
+    "registry_database": "refseq_assembly"
 }
 ```
 
 `db_user` is used for database creation and metadata updates. `db_read_user`
 is used by the taxonomy step to read the taxonomy ID from the core database.
+The `registry_*` fields are used by the registry tracker. Registry connection
+details are required; the pipeline has no hardcoded registry fallback values.
 
 ## Running
 
@@ -97,8 +104,12 @@ main.nf
       GET_SAMPLE_GENE
       ADD_STATIC_METAKEYS
       LOAD_TAXONOMY
+    GET_CORE_METADATA
+    PREPARE_CORE_RENAME
     REGISTRY_TRACKER_COMPLETE
     PREPARE_STATS_INPUT
+    COMBINE_CORE_RENAME
+    COMBINE_STATS_INPUT
 ```
 
 Each assembly is processed independently.
@@ -121,12 +132,16 @@ Each assembly is processed independently.
 9. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
    core database. Requests are serialized and transient NCBI rate-limit or
    network errors are retried with backoff.
-10. After core loading, metadata/taxonomy, and RepeatMasker loading (or a
-    recorded missing RepeatMasker file) have all completed,
-    `REGISTRY_TRACKER_COMPLETE` marks the registry row as `completed` and
-    `PREPARE_STATS_INPUT` writes the CSV consumed by the statistics pipeline.
-11. `COMBINE_STATS_INPUT` combines the per-assembly statistics inputs after all
-    assemblies have reached that point.
+10. `GET_CORE_METADATA` reads `genebuild.version` and
+    `genebuild.last_geneset_update` from each imported core.
+11. `PREPARE_CORE_RENAME` creates a per-assembly mapping from the current core
+    name to the next core name, using the update month as a `YYYYMM` suffix.
+12. `REGISTRY_TRACKER_COMPLETE` writes the core genebuild version and update
+    date to the registry and marks the import as `completed`.
+13. `PREPARE_STATS_INPUT` writes the per-assembly CSV consumed by the
+    statistics pipeline.
+14. `COMBINE_CORE_RENAME` and `COMBINE_STATS_INPUT` combine the per-assembly
+    CSV files after all assemblies have reached the final output stage.
 
 ## Outputs
 
@@ -136,6 +151,8 @@ Published files are written below `--outdir`:
 <outdir>/refseq/<assembly_id>/
 <outdir>/refseq/<assembly_id>/repeatmasker/
 <outdir>/metadata/<assembly_id>/
+<outdir>/core_rename/core_rename.csv
+<outdir>/statistics_input/statistics_input.csv
 ```
 
 The workflow emits:
@@ -144,7 +161,12 @@ The workflow emits:
 - Metadata and taxonomy completion markers
 - `statistics_input.csv`, containing the core name, species ID, and the
   published genome FASTA path
+- `core_rename.csv`, containing `core_name`, `server`, and `new_core_name`
 - `versions.yml` files from each process
+
+The `core_rename.csv` output uses the core’s `genebuild.last_geneset_update`
+value. For example, a core ending in `_1` and an update month of `2026-01`
+produces a new name ending in `_202601`.
 
 The generated CSV contains only `dbname`, `species_id`, and `genome_file`.
 The `genome_file` column points to the published RefSeq FASTA, so the
@@ -162,17 +184,41 @@ The parameter schema is in
 [`nextflow_schema.json`](nextflow_schema.json), and the sample-sheet schema is
 in [`assets/schema_input.json`](assets/schema_input.json).
 
-The registry tracker can be called from a future Nextflow module:
+The registry tracker is integrated into the workflow. It can also be called
+directly for inspection or recovery:
 
 ```bash
 # List current assemblies which have never been imported
-python bin/registry_tracker.py pending
+python bin/registry_tracker.py \
+  --host mysql.registry.example.org \
+  --port 4527 \
+  --user registryuser \
+  --password registry-secret \
+  --database refseq_assembly \
+  pending
 
 # Reserve an assembly before starting the pipeline; capture the printed id
-status_id=$(python bin/registry_tracker.py start --accession GCF_000001405.40)
+status_id=$(python bin/registry_tracker.py \
+  --host mysql.registry.example.org \
+  --port 4527 \
+  --user registryuser \
+  --password registry-secret \
+  --database refseq_assembly \
+  start \
+  --accession GCF_000001405.40 \
+  --genebuilder automated)
 
 # Call this only after the import has completed successfully
-python bin/registry_tracker.py complete --import-status-id "$status_id"
+python bin/registry_tracker.py \
+  --host mysql.registry.example.org \
+  --port 4527 \
+  --user registryuser \
+  --password registry-secret \
+  --database refseq_assembly \
+  complete \
+  --import-status-id "$status_id" \
+  --genebuild-version EXT01 \
+  --last-genebuild-update 2026-01
 ```
 
 `start` refuses to create a row when any import history already exists for the
@@ -185,6 +231,12 @@ By default, an existing import-status record stops the pipeline. Set
 record, but only when its
 `genebuilder` matches the requested value. Reuse resets the record to
 `in_progress` and updates its start and status-update dates.
+
+Static core metakeys are configured in
+[`config/static_metakeys.json`](config/static_metakeys.json). Entries under
+the `refseq` key are inserted into the core `meta` table by
+`ADD_STATIC_METAKEYS`. Existing metakeys are preserved because the insert uses
+`INSERT IGNORE`.
 
 ## Next steps
 Run the statistics pipeline on the output CSV to generate statistics for handover.

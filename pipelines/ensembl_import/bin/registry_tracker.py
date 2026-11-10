@@ -20,13 +20,8 @@ from _mysq_helper import mysql_connection
 
 LOGGER = logging.getLogger(__name__)
 
-REGISTRY_SERVER = "mysql-ens-genebuild-prod-1"
-REGISTRY_PORT = 4527
-REGISTRY_USER = "ensadmin"
-REGISTRY_PASSWORD = "ensembl"
-REGISTRY_DB = "refseq_assembly_test"
-GENEBUILD_VERSION = "EXT01"
 GCF_ACCESSION_PATTERN = re.compile(r"GCF_\d+\.\d+")
+GENEBUILD_MONTH_PATTERN = re.compile(r"(\d{4})-(\d{2})")
 
 
 class RegistryTrackerError(RuntimeError):
@@ -39,11 +34,11 @@ class ExistingImportError(RegistryTrackerError):
 
 @dataclass(frozen=True)
 class RegistryConfig:
-    host: str = REGISTRY_SERVER
-    port: int = REGISTRY_PORT
-    user: str = REGISTRY_USER
-    password: str = REGISTRY_PASSWORD
-    database: str = REGISTRY_DB
+    host: str
+    port: int
+    user: str
+    password: str
+    database: str
 
 
 PENDING_QUERY = """
@@ -157,11 +152,10 @@ def start_import(
                     UPDATE import_status
                        SET import_status = 'in_progress',
                            date_started = CURRENT_DATE,
-                           date_status_update = CURRENT_DATE,
-                           genebuild_version = %s
+                           date_status_update = CURRENT_DATE
                      WHERE import_status_id = %s
                     """,
-                    (GENEBUILD_VERSION, existing_record["import_status_id"]),
+                    (existing_record["import_status_id"],),
                 )
                 status_id = existing_record["import_status_id"]
                 conn.commit()
@@ -176,12 +170,11 @@ def start_import(
                 """
                 INSERT INTO import_status
                     (refseq_assembly_id, import_status, genebuilder,
-                     annotation_source, date_started, date_status_update,
-                     genebuild_version)
+                     annotation_source, date_started, date_status_update)
                 VALUES (%s, 'in_progress', %s, 'import_refseq',
-                        CURRENT_DATE, CURRENT_DATE, %s)
+                        CURRENT_DATE, CURRENT_DATE)
                 """,
-                (assembly["refseq_assembly_id"], genebuilder, GENEBUILD_VERSION),
+                (assembly["refseq_assembly_id"], genebuilder),
             )
             status_id = cursor.lastrowid
             conn.commit()
@@ -191,8 +184,20 @@ def start_import(
             cursor.execute("SELECT RELEASE_LOCK(%s)", (lock_name,))
 
 
-def complete_import(config: RegistryConfig, import_status_id: int) -> None:
+def complete_import(
+    config: RegistryConfig,
+    import_status_id: int,
+    genebuild_version: str,
+    last_genebuild_update: str,
+) -> None:
     """Mark one in-progress import as completed."""
+    if not genebuild_version or len(genebuild_version) > 10:
+        raise RegistryTrackerError("genebuild_version must be between 1 and 10 characters")
+    month_match = GENEBUILD_MONTH_PATTERN.fullmatch(last_genebuild_update)
+    if not month_match or not 1 <= int(month_match.group(2)) <= 12:
+        raise RegistryTrackerError("last_genebuild_update must be a valid month in YYYY-MM format")
+    registry_update_date = f"{last_genebuild_update}-01"
+
     with mysql_connection(
         config.database, config.host, config.port, config.user, config.password
     ) as conn, conn.cursor() as cursor:
@@ -201,12 +206,13 @@ def complete_import(config: RegistryConfig, import_status_id: int) -> None:
             UPDATE import_status
                SET import_status = 'completed',
                    date_status_update = CURRENT_DATE,
-                   last_genebuild_update = CURRENT_DATE,
+                   genebuild_version = %s,
+                   last_genebuild_update = %s,
                    last_attempt = 1
              WHERE import_status_id = %s
                AND import_status = 'in_progress'
             """,
-            (import_status_id,),
+            (genebuild_version, registry_update_date, import_status_id),
         )
         if cursor.rowcount != 1:
             conn.rollback()
@@ -217,11 +223,11 @@ def complete_import(config: RegistryConfig, import_status_id: int) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--host", default=REGISTRY_SERVER)
-    parser.add_argument("--port", default=REGISTRY_PORT, type=int)
-    parser.add_argument("--user", default=REGISTRY_USER)
-    parser.add_argument("--password", default=REGISTRY_PASSWORD)
-    parser.add_argument("--database", default=REGISTRY_DB)
+    parser.add_argument("--host", required=True)
+    parser.add_argument("--port", required=True, type=int)
+    parser.add_argument("--user", required=True)
+    parser.add_argument("--password", required=True)
+    parser.add_argument("--database", required=True)
     subparsers = parser.add_subparsers(dest="operation", required=True)
     subparsers.add_parser("pending", help="list current assemblies with no import status")
     start = subparsers.add_parser("start", help="record an import start")
@@ -234,6 +240,8 @@ def parse_args() -> argparse.Namespace:
     )
     complete = subparsers.add_parser("complete", help="record a successful import")
     complete.add_argument("--import-status-id", required=True, type=int)
+    complete.add_argument("--genebuild-version", required=True)
+    complete.add_argument("--last-genebuild-update", required=True)
     return parser.parse_args()
 
 
@@ -254,7 +262,12 @@ def main() -> None:
                 )
             )
         else:
-            complete_import(config, args.import_status_id)
+            complete_import(
+                config,
+                args.import_status_id,
+                args.genebuild_version,
+                args.last_genebuild_update,
+            )
     except RegistryTrackerError as error:
         LOGGER.error("Registry tracker failed: %s", error)
         raise SystemExit(1) from None

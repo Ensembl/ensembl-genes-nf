@@ -5,6 +5,8 @@ process REGISTRY_TRACKER_START {
 
     input:
     val meta
+    tuple val(registry_host), val(registry_port), val(registry_user),
+          val(registry_password), val(registry_database)
 
     output:
     tuple val(meta), path('import_status_id.txt'), emit: started
@@ -14,7 +16,13 @@ process REGISTRY_TRACKER_START {
     def skipStartCheck = params.skip_start_check == 'true' ? '--skip-start-check' : ''
 
     """
-    registry_tracker.py start \
+    registry_tracker.py \
+        --host '${registry_host}' \
+        --port '${registry_port}' \
+        --user '${registry_user}' \
+        --password '${registry_password}' \
+        --database '${registry_database}' \
+        start \
         --accession ${meta.id} \
         --genebuilder '${params.genebuilder}' \
         ${skipStartCheck} \
