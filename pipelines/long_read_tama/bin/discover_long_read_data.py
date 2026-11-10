@@ -145,7 +145,13 @@ def discover(taxon: str, tree: bool, cache: Path, probe: bool, target: int,
         bio = cached_json(bio_url, cache / "biosamples" / f"{sample}.json") if sample != "unknown" else {}
         raw_tissue = first_characteristic(bio, ("tissue", "organism_part"))
         subread_class, subread_uri, subread_md5 = artifact(row.get("submitted_ftp", ""), row.get("submitted_md5", ""), row.get("submitted_format", ""))
-        original = resolve_ncbi_original(row.get("run_accession", ""), cache / "ncbi_original")
+        # ``--no-probe`` is intended to make discovery metadata-only.  NCBI
+        # Original Format resolution is a per-run network lookup, so do not
+        # perform it when probing has been explicitly disabled; the submitted
+        # artifact and ENA filename still provide the conservative fallback
+        # classification used below.
+        original = (resolve_ncbi_original(row.get("run_accession", ""), cache / "ncbi_original")
+                    if probe else {})
         original_representation = original.get("ncbi_original_representation", "UNKNOWN")
         observed = "NOT_PROBED"
         if row.get("instrument_platform") == "OXFORD_NANOPORE": observed = "ONT"

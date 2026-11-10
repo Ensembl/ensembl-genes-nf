@@ -6,11 +6,9 @@ process PREPARE_BACKEND_MERGE {
     tuple val(meta), val(backend), val(scope), path(gtfs), val(sort_mode)
     output:
     tuple val(meta), val(backend), val(scope), path(gtfs), path('merge_input.gtf'), path('merge_gtf.status.tsv'), path('merge_status.tsv'), path('merge_skipped_inputs.tsv'), emit: prepared
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/merge_gtfs.py --inputs ${gtfs} --output merge_input.gtf --backend '${backend}' --status merge_gtf.status.tsv --skipped merge_skipped_inputs.tsv --merge-status merge_status.tsv --scope '${scope}' --sort '${sort_mode}'
-    printf '"%s":\\n    merge_preparation: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
@@ -18,7 +16,6 @@ process PREPARE_BACKEND_MERGE {
     printf 'backend\\tstatus\\n%s\\tCOMPLETE\\n' '${backend}' > merge_gtf.status.tsv
     printf 'backend\\tscope\\tstatus\\n%s\\t%s\\tCOMPLETE\\n' '${backend}' '${scope}' > merge_status.tsv
     printf 'input\\tstatus\\n' > merge_skipped_inputs.tsv
-    printf '"%s":\\n    merge_preparation: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -30,16 +27,13 @@ process MERGE_DIRECT_GTF {
     tuple val(meta), val(backend), val(scope), path(merge_input), path(status), path(merge_status), path(skipped)
     output:
     tuple val(meta), val(backend), val(scope), path('merged.gtf'), emit: merged
-    path 'versions.yml', emit: versions
     script:
     """
     cp ${merge_input} merged.gtf
-    printf '"%s":\\n    direct_merge: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     cp ${merge_input} merged.gtf
-    printf '"%s":\\n    direct_merge: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -63,7 +57,7 @@ process STRINGTIE2_MERGE {
     stub:
     """
     cp ${merge_input} merged.gtf
-    printf '"%s":\\n    stringtie: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -87,7 +81,7 @@ process STRINGTIE3_MERGE {
     stub:
     """
     cp ${merge_input} merged.gtf
-    printf '"%s":\\n    stringtie: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -111,7 +105,7 @@ process TMERGE_MERGE {
     stub:
     """
     cp ${merge_input} merged.gtf
-    printf '"%s":\\n    tmerge: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -123,16 +117,13 @@ process EMIT_EMPTY_MERGED_GTF {
     tuple val(meta), val(backend), val(scope), path(merge_input), path(status), path(merge_status), path(skipped)
     output:
     tuple val(meta), val(backend), val(scope), path('merged.gtf'), emit: merged
-    path 'versions.yml', emit: versions
     script:
     """
     cp ${merge_input} merged.gtf
-    printf '"%s":\\n    empty_merge: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     cp ${merge_input} merged.gtf
-    printf '"%s":\\n    empty_merge: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -145,17 +136,14 @@ process WRITE_MERGE_FILELIST {
     output:
     tuple val(meta), val(backend), val(scope), path('merge_filelist.txt'), path('merge_filelist.sha256'), emit: filelist
     path 'merge_manifest.json', emit: manifest
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/merge_filelist.py --inputs ${gtfs} --file-list merge_filelist.txt --checksum merge_filelist.sha256 --manifest merge_manifest.json --backend '${backend}' --scope '${scope}' --status-file ${status}
-    printf '"%s":\\n    merge_filelist: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'stub\\n' > merge_filelist.txt
     printf 'stub\\n' > merge_filelist.sha256
     printf '{"backend":"%s","scope":"%s","stub":true}\\n' '${backend}' '${scope}' > merge_manifest.json
-    printf '"%s":\\n    merge_filelist: stub\\n' '${task.process}' > versions.yml
     """
 }

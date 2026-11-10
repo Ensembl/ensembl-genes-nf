@@ -7,16 +7,35 @@ process WRITE_MODEL_RECORDS {
     val cohort_id
     output:
     path 'model_records.json', emit: records
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/write_json.py --value '${model_records_json}' --output model_records.json
-    printf '"%s":\\n    model_records: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     python3 ${projectDir}/bin/write_json.py --value '${model_records_json}' --output model_records.json
-    printf '"%s":\\n    model_records: stub\\n' '${task.process}' > versions.yml
+    """
+}
+
+process JOIN_MODEL_EVIDENCE {
+    label 'process_medium'
+    container params.use_containers ? params.tool_containers.python_helper : null
+    tag "${cohort_id}"
+    input:
+    path bed12s, stageAs: 'models/*'
+    path model_records
+    path direct_support_dirs, stageAs: 'direct_support/*'
+    path reference
+    val cohort_id
+    output:
+    path 'joined_support', emit: support
+    script:
+    """
+    python3 ${projectDir}/bin/build_model_support.py --models-dir models --model-records ${model_records} --direct-support-dir direct_support --reference ${reference} --output-dir joined_support
+    """
+    stub:
+    """
+    python3 ${projectDir}/bin/build_model_support.py --models-dir models --model-records ${model_records} --direct-support-dir direct_support --reference ${reference} --output-dir joined_support
     """
 }
 
@@ -31,10 +50,11 @@ process PACKAGE_LONG_READ_EVIDENCE {
     path alignment_manifests, stageAs: 'alignment_manifests/*'
     path reference_identity, stageAs: 'reference_identity.json'
     path model_records
+    path direct_support_dirs, stageAs: 'direct_support/*'
+    path joined_support
     val cohort_id
     output:
     path 'evidence', emit: evidence
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/package_evidence.py \\
@@ -43,8 +63,9 @@ process PACKAGE_LONG_READ_EVIDENCE {
         --normalized-manifest ${normalized_manifest} \\
         --reference-identity reference_identity.json \\
         --model-records ${model_records} \\
+        --direct-support-dir direct_support \\
+        --joined-support-dir ${joined_support} \\
         --output-dir evidence
-    printf '"%s":\\n    evidence_packager: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
@@ -54,8 +75,9 @@ process PACKAGE_LONG_READ_EVIDENCE {
         --normalized-manifest ${normalized_manifest} \\
         --reference-identity reference_identity.json \\
         --model-records ${model_records} \\
+        --direct-support-dir direct_support \\
+        --joined-support-dir ${joined_support} \\
         --output-dir evidence
-    printf '"%s":\\n    evidence_packager: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -69,14 +91,12 @@ process VERIFY_LONG_READ_EVIDENCE {
     val cohort_id
     output:
     path 'evidence', emit: evidence
-    path 'versions.yml', emit: versions
     script:
     """
-    python3 ${projectDir}/bin/verify_evidence_publication.py --evidence-dir evidence
-    printf '"%s":\\n    evidence_verifier: pipeline\\n' '${task.process}' > versions.yml
+    python3 ${projectDir}/bin/verify_evidence_publication.py --evidence-dir evidence --require-support
     """
     stub:
     """
-    printf '"%s":\\n    evidence_verifier: stub\\n' '${task.process}' > versions.yml
+    python3 ${projectDir}/bin/verify_evidence_publication.py --evidence-dir evidence --require-support
     """
 }

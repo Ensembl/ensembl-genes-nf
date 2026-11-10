@@ -18,8 +18,5 @@ workflow AUDIT_NATIVE_SHARDS {
 
     emit:
     audited = audited
-    versions = EMIT_EMPTY_NATIVE_MODEL.out.versions
-        .mix(AUDIT_NATIVE_SHARD_MODELS.out.versions)
-        .mix(AUDIT_BACKEND_SHARD_PLAN.out.versions)
-        .mix(VALIDATE_BACKEND_SHARD_PLAN.out.versions)
+    versions = channel.empty()
 }

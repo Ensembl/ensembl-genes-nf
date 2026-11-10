@@ -13,5 +13,5 @@ workflow VALIDATE_RETROSPECTIVE_INPUT {
 
     emit:
     normalized = VALIDATE_INPUT_MANIFEST.out.normalized
-    versions = VALIDATE_INPUT_MANIFEST.out.versions
+    versions = channel.empty()
 }

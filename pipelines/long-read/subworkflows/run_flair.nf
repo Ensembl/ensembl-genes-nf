@@ -40,5 +40,5 @@ workflow RUN_FLAIR {
     combined = FLAIR_COMBINE_GTF.out.native_models.map { meta, backend, product, status ->
         tuple(meta, [backend: backend, scope: 'run', run_id_or_cohort_id: meta.run_id, shard_id_or_merged: 'merged', native_format: 'gtf', model_count: 0, status: status.text.contains('EMPTY') ? 'EMPTY' : 'SUCCESS'], product, status)
     }
-    versions = SAMTOOLS_VIEW_SHARD.out.versions.mix(FLAIR_JUNCTIONS.out.versions).mix(FLAIR_TRANSCRIPTOME.out.versions).mix(FINALIZE_FLAIR_GTF.out.versions).mix(COLLECT_FLAIR_PRODUCTS.out.versions).mix(WRITE_FLAIR_MANIFEST.out.versions).mix(FLAIR_EMPTY.out.versions).mix(FLAIR_COMBINE_GTF.out.versions).mix(FLAIR_COMBINE_PRODUCTS.out.versions).mix(WRITE_FLAIR_COMBINED_MANIFEST.out.versions)
+    versions = SAMTOOLS_VIEW_SHARD.out.versions.mix(FLAIR_TRANSCRIPTOME.out.versions)
 }

@@ -33,6 +33,34 @@ def selected_backends(value) {
     requested
 }
 
+def normalized_technology(value, row_id) {
+    def technology = (value ?: '').toString().trim().toLowerCase().replaceAll(/[\s-]+/, '_')
+    if (technology in ['ont', 'nanopore', 'oxford_nanopore']) return 'ont'
+    if (technology in ['pacbio', 'pacbio_ccs', 'pacbio_hifi', 'ccs']) return 'pacbio'
+    error "manifest row ${row_id} has unsupported technology '${value}'; use ont or pacbio"
+}
+
+def normalized_minimap2_preset(value, technology, row_id) {
+    def preset = (value ?: (technology == 'ont' ? 'splice' : 'splice:hq')).toString().trim()
+    if (!(preset in ['splice:hq', 'splice', 'map-ont', 'map-pb']))
+        error "manifest row ${row_id} has unsupported minimap2_preset '${preset}'"
+    preset
+}
+
+def normalized_isoquant_data_type(value, technology, row_id) {
+    def data_type = (value ?: (technology == 'ont' ? 'nanopore' : 'pacbio_ccs')).toString().trim()
+    if (!(data_type in ['pacbio_ccs', 'nanopore', 'assembly']))
+        error "manifest row ${row_id} has unsupported isoquant_data_type '${data_type}'"
+    data_type
+}
+
+def normalized_transgram_data_type(value, fallback, row_id) {
+    def data_type = (value ?: fallback).toString().trim()
+    if (!(data_type in ['auto', 'alpha', 'beta']))
+        error "manifest row ${row_id} has unsupported transgram_data_type '${data_type}'"
+    data_type
+}
+
 def validate_runtime_options() {
     if (!(params.mode in ['fastq', 'bam', 'approved_manifest']))
         error '--mode must be fastq, bam, or approved_manifest'
@@ -161,11 +189,15 @@ workflow {
             def index_value = row.index_uri ?: row.bai ?: row.pbi
             def source_index_uri = index_value ? ((index_value.startsWith('/') || index_value.contains('://')) ? index_value : file("${manifest_file.parent}/${index_value}").toString()) : "${source_uri}.bai"
             def read_representation = normalized_read_representation(row, params.mode)
+            def technology = normalized_technology(row.technology, row_id)
             def meta = [
                 id: row_id,
                 cohort_id: row.cohort_id ?: params.cohort_id,
                 run_id: row.run_id ?: row_id,
-                technology: row.technology ?: 'unknown',
+                technology: technology,
+                minimap2_preset: normalized_minimap2_preset(row.minimap2_preset, technology, row_id),
+                isoquant_data_type: normalized_isoquant_data_type(row.isoquant_data_type, technology, row_id),
+                transgram_data_type: normalized_transgram_data_type(row.transgram_data_type, params.transgram_data_type, row_id),
                 assembly_id: row.assembly_id ?: 'reference',
                 read_set_id: row.read_set_id ?: row_id,
                 sample_id: row.sample_id ?: row_id,
@@ -263,7 +295,7 @@ workflow {
     versions = versions.mix(COMPARE_MODELS.out.versions)
     evidence_status = channel.of('DISABLED')
     if (params.evidence_mode == 'enabled') {
-        COLLECT_LONG_READ_EVIDENCE_PRODUCTS(NORMALIZE_VALIDATE_MODELS.out.validated, PREPARE_LONG_READS.out.normalized, ALIGN_LONG_READS.out.alignment_manifest.collect(), ALIGN_LONG_READS.out.reference_identity, params.cohort_id)
+        COLLECT_LONG_READ_EVIDENCE_PRODUCTS(NORMALIZE_VALIDATE_MODELS.out.validated, PREPARE_LONG_READS.out.normalized, ALIGN_LONG_READS.out.alignment_manifest.collect(), ALIGN_LONG_READS.out.reference_identity, ALIGN_LONG_READS.out.direct_support.map { meta, support -> support }.collect(), reference_file, params.cohort_id)
         evidence_status = COLLECT_LONG_READ_EVIDENCE_PRODUCTS.out.evidence.map { _evidence -> 'COMPLETE' }
         versions = versions.mix(COLLECT_LONG_READ_EVIDENCE_PRODUCTS.out.versions)
     }
@@ -301,6 +333,7 @@ workflow {
         discovery_query: params.discovery_query,
         publish_native_intermediates: params.publish_native_intermediates,
         evidence_mode: params.evidence_mode,
+        evidence_min_mapq: params.evidence_min_mapq,
         orf_mode: params.orf_mode,
         diamond_mode: params.diamond_mode,
         tama: [cap_mode: params.tama_cap_mode, end_mode: params.tama_end_mode, run_mode: params.tama_run_mode],

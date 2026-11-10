@@ -1,0 +1,7 @@
+run_id	fastq	technology	minimap2_preset	source_uri	selected_artifact_md5	selected_artifact_basename	sample_id	study_accession	assembly_id	tissue	organism_part	cell_type	developmental_stage	sex	strain_or_breed	library_strategy	library_selection	read_representation	molecule_type	processing_class	review_flags	staging_note
+SRR31429673		ont	splice				SAMN44849003	PRJNA1188790	GCA_008641055.3	Testis				male	Wild type	RNA-Seq	PolyA	fastq	ont_cdna	QUARANTINE	NO_FASTQ_OR_MD5	do not stage: NO_FASTQ_OR_MD5
+SRR31429677		ont	splice				SAMN44848999	PRJNA1188790	GCA_008641055.3	Skeletal Muscle				male	Wild type	RNA-Seq	PolyA	fastq	ont_cdna	QUARANTINE	NO_FASTQ_OR_MD5	do not stage: NO_FASTQ_OR_MD5
+SRR40857351		pacbio	splice:hq				SAMN63532440	PRJNA1535064	GCA_008641055.3	descending colon				male	not collected	RNA-Seq	PolyA	fastq	pacbio_transcriptomic	QUARANTINE	NO_FASTQ_OR_MD5	do not stage: NO_FASTQ_OR_MD5
+SRR40857352		pacbio	splice:hq				SAMN63532459	PRJNA1535064	GCA_008641055.3	palate muscle				male	not collected	RNA-Seq	PolyA	fastq	pacbio_transcriptomic	QUARANTINE	NO_FASTQ_OR_MD5	do not stage: NO_FASTQ_OR_MD5
+SRR40857363		pacbio	splice:hq				SAMN63532454	PRJNA1535064	GCA_008641055.3	lung				male	not collected	RNA-Seq	PolyA	fastq	pacbio_transcriptomic	QUARANTINE	NO_FASTQ_OR_MD5	do not stage: NO_FASTQ_OR_MD5
+SRR40857374		pacbio	splice:hq				SAMN63532437	PRJNA1535064	GCA_008641055.3	adrenal gland (medulla)				male	not collected	RNA-Seq	PolyA	fastq	pacbio_transcriptomic	QUARANTINE	NO_FASTQ_OR_MD5	do not stage: NO_FASTQ_OR_MD5

@@ -10,5 +10,5 @@ workflow COMPARE_MODELS {
 
     emit:
     comparison = COMPARE_NORMALIZED_MODELS.out.comparison
-    versions = COMPARE_NORMALIZED_MODELS.out.versions
+    versions = channel.empty()
 }

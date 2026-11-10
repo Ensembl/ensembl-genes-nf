@@ -11,8 +11,8 @@ process FINALIZE_RUN_MANIFEST {
     val run_configuration
     val stage_status
     val evidence_status
-    path model_publications
-    path merge_provenance
+    path model_publications, stageAs: 'model_publications.jsonl'
+    path merge_provenance, stageAs: 'merge_provenance.jsonl'
     output:
     path 'run_manifest.json', emit: run_manifest
     path 'final_model_checksums.tsv', emit: checksums
@@ -46,7 +46,6 @@ process VERIFY_PUBLICATION_CHECKSUMS {
     path final_checksums
     output:
     path 'publication_checksum_verification.tsv', emit: checksum_verification
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/verify_publication_checksums.py --root . --checksums ${final_checksums} --report publication_checksum_verification.tsv
@@ -54,7 +53,6 @@ process VERIFY_PUBLICATION_CHECKSUMS {
     stub:
     """
     printf 'path\\tsource_path\\texpected_sha256\\tactual_sha256\\tstatus\\n# errors\\t0\\n' > publication_checksum_verification.tsv
-    printf '"%s":\\n    publication_checksum_verifier: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -72,7 +70,7 @@ process COLLECT_SOFTWARE_VERSIONS {
     """
     stub:
     """
-    printf 'long_read: stub\\n' > software_versions.yml
+    touch software_versions.yml
     """
 }
 
@@ -82,16 +80,13 @@ process EXTRACT_COMBINED_TRANSCRIPTS {
     tuple val(meta), val(backend), val(scope), path(bed12), path(model_manifest), path(validation_report)
     output:
     tuple val(meta), val(backend), val(scope), path('transcripts.fa'), emit: transcripts
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/extract_transcripts.py --bed12 ${bed12} --output transcripts.fa
-    printf '"%s":\\n    transcript_extractor: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf '>stub\\nNNNN\\n' > transcripts.fa
-    printf '"%s":\\n    transcript_extractor: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -101,40 +96,34 @@ process PREDICT_LONGEST_ATG_ORFS {
     tuple val(meta), val(backend), val(scope), path(transcripts)
     output:
     tuple val(meta), val(backend), val(scope), path('orfs.fa'), emit: orfs
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/predict_orfs.py --transcripts ${transcripts} --output orfs.fa
-    printf '"%s":\\n    orf_predictor: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     cp ${transcripts} orfs.fa
-    printf '"%s":\\n    orf_predictor: stub\\n' '${task.process}' > versions.yml
     """
 }
 
 process PUBLISH_ORF_PRODUCTS {
     label 'process_low'
-    publishDir "${params.outdir}", mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : "per_cohort/${meta.cohort_id}/qc/orf/${backend}/${scope}/${filename}" }
+    publishDir "${params.outdir}", mode: 'copy', saveAs: { filename -> "per_cohort/${meta.cohort_id}/qc/orf/${backend}/${scope}/${filename}" }
     tag "${meta.id}:${backend}:${scope}"
     input:
     tuple val(meta), val(backend), val(scope), path(orfs)
     output:
     path 'orfs.fa', emit: orfs
     path 'orf_manifest.tsv', emit: manifest
-    path 'versions.yml', emit: versions
     script:
     """
     if [[ '${orfs}' != 'orfs.fa' ]]; then cp ${orfs} orfs.fa; fi
     printf 'backend\\tscope\\tmodel_artifact\\tproduct\\n%s\\t%s\\t%s\\torfs.fa\\n' '${backend}' '${scope}' '${orfs}' > orf_manifest.tsv
-    printf '"%s":\\n    orf_product: longest_atg\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     if [[ '${orfs}' != 'orfs.fa' ]]; then cp ${orfs} orfs.fa; fi
     printf 'backend\\tscope\\tmodel_artifact\\tproduct\\n%s\\t%s\\t%s\\torfs.fa\\n' '${backend}' '${scope}' '${orfs}' > orf_manifest.tsv
-    printf '"%s":\\n    orf_product: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -155,7 +144,7 @@ process PREP_DIAMOND_DB {
     stub:
     """
     printf 'stub\\n' > reference.dmnd
-    printf '"%s":\\n    diamond: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -167,16 +156,13 @@ process WRITE_DIAMOND_DATABASE_IDENTITY {
     val label
     output:
     path 'database_identity.json', emit: identity
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/write_file_identity.py --input ${input_file} --label '${label}' --output database_identity.json
-    printf '"%s":\\n    database_identity: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf '{"label":"%s","stub":true}\\n' '${label}' > database_identity.json
-    printf '"%s":\\n    database_identity: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -198,7 +184,7 @@ process DIAMOND_BLASTP {
     stub:
     """
     printf 'query\\ttarget\\tscore\\n' > diamond.tsv
-    printf '"%s":\\n    diamond: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -208,16 +194,13 @@ process REPORT_COMBINED_DIAMOND_MODELS {
     tuple val(meta), val(backend), val(scope), path(hits)
     output:
     tuple val(meta), val(backend), val(scope), path('diamond_model_report.tsv'), emit: report
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/count_model_records.py --hits ${hits} --hits-only --report diamond_model_report.tsv
-    printf '"%s":\\n    diamond_report: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'status\\tmodels\\nCOMPLETE\\t0\\n' > diamond_model_report.tsv
-    printf '"%s":\\n    diamond_report: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -229,15 +212,12 @@ process COMPARE_CANDIDATE_MODELS {
     tuple val(meta), val(backend), val(scope), path(bed12), path(diamond_report)
     output:
     path 'candidate_model_comparison.tsv', emit: comparison
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/count_model_records.py --models ${bed12} --hits ${diamond_report} --backend '${backend}' --scope '${scope}' --report candidate_model_comparison.tsv
-    printf '"%s":\\n    candidate_comparison: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'backend\\tscope\\tmodels\\tdiamond_hits\\tclassification_policy\\n%s\\t%s\\t1\\t0\\tlongest_atg_orf\\n' '${backend}' '${scope}' > candidate_model_comparison.tsv
-    printf '"%s":\\n    candidate_comparison: stub\\n' '${task.process}' > versions.yml
     """
 }

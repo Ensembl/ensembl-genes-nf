@@ -43,12 +43,14 @@ workflow PREPARE_LONG_READS {
         : input_runs.filter { item -> item[0].read_representation in ['bam', 'ccs', 'raw_subreads'] }
     VALIDATE_BAM_INPUT(bam_inputs)
 
+    bam_to_fastq_versions = channel.empty()
     if (preparation_stages.contains('bam_to_fastq')) {
         if (ccs_mode == 'pbccs') {
             error 'preparation_stages bam_to_fastq cannot be combined with ccs_mode pbccs'
         }
         BAM_TO_FASTQ(VALIDATE_BAM_INPUT.out.bam.map { meta, bam, _bai, _status -> tuple(meta, bam) })
         fastq_inputs = BAM_TO_FASTQ.out.fastq
+        bam_to_fastq_versions = BAM_TO_FASTQ.out.versions
     }
     VALIDATE_FASTQ(fastq_inputs)
     AUDIT_FASTQ(VALIDATE_FASTQ.out.reads)
@@ -80,18 +82,9 @@ workflow PREPARE_LONG_READS {
         FINALIZE_PREPARED_MANIFEST(VALIDATE_INPUT_MANIFEST.out.normalized, prepared_metadata)
     }
 
-    versions = VALIDATE_INPUT_MANIFEST.out.versions
-        .mix(VALIDATE_BAM_INPUT.out.versions)
-        .mix(VALIDATE_FASTQ.out.versions)
-        .mix(AUDIT_FASTQ.out.versions)
+    versions = VALIDATE_BAM_INPUT.out.versions
         .mix(RUN_PBCCS.out.versions)
-        .mix(INDEX_PBCCS.out.versions)
-        .mix(STAGE_VALIDATED_FASTQ.out.versions)
-        .mix(STAGE_VALIDATED_INPUT.out.versions)
-    if (preparation_stages.contains('discover')) versions = versions.mix(DISCOVER_LONG_READ_DATA.out.versions)
-    if (preparation_stages.contains('resolve_metadata')) versions = versions.mix(RESOLVE_LONG_READ_METADATA.out.versions)
-    if (preparation_stages.contains('acquire')) versions = versions.mix(ACQUIRE_FASTQ.out.versions).mix(ACQUIRE_BAM.out.versions)
-    if (preparation_stages.contains('bam_to_fastq')) versions = versions.mix(BAM_TO_FASTQ.out.versions).mix(FINALIZE_PREPARED_MANIFEST.out.versions)
+        .mix(bam_to_fastq_versions)
 
     emit:
     reads = STAGE_VALIDATED_FASTQ.out.reads.map { meta, reads -> tuple(meta, reads) }

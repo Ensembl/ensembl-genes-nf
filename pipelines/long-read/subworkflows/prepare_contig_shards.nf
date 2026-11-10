@@ -42,5 +42,5 @@ workflow PREPARE_CONTIG_SHARDS {
     summaries = PLAN_CONTIG_SHARDS.out.plan.map { meta, _bam, _bai, _plan, summary, _status -> tuple(meta, summary.readLines()[1].split('\\t')[1].toInteger()) }
     shards = VALIDATE_CONTIG_SHARDS.out.validated.map { meta, shard_meta, bam, bai, validation -> tuple(meta, shard_meta, bam, bai) }
     status = SPLIT_BAM_BY_CONTIG.out.status
-    versions = SAMTOOLS_IDXSTATS.out.versions.mix(INSPECT_BAM_WORKLOAD.out.versions).mix(PLAN_CONTIG_SHARDS.out.versions).mix(SPLIT_BAM_BY_CONTIG.out.versions).mix(INDEX_CONTIG_SHARD.out.versions).mix(VALIDATE_CONTIG_SHARDS.out.versions).mix(COUNT_SOURCE_COVERAGE.out.versions).mix(COUNT_CONTIG_SHARD_COVERAGE.out.versions).mix(COLLECT_SHARD_COVERAGE_COUNTS.out.versions).mix(VALIDATE_SHARD_COVERAGE.out.versions)
+    versions = SAMTOOLS_IDXSTATS.out.versions.mix(SPLIT_BAM_BY_CONTIG.out.versions).mix(INDEX_CONTIG_SHARD.out.versions).mix(VALIDATE_CONTIG_SHARDS.out.versions).mix(COUNT_SOURCE_COVERAGE.out.versions).mix(COUNT_CONTIG_SHARD_COVERAGE.out.versions)
 }

@@ -1,7 +1,7 @@
 process VALIDATE_INPUT_MANIFEST {
     label 'process_light'
     container params.use_containers ? params.tool_containers.python_helper : null
-    publishDir "${params.outdir}/inputs", mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
+    publishDir "${params.outdir}/inputs", mode: 'copy'
     tag "${manifest.baseName}"
     input:
     path manifest
@@ -13,17 +13,12 @@ process VALIDATE_INPUT_MANIFEST {
     val cache_dir
     output:
     tuple path('normalized_manifest.tsv'), path('normalized_manifest.sha256'), path('input_checksums.tsv'), path('preparation_status.tsv'), emit: normalized
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/normalize_manifest.py \
         --manifest ${manifest} --mode ${mode} --cohort-id ${cohort_id} --manifest-root ${manifest_root} --ccs-mode ${ccs_mode} ${allow_unresolved_inputs ? '--allow-unresolved-inputs' : ''} ${cache_dir ? "--cache-dir ${cache_dir}" : ''} \
         --normalized normalized_manifest.tsv --manifest-checksum normalized_manifest.sha256 \
         --checksums input_checksums.tsv --status preparation_status.tsv
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    python: "\$(python3 --version 2>&1)"
-VERSIONS
     """
     stub:
     """
@@ -31,33 +26,29 @@ VERSIONS
         --manifest ${manifest} --mode ${mode} --cohort-id ${cohort_id} --manifest-root ${manifest_root} --ccs-mode ${ccs_mode} ${allow_unresolved_inputs ? '--allow-unresolved-inputs' : ''} ${cache_dir ? "--cache-dir ${cache_dir}" : ''} \\
         --normalized normalized_manifest.tsv --manifest-checksum normalized_manifest.sha256 \\
         --checksums input_checksums.tsv --status preparation_status.tsv
-    printf '"%s":\\n    pipeline: stub\\n' '${task.process}' > versions.yml
     """
 }
 
 process FINALIZE_PREPARED_MANIFEST {
     label 'process_light'
     container params.use_containers ? params.tool_containers.python_helper : null
-    publishDir "${params.outdir}/inputs", mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
+    publishDir "${params.outdir}/inputs", mode: 'copy'
     input:
     tuple path(normalized), path(manifest_checksum), path(input_checksums), path(status)
     path prepared_inputs
     output:
     tuple path('normalized_manifest.tsv'), path('normalized_manifest.sha256'), path('input_checksums.tsv'), path('preparation_status.tsv'), emit: normalized
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/finalize_prepared_manifest.py \
         --normalized ${normalized} --prepared ${prepared_inputs} \
         --output normalized_manifest.tsv --checksums input_checksums.tsv --status preparation_status.tsv
-    printf '"%s":\\n    manifest_finalization: prepared_inputs\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     python3 ${projectDir}/bin/finalize_prepared_manifest.py \
         --normalized ${normalized} --prepared ${prepared_inputs} \
         --output normalized_manifest.tsv --checksums input_checksums.tsv --status preparation_status.tsv
-    printf '"%s":\\n    manifest_finalization: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -69,22 +60,16 @@ process VALIDATE_FASTQ {
     tuple val(meta), path(reads)
     output:
     tuple val(meta), path(reads), path('fastq.status.tsv'), emit: reads
-    path 'versions.yml', emit: versions
     when:
     task.ext.when == null || task.ext.when
     script:
     """
     python3 ${projectDir}/bin/validate_fastq.py --reads ${reads} --run-id '${meta.id}' --status fastq.status.tsv
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    fastq_validator: python
-VERSIONS
     """
     stub:
     """
     printf 'id\\tstatus\\n%s\\tVALID\\n' '${meta.id}' > fastq.status.tsv
     touch ${reads}
-    printf '"%s":\\n    fastq_validator: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -97,16 +82,13 @@ process AUDIT_FASTQ {
     output:
     tuple val(meta), path(reads), emit: reads
     path 'fastq.audit.tsv', emit: audit
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/audit_fastq.py --reads ${reads} --run-id '${meta.id}' --audit fastq.audit.tsv
-    printf '"%s":\n    fastq_audit: python\n' '${task.process}' > versions.yml
     """
     stub:
     """
-    printf 'id\tstatus\tbytes\n%s\tVALID\t0\n' '${meta.id}' > fastq.audit.tsv
-    printf 'stub\n' > versions.yml
+    printf 'id\\tstatus\\tbytes\\n%s\\tVALID\\t0\\n' '${meta.id}' > fastq.audit.tsv
     """
 }
 
@@ -140,7 +122,7 @@ VERSIONS
     touch ${bam}
     touch ${bai}
     printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\t%s\\tSTUB\\t%s\\tSTUB\\n' '${meta.id}' '${bam.getName()}' '${bai.getName()}' > prepared_input.tsv
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -151,19 +133,13 @@ process STAGE_VALIDATED_INPUT {
     tuple val(meta), path(input_artifact)
     output:
     tuple val(meta), path('staged.input'), emit: reads
-    path 'versions.yml', emit: versions
     script:
     """
     cp ${input_artifact} staged.input
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    staging: pipeline
-VERSIONS
     """
     stub:
     """
     touch staged.input
-    printf '"%s":\\n    staging: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -175,18 +151,15 @@ process STAGE_VALIDATED_FASTQ {
     output:
     tuple val(meta), path('staged.fastq'), emit: reads
     path 'prepared_input.tsv', emit: prepared
-    path 'versions.yml', emit: versions
     script:
     """
     cp ${reads} staged.fastq
     printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tstaged.fastq\\t%s\\t\\t\\n' '${meta.id}' "\$(sha256sum staged.fastq | cut -d' ' -f1)" > prepared_input.tsv
-    printf 'staged_fastq\t%s\n' '${meta.id}' > versions.yml
     """
     stub:
     """
     touch staged.fastq
     printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tstaged.fastq\\tSTUB\\t\\t\\n' '${meta.id}' > prepared_input.tsv
-    printf 'staged_fastq\tstub\n' > versions.yml
     """
 }
 
@@ -196,11 +169,9 @@ process DISCOVER_LONG_READ_DATA {
     val query
     output:
     path 'discovery.tsv', emit: discovery
-    path 'versions.yml', emit: versions
     script:
     """
     printf 'query\\tstatus\\n%s\\tNOT_REQUESTED\\n' '${query}' > discovery.tsv
-    printf '"%s":\\n    discovery: explicit\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -210,11 +181,9 @@ process RESOLVE_LONG_READ_METADATA {
     path manifest
     output:
     path 'resolved_metadata.tsv', emit: metadata
-    path 'versions.yml', emit: versions
     script:
     """
     cp ${manifest} resolved_metadata.tsv
-    printf '"%s":\\n    metadata_resolution: explicit\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -225,17 +194,14 @@ process ACQUIRE_FASTQ {
     output:
     tuple val(meta), path('acquired.fastq.gz'), emit: reads
     path 'acquired_input.tsv', emit: prepared
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/acquire_input.py --uri '${source_uri}' --output acquired.fastq.gz --run-id '${meta.id}' --metadata acquired_input.tsv
-    printf '"%s":\\n    acquisition: curl_or_copy\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     touch acquired.fastq.gz
     printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tacquired.fastq.gz\\tSTUB\\t\\t\\n' '${meta.id}' > acquired_input.tsv
-    printf '"%s":\\n    acquisition: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -246,17 +212,14 @@ process ACQUIRE_BAM {
     output:
     tuple val(meta), path('acquired.bam'), path('acquired.bam.bai'), emit: bam
     path 'acquired_input.tsv', emit: prepared
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/acquire_input.py --uri '${source_uri}' --output acquired.bam --index-uri '${meta.source_index_uri}' --index-output acquired.bam.bai --run-id '${meta.id}' --metadata acquired_input.tsv
-    printf '"%s":\\n    acquisition: curl_or_copy\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     touch acquired.bam acquired.bam.bai
     printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tacquired.bam\\tSTUB\\tacquired.bam.bai\\tSTUB\\n' '${meta.id}' > acquired_input.tsv
-    printf '"%s":\\n    acquisition: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -288,17 +251,14 @@ process INDEX_PBCCS {
     tuple val(meta), path(ccs_bam)
     output:
     tuple val(meta), path('ccs.bam'), path('ccs.bam.pbi'), emit: ccs
-    path 'versions.yml', emit: versions
     script:
     """
     pbindex ${ccs_bam}
-    printf '"%s":\\n    pbindex: pinned-runtime\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     cp ${ccs_bam} ccs.bam
     touch ccs.bam.pbi
-    printf '"%s":\\n    pbindex: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -326,6 +286,6 @@ VERSIONS
     """
     touch converted.fastq.gz
     printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tconverted.fastq.gz\\tSTUB\\t\\t\\n' '${meta.id}' > prepared_input.tsv
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }

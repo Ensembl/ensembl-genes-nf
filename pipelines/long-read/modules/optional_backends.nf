@@ -4,9 +4,8 @@ process ISOQUANT_ANNOTATION_FREE {
     container params.use_containers ? params.tool_containers.isoquant : null
     tag "${meta.id}"
     input:
-    tuple val(meta), path(bam), path(bai)
+    tuple val(meta), path(bam), path(bai), val(data_type)
     path reference
-    val data_type
     val high_memory
     val isoquant_args
     output:
@@ -22,7 +21,7 @@ process ISOQUANT_ANNOTATION_FREE {
     """
     mkdir -p output
     printf 'chr1\\tisoquant\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "isoquant.1";\\n' > output/transcript_models.gtf
-    printf '"%s":\\n    isoquant: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -32,10 +31,9 @@ process ISOQUANT_REFERENCE_GUIDED {
     container params.use_containers ? params.tool_containers.isoquant : null
     tag "${meta.id}"
     input:
-    tuple val(meta), path(bam), path(bai)
+    tuple val(meta), path(bam), path(bai), val(data_type)
     path reference
     path genedb
-    val data_type
     val high_memory
     val isoquant_args
     output:
@@ -51,7 +49,7 @@ process ISOQUANT_REFERENCE_GUIDED {
     """
     mkdir -p output
     printf 'chr1\\tisoquant\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "isoquant.1";\\n' > output/transcript_models.gtf
-    printf '"%s":\\n    isoquant: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -63,17 +61,14 @@ process FINALIZE_ISOQUANT_GTF {
     tuple val(meta), path(isoquant_output)
     output:
     tuple val(meta), val('isoquant'), path('native.gtf'), path('status.tsv'), emit: native_models
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/finalize_gtf.py --source-dir ${isoquant_output} --pattern '*transcript_models.gtf' --output native.gtf --status status.tsv --backend isoquant --empty-message 'IsoQuant produced no transcript models' --require-source
-    printf '"%s":\\n    isoquant_gtf_finalizer: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'chr1\\tisoquant\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "isoquant.1";\\n' > native.gtf
     printf 'isoquant\\tSUCCESS\\n' > status.tsv
-    printf '"%s":\\n    isoquant_gtf_finalizer: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -86,16 +81,13 @@ process COLLECT_ISOQUANT_PRODUCTS {
     val large_output
     output:
     tuple val(meta), path('native_products'), emit: products
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/collect_products.py --source ${isoquant_output} --destination native_products --patterns '*read_info*' '*read_assignments*' '*transcript_model_reads*' '*corrected_reads*' '*allinfo*' '*tagged.bam' '*deduplicated.bam'
-    printf '"%s":\\n    isoquant_product_collection: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     mkdir -p native_products
-    printf '"%s":\\n    isoquant_product_collection: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -104,24 +96,20 @@ process WRITE_ISOQUANT_MANIFEST_ANNO {
     container params.use_containers ? params.tool_containers.python_helper : null
     tag "${meta.id}"
     input:
-    tuple val(meta), path(bam), path(bai)
+    tuple val(meta), path(bam), path(bai), val(data_type)
     path reference
-    val data_type
     val analysis
     val large_output
     val isoquant_args
     output:
     path 'input_manifest.json', emit: manifest
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/write_isoquant_manifest.py --reference ${reference} --bam ${bam} --data-type '${data_type}' --analysis ${analysis.join(' ')} --large-output ${large_output.join(' ')} --args '${isoquant_args}' --output input_manifest.json
-    printf '"%s":\\n    isoquant_manifest: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf '{"stub":true}\\n' > input_manifest.json
-    printf '"%s":\\n    isoquant_manifest: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -130,25 +118,21 @@ process WRITE_ISOQUANT_MANIFEST_GUIDED {
     container params.use_containers ? params.tool_containers.python_helper : null
     tag "${meta.id}"
     input:
-    tuple val(meta), path(bam), path(bai)
+    tuple val(meta), path(bam), path(bai), val(data_type)
     path reference
     path genedb
-    val data_type
     val analysis
     val large_output
     val isoquant_args
     output:
     path 'input_manifest.json', emit: manifest
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/write_isoquant_manifest.py --reference ${reference} --genedb ${genedb} --bam ${bam} --data-type '${data_type}' --analysis ${analysis.join(' ')} --large-output ${large_output.join(' ')} --args '${isoquant_args}' --output input_manifest.json
-    printf '"%s":\\n    isoquant_manifest: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf '{"stub":true}\\n' > input_manifest.json
-    printf '"%s":\\n    isoquant_manifest: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -159,17 +143,14 @@ process NORMALISE_ISOQUANT_OUTPUTS {
     tuple val(meta), val(backend), path(gtf), path(status)
     output:
     tuple val(meta), val(backend), path('native.gtf'), path('status.tsv'), emit: native_models
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/normalize_gtf.py --gtf ${gtf} --status ${status} --output-gtf native.gtf --output-status status.tsv --backend isoquant --empty-message 'IsoQuant produced no transcript models'
-    printf '"%s":\\n    isoquant_normaliser: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     if [[ "${gtf}" != 'native.gtf' ]]; then cp ${gtf} native.gtf; fi
     if [[ "${status}" != 'status.tsv' ]]; then cp ${status} status.tsv; fi
-    printf '"%s":\\n    isoquant_normaliser: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -181,18 +162,15 @@ process AUDIT_ISOQUANT_OUTPUTS {
     output:
     tuple val(meta), val(backend), path('native.gtf'), path('status.tsv'), emit: native_models
     path 'isoquant.audit.tsv', emit: audit
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/audit_gtf.py --gtf ${gtf} --status ${status} --backend isoquant --output-gtf native.gtf --output-status status.tsv --audit isoquant.audit.tsv
-    printf '"%s":\\n    isoquant_audit: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     if [[ "${gtf}" != 'native.gtf' ]]; then cp ${gtf} native.gtf; fi
     if [[ "${status}" != 'status.tsv' ]]; then cp ${status} status.tsv; fi
     printf 'backend\\tstatus\\nisoquant\\tSUCCESS\\n' > isoquant.audit.tsv
-    printf '"%s":\\n    isoquant_audit: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -204,17 +182,14 @@ process FLAIR_JUNCTIONS {
     output:
     tuple val(meta), val(shard_meta), path('junctions.bed'), emit: junctions
     tuple val(meta), val(shard_meta), path('junction_status.tsv'), emit: status
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/bam_to_junction_bed.py --sam ${alignment_sam} --output junctions.bed --status junction_status.tsv --run-id '${meta.run_id}' --shard-id '${shard_meta.shard_id}'
-    printf '"%s":\\n    junction_extractor: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     touch junctions.bed
     printf 'run_id\\tshard_id\\tstatus\\n%s\\t%s\\tEMPTY\\n' '${meta.run_id}' '${shard_meta.shard_id}' > junction_status.tsv
-    printf '"%s":\\n    junction_extractor: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -242,7 +217,7 @@ process FLAIR_TRANSCRIPTOME {
     printf 'chr1\\t1\\t100\\tflair.1\\t0\\t+\\n' > flair.isoforms.bed
     printf '>flair.1\\nACGT\\n' > flair.isoforms.fa
     printf 'read1\\tflair.1\\n' > flair.isoforms.read.map.txt
-    printf '"%s":\\n    flair: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -254,13 +229,11 @@ process FINALIZE_FLAIR_GTF {
     tuple val(meta), val(shard_meta), path(flair_products)
     output:
     tuple val(meta), val(shard_meta), val('flair'), path('*.flair.gtf'), path('*.flair.status.tsv'), emit: native_models
-    path 'versions.yml', emit: versions
     script:
     def flair_gtf = "${meta.run_id}.${shard_meta.shard_id}.flair.gtf"
     def flair_status = "${meta.run_id}.${shard_meta.shard_id}.flair.status.tsv"
     """
     python3 ${projectDir}/bin/finalize_gtf.py --source flair.isoforms.gtf --output '${flair_gtf}' --status '${flair_status}' --backend flair --empty-message 'FLAIR produced no transcript models'
-    printf '"%s":\\n    flair_gtf_finalizer: python\\n' '${task.process}' > versions.yml
     """
     stub:
     def flair_gtf = "${meta.run_id}.${shard_meta.shard_id}.flair.gtf"
@@ -268,7 +241,6 @@ process FINALIZE_FLAIR_GTF {
     """
     printf 'chr1\\tflair\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "flair.1";\\n' > '${flair_gtf}'
     printf 'flair\\tSUCCESS\\n' > '${flair_status}'
-    printf '"%s":\\n    flair_gtf_finalizer: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -280,17 +252,14 @@ process COLLECT_FLAIR_PRODUCTS {
     tuple val(meta), val(shard_meta), path(flair_products)
     output:
     tuple val(meta), val(shard_meta), path('native_products'), emit: products
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/collect_products.py --source . --destination native_products --patterns 'flair*'
-    printf '"%s":\\n    flair_product_collection: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     mkdir -p native_products
     printf 'stub\\n' > native_products/flair.stub
-    printf '"%s":\\n    flair_product_collection: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -304,16 +273,13 @@ process WRITE_FLAIR_MANIFEST {
     val flair_args
     output:
     path 'input_manifest.json', emit: manifest
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/write_flair_manifest.py --output input_manifest.json --native-products ${native_products} --run-id '${meta.run_id}' --shard-id '${shard_meta.shard_id}' --status SUCCESS --status-file ${status} --args '${flair_args}' --input ${reference} ${bam} ${junctions}
-    printf '"%s":\\n    flair_manifest: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf '{"backend":"flair","stub":true}\\n' > input_manifest.json
-    printf '"%s":\\n    flair_manifest: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -326,13 +292,11 @@ process FLAIR_EMPTY {
     tuple val(meta), val(shard_meta), val('flair'), path('*.flair.gtf'), path('*.flair.status.tsv'), emit: native_models
     path 'native_products', emit: native_products
     path 'input_manifest.json', emit: manifest
-    path 'versions.yml', emit: versions
     script:
     def flair_gtf = "${meta.run_id}.${shard_meta.shard_id}.flair.gtf"
     def flair_status = "${meta.run_id}.${shard_meta.shard_id}.flair.status.tsv"
     """
     python3 ${projectDir}/bin/write_empty_flair.py --junction-status ${junction_status} --run-id '${meta.run_id}' --shard-id '${shard_meta.shard_id}' --gtf '${flair_gtf}' --status '${flair_status}' --manifest input_manifest.json --products native_products
-    printf '"%s":\\n    flair_empty: python\\n' '${task.process}' > versions.yml
     """
     stub:
     def flair_gtf = "${meta.run_id}.${shard_meta.shard_id}.flair.gtf"
@@ -342,7 +306,6 @@ process FLAIR_EMPTY {
     printf 'flair\\tEMPTY\\t%s\\n' '${shard_meta.shard_id}' > '${flair_status}'
     mkdir -p native_products
     printf '{"backend":"flair","status":"EMPTY"}\\n' > input_manifest.json
-    printf '"%s":\\n    flair_empty: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -354,17 +317,14 @@ process FLAIR_COMBINE_GTF {
     tuple val(meta), val(backend), path(gtfs)
     output:
     tuple val(meta), val('flair'), path('native.gtf'), path('status.tsv'), emit: native_models
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/merge_gtfs.py --inputs ${gtfs} --output native.gtf --backend flair --status status.tsv
-    printf '"%s":\\n    flair_combine_gtf: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'chr1\\tflair\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "flair.1";\\n' > native.gtf
     printf 'backend\\tstatus\\nflair\\tSUCCESS\\n' > status.tsv
-    printf '"%s":\\n    flair_combine_gtf: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -376,17 +336,14 @@ process FLAIR_COMBINE_PRODUCTS {
     tuple val(meta), val(backend), path(gtfs)
     output:
     tuple val(meta), path(gtfs), path('native_products'), emit: products
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/copy_products.py --inputs ${gtfs} --destination native_products
-    printf '"%s":\\n    flair_combine_products: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     mkdir -p native_products
     printf 'stub\\n' > native_products/flair.stub
-    printf '"%s":\\n    flair_combine_products: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -398,16 +355,13 @@ process WRITE_FLAIR_COMBINED_MANIFEST {
     tuple val(meta), path(native_products), path(status), path(gtfs)
     output:
     path 'input_manifest.json', emit: manifest
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/write_flair_manifest.py --output input_manifest.json --native-products ${native_products} --run-id '${meta.run_id}' --status SUCCESS --status-file ${status} --input ${gtfs}
-    printf '"%s":\\n    flair_combined_manifest: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf '{"backend":"flair","stub":true}\\n' > input_manifest.json
-    printf '"%s":\\n    flair_combined_manifest: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -426,11 +380,9 @@ process BAMBU_DISCOVERY {
     path 'bambu.rds', emit: rds
     path 'read_assignments.tsv', emit: assignments
     path 'input_manifest.json', emit: manifest
-    path 'versions.yml', emit: versions
     script:
     """
     Rscript ${projectDir}/bin/run_bambu.R ${bam} ${reference} native.gtf bambu.rds read_assignments.tsv ${track_reads} ${quantify} input_manifest.json
-    printf '"%s":\\n    bambu: pinned-runtime\\n' '${task.process}' > versions.yml
     """
     stub:
     """
@@ -438,7 +390,6 @@ process BAMBU_DISCOVERY {
     printf '{}' > bambu.rds
     printf 'read\\ttranscript\\n' > read_assignments.tsv
     printf '{"backend":"bambu","stub":true}\\n' > input_manifest.json
-    printf '"%s":\\n    bambu: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -450,27 +401,24 @@ process BAMBU_STATUS {
     tuple val(meta), path(native_gtf)
     output:
     tuple val(meta), val('bambu'), path('native.gtf'), path('status.tsv'), emit: native_models
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/gtf_status.py --gtf ${native_gtf} --backend bambu --status status.tsv --empty-message 'Bambu produced no transcript models'
-    printf '"%s":\\n    bambu_status: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     if [[ "${native_gtf}" != 'native.gtf' ]]; then cp ${native_gtf} native.gtf; fi
     printf 'bambu\\tSUCCESS\\n' > status.tsv
-    printf '"%s":\\n    bambu_status: stub\\n' '${task.process}' > versions.yml
     """
 }
+
 process TRANSGRAM_ANNOTATION_FREE {
     label 'process_high_memory'
     // Official project-provided image: trans_gram-20250912.sif
     container params.use_containers ? params.tool_containers.transgram : null
     tag "${meta.id}"
     input:
-    tuple val(meta), path(bam), path(bai)
-    val data_type
+    tuple val(meta), path(bam), path(bai), val(data_type)
     val transgram_args
     val transgram_executable
     output:
@@ -508,9 +456,8 @@ process TRANSGRAM_ANNOTATION_GUIDED {
     container params.use_containers ? params.tool_containers.transgram : null
     tag "${meta.id}"
     input:
-    tuple val(meta), path(bam), path(bai)
+    tuple val(meta), path(bam), path(bai), val(data_type)
     path annotation
-    val data_type
     val transgram_args
     val transgram_executable
     output:

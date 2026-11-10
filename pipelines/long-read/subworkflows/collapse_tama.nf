@@ -19,6 +19,6 @@ workflow COLLAPSE_TAMA {
 
     emit:
     native_models = CLASSIFY_NATIVE_GTF.out.native_models.map { meta, shard_meta, backend, product, status -> tuple(meta, [backend: backend, scope: 'run', run_id_or_cohort_id: meta.run_id, shard_id_or_merged: shard_meta.shard_id, native_format: 'gtf', model_count: 0, status: status.text.contains('EMPTY') ? 'EMPTY' : 'SUCCESS'], product, status) }
-    versions = SAMTOOLS_VIEW_SHARD.out.versions.mix(TAMA_PREPARE_SAM.out.versions).mix(TAMA_COLLAPSE.out.versions).mix(TAMA_BED12_TO_GTF.out.versions).mix(CLASSIFY_NATIVE_GTF.out.versions).mix(WRITE_MODEL_INPUT_CHECKSUMS.out.versions)
+    versions = SAMTOOLS_VIEW_SHARD.out.versions
     checksums = WRITE_MODEL_INPUT_CHECKSUMS.out.checksums
 }

@@ -16,14 +16,14 @@ workflow COLLAPSE_STRINGTIE {
         CLASSIFY_STRINGTIE2(STRINGTIE2_COLLAPSE.out.raw.map { meta, shard_meta, _bam, _bai, native_gtf -> tuple(meta, shard_meta, 'stringtie2', native_gtf) }, 'StringTie2 produced no models')
         CHECKSUM_STRINGTIE2(STRINGTIE2_COLLAPSE.out.raw.map { meta, shard_meta, bam, bai, _gtf -> tuple(meta, shard_meta, 'stringtie2', [bam, bai]) })
         stringtie2_native_models = CLASSIFY_STRINGTIE2.out.native_models
-        stringtie2_versions = STRINGTIE2_COLLAPSE.out.versions.mix(CLASSIFY_STRINGTIE2.out.versions).mix(CHECKSUM_STRINGTIE2.out.versions)
+        stringtie2_versions = STRINGTIE2_COLLAPSE.out.versions
     }
     if (backends.contains('stringtie3')) {
         STRINGTIE3_COLLAPSE(shards, reference)
         CLASSIFY_STRINGTIE3(STRINGTIE3_COLLAPSE.out.raw.map { meta, shard_meta, _bam, _bai, native_gtf -> tuple(meta, shard_meta, 'stringtie3', native_gtf) }, 'StringTie3 produced no models')
         CHECKSUM_STRINGTIE3(STRINGTIE3_COLLAPSE.out.raw.map { meta, shard_meta, bam, bai, _gtf -> tuple(meta, shard_meta, 'stringtie3', [bam, bai]) })
         stringtie3_native_models = CLASSIFY_STRINGTIE3.out.native_models
-        stringtie3_versions = STRINGTIE3_COLLAPSE.out.versions.mix(CLASSIFY_STRINGTIE3.out.versions).mix(CHECKSUM_STRINGTIE3.out.versions)
+        stringtie3_versions = STRINGTIE3_COLLAPSE.out.versions
     }
 
     emit:

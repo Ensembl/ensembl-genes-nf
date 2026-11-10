@@ -56,6 +56,13 @@ and `retrospective_schema.json` for retrospective evidence collection.
 | Evidence/annotation QC | `evidence_mode`, `orf_mode`, `diamond_mode`, `diamond_database`, `diamond_reference_proteins` |
 | Runtime registry | `tool_containers` |
 
+The input manifest is also authoritative for run-level technology settings.
+Each row must provide `technology` as `ont` or `pacbio`; it may optionally
+provide `minimap2_preset`, `isoquant_data_type`, and `transgram_data_type`.
+Missing minimap2/IsoQuant values resolve to ONT `splice`/`nanopore` or PacBio
+`splice:hq`/`pacbio_ccs`; TransGram remains independent of sequencing
+technology and defaults to `auto`.
+
 The main schema contains typed enums, file-path checks, uniqueness constraints,
 immutable SHA-256 container-reference patterns, and conditional
 reference-guided/DIAMOND requirements. The retrospective schema declares the
@@ -206,12 +213,11 @@ Passing checks:
   reference-guided IsoQuant without `isoquant_genedb`, DIAMOND without a
   database/protein FASTA, and duplicate backend selection all failed during
   parameter validation before task submission.
-* Software-version aggregation now preserves complete per-process YAML records
-  instead of sorting their lines globally. A fresh real tmerge run contains 24
-  process records, resolved minimap2/samtools versions, the merge backend
-  record, and no unresolved command substitutions. Evidence packaging and ORF
-  extraction/prediction versions are also included when those stages are
-  enabled.
+* Software-version aggregation now contains only concrete executable/tool
+  identities: resolved minimap2/samtools versions, ccs when used, IsoQuant,
+  FLAIR, StringTie, DIAMOND, and the vendored TMerge identity. Pipeline-owned
+  validation, conversion, audit, manifest, evidence, ORF, Bambu, and TAMA
+  helper stages do not emit `versions.yml` records.
 * The repository-local immutable-reference audit
   (`bin/audit_containers.py`) passed all twelve configured images for a
   linux/amd64 OCI descriptor or single manifest. The stale tmerge digest was

@@ -1,8 +1,63 @@
 import json
+import re
 from pathlib import Path
 
 
 ROOT = Path(__file__).parents[1]
+
+
+CONCRETE_VERSION_PROCESSES = {
+    "ALIGN_FASTQ",
+    "BAM_TO_FASTQ",
+    "BUILD_MINIMAP_INDEX",
+    "COUNT_CONTIG_SHARD_COVERAGE",
+    "COUNT_SOURCE_COVERAGE",
+    "DIAMOND_BLASTP",
+    "FLAIR_TRANSCRIPTOME",
+    "INDEX_CONTIG_SHARD",
+    "INDEX_SORTED_ALIGNMENT",
+    "ISOQUANT_ANNOTATION_FREE",
+    "ISOQUANT_REFERENCE_GUIDED",
+    "PREP_DIAMOND_DB",
+    "RUN_PBCCS",
+    "SAMTOOLS_FLAGSTAT",
+    "SAMTOOLS_IDXSTATS",
+    "SAMTOOLS_QC_SUMMARY",
+    "SAMTOOLS_VIEW_ALIGNMENT",
+    "SAMTOOLS_VIEW_SHARD",
+    "SORT_FASTQ_ALIGNMENT",
+    "SORT_INPUT_BAM",
+    "SPLIT_BAM_BY_CONTIG",
+    "STRINGTIE2_COLLAPSE",
+    "STRINGTIE2_MERGE",
+    "STRINGTIE3_COLLAPSE",
+    "STRINGTIE3_MERGE",
+    "TMERGE_COLLAPSE",
+    "TMERGE_MERGE",
+    "TRANSGRAM_ANNOTATION_FREE",
+    "TRANSGRAM_ANNOTATION_GUIDED",
+    "VALIDATE_BAM_INPUT",
+    "VALIDATE_CONTIG_SHARDS",
+    "VALIDATE_SORTED_ALIGNMENT",
+}
+
+
+def test_versions_only_report_concrete_tools():
+    process_pattern = re.compile(r"(?ms)^process\s+([A-Z][A-Z0-9_]*)\s*\{.*?^}\s*$")
+    version_output = re.compile(r"path ['\"]versions\.yml['\"], emit: versions")
+    forbidden_label = re.compile(
+        r"(?:pipeline|python|pinned-runtime|stub|explicit|prepared_inputs|sha256sum|longest_atg)"
+    )
+
+    for module in (ROOT / "modules").glob("*.nf"):
+        source = module.read_text()
+        for match in process_pattern.finditer(source):
+            process_name, block = match.group(1), match.group(0)
+            if not version_output.search(block):
+                continue
+            assert process_name in CONCRETE_VERSION_PROCESSES
+            version_lines = [line for line in block.splitlines() if "versions.yml" in line]
+            assert not any(forbidden_label.search(line) for line in version_lines)
 
 
 def test_schemas_are_json_and_backend_set_is_unique():

@@ -21,7 +21,5 @@ workflow COLLECT_RETROSPECTIVE_EVIDENCE {
     emit:
     evidence = VERIFY_RETROSPECTIVE_EVIDENCE.out.evidence
     reference_identity = PREPARE_RETROSPECTIVE_EVIDENCE.out.reference_identity
-    versions = PREPARE_RETROSPECTIVE_EVIDENCE.out.versions
-        .mix(PACKAGE_RETROSPECTIVE_EVIDENCE.out.versions)
-        .mix(VERIFY_RETROSPECTIVE_EVIDENCE.out.versions)
+    versions = channel.empty()
 }

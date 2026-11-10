@@ -65,11 +65,7 @@ workflow MERGE_LONG_READ_MODELS {
 
     emit:
     merged
-    versions = PREPARE_BACKEND_MERGE.out.versions
-        .mix(MERGE_DIRECT_GTF.out.versions)
-        .mix(STRINGTIE2_MERGE.out.versions)
+    versions = STRINGTIE2_MERGE.out.versions
         .mix(STRINGTIE3_MERGE.out.versions)
         .mix(TMERGE_MERGE.out.versions)
-        .mix(EMIT_EMPTY_MERGED_GTF.out.versions)
-        .mix(WRITE_MERGE_FILELIST.out.versions)
 }

@@ -21,7 +21,7 @@ VERSIONS
     stub:
     """
     printf 'stub index\\n' > reference.mmi
-    printf '"%s":\\n    minimap2: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -36,17 +36,14 @@ process BUILD_REFERENCE_IDENTITY {
     output:
     path 'reference.dict.tsv', emit: dictionary
     path 'reference_identity.json', emit: identity
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/reference_identity.py --reference ${reference} --dictionary reference.dict.tsv --identity reference_identity.json
-    printf '"%s":\\n    reference_identity: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'chr1\\t1000\\nchr2\\t500\\n' > reference.dict.tsv
     printf '{"path":"%s","stub":true}\\n' '${reference}' > reference_identity.json
-    printf '"%s":\\n    reference_identity: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -66,8 +63,9 @@ process ALIGN_FASTQ {
     path 'versions.yml', emit: versions
     script:
     def secondary = secondary_mode ? '' : '--secondary=no'
+    def alignment_preset = meta.minimap2_preset ?: preset
     """
-    minimap2 -ax ${preset} ${secondary} ${minimap_index} ${reads} > aligned.sam
+    minimap2 -ax ${alignment_preset} ${secondary} ${minimap_index} ${reads} > aligned.sam
     test -s aligned.sam
     cat > versions.yml <<VERSIONS
 "${task.process}":
@@ -77,7 +75,7 @@ VERSIONS
     stub:
     """
     printf '@HD\\tVN:1.6\\tSO:unsorted\\n' > aligned.sam
-    printf '"%s":\\n    minimap2: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -108,7 +106,7 @@ process SORT_FASTQ_ALIGNMENT {
     printf 'BAM\\n' > '${meta.run_id}.sorted.bam'
     printf 'BAI\\n' > '${meta.run_id}.sorted.bam.bai'
     touch alignment_input
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -136,7 +134,7 @@ process SORT_INPUT_BAM {
     printf 'BAM\\n' > '${meta.run_id}.sorted.bam'
     printf 'BAI\\n' > '${meta.run_id}.sorted.bam.bai'
     touch alignment_input
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -162,7 +160,7 @@ process INDEX_SORTED_ALIGNMENT {
     cp ${sorted_bam} indexed.sorted.bam
     if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
     printf 'BAI\\n' > indexed.sorted.bam.bai
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -190,7 +188,7 @@ process VALIDATE_SORTED_ALIGNMENT {
     cp ${sorted_bam} validated.sorted.bam
     cp ${sorted_bai} validated.sorted.bam.bai
     if [[ "${alignment_input}" != 'alignment_input' ]]; then cp ${alignment_input} alignment_input; fi
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -204,21 +202,16 @@ process WRITE_ALIGNMENT_MANIFEST {
     val secondary_mode
     output:
     path '*.alignment_manifest.json', emit: manifest
-    path 'versions.yml', emit: versions
     script:
     def secondary = secondary_mode ? '--secondary' : ''
-    def preset_arg = preset ? "--preset '${preset}'" : ''
+    def alignment_preset = meta.minimap2_preset ?: preset
+    def preset_arg = alignment_preset ? "--preset '${alignment_preset}'" : ''
     """
     python3 ${projectDir}/bin/write_alignment_manifest.py --run-id '${meta.run_id}' --input ${input} --reference ${reference} --bam ${bam} --bai ${bai} ${preset_arg} ${secondary} --output '${meta.run_id}.alignment_manifest.json'
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    manifest: python
-VERSIONS
     """
     stub:
     """
     printf '{"run_id":"%s","stub":true}\\n' '${meta.run_id}' > '${meta.run_id}.alignment_manifest.json'
-    printf '"%s":\\n    manifest: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -244,7 +237,7 @@ VERSIONS
     stub:
     """
     printf 'stub\\n' > flagstat.txt
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -269,7 +262,7 @@ process SAMTOOLS_QC_SUMMARY {
     """
     printf 'run_id\\tstatus\\n%s\\tVALID\\n' '${meta.run_id}' > quickcheck.tsv
     printf 'run_id\\tbam\\n%s\\taligned.bam\\n' '${meta.run_id}' > alignment_summary.tsv
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -281,11 +274,11 @@ process SAMTOOLS_VIEW_ALIGNMENT {
     input:
     tuple val(meta), path(bam), path(bai)
     output:
-    tuple val(meta), path('alignment.sam'), emit: sam
+    tuple val(meta), path('alignment.sam.gz'), emit: sam
     path 'versions.yml', emit: versions
     script:
     """
-    samtools view -F 3844 ${bam} > alignment.sam
+    samtools view ${bam} | gzip -c > alignment.sam.gz
     cat > versions.yml <<VERSIONS
 "${task.process}":
     samtools: \$(samtools --version | head -n1)
@@ -293,8 +286,8 @@ VERSIONS
     """
     stub:
     """
-    touch alignment.sam
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    gzip -c </dev/null > alignment.sam.gz
+    touch versions.yml
     """
 }
 
@@ -302,27 +295,24 @@ process EXTRACT_ALIGNMENT_FEATURES {
     label 'process_medium'
     // audit container 'docker.io/library/python@sha256:17b9724493d916f56565c131f389faff2597f46dec6ce09516f95125bc9f519f'
     container params.use_containers ? params.tool_containers.python_helper : null
-    publishDir "${params.outdir}/per_run", mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : "${task.tag}/transcript_features/${filename}" }
+    publishDir "${params.outdir}/per_run", mode: 'copy', saveAs: { filename ->
+        filename.endsWith('.direct_support') ? null : "${task.tag}/transcript_features/${filename}"
+    }
     tag "${meta.run_id}"
     input:
     tuple val(meta), path(sam)
     output:
     tuple val(meta), path('read_features.tsv.gz'), path('five_prime_ends.bed'), path('three_prime_ends.bed'), path('junctions.bed'), path('feature_summary.tsv'), emit: features
-    path 'versions.yml', emit: versions
+    tuple val(meta), path("${meta.run_id}.direct_support"), emit: direct_support
     script:
+    def support_arg = params.evidence_mode == 'enabled' ? '' : '--skip-support'
     """
-    python3 ${projectDir}/bin/bam_to_features.py --sam ${sam} --read-features read_features.tsv.gz --five-prime five_prime_ends.bed --three-prime three_prime_ends.bed --junctions junctions.bed --summary feature_summary.tsv --run-id '${meta.run_id}'
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    feature_extractor: pipeline
-VERSIONS
+    python3 ${projectDir}/bin/bam_to_features.py --sam ${sam} --read-features read_features.tsv.gz --five-prime five_prime_ends.bed --three-prime three_prime_ends.bed --junctions junctions.bed --summary feature_summary.tsv --support-dir '${meta.run_id}.direct_support' --run-id '${meta.run_id}' --assembly-id '${meta.assembly_id}' --sample-id '${meta.sample_id}' --library-id '${meta.library_id}' --read-set-id '${meta.read_set_id}' --technology '${meta.technology}' --min-mapq ${params.evidence_min_mapq} ${support_arg}
     """
     stub:
+    def support_arg = params.evidence_mode == 'enabled' ? '' : '--skip-support'
     """
-    printf 'read_id\\tcontig\\n' | gzip -c > read_features.tsv.gz
-    touch five_prime_ends.bed three_prime_ends.bed junctions.bed
-    printf 'run_id\\tfive_prime_semantics\\n%s\\talignment-oriented genomic endpoint\\n' '${meta.run_id}' > feature_summary.tsv
-    printf '"%s":\\n    feature_extractor: stub\\n' '${task.process}' > versions.yml
+    python3 ${projectDir}/bin/bam_to_features.py --sam ${sam} --read-features read_features.tsv.gz --five-prime five_prime_ends.bed --three-prime three_prime_ends.bed --junctions junctions.bed --summary feature_summary.tsv --support-dir '${meta.run_id}.direct_support' --run-id '${meta.run_id}' --assembly-id '${meta.assembly_id}' --sample-id '${meta.sample_id}' --library-id '${meta.library_id}' --read-set-id '${meta.read_set_id}' --technology '${meta.technology}' --min-mapq ${params.evidence_min_mapq} ${support_arg}
     """
 }
 
@@ -344,7 +334,7 @@ process SAMTOOLS_IDXSTATS {
     stub:
     """
     printf 'chr1\\t1000\\t2\\t0\\nchr2\\t500\\t0\\t0\\n*\\t0\\t0\\t0\\n' > bam.idxstats.tsv
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -358,15 +348,12 @@ process VALIDATE_ALIGNMENT_REFERENCE {
     output:
     tuple val(meta), path(bam), path(bai), emit: alignment
     path 'reference.validation.tsv', emit: validation
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/validate_bam_reference.py --idxstats ${idxstats} --reference-dictionary ${reference_dictionary} --report reference.validation.tsv
-    printf '"%s":\\n    reference_validation: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'metric\\tvalue\\ncontigs\\t2\\nerrors\\t0\\n' > reference.validation.tsv
-    printf '"%s":\\n    reference_validation: stub\\n' '${task.process}' > versions.yml
     """
 }

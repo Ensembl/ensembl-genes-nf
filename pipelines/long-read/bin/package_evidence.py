@@ -61,8 +61,12 @@ def main() -> None:
     parser.add_argument("--normalized-manifest", required=True, type=Path)
     parser.add_argument("--reference-identity", required=True, type=Path)
     parser.add_argument("--model-records", required=True, type=Path)
+    parser.add_argument("--direct-support-dir", type=Path)
+    parser.add_argument("--joined-support-dir", type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
     args = parser.parse_args()
+    if bool(args.direct_support_dir) != bool(args.joined_support_dir):
+        raise SystemExit("direct and joined support must be supplied together")
 
     records = json.loads(args.model_records.read_text())
     if not isinstance(records, list) or not records:
@@ -172,6 +176,47 @@ def main() -> None:
         "assessments": relation_rows,
         "relations": {"path": "relations.parquet", "inspection_path": "relations.tsv", "rows": len(relation_rows)},
     }
+    if args.direct_support_dir:
+        support_root = evidence / "support"
+        support_root.mkdir()
+        files = {}
+        run_dirs = sorted(path for path in args.direct_support_dir.iterdir() if path.is_dir())
+        if not run_dirs:
+            raise SystemExit("direct support contains no run directories")
+        for directory in run_dirs:
+            metadata = read_json(directory / "evidence_metadata.json")
+            if metadata.get("schema") != "direct-alignment-support-v1":
+                raise SystemExit(f"unsupported direct support schema: {directory}")
+            run_id = metadata["run_id"]
+            if run_id not in alignments:
+                raise SystemExit(f"direct support has no alignment manifest: {run_id}")
+            for source in sorted(directory.iterdir()):
+                if not source.is_file():
+                    raise SystemExit(f"unexpected direct support entry: {source}")
+                relative = Path("per_run") / run_id / source.name
+                files[str(relative)] = copy_with_checksum(source, support_root / relative)
+        joined_files = sorted(args.joined_support_dir.iterdir())
+        required_joined = {"model_index.tsv.gz", "model_support.tsv.gz", "model_junction_support.tsv.gz", "model_event_support.tsv.gz", "chain_event_support.tsv.gz", "event_caller_run_support.tsv.gz", "event_support.tsv.gz", "event_support_sensitivity.tsv.gz", "event_cluster_sensitivity.tsv.gz", "event_tier_summary.tsv", "event_best_depth_summary.tsv", "chain_length_depth_composition.tsv.gz", "support_schema.json"}
+        if {path.name for path in joined_files} != required_joined:
+            raise SystemExit("joined support files differ from the required contract")
+        for source in joined_files:
+            relative = Path("summary") / source.name
+            files[str(relative)] = copy_with_checksum(source, support_root / relative)
+        recording = {
+            "schema": "long-read-support-recording-v1",
+            "reference_id": reference_id,
+            "run_ids": sorted(metadata["run_id"] for metadata in (read_json(path / "evidence_metadata.json") for path in run_dirs)),
+            "files": files,
+        }
+        write_json(support_root / "recording_manifest.json", recording)
+        files["recording_manifest.json"] = digest(support_root / "recording_manifest.json")
+        (support_root / "SHA256SUMS").write_text("".join(f"{value}  {name}\n" for name, value in sorted(files.items())))
+        catalog["direct_support"] = {
+            "schema": recording["schema"],
+            "path": "support/recording_manifest.json",
+            "checksum_path": "support/SHA256SUMS",
+            "files": len(files),
+        }
     write_json(evidence / "catalog.json", catalog)
 
 

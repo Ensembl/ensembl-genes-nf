@@ -1,4 +1,4 @@
-include { WRITE_MODEL_RECORDS; PACKAGE_LONG_READ_EVIDENCE; VERIFY_LONG_READ_EVIDENCE } from '../modules/evidence.nf'
+include { WRITE_MODEL_RECORDS; JOIN_MODEL_EVIDENCE; PACKAGE_LONG_READ_EVIDENCE; VERIFY_LONG_READ_EVIDENCE } from '../modules/evidence.nf'
 
 workflow COLLECT_LONG_READ_EVIDENCE_PRODUCTS {
     take:
@@ -6,6 +6,8 @@ workflow COLLECT_LONG_READ_EVIDENCE_PRODUCTS {
     normalized_manifest
     alignment_manifests
     reference_identity
+    direct_support
+    reference_fasta
     cohort_id
 
     main:
@@ -18,10 +20,11 @@ workflow COLLECT_LONG_READ_EVIDENCE_PRODUCTS {
     alignment_files = alignment_manifests
     reference = reference_identity
     WRITE_MODEL_RECORDS(model_records_json, cohort_id)
-    PACKAGE_LONG_READ_EVIDENCE(beds, manifest, alignment_files, reference, WRITE_MODEL_RECORDS.out.records, cohort_id)
+    JOIN_MODEL_EVIDENCE(beds, WRITE_MODEL_RECORDS.out.records, direct_support, reference_fasta, cohort_id)
+    PACKAGE_LONG_READ_EVIDENCE(beds, manifest, alignment_files, reference, WRITE_MODEL_RECORDS.out.records, direct_support, JOIN_MODEL_EVIDENCE.out.support, cohort_id)
     VERIFY_LONG_READ_EVIDENCE(PACKAGE_LONG_READ_EVIDENCE.out.evidence, cohort_id)
 
     emit:
     evidence = VERIFY_LONG_READ_EVIDENCE.out.evidence
-    versions = WRITE_MODEL_RECORDS.out.versions.mix(PACKAGE_LONG_READ_EVIDENCE.out.versions).mix(VERIFY_LONG_READ_EVIDENCE.out.versions)
+    versions = channel.empty()
 }

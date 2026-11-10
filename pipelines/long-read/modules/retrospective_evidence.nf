@@ -12,7 +12,6 @@ process PREPARE_RETROSPECTIVE_EVIDENCE {
     path 'alignment_manifests', emit: alignment_manifests
     path 'reference_identity.json', emit: reference_identity
     path 'model_records.json', emit: model_records
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/prepare_retrospective_evidence.py \\
@@ -23,7 +22,6 @@ process PREPARE_RETROSPECTIVE_EVIDENCE {
         --alignment-manifests-dir alignment_manifests \\
         --reference-identity reference_identity.json \\
         --model-records model_records.json
-    printf '"%s":\\n    retrospective_preparation: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
@@ -32,7 +30,6 @@ process PREPARE_RETROSPECTIVE_EVIDENCE {
     printf '{"run_id":"run1","retrospective":true}\\n' > alignment_manifests/run1.alignment_manifest.json
     printf '{"retrospective":true}\\n' > reference_identity.json
     printf '[]\\n' > model_records.json
-    printf '"%s":\\n    retrospective_preparation: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -42,15 +39,14 @@ process PACKAGE_RETROSPECTIVE_EVIDENCE {
     publishDir "${params.outdir}", mode: 'copy'
     tag '${cohort_id}'
     input:
-    path models, stageAs: 'models/*'
-    path alignment_manifests, stageAs: 'alignment_manifests/*'
+    path models, stageAs: 'models'
+    path alignment_manifests, stageAs: 'alignment_manifests'
     path normalized_manifest
     path reference_identity, stageAs: 'reference_identity.json'
     path model_records
     val cohort_id
     output:
     path 'evidence', emit: evidence
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/package_evidence.py \\
@@ -60,12 +56,10 @@ process PACKAGE_RETROSPECTIVE_EVIDENCE {
         --reference-identity reference_identity.json \\
         --model-records ${model_records} \\
         --output-dir evidence
-    printf '"%s":\\n    retrospective_packager: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     mkdir -p evidence
-    printf '"%s":\\n    retrospective_packager: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -79,14 +73,11 @@ process VERIFY_RETROSPECTIVE_EVIDENCE {
     val cohort_id
     output:
     path 'evidence', emit: evidence
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/verify_evidence_publication.py --evidence-dir evidence
-    printf '"%s":\\n    retrospective_verifier: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
-    printf '"%s":\\n    retrospective_verifier: stub\\n' '${task.process}' > versions.yml
     """
 }

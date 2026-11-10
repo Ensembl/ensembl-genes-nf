@@ -4,11 +4,47 @@ This is the strict DSL2 replacement for `pipelines/long_read_tama/`. It accepts
 explicit FASTQ, indexed BAM, approved-manifest, and retrospective inputs and
 publishes normalized BED12 products under run- and cohort-namespaced paths.
 
+The default reconstruction set is IsoQuant, StringTie3, and TransGram. The
+manifest is the source of truth for per-run technology settings. `technology`
+must be `ont` or `pacbio`; optional `minimap2_preset` and `isoquant_data_type`
+columns override the technology-derived values. If omitted, ONT uses minimap2
+`splice` and IsoQuant `nanopore`, while PacBio uses minimap2 `splice:hq` and
+IsoQuant `pacbio_ccs`. `transgram_data_type` is independent of sequencing
+technology and defaults to `auto`; set it in the manifest only when the
+Alpha/Beta dataset classification has been established.
+
 The public contracts are documented in `docs/CHANNEL_CONTRACTS.md`. Required
 stages fail the invocation; a selected backend is never converted into an
 optional best-effort task. Native backend products are retained only when
 `--publish_native_intermediates true` is selected. The legacy pipeline is not a
 runtime dependency.
+
+## Existing aligned BAMs
+
+Use `--mode bam` with a tab-separated manifest to process BAMs that are already
+aligned to the supplied reference. Each BAM needs a `.bai` sidecar (either
+`sample.bam.bai` or `sample.bai`). Paths may be absolute or relative to the
+manifest. For example:
+
+```tsv
+id	cohort_id	run_id	technology	minimap2_preset	isoquant_data_type	transgram_data_type	assembly_id	read_set_id	sample_id	library_id	read_representation	source_uri	bam
+run1	cohort1	run1	pacbio	splice:hq	pacbio_ccs	auto	GRCh38	set1	sample1	lib1	bam	/data/run1.bam	/data/run1.bam
+```
+
+```bash
+nextflow run pipelines/long-read/main.nf \
+  --mode bam --manifest /data/samples.tsv \
+  --reference_fasta /data/GRCh38.fa --cohort_id cohort1 \
+  --evidence_mode enabled --outdir /data/results
+```
+
+The BAM path skips minimap2 alignment. The pipeline checks the BAM and index,
+sorts and indexes a working copy, and checks its reference contigs and lengths
+against the FASTA before downstream analysis.
+
+Direct chain, junction, and end-pair evidence plus model/event support is
+published when `--evidence_mode enabled`. The output contract, filter rules,
+coordinates, and interpretation limits are in `docs/EVENT_SUPPORT.md`.
 
 Preparation extensions are explicit through `preparation_stages`: `discover`,
 `resolve_metadata`, `acquire`, and `bam_to_fastq`. Acquisition failures are
@@ -20,7 +56,7 @@ are not converted. Normalized BED12 is the only cross-backend model contract.
 `fasta`, or `path` when `reference_fasta` is not supplied. ORF products can be
 published independently with `orf_mode=enabled`; DIAMOND QC consumes validated
 BED12 models and publishes backend/scope-separated reports when enabled.
-TransGram is an opt-in run-level backend selected with
+TransGram is a run-level backend selected by default or explicitly with
 `--model_backends transgram` (or through `all`). It consumes each validated
 sorted BAM, preserves both TransGram GTF products before combining them for the
 common model contract, and supports optional annotation-guided reconstruction
@@ -29,8 +65,8 @@ dated `20250912`; sites may override `tool_containers.transgram` with an
 approved immutable local or OCI image reference.
 
 Backend selection accepts either a JSON array in a params file or a direct
-comma-separated CLI value, for example `--model_backends tama,stringtie3` or
-`--model_backends all`. `backend_scopes` likewise accepts `run`, `cohort`, or
+comma-separated CLI value, for example `--model_backends isoquant,stringtie3,transgram`
+or `--model_backends all`. `backend_scopes` likewise accepts `run`, `cohort`, or
 `both`. Approved inventory manifests can be processed directly; provide
 `fastq_cache_dir` to resolve `classification/MD5/basename` cache entries before
 falling back to acquisition.

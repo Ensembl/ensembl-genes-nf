@@ -18,5 +18,5 @@ workflow NORMALIZE_VALIDATE_MODELS {
     validated = VALIDATE_LONG_READ_MODELS.out.validated
     reports = GTF_TO_BED12.out.report.mix(ISOQUANT_TO_BED12.out.report)
     summary = AUDIT_NATIVE_MODELS.out.summary
-    versions = GTF_TO_BED12.out.versions.mix(ISOQUANT_TO_BED12.out.versions).mix(CANONICALISE_COMBINED_MODELS.out.versions).mix(VALIDATE_LONG_READ_MODELS.out.versions).mix(AUDIT_NATIVE_MODELS.out.versions)
+    versions = channel.empty()
 }

@@ -15,6 +15,7 @@
     "cohort_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
     "outdir": {"type": "string"},
     "evidence_mode": {"type": "string", "enum": ["enabled"]},
+    "evidence_min_mapq": {"type": "integer", "minimum": 0},
     "ccs_mode": {"type": "string", "enum": ["disabled", "pbccs"], "default": "disabled"},
     "preparation_stages": {"type": "array", "uniqueItems": true, "items": {"type": "string", "enum": ["discover", "resolve_metadata", "acquire", "bam_to_fastq"]}},
     "discovery_query": {"type": ["string", "null"]},

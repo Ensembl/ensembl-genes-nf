@@ -1,0 +1,8 @@
+species	scientific_name	assembly_id	total_runs	primary_runs	review_runs	quarantine_runs	primary_manifest	review_manifest	quarantine_manifest
+cat	Felis catus	GCA_013340865.1	14	12	2	0	cat/primary.tsv	cat/review.tsv	cat/quarantine.tsv
+dog	Canis lupus familiaris	GCA_008641055.3	69	30	33	6	dog/primary.tsv	dog/review.tsv	dog/quarantine.tsv
+rat	Rattus norvegicus	GCA_036323735.1	374	119	196	59	rat/primary.tsv	rat/review.tsv	rat/quarantine.tsv
+sheep	Ovis aries	GCA_016772045.1	195	143	52	0	sheep/primary.tsv	sheep/review.tsv	sheep/quarantine.tsv
+pig	Sus scrofa	GCA_000003025.6	191	61	111	19	pig/primary.tsv	pig/review.tsv	pig/quarantine.tsv
+zebrafish	Danio rerio	GCA_052040795.2	141	21	77	43	zebrafish/primary.tsv	zebrafish/review.tsv	zebrafish/quarantine.tsv
+chicken	Gallus gallus	GCA_016699485.1	453	146	71	236	chicken/primary.tsv	chicken/review.tsv	chicken/quarantine.tsv

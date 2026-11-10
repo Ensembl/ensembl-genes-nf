@@ -1,0 +1,11 @@
+{
+  "mode": "fastq",
+  "manifest": "pipelines/long-read/test/data/manifest_mixed_technology.tsv",
+  "reference_fasta": "pipelines/long-read/test/data/reference.fa",
+  "cohort_id": "fixture",
+  "model_backends": ["isoquant", "stringtie3", "transgram"],
+  "backend_scopes": ["run"],
+  "evidence_mode": "disabled",
+  "orf_mode": "disabled",
+  "diamond_mode": "disabled"
+}

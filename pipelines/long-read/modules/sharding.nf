@@ -7,19 +7,13 @@ process INSPECT_BAM_WORKLOAD {
     tuple val(meta), path(bam), path(bai), path(idxstats)
     output:
     tuple val(meta), path(bam), path(bai), path('workload.tsv'), emit: workload
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/inspect_bam_workload.py --idxstats ${idxstats} --output workload.tsv
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    workload_inspector: python
-VERSIONS
     """
     stub:
     """
     printf 'contig\\treference_length\\tmapped_reads\\teligible\\tresource_class\\nchr1\\t1000\\t2\\ttrue\\tunassigned\\nchr2\\t500\\t0\\tfalse\\tunassigned\\n' > workload.tsv
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -35,21 +29,15 @@ process PLAN_CONTIG_SHARDS {
     val very_large_threshold
     output:
     tuple val(meta), path(bam), path(bai), path('*.shard_plan.tsv'), path('shard_plan_summary.tsv'), path('shard_status.tsv'), emit: plan
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/plan_contig_shards.py --workload ${workload} --mode ${shard_mode} --threshold ${large_threshold} --very-large-threshold ${very_large_threshold} --run-id '${meta.run_id}' --plan '${meta.run_id}.shard_plan.tsv' --summary shard_plan_summary.tsv --status shard_status.tsv
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    shard_planner: pipeline
-VERSIONS
     """
     stub:
     """
     printf 'shard_id\\tcontig\\treference_length\\tmapped_reads\\teligible\\tresource_class\\tsource_run_id\\tshard_status\\n%s__chr1\\tchr1\\t1000\\t2\\ttrue\\tsmall\\t%s\\tPLANNED\\n%s__chr2\\tchr2\\t500\\t0\\tfalse\\tempty\\t%s\\tEMPTY\\n' '${meta.run_id}' '${meta.run_id}' '${meta.run_id}' '${meta.run_id}' > '${meta.run_id}.shard_plan.tsv'
     printf 'run_id\\teligible_shards\\n%s\\t1\\n' '${meta.run_id}' > shard_plan_summary.tsv
     printf 'shard_id\\tcontig\\tstatus\\n%s__chr1\\tchr1\\tPLANNED\\n%s__chr2\\tchr2\\tEMPTY\\n' '${meta.run_id}' '${meta.run_id}' > shard_status.tsv
-    printf '"%s":\\n    shard_planner: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -82,7 +70,7 @@ VERSIONS
     """
     printf 'BAM\\n' > '${meta.run_id}.${shard_meta.shard_id}.shard.bam'
     printf 'shard_id\\tcontig\\tstatus\\n%s\\t%s\\tEMITTED\\n' '${shard_meta.shard_id}' '${shard_meta.contig}' > shard_status.tsv
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -108,7 +96,7 @@ process INDEX_CONTIG_SHARD {
     """
     cp ${shard_bam} '${indexed_bam}'
     printf 'BAI\\n' > '${indexed_bam}.bai'
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -125,12 +113,15 @@ process COUNT_SOURCE_COVERAGE {
     script:
     """
     samtools view -c -F 4 ${source_bam} > source_count.tsv
-    printf '"%s":\\n    shard_coverage: pipeline\\n' '${task.process}' > versions.yml
+    cat > versions.yml <<VERSIONS
+"${task.process}":
+    samtools: \$(samtools --version | head -n1)
+VERSIONS
     """
     stub:
     """
     printf '2\\n' > source_count.tsv
-    printf '"%s":\\n    shard_coverage: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -148,13 +139,16 @@ process COUNT_CONTIG_SHARD_COVERAGE {
     def shard_count = "${meta.run_id}.${shard_meta.shard_id}.shard_count.tsv"
     """
     samtools view -c -F 4 ${shard_bam} > '${shard_count}'
-    printf '"%s":\\n    shard_coverage: pipeline\\n' '${task.process}' > versions.yml
+    cat > versions.yml <<VERSIONS
+"${task.process}":
+    samtools: \$(samtools --version | head -n1)
+VERSIONS
     """
     stub:
     def shard_count = "${meta.run_id}.${shard_meta.shard_id}.shard_count.tsv"
     """
     printf '2\\n' > '${shard_count}'
-    printf '"%s":\\n    shard_coverage: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -166,16 +160,13 @@ process COLLECT_SHARD_COVERAGE_COUNTS {
     tuple val(meta), path(shard_plan), path(source_count), path(shard_counts), path(shard_bams)
     output:
     tuple val(meta), path(shard_plan), path(shard_bams), path('coverage_counts.tsv'), emit: counts
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/collect_shard_coverage_counts.py --source-count ${source_count} --shard-counts ${shard_counts} --output coverage_counts.tsv
-    printf '"%s":\\n    shard_coverage_counts: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'source_mapped_reads\\t2\\nshard_mapped_reads\\t2\\n' > coverage_counts.tsv
-    printf '"%s":\\n    shard_coverage_counts: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -188,16 +179,13 @@ process VALIDATE_SHARD_COVERAGE {
     tuple val(meta), path(shard_plan), path(shard_bams), path(coverage_counts)
     output:
     path 'shard.coverage.tsv', emit: coverage
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/validate_shard_coverage.py --plan ${shard_plan} --counts ${coverage_counts} --shard-files ${shard_bams} --report shard.coverage.tsv
-    printf '"%s":\\n    shard_coverage: pipeline\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'metric\\tvalue\\nplanned_eligible_shards\\t1\\nemitted_shards\\t1\\nsource_mapped_reads\\t2\\nplanned_mapped_reads\\t2\\nshard_mapped_reads\\t2\\nerrors\\t0\\n' > shard.coverage.tsv
-    printf '"%s":\\n    shard_coverage: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -220,6 +208,6 @@ process VALIDATE_CONTIG_SHARDS {
     stub:
     """
     printf 'shard_id\\tstatus\\n%s\\tVALID\\n' '${shard_meta.shard_id}' > shard.validation.tsv
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }

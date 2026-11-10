@@ -42,8 +42,9 @@ workflow ALIGN_LONG_READS {
         .join(SAMTOOLS_QC_SUMMARY.out.qc, by: 0)
         .map { meta, flagstat, idxstats, quickcheck, alignment_summary -> tuple(meta, flagstat, idxstats, quickcheck, alignment_summary) }
     features = EXTRACT_ALIGNMENT_FEATURES.out.features
+    direct_support = EXTRACT_ALIGNMENT_FEATURES.out.direct_support
     alignment_manifest = WRITE_FASTQ_ALIGNMENT_MANIFEST.out.manifest.mix(WRITE_BAM_ALIGNMENT_MANIFEST.out.manifest)
-    versions = BUILD_MINIMAP_INDEX.out.versions.mix(BUILD_REFERENCE_IDENTITY.out.versions).mix(ALIGN_FASTQ.out.versions).mix(SORT_FASTQ_ALIGNMENT.out.versions).mix(SORT_INPUT_BAM.out.versions).mix(INDEX_FASTQ_ALIGNMENT.out.versions).mix(INDEX_BAM_ALIGNMENT.out.versions).mix(VALIDATE_FASTQ_ALIGNMENT.out.versions).mix(VALIDATE_BAM_ALIGNMENT.out.versions).mix(WRITE_FASTQ_ALIGNMENT_MANIFEST.out.versions).mix(WRITE_BAM_ALIGNMENT_MANIFEST.out.versions).mix(SAMTOOLS_IDXSTATS.out.versions).mix(VALIDATE_ALIGNMENT_REFERENCE.out.versions).mix(SAMTOOLS_FLAGSTAT.out.versions).mix(SAMTOOLS_QC_SUMMARY.out.versions).mix(SAMTOOLS_VIEW_ALIGNMENT.out.versions).mix(EXTRACT_ALIGNMENT_FEATURES.out.versions)
+    versions = BUILD_MINIMAP_INDEX.out.versions.mix(ALIGN_FASTQ.out.versions).mix(SORT_FASTQ_ALIGNMENT.out.versions).mix(SORT_INPUT_BAM.out.versions).mix(INDEX_FASTQ_ALIGNMENT.out.versions).mix(INDEX_BAM_ALIGNMENT.out.versions).mix(VALIDATE_FASTQ_ALIGNMENT.out.versions).mix(VALIDATE_BAM_ALIGNMENT.out.versions).mix(SAMTOOLS_IDXSTATS.out.versions).mix(SAMTOOLS_FLAGSTAT.out.versions).mix(SAMTOOLS_QC_SUMMARY.out.versions).mix(SAMTOOLS_VIEW_ALIGNMENT.out.versions)
     reference_dictionary = BUILD_REFERENCE_IDENTITY.out.dictionary
     reference_identity = BUILD_REFERENCE_IDENTITY.out.identity
     reference_validation = VALIDATE_ALIGNMENT_REFERENCE.out.validation

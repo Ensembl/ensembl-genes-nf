@@ -6,19 +6,13 @@ process TAMA_PREPARE_SAM {
     tuple val(meta), val(shard_meta), path(shard_bam), path(shard_bai), path(alignment_sam)
     output:
     tuple val(meta), val(shard_meta), path(shard_bam), path(shard_bai), path('shard.sam'), emit: prepared
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/filter_sam.py --input ${alignment_sam} --output shard.sam
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    sam_filter: python
-VERSIONS
     """
     stub:
     """
     touch shard.sam
-    printf '"%s":\\n    sam_filter: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -35,20 +29,14 @@ process TAMA_COLLAPSE {
     val run_mode
     output:
     tuple val(meta), val(shard_meta), path(shard_bam), path(shard_bai), path(shard_sam), path('tama.bed'), emit: raw
-    path 'versions.yml', emit: versions
     script:
     def args = task.ext.args ?: "-x ${cap_mode} -e ${end_mode} -rm ${run_mode}"
     """
     python3 ${projectDir}/bin/run_tama.py --sam ${shard_sam} --reference ${reference} --output tama.bed --prefix tama --args '${args}'
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    tama: pinned-runtime
-VERSIONS
     """
     stub:
     """
     printf 'chr1\\t0\\t100\\ttama.1\\t0\\t+\\t0\\t100\\t0\\t1\\t100,\\t0,\\n' > tama.bed
-    printf '"%s":\\n    tama: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -60,16 +48,13 @@ process TAMA_BED12_TO_GTF {
     tuple val(meta), val(shard_meta), path(tama_bed)
     output:
     tuple val(meta), val(shard_meta), path('native.gtf'), emit: gtf
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/bed12_to_gtf.py --bed12 ${tama_bed} --gtf native.gtf --source tama --allow-empty
-    printf '"%s":\\n    tama_bed12_to_gtf: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'chr1\\ttama\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "tama.1"; transcript_id "tama.1"; exon_number "1";\\n' > native.gtf
-    printf '"%s":\\n    tama_bed12_to_gtf: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -82,17 +67,14 @@ process CLASSIFY_NATIVE_GTF {
     val empty_message
     output:
     tuple val(meta), val(shard_meta), val(backend), path('native.gtf'), path('status.tsv'), emit: native_models
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/gtf_status.py --gtf ${native_gtf} --backend '${backend}' --status status.tsv --empty-message '${empty_message}'
-    printf '"%s":\\n    gtf_status: python\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'chr1\\t%s\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "t1";\\n' '${backend}' > native.gtf
     printf 'backend\\tstatus\\n%s\\tSUCCESS\\n' '${backend}' > status.tsv
-    printf '"%s":\\n    gtf_status: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -104,16 +86,13 @@ process WRITE_MODEL_INPUT_CHECKSUMS {
     tuple val(meta), val(shard_meta), val(backend), path(input_files)
     output:
     tuple val(meta), val(shard_meta), val(backend), path('input_checksums.tsv'), emit: checksums
-    path 'versions.yml', emit: versions
     script:
     """
     sha256sum ${input_files} > input_checksums.tsv
-    printf '"%s":\\n    input_checksums: sha256sum\\n' '${task.process}' > versions.yml
     """
     stub:
     """
     printf 'stub\\n' > input_checksums.tsv
-    printf '"%s":\\n    input_checksums: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -137,7 +116,7 @@ process STRINGTIE2_COLLAPSE {
     stub:
     """
     printf 'chr1\\tstringtie2\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "stringtie2.1";\\n' > native.gtf
-    printf '"%s":\\n    stringtie: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -160,7 +139,7 @@ process STRINGTIE3_COLLAPSE {
     stub:
     """
     printf 'chr1\\tstringtie3\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "stringtie3.1";\\n' > native.gtf
-    printf '"%s":\\n    stringtie: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -185,7 +164,7 @@ VERSIONS
     stub:
     """
     touch alignment.sam
-    printf '"%s":\\n    samtools: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
 
@@ -197,19 +176,13 @@ process BAM_TO_ALIGNMENT_GTF {
     tuple val(meta), val(shard_meta), path(alignment_sam)
     output:
     tuple val(meta), val(shard_meta), path('alignment.gtf'), emit: alignment_gtf
-    path 'versions.yml', emit: versions
     script:
     """
     python3 ${projectDir}/bin/bam_to_alignment_gtf.py --sam ${alignment_sam} --output alignment.gtf
-    cat > versions.yml <<VERSIONS
-"${task.process}":
-    converter: python
-VERSIONS
     """
     stub:
     """
     printf 'chr1\\tconverter\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "read.1";\\n' > alignment.gtf
-    printf '"%s":\\n    converter: stub\\n' '${task.process}' > versions.yml
     """
 }
 
@@ -233,6 +206,6 @@ process TMERGE_COLLAPSE {
     stub:
     """
     printf 'chr1\\ttmerge\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "tmerge.1";\\n' > native.gtf
-    printf '"%s":\\n    tmerge: stub\\n' '${task.process}' > versions.yml
+    touch versions.yml
     """
 }
