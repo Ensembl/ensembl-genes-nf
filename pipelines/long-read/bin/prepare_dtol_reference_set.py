@@ -457,15 +457,17 @@ def ordered_reference_mapping(
         return None
 
     i = 0
+    fallback_index = 0
     for bam_name in bam_names:
         while i < n_ref:
             ref_name = ref_names[i]
             i += 1
             if ref_sq[ref_name] != bam_sq[bam_name]:
                 continue
-            if counts[i][len(mapping) + 1] == 0:
+            if counts[i][fallback_index + 1] == 0:
                 continue
             mapping[ref_name] = bam_name
+            fallback_index += 1
             break
         else:
             return None
