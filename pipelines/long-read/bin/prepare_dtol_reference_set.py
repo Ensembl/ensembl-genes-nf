@@ -358,9 +358,126 @@ def compare_dictionaries(bam_sq: dict[str, int], ref_sq: dict[str, int]) -> tupl
     mismatched = sorted(name for name in bam_sq if name in ref_sq and bam_sq[name] != ref_sq[name])
     if missing or mismatched:
         return "mismatch", f"missing={','.join(missing)} length_mismatch={','.join(mismatched)}"
-    if set(bam_sq) == set(ref_sq):
+    if list(bam_sq.items()) == list(ref_sq.items()):
         return "exact", "all BAM contigs and lengths match"
+    if set(bam_sq) == set(ref_sq):
+        return "mismatch", "BAM and reference contigs have the same names and lengths but a different order"
     return "compatible", f"BAM contigs match; reference has {len(set(ref_sq) - set(bam_sq))} extra contigs"
+
+
+def ordered_reference_mapping(
+    bam_sq: dict[str, int], ref_sq: dict[str, int]
+) -> tuple[dict[str, str], str] | None:
+    """Return a safe reference-name -> BAM-name mapping, if one exists.
+
+    DToL BAMs can retain the accession names from the assembly used for
+    alignment, while Ensembl FASTAs commonly use chromosome names (for
+    example ``1`` instead of ``OZ023076.1``).  We only infer a rename when
+    the BAM dictionary can be recovered as an ordered subsequence of the
+    reference dictionary with identical lengths.  This preserves sequence
+    order and prevents an arbitrary length-only match from changing the
+    assembly coordinates.
+    """
+
+    bam_names = list(bam_sq)
+    ref_names = list(ref_sq)
+
+    if list(bam_sq.items()) == list(ref_sq.items()):
+        return None
+
+    # A reference may contain unplaced/alternate contigs in addition to the
+    # primary contigs retained by the BAM.  If the BAM names are already
+    # present, dropping those extras is safe only when the retained order is
+    # identical to the BAM order and all lengths agree.
+    if all(name in ref_sq and ref_sq[name] == bam_sq[name] for name in bam_names):
+        retained = [name for name in ref_names if name in bam_sq]
+        if retained == bam_names:
+            return {name: name for name in bam_names}, "dropped reference-only contigs"
+        if set(retained) == set(bam_names):
+            return None
+
+    # Find a unique ordered subsequence of reference contigs whose lengths
+    # equal the BAM lengths.  Counting is capped at two: we only need to know
+    # whether the solution is unique or ambiguous.
+    n_ref = len(ref_names)
+    n_bam = len(bam_names)
+    counts = [[0] * (n_bam + 1) for _ in range(n_ref + 1)]
+    for i in range(n_ref + 1):
+        counts[i][n_bam] = 1
+    for i in range(n_ref - 1, -1, -1):
+        for j in range(n_bam - 1, -1, -1):
+            count = counts[i + 1][j]
+            if ref_sq[ref_names[i]] == bam_sq[bam_names[j]]:
+                count += counts[i + 1][j + 1]
+            counts[i][j] = min(count, 2)
+
+    if counts[0][0] != 1:
+        return None
+
+    mapping: dict[str, str] = {}
+    i = 0
+    for bam_name in bam_names:
+        while i < n_ref:
+            ref_name = ref_names[i]
+            i += 1
+            if ref_sq[ref_name] != bam_sq[bam_name]:
+                continue
+            if counts[i][len(mapping) + 1] == 0:
+                continue
+            mapping[ref_name] = bam_name
+            break
+        else:
+            return None
+    return mapping, "renamed headers using unique ordered contig lengths"
+
+
+def normalize_reference_to_bam(
+    reference: Path,
+    bam_sq: dict[str, int],
+    output: Path,
+    mapping_path: Path,
+) -> tuple[bool, str]:
+    """Rewrite FASTA headers to the BAM dictionary when the mapping is safe."""
+
+    ref_sq = fasta_dictionary(reference)
+    mapping_result = ordered_reference_mapping(bam_sq, ref_sq)
+    if mapping_result is None:
+        return False, "no unique ordered contig-length mapping"
+    mapping, method = mapping_result
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    partial = output.with_name(output.name + ".partial")
+    seen: set[str] = set()
+    current_keep = False
+    with reference.open() as source, partial.open("w") as destination:
+        for line in source:
+            if line.startswith(">"):
+                source_name = line[1:].split(None, 1)[0]
+                target_name = mapping.get(source_name)
+                current_keep = target_name is not None
+                if current_keep:
+                    if target_name in seen:
+                        partial.unlink(missing_ok=True)
+                        return False, f"duplicate mapped BAM contig {target_name}"
+                    seen.add(target_name)
+                    destination.write(f">{target_name}\n")
+                continue
+            if current_keep:
+                destination.write(line)
+    partial.replace(output)
+    Path(str(output) + ".fai").unlink(missing_ok=True)
+
+    normalized_sq = fasta_dictionary(output)
+    match_kind, detail = compare_dictionaries(bam_sq, normalized_sq)
+    if match_kind != "exact":
+        return False, f"normalized FASTA failed exact validation: {detail}"
+
+    with mapping_path.open("w", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(["source_name", "bam_name", "length"])
+        for source_name, bam_name in mapping.items():
+            writer.writerow([source_name, bam_name, bam_sq[bam_name]])
+    return True, method
 
 
 def discover_bam(bam_root: Path, species: str) -> Path | None:
@@ -572,15 +689,32 @@ def main() -> int:
                     materialize(genome_source, candidate_fasta, base / "download_cache")
                     ref_sq = fasta_dictionary(candidate_fasta)
                     match_kind, detail = compare_dictionaries(bam_sq, ref_sq)
+                    header_map = None
+                    if match_kind != "exact":
+                        normalized_fasta = candidate_cache / "reference.bam-named.fa"
+                        header_map = candidate_cache / "reference_header_map.tsv"
+                        normalized, normalization_detail = normalize_reference_to_bam(
+                            candidate_fasta,
+                            bam_sq,
+                            normalized_fasta,
+                            header_map,
+                        )
+                        if normalized:
+                            candidate_fasta = normalized_fasta
+                            match_kind = "normalized_exact"
+                            detail = normalization_detail
+                        else:
+                            detail = f"{detail}; {normalization_detail}"
                 except (OSError, subprocess.CalledProcessError, urllib.error.URLError) as error:
                     print(f"{accession} {candidate['source']}: validation error: {error}")
                     continue
 
                 print(f"{accession} {candidate['source']}: {match_kind} ({detail})")
-                if match_kind in {"exact", "compatible"}:
+                if match_kind in {"exact", "normalized_exact"}:
                     candidate["match_kind"] = match_kind
                     candidate["match_detail"] = detail
                     candidate["candidate_fasta"] = candidate_fasta
+                    candidate["header_map"] = header_map
                     matches.append(candidate)
 
         if not matches:
@@ -588,7 +722,7 @@ def main() -> int:
             print("FAIL: no candidate reference matched BAM @SQ dictionary")
             continue
 
-        score = {"exact": 2, "compatible": 1}
+        score = {"exact": 2, "normalized_exact": 1}
         best_score = max(score[item["match_kind"]] for item in matches)
         best = [item for item in matches if score[item["match_kind"]] == best_score]
         accessions = sorted({item["accession"] for item in best})
@@ -603,6 +737,16 @@ def main() -> int:
         reference = ref_dir / "reference.fa"
         shutil.copyfile(selected["candidate_fasta"], reference)
         ref_sq = fasta_dictionary(reference)
+        final_match_kind, final_detail = compare_dictionaries(bam_sq, ref_sq)
+        if final_match_kind != "exact":
+            failures.append({"species": species, "reason": f"selected reference failed final BAM dictionary validation: {final_detail}"})
+            print(f"FAIL: selected reference failed final BAM dictionary validation: {final_detail}")
+            continue
+
+        header_map = selected.get("header_map")
+        final_header_map = ref_dir / "reference_header_map.tsv"
+        if header_map and Path(header_map).is_file():
+            shutil.copyfile(header_map, final_header_map)
 
         protein_source = selected.get("protein_path") or selected.get("protein_url")
         protein = ref_dir / "proteins.faa"
@@ -627,6 +771,7 @@ def main() -> int:
             "bam": str(source_bam),
             "match_kind": selected["match_kind"],
             "match_detail": selected["match_detail"],
+            "header_map": str(final_header_map) if final_header_map.exists() else "",
         }
         (ref_dir / "reference_metadata.json").write_text(json.dumps(metadata, indent=2) + "\n")
         resolutions.append({**metadata, "reference": str(reference), "protein": str(protein) if protein.exists() else ""})
@@ -634,7 +779,7 @@ def main() -> int:
 
     resolution_path = base / "metadata" / "reference_resolution.tsv"
     with resolution_path.open("w", newline="") as handle:
-        fields = ["species", "assembly_accession", "source", "release", "match_kind", "match_detail", "reference", "protein"]
+        fields = ["species", "assembly_accession", "source", "release", "match_kind", "match_detail", "header_map", "reference", "protein"]
         writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t", lineterminator="\n")
         writer.writeheader()
         for item in resolutions:
