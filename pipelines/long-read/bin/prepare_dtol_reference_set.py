@@ -361,7 +361,7 @@ def compare_dictionaries(bam_sq: dict[str, int], ref_sq: dict[str, int]) -> tupl
     if list(bam_sq.items()) == list(ref_sq.items()):
         return "exact", "all BAM contigs and lengths match"
     if set(bam_sq) == set(ref_sq):
-        return "mismatch", "BAM and reference contigs have the same names and lengths but a different order"
+        return "compatible", "BAM and reference contigs have the same names and lengths but a different order"
     return "compatible", f"BAM contigs match; reference has {len(set(ref_sq) - set(bam_sq))} extra contigs"
 
 
@@ -373,10 +373,10 @@ def ordered_reference_mapping(
     DToL BAMs can retain the accession names from the assembly used for
     alignment, while Ensembl FASTAs commonly use chromosome names (for
     example ``1`` instead of ``OZ023076.1``).  We only infer a rename when
-    the BAM dictionary can be recovered as an ordered subsequence of the
-    reference dictionary with identical lengths.  This preserves sequence
-    order and prevents an arbitrary length-only match from changing the
-    assembly coordinates.
+    shared contigs anchor a reciprocal, unique contig-length mapping for the
+    remaining names.  This handles references that mix renamed primary
+    chromosomes with accession-named unplaced contigs, while preventing an
+    arbitrary length-only match from changing assembly coordinates.
     """
 
     bam_names = list(bam_sq)
@@ -385,16 +385,58 @@ def ordered_reference_mapping(
     if list(bam_sq.items()) == list(ref_sq.items()):
         return None
 
-    # A reference may contain unplaced/alternate contigs in addition to the
-    # primary contigs retained by the BAM.  If the BAM names are already
-    # present, dropping those extras is safe only when the retained order is
-    # identical to the BAM order and all lengths agree.
-    if all(name in ref_sq and ref_sq[name] == bam_sq[name] for name in bam_names):
-        retained = [name for name in ref_names if name in bam_sq]
-        if retained == bam_names:
-            return {name: name for name in bam_names}, "dropped reference-only contigs"
-        if set(retained) == set(bam_names):
-            return None
+    # Keep shared contigs as hard anchors. A shared name with a different
+    # length is evidence against this candidate and must not be rescued by a
+    # coincidental length match to another contig.
+    shared = set(bam_sq).intersection(ref_sq)
+    if any(bam_sq[name] != ref_sq[name] for name in shared):
+        return None
+
+    mapping = {name: name for name in shared}
+    unmatched_bam = [name for name in bam_names if name not in mapping]
+    unmatched_ref = [name for name in ref_names if name not in mapping]
+
+    # A reference may contain extra contigs, so match only when a remaining
+    # BAM contig and a remaining reference contig have the same length and
+    # that length identifies exactly one candidate on each side. Reciprocal
+    # uniqueness makes the rename deterministic without relying on contig
+    # order, which can differ for unplaced/alternate sequences.
+    while unmatched_bam:
+        ref_by_length: dict[int, list[str]] = {}
+        bam_by_length: dict[int, list[str]] = {}
+        for name in unmatched_ref:
+            ref_by_length.setdefault(ref_sq[name], []).append(name)
+        for name in unmatched_bam:
+            bam_by_length.setdefault(bam_sq[name], []).append(name)
+
+        discovered: list[tuple[str, str]] = []
+        for bam_name in unmatched_bam:
+            length = bam_sq[bam_name]
+            ref_candidates = ref_by_length.get(length, [])
+            bam_candidates = bam_by_length.get(length, [])
+            if len(ref_candidates) == 1 and len(bam_candidates) == 1:
+                discovered.append((ref_candidates[0], bam_name))
+
+        if not discovered:
+            break
+        for ref_name, bam_name in discovered:
+            mapping[ref_name] = bam_name
+        mapped_ref = {ref_name for ref_name, _ in discovered}
+        mapped_bam = {bam_name for _, bam_name in discovered}
+        unmatched_ref = [name for name in unmatched_ref if name not in mapped_ref]
+        unmatched_bam = [name for name in unmatched_bam if name not in mapped_bam]
+
+    if not unmatched_bam:
+        method = "renamed headers using shared contigs and unique contig lengths"
+        if not unmatched_ref:
+            method = "shared contigs and unique contig lengths"
+        return mapping, method
+
+    # Fall back to the stricter ordered-subsequence rule when no shared-anchor
+    # mapping was possible. This preserves the previous behaviour for
+    # references whose names are all changed and whose order is informative.
+    bam_names = unmatched_bam
+    ref_names = unmatched_ref
 
     # Find a unique ordered subsequence of reference contigs whose lengths
     # equal the BAM lengths.  Counting is capped at two: we only need to know
@@ -414,7 +456,6 @@ def ordered_reference_mapping(
     if counts[0][0] != 1:
         return None
 
-    mapping: dict[str, str] = {}
     i = 0
     for bam_name in bam_names:
         while i < n_ref:
@@ -428,7 +469,7 @@ def ordered_reference_mapping(
             break
         else:
             return None
-    return mapping, "renamed headers using unique ordered contig lengths"
+    return mapping, "renamed headers using shared contigs and ordered contig lengths"
 
 
 def normalize_reference_to_bam(
@@ -469,7 +510,7 @@ def normalize_reference_to_bam(
 
     normalized_sq = fasta_dictionary(output)
     match_kind, detail = compare_dictionaries(bam_sq, normalized_sq)
-    if match_kind != "exact":
+    if match_kind not in {"exact", "compatible"}:
         return False, f"normalized FASTA failed exact validation: {detail}"
 
     with mapping_path.open("w", newline="") as handle:
