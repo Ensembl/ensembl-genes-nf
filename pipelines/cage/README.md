@@ -20,11 +20,18 @@ sample_id species assembly assay_class protocol layout accession fastq_1 fastq_2
 `reference_manifest` is tab-separated with:
 
 ```text
-assembly species fasta gtf chrom_sizes taxon_id source
+assembly species fasta gtf chrom_sizes fasta_url gtf_url chrom_sizes_url taxon_id source
 ```
 
-All reference files must exist before execution. The sample assembly must match
-one row in the reference manifest.
+The `fasta`, `gtf`, and `chrom_sizes` columns may contain local files, or the
+manifest may use `fasta_url`, `gtf_url`, and `chrom_sizes_url`. Optional
+`fasta_checksum`, `gtf_checksum`, and `chrom_sizes_checksum` columns accept
+SHA256 values. Downloads are stored in `params.reference_cache` and reused
+when the source and checksum are unchanged. The sample assembly must match
+one row in the reference manifest. During `prepare_references`, rRNA features
+are extracted from the supplied GFF/GTF and added as decoy contigs to the STAR
+reference. Reads aligned to those decoys are reported through the reference
+outputs and excluded from the CTSS layer.
 
 An Ensembl-first production snapshot can be generated with
 `bin/build_ensembl_manifests.py`; see `manifests/README.md`. It produces a
@@ -38,6 +45,7 @@ nextflow run pipelines/cage/main.nf -profile test
 nextflow run pipelines/cage/main.nf -profile slurm -c config/singularity.config \
   --sample_manifest /path/to/samples.tsv \
   --reference_manifest /path/to/references.tsv \
+  --reference_cache /path/to/shared/cage-reference-cache \
   --outdir /path/to/cage-results -resume
 ```
 

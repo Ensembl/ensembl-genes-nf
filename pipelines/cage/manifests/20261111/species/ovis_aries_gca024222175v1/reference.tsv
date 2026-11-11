@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-ASM2422217v1	ovis_aries_gca024222175v1	/path/to/ensembl-cage-references/ovis_aries_gca024222175v1/genome.fa	/path/to/ensembl-cage-references/ovis_aries_gca024222175v1/annotation.gtf	/path/to/ensembl-cage-references/ovis_aries_gca024222175v1/chrom.sizes	9940	Ensembl	GCA_024222175.1	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+ASM2422217v1	ovis_aries_gca024222175v1	-	-	-	9940	Ensembl	GCA_024222175.1	downloadable	https://ftp.ensembl.org/pub/current_fasta/ovis_aries_gca024222175v1/dna/Ovis_aries_gca024222175v1.ASM2422217v1.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/ovis_aries_gca024222175v1/Ovis_aries_gca024222175v1.ASM2422217v1.116.gtf.gz	-

@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-ASM3070453v1	vitis_vinifera	/path/to/ensembl-cage-references/vitis_vinifera/genome.fa	/path/to/ensembl-cage-references/vitis_vinifera/annotation.gtf	/path/to/ensembl-cage-references/vitis_vinifera/chrom.sizes	29760	Ensembl	GCA_030704535.1	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+ASM3070453v1	vitis_vinifera	-	-	-	29760	Ensembl	GCA_030704535.1	downloadable	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/plants/fasta/vitis_vinifera/dna/Vitis_vinifera.ASM3070453v1.dna.toplevel.fa.gz	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/plants/gtf/vitis_vinifera/Vitis_vinifera.ASM3070453v1.63.gtf.gz	-

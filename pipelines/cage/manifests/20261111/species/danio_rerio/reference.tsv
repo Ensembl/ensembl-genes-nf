@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-GRCz11	danio_rerio	/path/to/ensembl-cage-references/danio_rerio/genome.fa	/path/to/ensembl-cage-references/danio_rerio/annotation.gtf	/path/to/ensembl-cage-references/danio_rerio/chrom.sizes	7955	Ensembl	GCA_000002035.4	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+GRCz11	danio_rerio	-	-	-	7955	Ensembl	GCA_000002035.4	downloadable	https://ftp.ensembl.org/pub/current_fasta/danio_rerio/dna/Danio_rerio.GRCz11.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/danio_rerio/Danio_rerio.GRCz11.116.gtf.gz	-

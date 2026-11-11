@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-Turkey_5.1	meleagris_gallopavo	/path/to/ensembl-cage-references/meleagris_gallopavo/genome.fa	/path/to/ensembl-cage-references/meleagris_gallopavo/annotation.gtf	/path/to/ensembl-cage-references/meleagris_gallopavo/chrom.sizes	9103	Ensembl	GCA_000146605.4	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+Turkey_5.1	meleagris_gallopavo	-	-	-	9103	Ensembl	GCA_000146605.4	downloadable	https://ftp.ensembl.org/pub/current_fasta/meleagris_gallopavo/dna/Meleagris_gallopavo.Turkey_5.1.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/meleagris_gallopavo/Meleagris_gallopavo.Turkey_5.1.116.gtf.gz	-

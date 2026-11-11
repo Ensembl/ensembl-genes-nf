@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-ARS-UCD2.0	bos_taurus	/path/to/ensembl-cage-references/bos_taurus/genome.fa	/path/to/ensembl-cage-references/bos_taurus/annotation.gtf	/path/to/ensembl-cage-references/bos_taurus/chrom.sizes	9913	Ensembl	GCA_002263795.4	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+ARS-UCD2.0	bos_taurus	-	-	-	9913	Ensembl	GCA_002263795.4	downloadable	https://ftp.ensembl.org/pub/current_fasta/bos_taurus/dna/Bos_taurus.ARS-UCD2.0.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/bos_taurus/Bos_taurus.ARS-UCD2.0.116.gtf.gz	-

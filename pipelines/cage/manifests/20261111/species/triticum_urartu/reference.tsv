@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-IGDB	triticum_urartu	/path/to/ensembl-cage-references/triticum_urartu/genome.fa	/path/to/ensembl-cage-references/triticum_urartu/annotation.gtf	/path/to/ensembl-cage-references/triticum_urartu/chrom.sizes	4572	Ensembl	GCA_003073215.1	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+IGDB	triticum_urartu	-	-	-	4572	Ensembl	GCA_003073215.1	downloadable	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/plants/fasta/triticum_urartu/dna/Triticum_urartu.IGDB.dna.toplevel.fa.gz	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/plants/gtf/triticum_urartu/Triticum_urartu.IGDB.63.gtf.gz	-

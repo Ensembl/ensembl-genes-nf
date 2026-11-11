@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-DBA_2J_v3	mus_musculus_dba2j	/path/to/ensembl-cage-references/mus_musculus_dba2j/genome.fa	/path/to/ensembl-cage-references/mus_musculus_dba2j/annotation.gtf	/path/to/ensembl-cage-references/mus_musculus_dba2j/chrom.sizes	10090	Ensembl	GCA_921998315.2	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+DBA_2J_v3	mus_musculus_dba2j	-	-	-	10090	Ensembl	GCA_921998315.2	downloadable	https://ftp.ensembl.org/pub/current_fasta/mus_musculus_dba2j/dna/Mus_musculus_dba2j.DBA_2J_v3.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/mus_musculus_dba2j/Mus_musculus_dba2j.DBA_2J_v3.116.gtf.gz	-

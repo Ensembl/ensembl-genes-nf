@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-UCB_Xtro_10.0	xenopus_tropicalis	/path/to/ensembl-cage-references/xenopus_tropicalis/genome.fa	/path/to/ensembl-cage-references/xenopus_tropicalis/annotation.gtf	/path/to/ensembl-cage-references/xenopus_tropicalis/chrom.sizes	8364	Ensembl	GCA_000004195.4	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+UCB_Xtro_10.0	xenopus_tropicalis	-	-	-	8364	Ensembl	GCA_000004195.4	downloadable	https://ftp.ensembl.org/pub/current_fasta/xenopus_tropicalis/dna/Xenopus_tropicalis.UCB_Xtro_10.0.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/xenopus_tropicalis/Xenopus_tropicalis.UCB_Xtro_10.0.116.gtf.gz	-

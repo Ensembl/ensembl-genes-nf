@@ -1,1 +1,2 @@
 chr1	test	gene	1	20	.	+	.	gene_id "gene1";
+chr1	test	rRNA	5	12	.	+	.	gene_id "rrna1"; gene_biotype "rRNA";

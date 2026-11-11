@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-bTaeGut1_v1.p	taeniopygia_guttata	/path/to/ensembl-cage-references/taeniopygia_guttata/genome.fa	/path/to/ensembl-cage-references/taeniopygia_guttata/annotation.gtf	/path/to/ensembl-cage-references/taeniopygia_guttata/chrom.sizes	59729	Ensembl	GCA_003957565.2	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+bTaeGut1_v1.p	taeniopygia_guttata	-	-	-	59729	Ensembl	GCA_003957565.2	downloadable	https://ftp.ensembl.org/pub/current_fasta/taeniopygia_guttata/dna/Taeniopygia_guttata.bTaeGut1_v1.p.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/taeniopygia_guttata/Taeniopygia_guttata.bTaeGut1_v1.p.116.gtf.gz	-

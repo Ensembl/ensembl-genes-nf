@@ -5,19 +5,21 @@ process ALIGN_CAGE_READS {
     publishDir { "${params.outdir}/alignments/${meta.species}" }, mode: 'copy'
 
     input:
-    tuple val(meta), path(reads), path(index)
+    tuple val(meta), path(reads), path(index), path(excluded_contigs)
 
     output:
-    tuple val(meta), path('*.bam'), path('*.Log.final.out'), emit: bam
+    tuple val(meta), path('*.bam'), path('*.Log.final.out'), path('excluded_contigs.txt'), emit: bam
 
     script:
     def files = reads.collect { read -> read.toString() }.join(' ')
     """
+    set -euo pipefail
+    cp ${excluded_contigs} excluded_contigs.txt
     STAR --genomeDir ${index} --readFilesIn ${files} --readFilesCommand cat --runThreadN ${task.cpus} ${meta.alignment_args ?: ''} --outFileNamePrefix ${meta.sample_id}. --outSAMtype BAM SortedByCoordinate
     """
 
     stub:
     """
-    touch ${meta.sample_id}.bam ${meta.sample_id}.Log.final.out
+    touch ${meta.sample_id}.bam ${meta.sample_id}.Log.final.out excluded_contigs.txt
     """
 }

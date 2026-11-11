@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-ASM637657v1	yersinia_pestis_gca_006376575	/path/to/ensembl-cage-references/yersinia_pestis_gca_006376575/genome.fa	/path/to/ensembl-cage-references/yersinia_pestis_gca_006376575/annotation.gtf	/path/to/ensembl-cage-references/yersinia_pestis_gca_006376575/chrom.sizes	632	Ensembl	GCA_006376575.1	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+ASM637657v1	yersinia_pestis_gca_006376575	-	-	-	632	Ensembl	GCA_006376575.1	downloadable	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/bacteria/fasta/bacteria_80_collection/yersinia_pestis_gca_006376575/dna/Yersinia_pestis_gca_006376575.ASM637657v1.dna.toplevel.fa.gz	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/bacteria/gtf/bacteria_80_collection/yersinia_pestis_gca_006376575/Yersinia_pestis_gca_006376575.ASM637657v1.63.gtf.gz	-

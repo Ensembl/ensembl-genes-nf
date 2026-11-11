@@ -10,6 +10,7 @@
     "orthology_manifest": {"type": "string", "format": "file-path", "exists": true, "description": "Optional orthology mapping manifest."},
     "run_cross_species": {"type": "boolean", "default": false, "description": "Build the optional cross-species comparison."},
     "outdir": {"type": "string", "default": "./results", "description": "Output directory."},
+    "reference_cache": {"type": "string", "default": "./.cage-reference-cache", "description": "Persistent cache for downloaded reference files."},
     "tracedir": {"type": "string", "description": "Execution reports directory."}
   },
   "required": ["sample_manifest", "reference_manifest"],

@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-GCA000182965v3	candida_albicans	/path/to/ensembl-cage-references/candida_albicans/genome.fa	/path/to/ensembl-cage-references/candida_albicans/annotation.gtf	/path/to/ensembl-cage-references/candida_albicans/chrom.sizes	237561	Ensembl	GCA_000182965.3	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+GCA000182965v3	candida_albicans	-	-	-	237561	Ensembl	GCA_000182965.3	downloadable	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/fungi/fasta/candida_albicans/dna/Candida_albicans.GCA000182965v3.dna.toplevel.fa.gz	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/fungi/gtf/candida_albicans/Candida_albicans.GCA000182965v3.63.gtf.gz	-

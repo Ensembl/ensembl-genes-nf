@@ -14,14 +14,18 @@ Outputs:
 
 - `cage_samples_ensembl.tsv`: ENA runs whose species have an Ensembl assembly;
 - `cage_samples_uncovered.tsv`: excluded runs without Ensembl assembly coverage;
-- `cage_references_ensembl.tsv`: reference manifest with paths to be staged;
+- `cage_references_ensembl.tsv`: reference manifest with explicit Ensembl FASTA/GTF URLs;
 - `species_manifest_index.tsv` and `species/<species>/`: one sample/reference
   manifest pair per covered species for independent runs;
 - `ensembl_coverage_report.tsv`: species/run coverage summary;
 - `manifest_build_summary.json`: census totals and generation evidence.
 
-The reference manifest is intentionally marked `needs_staging` until the FASTA,
-GTF, and chromosome-size files are placed at the configured reference root.
+The committed reference manifest uses explicit Ensembl FASTA/GTF URLs and sets
+`chrom_sizes` to `-`; chromosome sizes are derived from the downloaded FASTA.
+For a private or pinned mirror, replace the URLs and optionally add
+`chrom_sizes_url` and `*_checksum` columns. The pipeline downloads files into
+`--reference_cache`, verifies any supplied checksums, and reuses matching cached
+files.
 
 The 2026-11-11 snapshot contains 18,658 ENA runs across 101 reported species:
 
@@ -34,6 +38,7 @@ The covered production run uses:
 nextflow run pipelines/cage/main.nf -profile slurm \
   --sample_manifest pipelines/cage/manifests/20261111/cage_samples_ensembl.tsv \
   --reference_manifest pipelines/cage/manifests/20261111/cage_references_ensembl.tsv \
+  --reference_cache /path/to/shared/cage-reference-cache \
   --outdir /path/to/cage-results -resume
 ```
 

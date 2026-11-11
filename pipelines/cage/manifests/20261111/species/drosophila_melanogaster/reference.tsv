@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-BDGP6.54	drosophila_melanogaster	/path/to/ensembl-cage-references/drosophila_melanogaster/genome.fa	/path/to/ensembl-cage-references/drosophila_melanogaster/annotation.gtf	/path/to/ensembl-cage-references/drosophila_melanogaster/chrom.sizes	7227	Ensembl	GCA_000001215.4	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+BDGP6.54	drosophila_melanogaster	-	-	-	7227	Ensembl	GCA_000001215.4	downloadable	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/metazoa/fasta/drosophila_melanogaster/dna/Drosophila_melanogaster.BDGP6.54.dna.toplevel.fa.gz	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/metazoa/gtf/drosophila_melanogaster/Drosophila_melanogaster.BDGP6.54.63.gtf.gz	-

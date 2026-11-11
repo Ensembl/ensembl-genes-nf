@@ -30,6 +30,18 @@ def manifest_path(value) {
     cwd_path.exists() ? value : "${projectDir}/${value}"
 }
 
+def reference_source(row, local_field, url_field, row_number, required = true) {
+    def local = row[local_field]?.toString()?.trim()
+    def url = row[url_field]?.toString()?.trim()
+    if (local && local != '-') {
+        def path = new File(manifest_path(local))
+        return path.canonicalPath
+    }
+    if (url && url != '-') return url
+    if (required) error "Reference row ${row_number} needs ${local_field} or ${url_field}"
+    ''
+}
+
 def load_protocol_profiles(path) {
     def rows = path.readLines().findAll { line -> line.trim() && !line.trim().startsWith('#') }
     if (rows.size() < 2) error "Protocol profile manifest must contain a header and at least one row"
@@ -96,7 +108,7 @@ def load_reference_manifest(path) {
     def rows = path.readLines().findAll { line -> line.trim() && !line.trim().startsWith('#') }
     if (rows.size() < 2) error "Reference manifest must contain a header and at least one row"
     def header = rows[0].split('\t', -1)*.trim()
-    def required = ['assembly', 'species', 'fasta', 'gtf', 'chrom_sizes']
+    def required = ['assembly', 'species']
     def missing = required.findAll { column -> !header.contains(column) }
     if (missing) error "Reference manifest is missing columns: ${missing.join(', ')}"
     def records = []
@@ -109,7 +121,10 @@ def load_reference_manifest(path) {
         def assembly = required_value(row, 'assembly', row_number)
         if (!ids.add(assembly)) error "Duplicate assembly '${assembly}' on reference manifest row ${row_number}"
         def meta = [id: assembly, assembly: assembly, species: required_value(row, 'species', row_number), taxon_id: row.taxon_id ?: '', source: row.source ?: 'user']
-        records << tuple(meta, file(manifest_path(required_value(row, 'fasta', row_number)), checkIfExists: true), file(manifest_path(required_value(row, 'gtf', row_number)), checkIfExists: true), file(manifest_path(required_value(row, 'chrom_sizes', row_number)), checkIfExists: true))
+        def fasta = reference_source(row, 'fasta', 'fasta_url', row_number)
+        def gtf = reference_source(row, 'gtf', 'gtf_url', row_number)
+        def chrom_sizes = reference_source(row, 'chrom_sizes', 'chrom_sizes_url', row_number, false)
+        records << tuple(meta, fasta, gtf, chrom_sizes, row.fasta_checksum ?: '', row.gtf_checksum ?: '', row.chrom_sizes_checksum ?: '')
     }
     records
 }

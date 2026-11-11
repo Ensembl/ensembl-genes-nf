@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-Mmul_10	macaca_mulatta	/path/to/ensembl-cage-references/macaca_mulatta/genome.fa	/path/to/ensembl-cage-references/macaca_mulatta/annotation.gtf	/path/to/ensembl-cage-references/macaca_mulatta/chrom.sizes	9544	Ensembl	GCA_003339765.3	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+Mmul_10	macaca_mulatta	-	-	-	9544	Ensembl	GCA_003339765.3	downloadable	https://ftp.ensembl.org/pub/current_fasta/macaca_mulatta/dna/Macaca_mulatta.Mmul_10.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/macaca_mulatta/Macaca_mulatta.Mmul_10.116.gtf.gz	-

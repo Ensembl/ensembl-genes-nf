@@ -7,6 +7,7 @@ import json
 import re
 import urllib.parse
 import urllib.request
+import time
 from urllib.error import HTTPError, URLError
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -18,6 +19,7 @@ ENA_FIELDS = [
     "library_source", "library_selection", "study_title", "first_public",
     "fastq_ftp", "submitted_ftp",
 ]
+GENOMES_METADATA = {}
 
 
 def fetch_json(url):
@@ -42,6 +44,61 @@ def fetch_ena():
 
 def normalise(value):
     return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+
+
+def directory_files(url):
+    request = urllib.request.Request(url, headers={"User-Agent": "ensembl-cage-manifest-builder/1.0"})
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                text = response.read().decode("utf-8")
+            return [urllib.parse.unquote(value) for value in re.findall(r'href="([^"]+)"', text)]
+        except (HTTPError, URLError):
+            if attempt == 2:
+                raise
+            time.sleep(2 ** attempt)
+
+
+def genomes_species_record(division, species):
+    if division not in GENOMES_METADATA:
+        url = f"https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/{division.lower()}/species_Ensembl{division.title()}.txt"
+        with urllib.request.urlopen(url, timeout=60) as response:
+            GENOMES_METADATA[division] = list(csv.DictReader((line.decode("utf-8") for line in response), delimiter="\t"))
+    wanted = normalise(species)
+    for row in GENOMES_METADATA[division]:
+        if normalise(row.get("species", "")) == wanted:
+            return row
+    raise RuntimeError(f"No Ensembl Genomes metadata record found for {species}")
+
+
+def choose_file(files, suffix, exclude=()):
+    candidates = [value for value in files if value.endswith(suffix) and not any(token in value for token in exclude)]
+    if not candidates:
+        raise RuntimeError(f"No {suffix} file found in reference directory")
+    return sorted(candidates, key=lambda value: ("toplevel" not in value, "primary_assembly" not in value, value))[0]
+
+
+def reference_urls(reference):
+    species = reference["species"]
+    file_species = species[0].upper() + species[1:]
+    division = reference.get("division", "")
+    if division == "EnsemblVertebrates":
+        fasta_dir = f"https://ftp.ensembl.org/pub/current_fasta/{species}/dna/"
+        gtf_dir = f"https://ftp.ensembl.org/pub/current/gtf/{species}/"
+        fasta = f"{file_species}.{reference['assembly']}.dna.toplevel.fa.gz"
+        gtf = f"{file_species}.{reference['assembly']}.116.gtf.gz"
+    else:
+        division_name = division.removeprefix("Ensembl").lower()
+        record = genomes_species_record(division_name, species)
+        canonical_species = record["species"]
+        collection = record.get("core_db", "").split("_core_", 1)[0]
+        collection_path = f"{collection}/" if collection.endswith("_collection") else ""
+        fasta_dir = f"https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/{division_name}/fasta/{collection_path}{canonical_species}/dna/"
+        gtf_dir = f"https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/{division_name}/gtf/{collection_path}{canonical_species}/"
+        file_species = canonical_species[0].upper() + canonical_species[1:]
+        fasta = f"{file_species}.{reference['assembly']}.dna.toplevel.fa.gz"
+        gtf = f"{file_species}.{reference['assembly']}.63.gtf.gz"
+    return urllib.parse.urljoin(fasta_dir, fasta), urllib.parse.urljoin(gtf_dir, gtf)
 
 
 def protocol_for(row):
@@ -159,17 +216,20 @@ def main():
     refs = []
     for species in sorted(reference_rows):
         reference = reference_rows[species]
-        root = Path(args.reference_root) / reference["species"]
+        fasta_url, gtf_url = reference_urls(reference)
         refs.append({
             "assembly": reference["assembly"],
             "species": reference["species"],
-            "fasta": str(root / "genome.fa"),
-            "gtf": str(root / "annotation.gtf"),
-            "chrom_sizes": str(root / "chrom.sizes"),
+            "fasta": "-",
+            "gtf": "-",
+            "chrom_sizes": "-",
+            "fasta_url": fasta_url,
+            "gtf_url": gtf_url,
+            "chrom_sizes_url": "-",
             "taxon_id": reference["tax_id"],
             "source": "Ensembl",
             "assembly_accession": reference["accession"],
-            "reference_status": "needs_staging",
+            "reference_status": "downloadable",
         })
     write_tsv(output_dir / "cage_references_ensembl.tsv", list(refs[0].keys()) if refs else ["assembly"], refs)
 

@@ -1,3 +1,3 @@
 assembly	species	fasta	gtf	chrom_sizes	taxon_id	source
-hg38	Homo_sapiens	assets/test_reference.fa	assets/test_reference.gtf	assets/test_chrom.sizes	9606	test
-mm39	Mus_musculus	assets/test_reference.fa	assets/test_reference.gtf	assets/test_chrom.sizes	10090	test
+hg38	Homo_sapiens	assets/test_reference.fa	assets/test_reference.gtf	-	9606	test
+mm39	Mus_musculus	assets/test_reference.fa	assets/test_reference.gtf	-	10090	test

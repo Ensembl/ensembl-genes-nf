@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-GRCh38	homo_sapiens	/path/to/ensembl-cage-references/homo_sapiens/genome.fa	/path/to/ensembl-cage-references/homo_sapiens/annotation.gtf	/path/to/ensembl-cage-references/homo_sapiens/chrom.sizes	9606	Ensembl	GCA_000001405.29	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+GRCh38	homo_sapiens	-	-	-	9606	Ensembl	GCA_000001405.29	downloadable	https://ftp.ensembl.org/pub/current_fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/homo_sapiens/Homo_sapiens.GRCh38.116.gtf.gz	-

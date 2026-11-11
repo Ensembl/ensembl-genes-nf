@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-droNov1	dromaius_novaehollandiae	/path/to/ensembl-cage-references/dromaius_novaehollandiae/genome.fa	/path/to/ensembl-cage-references/dromaius_novaehollandiae/annotation.gtf	/path/to/ensembl-cage-references/dromaius_novaehollandiae/chrom.sizes	8790	Ensembl	GCA_003342905.1	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+droNov1	dromaius_novaehollandiae	-	-	-	8790	Ensembl	GCA_003342905.1	downloadable	https://ftp.ensembl.org/pub/current_fasta/dromaius_novaehollandiae/dna/Dromaius_novaehollandiae.droNov1.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/dromaius_novaehollandiae/Dromaius_novaehollandiae.droNov1.116.gtf.gz	-

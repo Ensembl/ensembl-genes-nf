@@ -13,9 +13,9 @@ workflow PROCESS_READS {
     ch_acquired = ACQUIRE_READS(samples).reads
     ch_trimmed = TRIM_CAGE_READS(ch_acquired).reads
     ch_trimmed_keyed = ch_trimmed.map { meta, reads -> tuple(meta.assembly, meta, reads) }
-    ch_indexes_keyed = indexes.map { meta, index -> tuple(meta.assembly, index) }
+    ch_indexes_keyed = indexes.map { meta, index, excluded -> tuple(meta.assembly, index, excluded) }
     ch_joined = ch_trimmed_keyed.join(ch_indexes_keyed)
-        .map { _assembly, meta, reads, index -> tuple(meta, reads, index) }
+        .map { _assembly, meta, reads, index, excluded -> tuple(meta, reads, index, excluded) }
     ch_bam = ALIGN_CAGE_READS(ch_joined).bam
 
     emit:

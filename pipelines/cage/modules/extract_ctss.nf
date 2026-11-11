@@ -5,7 +5,7 @@ process EXTRACT_CTSS {
     publishDir { "${params.outdir}/ctss/${meta.species}" }, mode: 'copy'
 
     input:
-    tuple val(meta), path(bam), path(alignment_log)
+    tuple val(meta), path(bam), path(alignment_log), path(excluded_contigs)
     path helper
 
     output:
@@ -13,7 +13,7 @@ process EXTRACT_CTSS {
 
     script:
     """
-    bash ${helper} --bam ${bam} --sample ${meta.sample_id} --mode ${meta.ctss_mode} --bed ${meta.sample_id}.ctss.bed --bedgraph ${meta.sample_id}.ctss.bedgraph
+    bash ${helper} --bam ${bam} --sample ${meta.sample_id} --mode ${meta.ctss_mode} --exclude-contigs ${excluded_contigs} --bed ${meta.sample_id}.ctss.bed --bedgraph ${meta.sample_id}.ctss.bedgraph
     """
 
     stub:

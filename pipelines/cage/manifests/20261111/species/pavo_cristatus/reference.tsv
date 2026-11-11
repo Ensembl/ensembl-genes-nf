@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-AIIM_Pcri_1.0	pavo_cristatus	/path/to/ensembl-cage-references/pavo_cristatus/genome.fa	/path/to/ensembl-cage-references/pavo_cristatus/annotation.gtf	/path/to/ensembl-cage-references/pavo_cristatus/chrom.sizes	9049	Ensembl	GCA_005519975.1	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+AIIM_Pcri_1.0	pavo_cristatus	-	-	-	9049	Ensembl	GCA_005519975.1	downloadable	https://ftp.ensembl.org/pub/current_fasta/pavo_cristatus/dna/Pavo_cristatus.AIIM_Pcri_1.0.dna.toplevel.fa.gz	https://ftp.ensembl.org/pub/current/gtf/pavo_cristatus/Pavo_cristatus.AIIM_Pcri_1.0.116.gtf.gz	-

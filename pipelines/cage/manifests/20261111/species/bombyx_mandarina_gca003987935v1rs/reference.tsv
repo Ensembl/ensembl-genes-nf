@@ -1,2 +1,2 @@
-assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
-ASM398793v1	bombyx_mandarina_gca003987935v1rs	/path/to/ensembl-cage-references/bombyx_mandarina_gca003987935v1rs/genome.fa	/path/to/ensembl-cage-references/bombyx_mandarina_gca003987935v1rs/annotation.gtf	/path/to/ensembl-cage-references/bombyx_mandarina_gca003987935v1rs/chrom.sizes	7092	Ensembl	GCA_003987935.1	needs_staging
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status	fasta_url	gtf_url	chrom_sizes_url
+ASM398793v1	bombyx_mandarina_gca003987935v1rs	-	-	-	7092	Ensembl	GCA_003987935.1	downloadable	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/metazoa/fasta/bombyx_mandarina_gca003987935v1rs/dna/Bombyx_mandarina_gca003987935v1rs.ASM398793v1.dna.toplevel.fa.gz	https://ftp.ebi.ac.uk/ensemblgenomes/pub/current/metazoa/gtf/bombyx_mandarina_gca003987935v1rs/Bombyx_mandarina_gca003987935v1rs.ASM398793v1.63.gtf.gz	-
