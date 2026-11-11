@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Macaca_fascicularis_6.0	macaca_fascicularis	/path/to/ensembl-cage-references/macaca_fascicularis/genome.fa	/path/to/ensembl-cage-references/macaca_fascicularis/annotation.gtf	/path/to/ensembl-cage-references/macaca_fascicularis/chrom.sizes	9541	Ensembl	GCA_011100615.1	needs_staging

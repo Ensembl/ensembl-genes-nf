@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+droNov1	dromaius_novaehollandiae	/path/to/ensembl-cage-references/dromaius_novaehollandiae/genome.fa	/path/to/ensembl-cage-references/dromaius_novaehollandiae/annotation.gtf	/path/to/ensembl-cage-references/dromaius_novaehollandiae/chrom.sizes	8790	Ensembl	GCA_003342905.1	needs_staging

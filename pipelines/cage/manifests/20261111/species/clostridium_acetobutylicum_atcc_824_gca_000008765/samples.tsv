@@ -1,0 +1,3 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR16148995	clostridium_acetobutylicum_atcc_824_gca_000008765	ASM876v1	cage	standard_cage	SE	SRR16148995	-	-				-	-	Clostridium acetobutylicum ATCC 824	PRJNA767822	2022-04-09	ftp.sra.ebi.ac.uk/vol1/fastq/SRR161/095/SRR16148995/SRR16148995.fastq.gz	tax_id
+SRR16148994	clostridium_acetobutylicum_atcc_824_gca_000008765	ASM876v1	cage	standard_cage	SE	SRR16148994	-	-				-	-	Clostridium acetobutylicum ATCC 824	PRJNA767822	2022-04-09	ftp.sra.ebi.ac.uk/vol1/fastq/SRR161/094/SRR16148994/SRR16148994.fastq.gz	tax_id

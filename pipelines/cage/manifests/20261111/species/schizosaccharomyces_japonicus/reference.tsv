@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+GCA_000149845.2	schizosaccharomyces_japonicus	/path/to/ensembl-cage-references/schizosaccharomyces_japonicus/genome.fa	/path/to/ensembl-cage-references/schizosaccharomyces_japonicus/annotation.gtf	/path/to/ensembl-cage-references/schizosaccharomyces_japonicus/chrom.sizes	402676	Ensembl	GCA_000149845.2	needs_staging

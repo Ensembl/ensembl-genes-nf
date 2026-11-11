@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+TETRAODON8	tetraodon_nigroviridis	/path/to/ensembl-cage-references/tetraodon_nigroviridis/genome.fa	/path/to/ensembl-cage-references/tetraodon_nigroviridis/annotation.gtf	/path/to/ensembl-cage-references/tetraodon_nigroviridis/chrom.sizes	99883	Ensembl		needs_staging

@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM127576v2	madurella_mycetomatis_gca_001275765	/path/to/ensembl-cage-references/madurella_mycetomatis_gca_001275765/genome.fa	/path/to/ensembl-cage-references/madurella_mycetomatis_gca_001275765/annotation.gtf	/path/to/ensembl-cage-references/madurella_mycetomatis_gca_001275765/chrom.sizes	100816	Ensembl	GCA_001275765.2	needs_staging

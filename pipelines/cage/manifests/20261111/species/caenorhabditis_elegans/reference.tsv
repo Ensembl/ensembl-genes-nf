@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+WBcel235	caenorhabditis_elegans	/path/to/ensembl-cage-references/caenorhabditis_elegans/genome.fa	/path/to/ensembl-cage-references/caenorhabditis_elegans/annotation.gtf	/path/to/ensembl-cage-references/caenorhabditis_elegans/chrom.sizes	6239	Ensembl	GCA_000002985.3	needs_staging

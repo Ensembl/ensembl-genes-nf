@@ -1,0 +1,7 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR25083513	pavo_cristatus	AIIM_Pcri_1.0	cage	standard_cage	SE	SRR25083513	-	-				-	-	Pavo cristatus	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/013/SRR25083513/SRR25083513.fastq.gz	tax_id
+SRR25083515	pavo_cristatus	AIIM_Pcri_1.0	cage	standard_cage	SE	SRR25083515	-	-				-	-	Pavo cristatus	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/015/SRR25083515/SRR25083515.fastq.gz	tax_id
+SRR25083540	pavo_cristatus	AIIM_Pcri_1.0	cage	standard_cage	SE	SRR25083540	-	-				-	-	Pavo cristatus	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/040/SRR25083540/SRR25083540.fastq.gz	tax_id
+SRR25083541	pavo_cristatus	AIIM_Pcri_1.0	cage	standard_cage	SE	SRR25083541	-	-				-	-	Pavo cristatus	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/041/SRR25083541/SRR25083541.fastq.gz	tax_id
+SRR25083542	pavo_cristatus	AIIM_Pcri_1.0	cage	standard_cage	SE	SRR25083542	-	-				-	-	Pavo cristatus	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/042/SRR25083542/SRR25083542.fastq.gz	tax_id
+SRR25083514	pavo_cristatus	AIIM_Pcri_1.0	cage	standard_cage	SE	SRR25083514	-	-				-	-	Pavo cristatus	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/014/SRR25083514/SRR25083514.fastq.gz	tax_id

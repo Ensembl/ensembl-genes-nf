@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Amel_HAv3.1	apis_mellifera	/path/to/ensembl-cage-references/apis_mellifera/genome.fa	/path/to/ensembl-cage-references/apis_mellifera/annotation.gtf	/path/to/ensembl-cage-references/apis_mellifera/chrom.sizes	7460	Ensembl	GCA_003254395.2	needs_staging

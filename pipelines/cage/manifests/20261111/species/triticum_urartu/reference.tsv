@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+IGDB	triticum_urartu	/path/to/ensembl-cage-references/triticum_urartu/genome.fa	/path/to/ensembl-cage-references/triticum_urartu/annotation.gtf	/path/to/ensembl-cage-references/triticum_urartu/chrom.sizes	4572	Ensembl	GCA_003073215.1	needs_staging

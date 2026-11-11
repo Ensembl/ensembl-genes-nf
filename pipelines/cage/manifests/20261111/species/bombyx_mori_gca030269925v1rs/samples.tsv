@@ -1,0 +1,2 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+DRR495186	bombyx_mori_gca030269925v1rs	ASM3026992v2	cage	standard_cage	SE	DRR495186	-	-				-	-	Bombyx mori	PRJDB13955	2026-01-02	ftp.sra.ebi.ac.uk/vol1/fastq/DRR495/DRR495186/DRR495186.fastq.gz	tax_id

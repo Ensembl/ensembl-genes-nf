@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM876v1	clostridium_acetobutylicum_atcc_824_gca_000008765	/path/to/ensembl-cage-references/clostridium_acetobutylicum_atcc_824_gca_000008765/genome.fa	/path/to/ensembl-cage-references/clostridium_acetobutylicum_atcc_824_gca_000008765/annotation.gtf	/path/to/ensembl-cage-references/clostridium_acetobutylicum_atcc_824_gca_000008765/chrom.sizes	272562	Ensembl	GCA_000008765.1	needs_staging

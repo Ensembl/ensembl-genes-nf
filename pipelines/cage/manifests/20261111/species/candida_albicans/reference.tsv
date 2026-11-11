@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+GCA000182965v3	candida_albicans	/path/to/ensembl-cage-references/candida_albicans/genome.fa	/path/to/ensembl-cage-references/candida_albicans/annotation.gtf	/path/to/ensembl-cage-references/candida_albicans/chrom.sizes	237561	Ensembl	GCA_000182965.3	needs_staging

@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+R64-1-1	saccharomyces_cerevisiae	/path/to/ensembl-cage-references/saccharomyces_cerevisiae/genome.fa	/path/to/ensembl-cage-references/saccharomyces_cerevisiae/annotation.gtf	/path/to/ensembl-cage-references/saccharomyces_cerevisiae/chrom.sizes	559292	Ensembl	GCA_000146045.2	needs_staging

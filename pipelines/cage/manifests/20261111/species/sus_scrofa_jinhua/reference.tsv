@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Jinhua_pig_v1	sus_scrofa_jinhua	/path/to/ensembl-cage-references/sus_scrofa_jinhua/genome.fa	/path/to/ensembl-cage-references/sus_scrofa_jinhua/annotation.gtf	/path/to/ensembl-cage-references/sus_scrofa_jinhua/chrom.sizes	9823	Ensembl	GCA_001700295.1	needs_staging

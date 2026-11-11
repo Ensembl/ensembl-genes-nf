@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Coturnix_japonica_2.0	coturnix_japonica	/path/to/ensembl-cage-references/coturnix_japonica/genome.fa	/path/to/ensembl-cage-references/coturnix_japonica/annotation.gtf	/path/to/ensembl-cage-references/coturnix_japonica/chrom.sizes	93934	Ensembl	GCA_001577835.1	needs_staging

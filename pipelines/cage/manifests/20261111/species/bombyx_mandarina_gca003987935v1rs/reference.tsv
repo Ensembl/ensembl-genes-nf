@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM398793v1	bombyx_mandarina_gca003987935v1rs	/path/to/ensembl-cage-references/bombyx_mandarina_gca003987935v1rs/genome.fa	/path/to/ensembl-cage-references/bombyx_mandarina_gca003987935v1rs/annotation.gtf	/path/to/ensembl-cage-references/bombyx_mandarina_gca003987935v1rs/chrom.sizes	7092	Ensembl	GCA_003987935.1	needs_staging

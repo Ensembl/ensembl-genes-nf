@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Zm-B73-REFERENCE-NAM-5.0	zea_mays	/path/to/ensembl-cage-references/zea_mays/genome.fa	/path/to/ensembl-cage-references/zea_mays/annotation.gtf	/path/to/ensembl-cage-references/zea_mays/chrom.sizes	4577	Ensembl	GCA_902167145.1	needs_staging

@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM3070453v1	vitis_vinifera	/path/to/ensembl-cage-references/vitis_vinifera/genome.fa	/path/to/ensembl-cage-references/vitis_vinifera/annotation.gtf	/path/to/ensembl-cage-references/vitis_vinifera/chrom.sizes	29760	Ensembl	GCA_030704535.1	needs_staging

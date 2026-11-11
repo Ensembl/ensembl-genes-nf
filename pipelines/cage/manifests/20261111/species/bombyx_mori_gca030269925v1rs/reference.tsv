@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM3026992v2	bombyx_mori_gca030269925v1rs	/path/to/ensembl-cage-references/bombyx_mori_gca030269925v1rs/genome.fa	/path/to/ensembl-cage-references/bombyx_mori_gca030269925v1rs/annotation.gtf	/path/to/ensembl-cage-references/bombyx_mori_gca030269925v1rs/chrom.sizes	7091	Ensembl	GCA_030269925.2	needs_staging

@@ -1,0 +1,3 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR20992721	triticum_urartu	IGDB	cage	standard_cage	PE	SRR20992721	-	-				-	-	Triticum urartu	PRJNA814385	2023-10-29	ftp.sra.ebi.ac.uk/vol1/fastq/SRR209/021/SRR20992721/SRR20992721_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR209/021/SRR20992721/SRR20992721_2.fastq.gz	tax_id
+SRR20992722	triticum_urartu	IGDB	cage	standard_cage	PE	SRR20992722	-	-				-	-	Triticum urartu	PRJNA814385	2023-10-29	ftp.sra.ebi.ac.uk/vol1/fastq/SRR209/022/SRR20992722/SRR20992722_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR209/022/SRR20992722/SRR20992722_2.fastq.gz	tax_id

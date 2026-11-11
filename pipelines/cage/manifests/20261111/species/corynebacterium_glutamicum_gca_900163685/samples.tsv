@@ -1,0 +1,2 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR12496972	corynebacterium_glutamicum_gca_900163685	ASM90016368v1	cage	standard_cage	SE	SRR12496972	-	-				-	-	Corynebacterium glutamicum	PRJNA658771	2020-10-01	ftp.sra.ebi.ac.uk/vol1/fastq/SRR124/072/SRR12496972/SRR12496972.fastq.gz	tax_id

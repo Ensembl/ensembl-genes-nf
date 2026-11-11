@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+GRCz11	danio_rerio	/path/to/ensembl-cage-references/danio_rerio/genome.fa	/path/to/ensembl-cage-references/danio_rerio/annotation.gtf	/path/to/ensembl-cage-references/danio_rerio/chrom.sizes	7955	Ensembl	GCA_000002035.4	needs_staging

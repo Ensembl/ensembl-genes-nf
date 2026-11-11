@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+UCI_Dpse_MV25	drosophila_pseudoobscura_gca009870125v2rs	/path/to/ensembl-cage-references/drosophila_pseudoobscura_gca009870125v2rs/genome.fa	/path/to/ensembl-cage-references/drosophila_pseudoobscura_gca009870125v2rs/annotation.gtf	/path/to/ensembl-cage-references/drosophila_pseudoobscura_gca009870125v2rs/chrom.sizes	7237	Ensembl	GCA_009870125.2	needs_staging

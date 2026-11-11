@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM23734v1	naumovozyma_castellii_cbs_4309_gca_000237345	/path/to/ensembl-cage-references/naumovozyma_castellii_cbs_4309_gca_000237345/genome.fa	/path/to/ensembl-cage-references/naumovozyma_castellii_cbs_4309_gca_000237345/annotation.gtf	/path/to/ensembl-cage-references/naumovozyma_castellii_cbs_4309_gca_000237345/chrom.sizes	27288	Ensembl	GCA_000237345.1	needs_staging

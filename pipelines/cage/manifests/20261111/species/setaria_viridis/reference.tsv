@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Setaria_viridis_v2.0	setaria_viridis	/path/to/ensembl-cage-references/setaria_viridis/genome.fa	/path/to/ensembl-cage-references/setaria_viridis/annotation.gtf	/path/to/ensembl-cage-references/setaria_viridis/chrom.sizes	4556	Ensembl	GCA_005286985.1	needs_staging

@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM176148v1	yarrowia_lipolytica_gca_001761485	/path/to/ensembl-cage-references/yarrowia_lipolytica_gca_001761485/genome.fa	/path/to/ensembl-cage-references/yarrowia_lipolytica_gca_001761485/annotation.gtf	/path/to/ensembl-cage-references/yarrowia_lipolytica_gca_001761485/chrom.sizes	4952	Ensembl	GCA_001761485.1	needs_staging

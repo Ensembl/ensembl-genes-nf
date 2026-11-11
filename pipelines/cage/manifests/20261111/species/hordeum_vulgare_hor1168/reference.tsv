@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Hvulgare_HOR_1168_BPGv2	hordeum_vulgare_hor1168	/path/to/ensembl-cage-references/hordeum_vulgare_hor1168/genome.fa	/path/to/ensembl-cage-references/hordeum_vulgare_hor1168/annotation.gtf	/path/to/ensembl-cage-references/hordeum_vulgare_hor1168/chrom.sizes	4513	Ensembl	GCA_949783555.1	needs_staging

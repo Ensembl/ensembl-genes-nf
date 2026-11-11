@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+bTaeGut1_v1.p	taeniopygia_guttata	/path/to/ensembl-cage-references/taeniopygia_guttata/genome.fa	/path/to/ensembl-cage-references/taeniopygia_guttata/annotation.gtf	/path/to/ensembl-cage-references/taeniopygia_guttata/chrom.sizes	59729	Ensembl	GCA_003957565.2	needs_staging

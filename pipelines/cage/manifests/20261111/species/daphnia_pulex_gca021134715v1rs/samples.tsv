@@ -1,0 +1,9 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR3356118	daphnia_pulex_gca021134715v1rs	ASM2113471v1	cage	standard_cage	SE	SRR3356118	-	-				-	-	Daphnia pulex	PRJNA318020	2016-09-16	ftp.sra.ebi.ac.uk/vol1/fastq/SRR335/008/SRR3356118/SRR3356118.fastq.gz	tax_id
+SRR3356112	daphnia_pulex_gca021134715v1rs	ASM2113471v1	cage	standard_cage	SE	SRR3356112	-	-				-	-	Daphnia pulex	PRJNA318020	2016-09-16	ftp.sra.ebi.ac.uk/vol1/fastq/SRR335/002/SRR3356112/SRR3356112.fastq.gz	tax_id
+SRR3356116	daphnia_pulex_gca021134715v1rs	ASM2113471v1	cage	standard_cage	SE	SRR3356116	-	-				-	-	Daphnia pulex	PRJNA318020	2016-09-16	ftp.sra.ebi.ac.uk/vol1/fastq/SRR335/006/SRR3356116/SRR3356116.fastq.gz	tax_id
+SRR3356119	daphnia_pulex_gca021134715v1rs	ASM2113471v1	cage	standard_cage	SE	SRR3356119	-	-				-	-	Daphnia pulex	PRJNA318020	2016-09-16	ftp.sra.ebi.ac.uk/vol1/fastq/SRR335/009/SRR3356119/SRR3356119.fastq.gz	tax_id
+SRR3356113	daphnia_pulex_gca021134715v1rs	ASM2113471v1	cage	standard_cage	SE	SRR3356113	-	-				-	-	Daphnia pulex	PRJNA318020	2016-09-16	ftp.sra.ebi.ac.uk/vol1/fastq/SRR335/003/SRR3356113/SRR3356113.fastq.gz	tax_id
+SRR3356114	daphnia_pulex_gca021134715v1rs	ASM2113471v1	cage	standard_cage	SE	SRR3356114	-	-				-	-	Daphnia pulex	PRJNA318020	2016-09-16	ftp.sra.ebi.ac.uk/vol1/fastq/SRR335/004/SRR3356114/SRR3356114.fastq.gz	tax_id
+SRR3356115	daphnia_pulex_gca021134715v1rs	ASM2113471v1	cage	standard_cage	SE	SRR3356115	-	-				-	-	Daphnia pulex	PRJNA318020	2016-09-16	ftp.sra.ebi.ac.uk/vol1/fastq/SRR335/005/SRR3356115/SRR3356115.fastq.gz	tax_id
+SRR3356117	daphnia_pulex_gca021134715v1rs	ASM2113471v1	cage	standard_cage	SE	SRR3356117	-	-				-	-	Daphnia pulex	PRJNA318020	2016-09-16	ftp.sra.ebi.ac.uk/vol1/fastq/SRR335/007/SRR3356117/SRR3356117.fastq.gz	tax_id

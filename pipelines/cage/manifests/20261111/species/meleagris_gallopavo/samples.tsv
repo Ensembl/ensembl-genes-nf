@@ -1,0 +1,7 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR25083501	meleagris_gallopavo	Turkey_5.1	cage	standard_cage	SE	SRR25083501	-	-				-	-	Meleagris gallopavo	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/001/SRR25083501/SRR25083501.fastq.gz	tax_id
+SRR25083504	meleagris_gallopavo	Turkey_5.1	cage	standard_cage	SE	SRR25083504	-	-				-	-	Meleagris gallopavo	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/004/SRR25083504/SRR25083504.fastq.gz	tax_id
+SRR25083505	meleagris_gallopavo	Turkey_5.1	cage	standard_cage	SE	SRR25083505	-	-				-	-	Meleagris gallopavo	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/005/SRR25083505/SRR25083505.fastq.gz	tax_id
+SRR25083502	meleagris_gallopavo	Turkey_5.1	cage	standard_cage	SE	SRR25083502	-	-				-	-	Meleagris gallopavo	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/002/SRR25083502/SRR25083502.fastq.gz	tax_id
+SRR25083503	meleagris_gallopavo	Turkey_5.1	cage	standard_cage	SE	SRR25083503	-	-				-	-	Meleagris gallopavo	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/003/SRR25083503/SRR25083503.fastq.gz	tax_id
+SRR25083506	meleagris_gallopavo	Turkey_5.1	cage	standard_cage	SE	SRR25083506	-	-				-	-	Meleagris gallopavo	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/006/SRR25083506/SRR25083506.fastq.gz	tax_id

@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Sorghum_bicolor_NCBIv3	sorghum_bicolor	/path/to/ensembl-cage-references/sorghum_bicolor/genome.fa	/path/to/ensembl-cage-references/sorghum_bicolor/annotation.gtf	/path/to/ensembl-cage-references/sorghum_bicolor/chrom.sizes	4558	Ensembl	GCA_000003195.3	needs_staging

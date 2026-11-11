@@ -1,0 +1,60 @@
+# Protocol-aware CAGE atlas pipeline
+
+This pipeline processes a curated CAGE or related 5-prime assay manifest against
+native, versioned species references. It does not search or download the full
+archive inventory implicitly. Use the survey inventory to create a reviewed
+sample manifest, then run this pipeline explicitly.
+
+## Manifests
+
+`sample_manifest` is tab-separated with required columns:
+
+```text
+sample_id species assembly assay_class protocol layout accession fastq_1 fastq_2
+```
+
+`assay_class` is one of `cage`, `rampage`, `pro-cap`, `net-cage`, or `tss-seq`.
+`layout` is `SE` or `PE`. Supply either an archive `accession` or local
+`fastq_1`; paired-end rows also require `fastq_2` when local files are used.
+
+`reference_manifest` is tab-separated with:
+
+```text
+assembly species fasta gtf chrom_sizes taxon_id source
+```
+
+All reference files must exist before execution. The sample assembly must match
+one row in the reference manifest.
+
+An Ensembl-first production snapshot can be generated with
+`bin/build_ensembl_manifests.py`; see `manifests/README.md`. It produces a
+covered sample manifest plus an explicit coverage report for survey species
+without an Ensembl assembly.
+
+## Run
+
+```bash
+nextflow run pipelines/cage/main.nf -profile test
+nextflow run pipelines/cage/main.nf -profile slurm -c config/singularity.config \
+  --sample_manifest /path/to/samples.tsv \
+  --reference_manifest /path/to/references.tsv \
+  --outdir /path/to/cage-results -resume
+```
+
+The pipeline preserves `meta` fields through acquisition, trimming, alignment,
+CTSS extraction, and atlas construction. CTSS BED/bedGraph files are immutable
+published intermediates. Related assay classes are labelled and are not pooled
+silently.
+
+## Outputs
+
+FASTQs are staged internally for processing and are not published by default.
+Published outputs are grouped under `alignments/`, `ctss/`, and
+`atlas/<species>/<assembly>/`. The atlas directory contains sample metadata,
+CTSS/TSS/promoter matrices, TSS clusters, bidirectional enhancer candidates,
+GTF-overlap annotations, and QC metrics. The cross-species comparison is opt-in with a JSON params file
+containing `"run_cross_species": true` and an `orthology_manifest` path.
+
+The test profile is a wiring check. Production analysis requires validated
+references, protocol-specific parameters, real container execution, and
+biological QC.

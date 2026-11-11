@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM1696v1	clostridium_beijerinckii_ncimb_8052_gca_000016965	/path/to/ensembl-cage-references/clostridium_beijerinckii_ncimb_8052_gca_000016965/genome.fa	/path/to/ensembl-cage-references/clostridium_beijerinckii_ncimb_8052_gca_000016965/annotation.gtf	/path/to/ensembl-cage-references/clostridium_beijerinckii_ncimb_8052_gca_000016965/chrom.sizes	290402	Ensembl	GCA_000016965.1	needs_staging

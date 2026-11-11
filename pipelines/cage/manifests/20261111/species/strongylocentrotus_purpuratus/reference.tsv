@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Spur_5.0	strongylocentrotus_purpuratus	/path/to/ensembl-cage-references/strongylocentrotus_purpuratus/genome.fa	/path/to/ensembl-cage-references/strongylocentrotus_purpuratus/annotation.gtf	/path/to/ensembl-cage-references/strongylocentrotus_purpuratus/chrom.sizes	7668	Ensembl	GCA_000002235.4	needs_staging

@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+BraLan2	branchiostoma_lanceolatum	/path/to/ensembl-cage-references/branchiostoma_lanceolatum/genome.fa	/path/to/ensembl-cage-references/branchiostoma_lanceolatum/annotation.gtf	/path/to/ensembl-cage-references/branchiostoma_lanceolatum/chrom.sizes	7740	Ensembl	GCA_900088365.1	needs_staging

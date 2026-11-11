@@ -1,0 +1,3 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR8360235	candida_albicans	GCA000182965v3	cage	standard_cage	SE	SRR8360235	-	-				-	-	Candida albicans	PRJNA510689	2020-01-06	ftp.sra.ebi.ac.uk/vol1/fastq/SRR836/005/SRR8360235/SRR8360235.fastq.gz	scientific_name
+SRR8360234	candida_albicans	GCA000182965v3	cage	standard_cage	SE	SRR8360234	-	-				-	-	Candida albicans	PRJNA510689	2020-02-09	ftp.sra.ebi.ac.uk/vol1/fastq/SRR836/004/SRR8360234/SRR8360234.fastq.gz	scientific_name

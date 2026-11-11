@@ -1,0 +1,9 @@
+protocol	assay_class	trim_args	alignment_args	ctss_mode
+standard_cage	cage			forward_read_5prime
+nano_cage	cage			forward_read_5prime
+helicoscope_cage	cage			forward_read_5prime
+ss_cage	cage			forward_read_5prime
+rampage_v1	rampage			forward_read_5prime
+pro_cap_v1	pro-cap			forward_read_5prime
+net_cage_v1	net-cage			forward_read_5prime
+tss_seq_v1	tss-seq			forward_read_5prime

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Protocol-aware CAGE atlas parameters",
+  "description": "Manifest-driven, species-aware CAGE and related 5-prime assay processing.",
+  "type": "object",
+  "properties": {
+    "sample_manifest": {"type": "string", "format": "file-path", "exists": true, "description": "Tab-separated sample/accession manifest."},
+    "reference_manifest": {"type": "string", "format": "file-path", "exists": true, "description": "Tab-separated native-reference manifest."},
+    "protocol_profiles": {"type": "string", "format": "file-path", "exists": true, "description": "Versioned protocol-specific trimming/alignment profile manifest."},
+    "orthology_manifest": {"type": "string", "format": "file-path", "exists": true, "description": "Optional orthology mapping manifest."},
+    "run_cross_species": {"type": "boolean", "default": false, "description": "Build the optional cross-species comparison."},
+    "outdir": {"type": "string", "default": "./results", "description": "Output directory."},
+    "tracedir": {"type": "string", "description": "Execution reports directory."}
+  },
+  "required": ["sample_manifest", "reference_manifest"],
+  "allOf": [{"if": {"required": ["run_cross_species"], "properties": {"run_cross_species": {"const": true}}}, "then": {"required": ["orthology_manifest"]}}]
+}

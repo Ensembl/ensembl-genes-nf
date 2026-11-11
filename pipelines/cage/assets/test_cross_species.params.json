@@ -1,0 +1,4 @@
+{
+  "run_cross_species": true,
+  "orthology_manifest": "pipelines/cage/assets/test_orthology.tsv"
+}

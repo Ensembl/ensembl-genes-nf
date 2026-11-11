@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM90016368v1	corynebacterium_glutamicum_gca_900163685	/path/to/ensembl-cage-references/corynebacterium_glutamicum_gca_900163685/genome.fa	/path/to/ensembl-cage-references/corynebacterium_glutamicum_gca_900163685/annotation.gtf	/path/to/ensembl-cage-references/corynebacterium_glutamicum_gca_900163685/chrom.sizes	1718	Ensembl	GCA_900163685.1	needs_staging

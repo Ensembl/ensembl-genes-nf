@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM2104v1	azotobacter_vinelandii_dj_gca_000021045	/path/to/ensembl-cage-references/azotobacter_vinelandii_dj_gca_000021045/genome.fa	/path/to/ensembl-cage-references/azotobacter_vinelandii_dj_gca_000021045/annotation.gtf	/path/to/ensembl-cage-references/azotobacter_vinelandii_dj_gca_000021045/chrom.sizes	322710	Ensembl	GCA_000021045.1	needs_staging

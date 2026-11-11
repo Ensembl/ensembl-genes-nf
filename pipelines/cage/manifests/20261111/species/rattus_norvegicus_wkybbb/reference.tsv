@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+UTH_Rnor_WKY_Bbb_1.0	rattus_norvegicus_wkybbb	/path/to/ensembl-cage-references/rattus_norvegicus_wkybbb/genome.fa	/path/to/ensembl-cage-references/rattus_norvegicus_wkybbb/annotation.gtf	/path/to/ensembl-cage-references/rattus_norvegicus_wkybbb/chrom.sizes	10116	Ensembl	GCA_023515805.1	needs_staging

@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM636403v1	listeria_monocytogenes_gca_006364035	/path/to/ensembl-cage-references/listeria_monocytogenes_gca_006364035/genome.fa	/path/to/ensembl-cage-references/listeria_monocytogenes_gca_006364035/annotation.gtf	/path/to/ensembl-cage-references/listeria_monocytogenes_gca_006364035/chrom.sizes	1639	Ensembl	GCA_006364035.1	needs_staging

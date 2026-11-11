@@ -1,0 +1,14 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+ERR17033282	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033282	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/082/ERR17033282/ERR17033282.fastq.gz	tax_id
+ERR17033283	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033283	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/083/ERR17033283/ERR17033283.fastq.gz	tax_id
+ERR17033285	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033285	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/085/ERR17033285/ERR17033285.fastq.gz	tax_id
+ERR972698	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR972698	-	-				-	-	Sus scrofa	PRJEB10004	2015-09-28	ftp.sra.ebi.ac.uk/vol1/fastq/ERR972/ERR972698/ERR972698.fastq.gz	tax_id
+ERR17033276	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033276	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/076/ERR17033276/ERR17033276.fastq.gz	tax_id
+ERR17033281	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033281	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/081/ERR17033281/ERR17033281.fastq.gz	tax_id
+ERR17033275	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033275	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/075/ERR17033275/ERR17033275.fastq.gz	tax_id
+ERR17033277	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033277	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/077/ERR17033277/ERR17033277.fastq.gz	tax_id
+ERR17033278	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033278	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/078/ERR17033278/ERR17033278.fastq.gz	tax_id
+ERR17033286	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033286	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/086/ERR17033286/ERR17033286.fastq.gz	tax_id
+ERR17033279	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033279	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/079/ERR17033279/ERR17033279.fastq.gz	tax_id
+ERR17033280	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033280	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/080/ERR17033280/ERR17033280.fastq.gz	tax_id
+ERR17033284	sus_scrofa_jinhua	Jinhua_pig_v1	cage	standard_cage	SE	ERR17033284	-	-				-	-	Sus scrofa	PRJEB111781	2026-04-21	ftp.sra.ebi.ac.uk/vol1/fastq/ERR170/084/ERR17033284/ERR17033284.fastq.gz	tax_id

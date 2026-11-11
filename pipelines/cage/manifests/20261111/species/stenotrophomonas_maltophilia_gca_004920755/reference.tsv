@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM492075v1	stenotrophomonas_maltophilia_gca_004920755	/path/to/ensembl-cage-references/stenotrophomonas_maltophilia_gca_004920755/genome.fa	/path/to/ensembl-cage-references/stenotrophomonas_maltophilia_gca_004920755/annotation.gtf	/path/to/ensembl-cage-references/stenotrophomonas_maltophilia_gca_004920755/chrom.sizes	40324	Ensembl	GCA_004920755.1	needs_staging

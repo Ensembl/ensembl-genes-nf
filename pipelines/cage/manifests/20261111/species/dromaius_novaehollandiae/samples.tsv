@@ -1,0 +1,7 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR25083495	dromaius_novaehollandiae	droNov1	cage	standard_cage	SE	SRR25083495	-	-				-	-	Dromaius novaehollandiae	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/095/SRR25083495/SRR25083495.fastq.gz	tax_id
+SRR25083496	dromaius_novaehollandiae	droNov1	cage	standard_cage	SE	SRR25083496	-	-				-	-	Dromaius novaehollandiae	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/096/SRR25083496/SRR25083496.fastq.gz	tax_id
+SRR25083498	dromaius_novaehollandiae	droNov1	cage	standard_cage	SE	SRR25083498	-	-				-	-	Dromaius novaehollandiae	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/098/SRR25083498/SRR25083498.fastq.gz	tax_id
+SRR25083497	dromaius_novaehollandiae	droNov1	cage	standard_cage	SE	SRR25083497	-	-				-	-	Dromaius novaehollandiae	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/097/SRR25083497/SRR25083497.fastq.gz	tax_id
+SRR25083500	dromaius_novaehollandiae	droNov1	cage	standard_cage	SE	SRR25083500	-	-				-	-	Dromaius novaehollandiae	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/000/SRR25083500/SRR25083500.fastq.gz	tax_id
+SRR25083499	dromaius_novaehollandiae	droNov1	cage	standard_cage	SE	SRR25083499	-	-				-	-	Dromaius novaehollandiae	PRJNA880269	2023-09-02	ftp.sra.ebi.ac.uk/vol1/fastq/SRR250/099/SRR25083499/SRR25083499.fastq.gz	tax_id

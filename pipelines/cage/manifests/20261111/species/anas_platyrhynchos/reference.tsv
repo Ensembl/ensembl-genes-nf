@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM874695v1	anas_platyrhynchos	/path/to/ensembl-cage-references/anas_platyrhynchos/genome.fa	/path/to/ensembl-cage-references/anas_platyrhynchos/annotation.gtf	/path/to/ensembl-cage-references/anas_platyrhynchos/chrom.sizes	8839	Ensembl	GCA_008746955.1	needs_staging

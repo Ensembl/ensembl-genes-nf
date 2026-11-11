@@ -1,0 +1,4 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR9669915	yersinia_pestis_gca_006376575	ASM637657v1	cage	standard_cage	SE	SRR9669915	-	-				-	-	Yersinia pestis	PRJNA310777	2019-10-25	ftp.sra.ebi.ac.uk/vol1/fastq/SRR966/005/SRR9669915/SRR9669915.fastq.gz	tax_id
+SRR9669913	yersinia_pestis_gca_006376575	ASM637657v1	cage	standard_cage	SE	SRR9669913	-	-				-	-	Yersinia pestis	PRJNA310777	2019-10-25	ftp.sra.ebi.ac.uk/vol1/fastq/SRR966/003/SRR9669913/SRR9669913.fastq.gz	tax_id
+SRR9669914	yersinia_pestis_gca_006376575	ASM637657v1	cage	standard_cage	SE	SRR9669914	-	-				-	-	Yersinia pestis	PRJNA310777	2019-10-25	ftp.sra.ebi.ac.uk/vol1/fastq/SRR966/004/SRR9669914/SRR9669914.fastq.gz	tax_id

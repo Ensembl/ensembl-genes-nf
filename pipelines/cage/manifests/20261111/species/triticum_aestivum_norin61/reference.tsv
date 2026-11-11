@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+PGSBv2.1	triticum_aestivum_norin61	/path/to/ensembl-cage-references/triticum_aestivum_norin61/genome.fa	/path/to/ensembl-cage-references/triticum_aestivum_norin61/annotation.gtf	/path/to/ensembl-cage-references/triticum_aestivum_norin61/chrom.sizes	4565	Ensembl	GCA_904066035.1	needs_staging

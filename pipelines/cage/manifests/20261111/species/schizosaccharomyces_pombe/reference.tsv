@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+ASM294v2	schizosaccharomyces_pombe	/path/to/ensembl-cage-references/schizosaccharomyces_pombe/genome.fa	/path/to/ensembl-cage-references/schizosaccharomyces_pombe/annotation.gtf	/path/to/ensembl-cage-references/schizosaccharomyces_pombe/chrom.sizes	284812	Ensembl	GCA_000002945.2	needs_staging

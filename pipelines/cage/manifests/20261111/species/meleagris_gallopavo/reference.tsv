@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Turkey_5.1	meleagris_gallopavo	/path/to/ensembl-cage-references/meleagris_gallopavo/genome.fa	/path/to/ensembl-cage-references/meleagris_gallopavo/annotation.gtf	/path/to/ensembl-cage-references/meleagris_gallopavo/chrom.sizes	9103	Ensembl	GCA_000146605.4	needs_staging

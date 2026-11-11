@@ -1,0 +1,8 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR6245328	branchiostoma_lanceolatum	BraLan2	cage	standard_cage	SE	SRR6245328	-	-				-	-	Branchiostoma lanceolatum	PRJNA416976	2018-08-17	ftp.sra.ebi.ac.uk/vol1/fastq/SRR624/008/SRR6245328/SRR6245328.fastq.gz	tax_id
+SRR6245323	branchiostoma_lanceolatum	BraLan2	cage	standard_cage	SE	SRR6245323	-	-				-	-	Branchiostoma lanceolatum	PRJNA416976	2018-08-17	ftp.sra.ebi.ac.uk/vol1/fastq/SRR624/003/SRR6245323/SRR6245323.fastq.gz	tax_id
+SRR6245329	branchiostoma_lanceolatum	BraLan2	cage	standard_cage	SE	SRR6245329	-	-				-	-	Branchiostoma lanceolatum	PRJNA416976	2018-08-17	ftp.sra.ebi.ac.uk/vol1/fastq/SRR624/009/SRR6245329/SRR6245329.fastq.gz	tax_id
+SRR6245324	branchiostoma_lanceolatum	BraLan2	cage	standard_cage	SE	SRR6245324	-	-				-	-	Branchiostoma lanceolatum	PRJNA416976	2018-08-17	ftp.sra.ebi.ac.uk/vol1/fastq/SRR624/004/SRR6245324/SRR6245324.fastq.gz	tax_id
+SRR6245325	branchiostoma_lanceolatum	BraLan2	cage	standard_cage	SE	SRR6245325	-	-				-	-	Branchiostoma lanceolatum	PRJNA416976	2018-08-17	ftp.sra.ebi.ac.uk/vol1/fastq/SRR624/005/SRR6245325/SRR6245325.fastq.gz	tax_id
+SRR6245326	branchiostoma_lanceolatum	BraLan2	cage	standard_cage	SE	SRR6245326	-	-				-	-	Branchiostoma lanceolatum	PRJNA416976	2018-08-17	ftp.sra.ebi.ac.uk/vol1/fastq/SRR624/006/SRR6245326/SRR6245326.fastq.gz	tax_id
+SRR6245327	branchiostoma_lanceolatum	BraLan2	cage	standard_cage	SE	SRR6245327	-	-				-	-	Branchiostoma lanceolatum	PRJNA416976	2018-08-17	ftp.sra.ebi.ac.uk/vol1/fastq/SRR624/007/SRR6245327/SRR6245327.fastq.gz	tax_id

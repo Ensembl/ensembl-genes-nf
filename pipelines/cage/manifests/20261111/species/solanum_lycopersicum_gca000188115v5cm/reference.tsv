@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+SL4.0	solanum_lycopersicum_gca000188115v5cm	/path/to/ensembl-cage-references/solanum_lycopersicum_gca000188115v5cm/genome.fa	/path/to/ensembl-cage-references/solanum_lycopersicum_gca000188115v5cm/annotation.gtf	/path/to/ensembl-cage-references/solanum_lycopersicum_gca000188115v5cm/chrom.sizes	4081	Ensembl	GCA_000188115.5	needs_staging

@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Dgyrociliatus_assembly	dimorphilus_gyrociliatus_gca904063045v1	/path/to/ensembl-cage-references/dimorphilus_gyrociliatus_gca904063045v1/genome.fa	/path/to/ensembl-cage-references/dimorphilus_gyrociliatus_gca904063045v1/annotation.gtf	/path/to/ensembl-cage-references/dimorphilus_gyrociliatus_gca904063045v1/chrom.sizes	2664684	Ensembl	GCA_904063045.1	needs_staging

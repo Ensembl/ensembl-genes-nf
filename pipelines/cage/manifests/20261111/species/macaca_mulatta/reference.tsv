@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Mmul_10	macaca_mulatta	/path/to/ensembl-cage-references/macaca_mulatta/genome.fa	/path/to/ensembl-cage-references/macaca_mulatta/annotation.gtf	/path/to/ensembl-cage-references/macaca_mulatta/chrom.sizes	9544	Ensembl	GCA_003339765.3	needs_staging

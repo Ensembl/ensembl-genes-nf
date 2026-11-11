@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+mCalJac1.pat.X	callithrix_jacchus	/path/to/ensembl-cage-references/callithrix_jacchus/genome.fa	/path/to/ensembl-cage-references/callithrix_jacchus/annotation.gtf	/path/to/ensembl-cage-references/callithrix_jacchus/chrom.sizes	9483	Ensembl	GCA_011100555.1	needs_staging

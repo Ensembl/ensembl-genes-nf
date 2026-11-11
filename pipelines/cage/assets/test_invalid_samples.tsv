@@ -1,0 +1,2 @@
+sample_id\tspecies\tassembly\tassay_class\tprotocol\tlayout\taccession\tfastq_1\tfastq_2
+bad_sample\tHomo_sapiens\thg38\tcage\trampage_v1\tSE\t-\tassets/test_reads.fastq\t-

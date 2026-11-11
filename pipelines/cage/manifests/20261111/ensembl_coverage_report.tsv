@@ -1,0 +1,102 @@
+ena_species	run_count	covered_run_count	status	ensembl_species	ensembl_assembly	reason
+	102	0	not_covered			no Ensembl assembly match or assembly unavailable
+Acomys cahirinus	9	0	not_covered			no Ensembl assembly match or assembly unavailable
+African swine fever virus	10	0	not_covered			no Ensembl assembly match or assembly unavailable
+Anas platyrhynchos	6	6	covered	anas_platyrhynchos	ASM874695v1
+Apis mellifera	2	2	covered	apis_mellifera	Amel_HAv3.1
+Arabidopsis thaliana	170	170	covered	arabidopsis_thaliana	TAIR10
+Aspergillus luchuensis	12	0	not_covered			no Ensembl assembly match or assembly unavailable
+Azotobacter vinelandii DJ	6	6	covered
+Bombyx mandarina	1	1	covered
+Bombyx mori	1	1	covered
+Bos indicus	22	0	not_covered			no Ensembl assembly match or assembly unavailable
+Bos taurus	123	123	covered	bos_taurus	ARS-UCD2.0
+Branchiostoma lanceolatum	7	7	covered	branchiostoma_lanceolatum	BraLan2
+Breviolum minutum Mf 1.05b.01	2	0	not_covered			no Ensembl assembly match or assembly unavailable
+Caenorhabditis elegans	25	25	covered	caenorhabditis_elegans	WBcel235
+Callithrix jacchus	259	259	covered	callithrix_jacchus	mCalJac1.pat.X
+Candida albicans	2	2	covered	candida_albicans	GCA000182965v3
+Canis lupus familiaris	127	127	covered	canis_lupus_familiaris	ROS_Cfam_1.0
+Clostridium acetobutylicum ATCC 824	2	2	covered
+Clostridium beijerinckii	2	2	covered
+Clostridium beijerinckii NCIMB 8052	2	2	covered
+Corynebacterium glutamicum	1	1	covered
+Coturnix japonica	6	6	covered	coturnix_japonica	Coturnix_japonica_2.0
+Cyprinus carpio carpio	23	23	covered	cyprinus_carpio_carpio	Cypcar_WagV4.0
+Danio rerio	103	103	covered	danio_rerio	GRCz11
+Daphnia pulex	8	8	covered
+Dimorphilus gyrociliatus	2	2	covered
+Dromaius novaehollandiae	6	6	covered	dromaius_novaehollandiae	droNov1
+Drosophila melanogaster	463	463	covered	drosophila_melanogaster	BDGP6.54
+Drosophila pseudoobscura	4	4	covered
+Equid alphaherpesvirus 1	9	0	not_covered			no Ensembl assembly match or assembly unavailable
+Galleria mellonella	87	0	not_covered			no Ensembl assembly match or assembly unavailable
+Gallus gallus	42	42	covered	gallus_gallus	bGalGal1.mat.broiler.GRCg7b
+Glycine max	22	22	covered	glycine_max	Glycine_max_v2.1
+Hevea brasiliensis	3	0	not_covered			no Ensembl assembly match or assembly unavailable
+Homo sapiens	13302	13302	covered	homo_sapiens	GRCh38
+Hordeum vulgare	2	2	covered	hordeum_vulgare	MorexV3_pseudomolecules_assembly
+Hordeum vulgare subsp. vulgare	8	8	covered
+Human alphaherpesvirus 3	3	0	not_covered			no Ensembl assembly match or assembly unavailable
+Human betaherpesvirus 5	4	0	not_covered			no Ensembl assembly match or assembly unavailable
+Human gammaherpesvirus 8	9	0	not_covered			no Ensembl assembly match or assembly unavailable
+Hydra viridissima	2	0	not_covered			no Ensembl assembly match or assembly unavailable
+Klebsormidium nitens	4	0	not_covered			no Ensembl assembly match or assembly unavailable
+Kluyveromyces lactis	2	2	covered
+Lachancea kluyveri	2	0	not_covered			no Ensembl assembly match or assembly unavailable
+Lachancea waltii	2	0	not_covered			no Ensembl assembly match or assembly unavailable
+Listeria monocytogenes	6	6	covered
+Locusta migratoria migratoria	12	0	not_covered			no Ensembl assembly match or assembly unavailable
+Macaca fascicularis	285	285	covered	macaca_fascicularis	Macaca_fascicularis_6.0
+Macaca mulatta	79	79	covered	macaca_mulatta	Mmul_10
+Madurella mycetomatis	3	3	covered
+Marchantia polymorpha subsp. ruderalis	6	0	not_covered			no Ensembl assembly match or assembly unavailable
+Meleagris gallopavo	6	6	covered	meleagris_gallopavo	Turkey_5.1
+Monkeypox virus	9	0	not_covered			no Ensembl assembly match or assembly unavailable
+Mus musculus	2072	2072	covered	mus_musculus	GRCm39
+Naumovozyma castellii	2	2	covered
+Nematostella vectensis	2	2	covered
+Oikopleura dioica	16	0	not_covered			no Ensembl assembly match or assembly unavailable
+Oikopleura sp. OKI2018	12	0	not_covered			no Ensembl assembly match or assembly unavailable
+Oryza sativa	348	348	covered	oryza_sativa	IRGSP-1.0
+Oryza sativa Japonica Group	62	62	covered	oryza_sativa	IRGSP-1.0
+Ovis aries	73	73	covered	ovis_aries	ARS-UI_Ramb_v3.0
+Pavo cristatus	6	6	covered	pavo_cristatus	AIIM_Pcri_1.0
+Phyllostaurus sp. MVM-2010	1	0	not_covered			no Ensembl assembly match or assembly unavailable
+Pleurodeles waltl	43	0	not_covered			no Ensembl assembly match or assembly unavailable
+Polypedilum vanderplanki	18	0	not_covered			no Ensembl assembly match or assembly unavailable
+Pyrus pyrifolia	3	0	not_covered			no Ensembl assembly match or assembly unavailable
+Rattus norvegicus	26	26	covered	rattus_norvegicus	GRCr8
+Rattus rattus	13	0	not_covered			no Ensembl assembly match or assembly unavailable
+Saccharomyces cerevisiae	224	224	covered	saccharomyces_cerevisiae_gca_003046695	ASM304669v1
+Saccharomyces cerevisiae BY4741	18	0	not_covered			no Ensembl assembly match or assembly unavailable
+Saccharomyces cerevisiae S288C	35	35	covered
+Saccharomyces kudriavzevii	2	0	not_covered			no Ensembl assembly match or assembly unavailable
+Saccharomyces mikatae	2	0	not_covered			no Ensembl assembly match or assembly unavailable
+Saccharomyces paradoxus	4	0	not_covered			no Ensembl assembly match or assembly unavailable
+Saccharomyces uvarum	2	0	not_covered			no Ensembl assembly match or assembly unavailable
+Saccharomyces x bayanus	2	0	not_covered			no Ensembl assembly match or assembly unavailable
+Salvia miltiorrhiza	1	0	not_covered			no Ensembl assembly match or assembly unavailable
+Samia ricini	1	0	not_covered			no Ensembl assembly match or assembly unavailable
+Schizosaccharomyces japonicus	2	2	covered	schizosaccharomyces_japonicus	GCA_000149845.2
+Schizosaccharomyces pombe	37	37	covered	schizosaccharomyces_pombe	ASM294v2
+Schizosaccharomyces pombe 972h-	6	6	covered
+Setaria viridis	43	43	covered	setaria_viridis	Setaria_viridis_v2.0
+Solanum lycopersicum	39	39	covered
+Sorghum bicolor	4	4	covered	sorghum_bicolor	Sorghum_bicolor_NCBIv3
+Stenotrophomonas maltophilia	6	6	covered
+Strongylocentrotus purpuratus	9	9	covered	strongylocentrotus_purpuratus	Spur_5.0
+Suaeda aralocaspica	2	0	not_covered			no Ensembl assembly match or assembly unavailable
+Sus scrofa	13	13	covered	sus_scrofa	Sscrofa11.1
+Taeniopygia guttata	4	4	covered	taeniopygia_guttata	bTaeGut1_v1.p
+Tetraodon nigroviridis	2	2	covered	tetraodon_nigroviridis	TETRAODON8
+Trilocha varians	1	0	not_covered			no Ensembl assembly match or assembly unavailable
+Triticum aestivum	17	17	covered	triticum_aestivum	IWGSC
+Triticum urartu	2	2	covered	triticum_urartu	IGDB
+Vitis vinifera	12	12	covered	vitis_vinifera	ASM3070453v1
+Xenopus tropicalis	1	1	covered	xenopus_tropicalis	UCB_Xtro_10.0
+Yarrowia lipolytica	2	2	covered	yarrowia_lipolytica	GCA_000002525.1
+Yersinia pestis	3	3	covered
+Zea mays	36	36	covered	zea_mays	Zm-B73-REFERENCE-NAM-5.0
+Zea mays subsp. mays	8	0	not_covered			no Ensembl assembly match or assembly unavailable
+synthetic construct	4	0	not_covered			no Ensembl assembly match or assembly unavailable

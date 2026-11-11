@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Cypcar_WagV4.0	cyprinus_carpio_carpio	/path/to/ensembl-cage-references/cyprinus_carpio_carpio/genome.fa	/path/to/ensembl-cage-references/cyprinus_carpio_carpio/annotation.gtf	/path/to/ensembl-cage-references/cyprinus_carpio_carpio/chrom.sizes	630221	Ensembl	GCA_905221575.1	needs_staging

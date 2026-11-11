@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+jaNemVect1.1	nematostella_vectensis_gca932526225v1rs	/path/to/ensembl-cage-references/nematostella_vectensis_gca932526225v1rs/genome.fa	/path/to/ensembl-cage-references/nematostella_vectensis_gca932526225v1rs/annotation.gtf	/path/to/ensembl-cage-references/nematostella_vectensis_gca932526225v1rs/chrom.sizes	45351	Ensembl	GCA_932526225.1	needs_staging

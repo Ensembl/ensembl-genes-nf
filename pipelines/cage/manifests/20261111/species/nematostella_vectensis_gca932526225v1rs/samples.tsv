@@ -1,0 +1,3 @@
+sample_id	species	assembly	assay_class	protocol	layout	accession	fastq_1	fastq_2	tissue	condition	biological_replicate	checksum_1	checksum_2	ena_species	study_accession	first_public	fastq_ftp	match_method
+SRR768401	nematostella_vectensis_gca932526225v1rs	jaNemVect1.1	cage	standard_cage	SE	SRR768401	-	-				-	-	Nematostella vectensis		2014-04-10	ftp.sra.ebi.ac.uk/vol1/fastq/SRR768/SRR768401/SRR768401.fastq.gz	tax_id
+SRR768318	nematostella_vectensis_gca932526225v1rs	jaNemVect1.1	cage	standard_cage	SE	SRR768318	-	-				-	-	Nematostella vectensis		2014-04-10	ftp.sra.ebi.ac.uk/vol1/fastq/SRR768/SRR768318/SRR768318.fastq.gz	tax_id

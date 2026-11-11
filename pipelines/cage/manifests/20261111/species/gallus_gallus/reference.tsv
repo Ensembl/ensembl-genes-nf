@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+bGalGal1.mat.broiler.GRCg7b	gallus_gallus	/path/to/ensembl-cage-references/gallus_gallus/genome.fa	/path/to/ensembl-cage-references/gallus_gallus/annotation.gtf	/path/to/ensembl-cage-references/gallus_gallus/chrom.sizes	9031	Ensembl	GCA_016699485.1	needs_staging

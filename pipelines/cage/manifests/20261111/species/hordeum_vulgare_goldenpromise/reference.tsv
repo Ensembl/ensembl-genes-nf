@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Hvulgare_cv_Golden_Promise_BPGv2	hordeum_vulgare_goldenpromise	/path/to/ensembl-cage-references/hordeum_vulgare_goldenpromise/genome.fa	/path/to/ensembl-cage-references/hordeum_vulgare_goldenpromise/annotation.gtf	/path/to/ensembl-cage-references/hordeum_vulgare_goldenpromise/chrom.sizes	112509	Ensembl	GCA_949783185.1	needs_staging

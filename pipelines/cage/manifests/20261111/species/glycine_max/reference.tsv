@@ -1,0 +1,2 @@
+assembly	species	fasta	gtf	chrom_sizes	taxon_id	source	assembly_accession	reference_status
+Glycine_max_v2.1	glycine_max	/path/to/ensembl-cage-references/glycine_max/genome.fa	/path/to/ensembl-cage-references/glycine_max/annotation.gtf	/path/to/ensembl-cage-references/glycine_max/chrom.sizes	3847	Ensembl	GCA_000004515.4	needs_staging
