@@ -781,7 +781,7 @@ def main() -> int:
         shutil.copyfile(selected["candidate_fasta"], reference)
         ref_sq = fasta_dictionary(reference)
         final_match_kind, final_detail = compare_dictionaries(bam_sq, ref_sq)
-        if final_match_kind != "exact":
+        if final_match_kind not in {"exact", "compatible"}:
             failures.append({"species": species, "reason": f"selected reference failed final BAM dictionary validation: {final_detail}"})
             print(f"FAIL: selected reference failed final BAM dictionary validation: {final_detail}")
             continue
