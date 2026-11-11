@@ -104,7 +104,7 @@ main.nf
       GET_SAMPLE_GENE
       ADD_STATIC_METAKEYS
       LOAD_TAXONOMY
-    GET_CORE_METADATA
+    SET_CORE_GENEBUILD_METADATA
     PREPARE_CORE_RENAME
     REGISTRY_TRACKER_COMPLETE
     PREPARE_STATS_INPUT
@@ -132,8 +132,9 @@ Each assembly is processed independently.
 9. `LOAD_TAXONOMY` retrieves taxonomy data from NCBI and inserts it into the
    core database. Requests are serialized and transient NCBI rate-limit or
    network errors are retried with backoff.
-10. `GET_CORE_METADATA` reads `genebuild.version` and
-    `genebuild.last_geneset_update` from each imported core.
+10. `SET_CORE_GENEBUILD_METADATA` writes `genebuild.version` as `EXT01` and
+    `genebuild.last_geneset_update` as the month when loading completes.
+    It carries these values forward for the remaining steps.
 11. `PREPARE_CORE_RENAME` creates a per-assembly mapping from the current core
     name to the next core name, using the update month as a `YYYYMM` suffix.
 12. `REGISTRY_TRACKER_COMPLETE` writes the core genebuild version and update
@@ -164,9 +165,9 @@ The workflow emits:
 - `core_rename.csv`, containing `core_name`, `server`, and `new_core_name`
 - `versions.yml` files from each process
 
-The `core_rename.csv` output uses the core’s `genebuild.last_geneset_update`
-value. For example, a core ending in `_1` and an update month of `2026-01`
-produces a new name ending in `_202601`.
+The `core_rename.csv` output uses the `genebuild.last_geneset_update` value
+written after loading. For example, a core ending in `_1` and an update month
+of `2026-01` produces a new name ending in `_202601`.
 
 The generated CSV contains only `dbname`, `species_id`, and `genome_file`.
 The `genome_file` column points to the published RefSeq FASTA, so the

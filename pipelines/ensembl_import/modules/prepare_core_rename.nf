@@ -6,19 +6,18 @@ process PREPARE_CORE_RENAME {
     publishDir { "${params.outdir}/core_rename" }, mode: 'copy', overwrite: true
 
     input:
-    tuple val(meta), path(core_metadata)
+    val meta
 
     output:
     tuple val(meta), path("core_rename_${meta.id}.csv"), emit: csv
     path 'versions.yml', emit: versions
 
     script:
-    def metadata = new groovy.json.JsonSlurper().parseText(core_metadata.text)
     def oldCoreName = meta.db_name
     if (!(oldCoreName ==~ /.*_1$/)) {
         throw new IllegalArgumentException("Core name does not end in _1: ${oldCoreName}")
     }
-    def updateMonth = metadata.last_geneset_update
+    def updateMonth = meta.last_geneset_update
     def newCoreName = oldCoreName.replaceFirst(/_1$/, "_${updateMonth.replace('-', '')}")
 
     """
