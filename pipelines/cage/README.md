@@ -41,13 +41,28 @@ without an Ensembl assembly.
 ## Run
 
 ```bash
-nextflow run pipelines/cage/main.nf -profile test
-nextflow run pipelines/cage/main.nf -profile slurm -c config/singularity.config \
-  --sample_manifest /path/to/samples.tsv \
-  --reference_manifest /path/to/references.tsv \
-  --reference_cache /path/to/shared/cage-reference-cache \
-  --outdir /path/to/cage-results -resume
+nextflow run /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/pipelines/cage/main.nf \
+  -profile test \
+  -c /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/config/singularity.config \
+  --reference_cache /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/reference-cache \
+  --outdir /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/results/test \
+  -work-dir /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/work/test \
+  -resume
+
+nextflow run /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/pipelines/cage/main.nf \
+  -profile slurm \
+  -c /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/config/singularity.config \
+  --sample_manifest /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/pipelines/cage/manifests/20261111/cage_samples_ensembl.tsv \
+  --reference_manifest /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/pipelines/cage/manifests/20261111/cage_references_ensembl.tsv \
+  --reference_cache /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/reference-cache \
+  --outdir /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/results/20261111 \
+  -work-dir /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/work/20261111 \
+  -resume
 ```
+
+All production tools run in Singularity containers, including the `test`
+profile. The test profile only reduces resources and uses the local executor;
+it does not disable containers.
 
 The pipeline preserves `meta` fields through acquisition, trimming, alignment,
 CTSS extraction, and atlas construction. CTSS BED/bedGraph files are immutable

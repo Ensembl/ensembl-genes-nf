@@ -35,11 +35,15 @@ The 2026-11-11 snapshot contains 18,658 ENA runs across 101 reported species:
 The covered production run uses:
 
 ```bash
-nextflow run pipelines/cage/main.nf -profile slurm \
-  --sample_manifest pipelines/cage/manifests/20261111/cage_samples_ensembl.tsv \
-  --reference_manifest pipelines/cage/manifests/20261111/cage_references_ensembl.tsv \
-  --reference_cache /path/to/shared/cage-reference-cache \
-  --outdir /path/to/cage-results -resume
+nextflow run /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/pipelines/cage/main.nf \
+  -profile slurm \
+  -c /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/config/singularity.config \
+  --sample_manifest /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/pipelines/cage/manifests/20261111/cage_samples_ensembl.tsv \
+  --reference_manifest /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/ensembl-genes-nf/pipelines/cage/manifests/20261111/cage_references_ensembl.tsv \
+  --reference_cache /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/reference-cache \
+  --outdir /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/results/20261111 \
+  -work-dir /hps/nobackup/flicek/ensembl/genebuild/jackt/cage/work/20261111 \
+  -resume
 ```
 
 Review `ensembl_coverage_report.tsv` and `cage_samples_uncovered.tsv` before
