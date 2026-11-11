@@ -46,10 +46,10 @@ compatibility mode. StringTie merge arguments are configured with
 `run_then_cohort` topology is currently supported.
 
 Native run and cohort products emit backend-labelled model manifests, model
-counts, SHA256 checksums, sorted merge file lists, and merge-file-list
-checksums under `reports/native` when publishing is enabled. Set
-`--publish_native_intermediates true` to publish native intermediate files as
-well as the final comparison products.
+counts, SHA256 checksums, sorted merge file lists, native merge products, and
+tool-specific evidence under the backend-namespaced output tree. These model
+and evidence products are always published; comparison reports are not part
+of this workflow.
 
 The public sample contracts are `tuple val(meta), path(reads.fastq.gz)` for
 canonical reads and `tuple val(meta), path(sorted.bam), path(sorted.bam.bai)`
@@ -73,8 +73,8 @@ All configured published workflow outputs are copied into `--outdir` (including 
 minimap2-sorted BAM and its BAI under `alignments`). Validated model products
 under `final_models` include both backend and accession/cohort identifiers in
 their filenames; checksums, BED12 normalisation summaries, and model-validation
-reports use the same key. Native merge intermediates remain optional through
-`--publish_native_intermediates`.
+reports use the same key. Native tool evidence is retained beside these model
+products.
 
 The approved manifest records technology, read representation, preprocessing
 state, per-row minimap2 arguments, IsoQuant data type, and observation unit.
@@ -343,7 +343,7 @@ Read-to-transcript assignments are retained by default with
 structural-only, lower-memory comparison. Use `--bambu_quantify false` for
 discovery-only output, in which case read assignments are not expected.
 
-## Weekend comparison run
+## Full model-and-evidence run
 
 For an ONT cohort, the primary exploration run is:
 
@@ -363,16 +363,11 @@ nextflow run pipelines/long_read_tama/main.nf -profile slurm \
 ```
 
 For PacBio CCS, change only `--isoquant_data_type` to `pacbio_ccs` and ensure
-the approved manifest classifies the reads accordingly. The primary cohort
-and accession candidate sets are published under backend-specific directories;
-native tool products and evidence are retained alongside them. The
-backend-neutral structural summaries are published as
-`reports/comparison/candidate_model_comparison_cohort.tsv/.json`. Accession
-summaries are run independently per accession and published as
-`candidate_model_comparison_accession_<accession>.tsv/.json`, with matching
-`candidate_model_manifest_accession_<accession>.tsv` files. `backend_failure_policy=continue`
+the approved manifest classifies the reads accordingly. The cohort and
+accession model sets are published under backend-specific directories, with
+native tool products and evidence retained alongside them. `backend_failure_policy=continue`
 allows remaining methods to finish if an optional backend fails; the failure
-remains visible in the trace and must be included in the Monday review.
+remains visible in the trace and status products.
 Summarise computational cost after the run with:
 
 ```bash

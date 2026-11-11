@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy version-dependent FLAIR products to stable comparison names."""
+"""Copy version-dependent FLAIR products to stable evidence names."""
 
 from __future__ import annotations
 
@@ -49,9 +49,20 @@ def main() -> None:
     args.destination.mkdir(parents=True, exist_ok=True)
     for name, source in products.items():
         shutil.copy2(source, args.destination / name)
+    native = args.destination / "native"
+    native.mkdir(parents=True, exist_ok=True)
+    native_files = []
+    if args.prefix:
+        native_files = sorted(
+            path for path in args.source.iterdir()
+            if path.is_file() and path.name.startswith(args.prefix) and path.resolve() != args.destination.resolve()
+        )
+        for source in native_files:
+            shutil.copy2(source, native / source.name)
     (args.destination / "product_manifest.tsv").write_text(
         "stable_name\tsource_name\n"
         + "".join(f"{name}\t{source.relative_to(args.source)}\n" for name, source in products.items())
+        + "".join(f"native/{source.name}\t{source.name}\n" for source in native_files)
     )
 
 

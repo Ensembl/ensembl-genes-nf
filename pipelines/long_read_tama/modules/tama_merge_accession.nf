@@ -12,6 +12,9 @@ process TAMA_MERGE_ACCESSION {
 
     output:
     tuple val(meta), val(backend), val(accession), path("${backend}_${accession}_merged.bed"), emit: bed
+    path '*_gene_report.txt', emit: gene_report, optional: true
+    path '*_merge.txt', emit: merge_report, optional: true
+    path '*_trans_report.txt', emit: trans_report, optional: true
     path 'merge_filelist.tsv', emit: filelist
     path 'merge_filelist.sha256', emit: filelist_checksum
     path 'accession_merge_report.tsv', emit: report

@@ -208,8 +208,8 @@ def test_all_backends_have_independent_merge_and_finalisation_contracts():
     assert "CANONICALISE_COMBINED_MODELS(canonical_input)" in validate
     assert "VALIDATE_LONG_READ_MODELS" in validate
     canonical = (PIPELINE / "modules" / "canonicalise_models.nf").read_text()
-    assert '"${backend}_combined_models.bed"' in canonical
-    assert '"${backend}_combined_models.sha256"' in canonical
+    assert '"${backend}_${meta.id}_combined_models.bed"' in canonical
+    assert '"${backend}_${meta.id}_combined_models.sha256"' in canonical
 
 
 def test_diamond_qc_receives_each_finalised_backend():
@@ -303,18 +303,15 @@ def test_isoquant_is_an_independent_complete_bam_backend():
     assert "isoquant_args cannot override" in main
     assert "isoquant_mode = 'annotation_free'" in config
     assert "isoquant_large_output = ['read_info', 'read2transcripts']" in config
-    assert "${params.outdir}/isoquant/products" in config
-    assert "${params.outdir}/isoquant/reports" in config
+    assert "tools/isoquant" in module
     assert "ISOQUANT_TO_BED12" in runner
     assert "isoquant_bed" in main
 
 
-def test_flair_and_common_comparison_are_independent_contracts():
+def test_flair_and_model_evidence_are_independent_contracts():
     main = (PIPELINE / "main.nf").read_text()
     runner = (PIPELINE / "subworkflows" / "run_flair.nf").read_text()
     module = (PIPELINE / "modules" / "flair.nf").read_text()
-    comparison = (PIPELINE / "modules" / "compare_candidate_models.nf").read_text()
-    helper = (PIPELINE / "bin" / "compare_candidate_models.py").read_text()
     schema = (PIPELINE / "nextflow_schema.json").read_text()
     assert '"flair", "bambu", "all"' in schema
     assert "RUN_FLAIR(flair_shards, reference_fasta)" in main
@@ -330,15 +327,9 @@ def test_flair_and_common_comparison_are_independent_contracts():
     assert "--junction_bed '${junctions}'" in module
     assert "flair combine" in module
     assert "--noaligntoannot" in module and "flair combine" in module
-    assert "COMPARE_CANDIDATE_MODELS(comparison_input)" in main
-    assert "COMPARE_ACCESSION_CANDIDATE_MODELS(accession_comparison_input)" in main
-    assert ".map { meta, _backend, bed -> tuple(meta.id, bed) }" in main
-    assert ".groupTuple()" in main
     assert "VALIDATE_ACCESSION_MODELS(accession_candidates)" in main
-    assert "unique_intron_chain_count" in helper
-    assert "candidate_model_manifest" in comparison
-    assert "report_suffix = stage == 'accession'" in comparison
-    assert "path(model_beds, stageAs: 'bed??/*')" in comparison
+    assert "COMPARE_CANDIDATE_MODELS" not in main
+    assert "COMPARE_ACCESSION_CANDIDATE_MODELS" not in main
 
 
 def test_bambu_is_an_independent_annotation_free_complete_bam_backend():

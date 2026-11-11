@@ -1,5 +1,5 @@
 process TMERGE_NATIVE_MERGE {
-    publishDir path: { accession == params.cohort_id ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/tmerge" : "${params.outdir}/per_run/${accession}/tools/tmerge" }, mode: 'copy', enabled: params.publish_native_intermediates, saveAs: { filename -> filename == 'versions.yml' ? null : filename }
+    publishDir path: { accession == params.cohort_id ? "${params.outdir}/per_cohort/${params.cohort_id}/tools/tmerge" : "${params.outdir}/per_run/${accession}/tools/tmerge" }, mode: 'copy', saveAs: { filename -> filename == 'versions.yml' ? null : filename }
     tag "${backend}:${accession}:tmerge-merge"
     label 'process_high_memory'
     container 'community.wave.seqera.io/library/pip_pyfaidx_setuptools_six_pruned:b4fcc6bbecfa2bea'
@@ -9,6 +9,7 @@ process TMERGE_NATIVE_MERGE {
 
     output:
     tuple val(meta), val(backend), val(accession), path("${backend}_${accession}_merged.gtf"), emit: gtf
+    path 'tmerge_native_input.gtf', emit: native_input
     path 'merge_filelist.tsv', emit: filelist
     path 'merge_filelist.sha256', emit: filelist_checksum
     path 'versions.yml', emit: versions
@@ -26,6 +27,7 @@ process TMERGE_NATIVE_MERGE {
 
     stub:
     """
+    printf 'chrStub\\ttmerge\\texon\\t1\\t4\\t.\\t+\\t.\\ttranscript_id "${accession}.t1";\\n' > tmerge_native_input.gtf
     printf 'chrStub\\ttmerge\\texon\\t1\\t4\\t.\\t+\\t.\\ttranscript_id "${accession}.t1";\\n' > ${backend}_${accession}_merged.gtf
     printf 'stub.gtf\\n' > merge_filelist.tsv
     sha256sum merge_filelist.tsv > merge_filelist.sha256

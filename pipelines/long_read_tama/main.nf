@@ -16,7 +16,6 @@ include { VALIDATE_COMBINED_MODELS; VALIDATE_COMBINED_MODELS as VALIDATE_ACCESSI
 include { RUN_DIAMOND_QC } from './subworkflows/run_diamond_qc.nf'
 include { RUN_DIAMOND_ANNOTATIONS } from './subworkflows/run_diamond_annotations.nf'
 include { COLLECT_LONG_READ_SOFTWARE_VERSIONS } from './modules/collect_software_versions.nf'
-include { COMPARE_CANDIDATE_MODELS; COMPARE_CANDIDATE_MODELS as COMPARE_ACCESSION_CANDIDATE_MODELS } from './modules/compare_candidate_models.nf'
 include { SUMMARISE_NATIVE_SHARD_MODEL_COUNTS } from './modules/audit_native_shard_models.nf'
 
 def selected_backends() {
@@ -232,19 +231,6 @@ workflow {
     VALIDATE_ACCESSION_MODELS(accession_candidates)
     combined_bed = VALIDATE_COMBINED_MODELS.out.bed
     accession_bed = VALIDATE_ACCESSION_MODELS.out.bed
-    comparison_input = combined_bed
-        .map { _meta, _backend, bed -> bed }
-        .collect()
-        .map { beds -> tuple([id: params.cohort_id, scope: 'cohort'], beds, 'cohort') }
-    COMPARE_CANDIDATE_MODELS(comparison_input)
-    accession_comparison_input = accession_bed
-        // Accession BEDs share canonical backend filenames, so compare one
-        // accession at a time and retain its identity in the task/report.
-        .map { meta, _backend, bed -> tuple(meta.id, bed) }
-        .groupTuple()
-        .map { accession, beds -> tuple([id: accession, scope: 'accession'], beds, 'accession') }
-    COMPARE_ACCESSION_CANDIDATE_MODELS(accession_comparison_input)
-
     diamond_versions = channel.empty()
     if (run_diamond_validation) {
         cohort_diamond_inputs = combined_bed.map { meta, backend, bed ->

@@ -262,7 +262,6 @@ isoquant_args = ''
 isoquant_threads = null
 isoquant_high_memory = false
 isoquant_genedb_output = null
-isoquant_publish_native_intermediates = false
 ```
 
 `isoquant_args` is an escape hatch for tool options not yet promoted to the
@@ -392,7 +391,7 @@ part of the benchmark and must be reproducible.
 ## 9. Relationship to existing backends
 
 IsoQuant must be represented as an independent backend in finalisation and
-comparison products:
+model and evidence products:
 
 ```text
 tama_combined_models.bed

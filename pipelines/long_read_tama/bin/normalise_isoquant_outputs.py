@@ -25,6 +25,20 @@ def optional(root: Path, suffix: str) -> Path | None:
     return matches[0] if matches else None
 
 
+def optional_any(root: Path, suffixes: tuple[str, ...]) -> Path | None:
+    matches = sorted(
+        {
+            path
+            for suffix in suffixes
+            for path in root.rglob(f"*{suffix}")
+            if path.is_file()
+        }
+    )
+    if len(matches) > 1:
+        raise SystemExit(f"IsoQuant output has multiple products matching {suffixes}: {matches}")
+    return matches[0] if matches else None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("source")
@@ -59,6 +73,18 @@ def main() -> None:
         match = optional(source, suffix)
         if match:
             products[suffix.lstrip(".")] = match
+    for stable_name, suffixes in (
+        ("isoquant.log", ("isoquant.log",)),
+        ("read2transcripts.tsv.gz", (".read2transcripts.tsv.gz",)),
+        ("read2transcripts.tsv", (".read2transcripts.tsv",)),
+        ("read_assignments.tsv.gz", (".read_assignments.tsv.gz",)),
+        ("read_assignments.tsv", (".read_assignments.tsv",)),
+        ("corrected.bed", (".corrected.bed",)),
+        ("corrected.bed.gz", (".corrected.bed.gz",)),
+    ):
+        match = optional_any(source, suffixes)
+        if match:
+            products[stable_name] = match
 
     rows = []
     for stable_name, source_path in products.items():

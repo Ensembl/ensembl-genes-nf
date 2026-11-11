@@ -171,7 +171,6 @@ Optional parameters:
 --stringtie2_merge_args
 --stringtie3_merge_args
 --stringtie_merge_scope run_then_cohort
---publish_native_intermediates true|false
 ```
 
 The initial implementation should support only `run_then_cohort`; additional

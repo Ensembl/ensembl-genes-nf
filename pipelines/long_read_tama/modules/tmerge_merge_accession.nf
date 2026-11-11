@@ -9,6 +9,8 @@ process TMERGE_MERGE_ACCESSION {
 
     output:
     tuple val(meta), val(backend), val(accession), path("${backend}_${accession}_merged.bed"), emit: bed
+    path 'tmerge_input.gtf', emit: input_gtf
+    path 'tmerge_output.gtf', emit: output_gtf
     path 'merge_filelist.tsv', emit: filelist
     path 'accession_merge_report.tsv', emit: report
     path 'versions.yml', emit: versions
@@ -27,6 +29,8 @@ process TMERGE_MERGE_ACCESSION {
 
     stub:
     """
+    printf 'chrStub\\ttmerge\\texon\\t1\\t4\\t.\\t+\\t.\\ttranscript_id "${accession}.t1";\\n' > tmerge_input.gtf
+    cp tmerge_input.gtf tmerge_output.gtf
     printf 'chrStub\\t0\\t4\\t${backend}.${accession}.merged.1\\t0\\t+\\t0\\t4\\t0\\t1\\t4,\\t0,\\n' > ${backend}_${accession}_merged.bed
     printf 'tmerge_input.gtf\\n' > merge_filelist.tsv
     printf 'backend\\taccession\\tstatus\\tinputs\\n${backend}\\t${accession}\\tSUCCESS\\t1\\n' > accession_merge_report.tsv
