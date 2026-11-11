@@ -5,23 +5,6 @@ import argparse
 from pathlib import Path
 
 
-def fasta_records(path):
-    name = None
-    sequence = []
-    with path.open() as handle:
-        for line in handle:
-            line = line.rstrip("\n")
-            if line.startswith(">"):
-                if name is not None:
-                    yield name, "".join(sequence)
-                name = line[1:].split()[0]
-                sequence = []
-            elif name is not None:
-                sequence.append(line.strip())
-    if name is not None:
-        yield name, "".join(sequence)
-
-
 def attributes(value):
     result = {}
     for field in value.rstrip(";").split(";"):
@@ -56,8 +39,7 @@ def main():
     parser.add_argument("--output-contigs", required=True, type=Path)
     args = parser.parse_args()
 
-    sequences = dict(fasta_records(args.fasta))
-    intervals = []
+    intervals = {}
     with args.gtf.open() as handle:
         for line in handle:
             if not line.strip() or line.startswith("#"):
@@ -66,23 +48,47 @@ def main():
             if len(fields) != 9 or not is_rrna(fields[2], attributes(fields[8])):
                 continue
             chrom, start, end = fields[0], int(fields[3]), int(fields[4])
-            if chrom not in sequences:
-                raise SystemExit(f"rRNA annotation contig '{chrom}' is absent from FASTA")
-            intervals.append((chrom, start, end))
+            intervals.setdefault(chrom, set()).add((start, end))
 
     decoys = []
+    sequence_parts = {}
     with args.output_fasta.open("w") as output:
-        for name, sequence in fasta_records(args.fasta):
-            output.write(f">{name}\n")
-            for offset in range(0, len(sequence), 80):
-                output.write(sequence[offset:offset + 80] + "\n")
-        for index, (chrom, start, end) in enumerate(sorted(set(intervals)), 1):
-            decoy = f"__rRNA_{args.assembly}_{index}"
-            decoys.append((decoy, chrom, start, end, sequences[chrom][start - 1:end]))
-            output.write(f">{decoy}\n")
-            sequence = decoys[-1][-1]
-            for offset in range(0, len(sequence), 80):
-                output.write(sequence[offset:offset + 80] + "\n")
+        current = None
+        offset = 0
+        with args.fasta.open() as fasta:
+            for raw_line in fasta:
+                line = raw_line.rstrip("\n")
+                if line.startswith(">"):
+                    current = line[1:].split()[0]
+                    offset = 0
+                    sequence_parts[current] = {}
+                    output.write(raw_line)
+                    continue
+                if current is None:
+                    continue
+                sequence = line.strip()
+                output.write(raw_line)
+                for start, end in intervals.get(current, ()):
+                    left = max(start - 1 - offset, 0)
+                    right = min(end - offset, len(sequence))
+                    if left < right:
+                        sequence_parts[current].setdefault((start, end), []).append(sequence[left:right])
+                offset += len(sequence)
+
+        missing = sorted(set(intervals) - set(sequence_parts))
+        if missing:
+            raise SystemExit(f"rRNA annotation contig(s) absent from FASTA: {', '.join(missing[:5])}")
+
+        index = 0
+        for chrom in sorted(intervals):
+            for start, end in sorted(intervals[chrom]):
+                index += 1
+                sequence = "".join(sequence_parts[chrom][(start, end)])
+                decoy = f"__rRNA_{args.assembly}_{index}"
+                decoys.append((decoy, chrom, start, end, sequence))
+                output.write(f">{decoy}\n")
+                for offset in range(0, len(sequence), 80):
+                    output.write(sequence[offset:offset + 80] + "\n")
 
     with args.output_bed.open("w") as output:
         for decoy, chrom, start, end, _sequence in decoys:
