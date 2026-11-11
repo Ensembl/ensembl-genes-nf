@@ -1,6 +1,5 @@
 process BUILD_CROSS_SPECIES {
     tag 'cross-species'
-    container 'quay.io/biocontainers/python:3.12.12'
     label 'cage_python'
     publishDir "${params.outdir}/cross_species", mode: 'copy'
 

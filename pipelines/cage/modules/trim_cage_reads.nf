@@ -1,6 +1,5 @@
 process TRIM_CAGE_READS {
     tag "${meta.sample_id}:${meta.protocol}"
-    container 'quay.io/biocontainers/cutadapt:5.2--py312hfabe715_2'
     label 'cage_trim'
     input:
     tuple val(meta), path(reads)

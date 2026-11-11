@@ -1,6 +1,5 @@
 process PREPARE_REFERENCES {
     tag "${meta.assembly}"
-    container 'quay.io/biocontainers/python:3.12.12'
     label 'cage_python'
     publishDir { "${params.outdir}/references/${meta.assembly}" }, mode: 'copy'
 

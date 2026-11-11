@@ -1,6 +1,5 @@
 process DOWNLOAD_REFERENCES {
     tag "${meta.species}:${meta.assembly}"
-    container 'quay.io/biocontainers/python:3.12.12'
     label 'cage_python'
     publishDir { "${params.outdir}/references/${meta.assembly}" }, mode: 'copy'
 

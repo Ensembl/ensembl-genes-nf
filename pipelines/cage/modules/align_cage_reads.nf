@@ -1,11 +1,10 @@
 process ALIGN_CAGE_READS {
     tag "${meta.sample_id}:${meta.assembly}"
-    container 'quay.io/biocontainers/star:2.7.11b--h5814d7d_9'
     label 'cage_star'
     publishDir { "${params.outdir}/alignments/${meta.species}" }, mode: 'copy'
 
     input:
-    tuple val(meta), path(reads), path(index), path(excluded_contigs)
+    tuple val(meta), path(reads), path(index), path(excluded_contigs, stageAs: 'excluded_contigs.input.txt')
 
     output:
     tuple val(meta), path('*.bam'), path('*.Log.final.out'), path('excluded_contigs.txt'), emit: bam
@@ -14,7 +13,7 @@ process ALIGN_CAGE_READS {
     def files = reads.collect { read -> read.toString() }.join(' ')
     """
     set -euo pipefail
-    cp ${excluded_contigs} excluded_contigs.txt
+    cp excluded_contigs.input.txt excluded_contigs.txt
     STAR --genomeDir ${index} --readFilesIn ${files} --readFilesCommand cat --runThreadN ${task.cpus} ${meta.alignment_args ?: ''} --outFileNamePrefix ${meta.sample_id}. --outSAMtype BAM SortedByCoordinate
     """
 

@@ -1,6 +1,5 @@
 process ACQUIRE_READS {
     tag "${meta.sample_id}"
-    container 'quay.io/biocontainers/fastq-dl:4.0.1--pyhdfd78af_0'
     label 'cage_python'
     input:
     tuple val(meta), val(record)

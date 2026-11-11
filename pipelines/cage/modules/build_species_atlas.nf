@@ -1,6 +1,5 @@
 process BUILD_SPECIES_ATLAS {
     tag "${meta.species}:${meta.assembly}"
-    container 'quay.io/biocontainers/bioconductor-cagefightr:1.30.0--r45hdfd78af_0'
     label 'cage_r'
     publishDir { "${params.outdir}/atlas/${meta.species}/${meta.assembly}" }, mode: 'copy'
 

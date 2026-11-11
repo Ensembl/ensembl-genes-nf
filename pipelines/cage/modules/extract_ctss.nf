@@ -1,6 +1,5 @@
 process EXTRACT_CTSS {
     tag "${meta.sample_id}"
-    container 'quay.io/biocontainers/samtools:1.25--h9dcdb79_0'
     label 'cage_samtools'
     publishDir { "${params.outdir}/ctss/${meta.species}" }, mode: 'copy'
 
