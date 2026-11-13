@@ -221,6 +221,14 @@ def complete_import(
     LOGGER.info("Completed import_status_id=%s", import_status_id)
 
 
+def parse_genebuild_month(value: str) -> str:
+    """Validate a genebuild update month in YYYY-MM format."""
+    match = GENEBUILD_MONTH_PATTERN.fullmatch(value)
+    if not match or not 1 <= int(match.group(2)) <= 12:
+        raise argparse.ArgumentTypeError("must be a valid month in YYYY-MM format, for example 2026-01")
+    return value
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", required=True)
@@ -241,7 +249,12 @@ def parse_args() -> argparse.Namespace:
     complete = subparsers.add_parser("complete", help="record a successful import")
     complete.add_argument("--import-status-id", required=True, type=int)
     complete.add_argument("--genebuild-version", required=True)
-    complete.add_argument("--last-genebuild-update", required=True)
+    complete.add_argument(
+        "--last-genebuild-update",
+        required=True,
+        type=parse_genebuild_month,
+        help="last genebuild update month in YYYY-MM format",
+    )
     return parser.parse_args()
 
 
