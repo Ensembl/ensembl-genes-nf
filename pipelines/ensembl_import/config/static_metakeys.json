@@ -1,6 +1,7 @@
 {
     "refseq": {
         "genebuild.method": "import",
-        "genebuild.annotation_source": "refseq"
+        "genebuild.annotation_source": "refseq",
+        "species.division": "EnsemblVertebrates"
     }
 }

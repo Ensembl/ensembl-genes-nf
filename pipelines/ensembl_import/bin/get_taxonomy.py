@@ -9,11 +9,19 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import random
+import time
+from urllib.error import HTTPError, URLError
 
 from _mysq_helper import mysql_execute_query, mysql_fetch_data
 from Bio import Entrez
 
 logger = logging.getLogger(__name__)
+
+ENTREZ_TOOL = "ensembl_import_pipeline"
+NCBI_MAX_ATTEMPTS = 5
+NCBI_INITIAL_RETRY_DELAY = 15
+NCBI_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
 def get_info_from_db(database: str, host: str, port: int, user: str, password: str) -> int:
@@ -50,11 +58,45 @@ def get_species_taxonomy_meta_from_ncbi(
     logger.info(f"Fetching taxonomy info from NCBI for taxon ID: {taxon_id}")
 
     Entrez.email = email
+    Entrez.tool = ENTREZ_TOOL
+    Entrez.max_tries = 1
     if api_key:
         Entrez.api_key = api_key
 
-    with Entrez.efetch(db="taxonomy", id=str(taxon_id), retmode="xml") as handle:
-        records = Entrez.read(handle)
+    for attempt in range(1, NCBI_MAX_ATTEMPTS + 1):
+        try:
+            with Entrez.efetch(db="taxonomy", id=str(taxon_id), retmode="xml") as handle:
+                records = Entrez.read(handle)
+            break
+        except HTTPError as error:
+            retryable = error.code in NCBI_RETRYABLE_STATUS_CODES
+            if not retryable or attempt == NCBI_MAX_ATTEMPTS:
+                raise
+            delay = NCBI_INITIAL_RETRY_DELAY * (2 ** (attempt - 1)) + random.uniform(0, 5)
+            logger.warning(
+                "NCBI request for taxon ID %s returned HTTP %s; retrying in %.1f seconds "
+                "(attempt %s/%s)",
+                taxon_id,
+                error.code,
+                delay,
+                attempt,
+                NCBI_MAX_ATTEMPTS,
+            )
+            time.sleep(delay)
+        except URLError as error:
+            if attempt == NCBI_MAX_ATTEMPTS:
+                raise
+            delay = NCBI_INITIAL_RETRY_DELAY * (2 ** (attempt - 1)) + random.uniform(0, 5)
+            logger.warning(
+                "NCBI request for taxon ID %s failed (%s); retrying in %.1f seconds "
+                "(attempt %s/%s)",
+                taxon_id,
+                error.reason,
+                delay,
+                attempt,
+                NCBI_MAX_ATTEMPTS,
+            )
+            time.sleep(delay)
 
     if not records:
         raise ValueError(f"No taxonomy record found in NCBI for taxon_id {taxon_id}")
