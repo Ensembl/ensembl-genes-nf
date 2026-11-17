@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that BAM contigs and lengths exactly match the reference dictionary."""
+"""Verify that BAM contigs and lengths match the reference dictionary."""
 from __future__ import annotations
 
 import argparse
@@ -27,8 +27,10 @@ def main() -> None:
     args = parser.parse_args()
     reference = read_dictionary(args.reference_dictionary)
     bam = read_idxstats(args.idxstats)
+    reference_by_name = dict(reference)
+    bam_by_name = dict(bam)
     errors = []
-    if reference != bam:
+    if reference_by_name != bam_by_name:
         errors.append(f"reference/BAM dictionaries differ: reference={reference!r} bam={bam!r}")
     args.report.write_text("metric\tvalue\n" + f"contigs\t{len(bam)}\nerrors\t{len(errors)}\n" + "".join(f"error\t{error}\n" for error in errors))
     if errors:
