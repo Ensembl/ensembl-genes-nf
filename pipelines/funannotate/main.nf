@@ -5,7 +5,9 @@ nextflow.enable.strict = true
 
 include { validateParameters } from 'plugin/nf-schema'
 include { STAGE_FTP_INPUTS } from './subworkflows/stage_ftp_inputs.nf'
-include { INDEX_AND_VALIDATE_BAMS } from './modules/index_and_validate_bams.nf'
+include { VALIDATE_GENOME } from './modules/validate_genome.nf'
+include { VALIDATE_BAMS } from './modules/validate_bams.nf'
+include { INDEX_BAMS } from './modules/index_bams.nf'
 include { RUN_FUNANNOTATE } from './modules/run_funannotate.nf'
 
 def split_list(value) {
@@ -96,9 +98,11 @@ workflow {
     def records = parse_manifest(file(params.input_manifest, checkIfExists: true))
     source = channel.fromList(records)
     STAGE_FTP_INPUTS(source, params.stage_dir)
-    INDEX_AND_VALIDATE_BAMS(STAGE_FTP_INPUTS.out.staged)
+    VALIDATE_GENOME(STAGE_FTP_INPUTS.out.staged)
+    VALIDATE_BAMS(VALIDATE_GENOME.out.validated)
+    INDEX_BAMS(VALIDATE_BAMS.out.validated)
     RUN_FUNANNOTATE(
-        INDEX_AND_VALIDATE_BAMS.out.indexed,
+        INDEX_BAMS.out.indexed,
         params.funannotate_db ?: '',
         params.cpus,
         params.augustus_species ?: '',
