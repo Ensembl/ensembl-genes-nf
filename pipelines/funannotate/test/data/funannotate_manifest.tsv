@@ -1,0 +1,2 @@
+cohort_id	assembly_accession	assembly_release	species	isolate	genome_ftp_url	genome_sha256	bam_ftp_urls	bai_ftp_urls	bam_sha256s	transcript_evidence_ftp_urls	protein_evidence_ftp_urls	pasa_gff_ftp_url	parameters_json_ftp_url
+test_cohort	GCA_000000001.1	test-release	Testus species	TEST1	ftp://example.org/test/genome.fa		ftp://example.org/test/sample1.bam;ftp://example.org/test/sample2.bam						

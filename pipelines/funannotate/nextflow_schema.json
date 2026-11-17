@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Funannotate BAM-backed prediction pipeline",
+  "type": "object",
+  "properties": {
+    "input_manifest": {"type": "string", "format": "file-path", "exists": true},
+    "stage_dir": {"type": "string", "description": "Persistent directory for FTP inputs and staged BAMs"},
+    "outdir": {"type": "string", "default": "./results"},
+    "tracedir": {"type": "string"},
+    "funannotate_db": {"type": ["string", "null"], "description": "FUNANNOTATE_DB directory"},
+    "cpus": {"type": "integer", "minimum": 1, "default": 8},
+    "funannotate_container": {"type": ["string", "null"], "description": "Pinned funannotate container URI; required for real runs"},
+    "samtools_container": {"type": "string"},
+    "augustus_species": {"type": ["string", "null"]},
+    "parameters": {"type": ["string", "null"], "format": "file-path", "exists": true},
+    "soft_mask": {"type": "integer", "minimum": 0, "default": 2000},
+    "min_training_models": {"type": "integer", "minimum": 1, "default": 200},
+    "busco_db": {"type": ["string", "null"]},
+    "extra_predict_args": {"type": "string", "default": ""}
+  },
+  "required": ["input_manifest"],
+  "allOf": [
+    {"if": {"properties": {"funannotate_container": {"const": null}}}, "then": {"required": []}}
+  ]
+}
