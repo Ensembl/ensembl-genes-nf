@@ -11,7 +11,6 @@ process INDEX_AND_VALIDATE_BAMS {
 
     script:
     """
-    set -euo pipefail
     genome=\$(find staged -maxdepth 1 -type f -name 'genome.fa*' | head -n1)
     [[ -n "\$genome" && -s "\$genome" ]]
     samtools faidx "\$genome"
