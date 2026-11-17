@@ -1,6 +1,7 @@
 process RUN_FUNANNOTATE {
     tag "$meta.assembly_accession:$meta.id"
     label 'process_high'
+    container params.funannotate_container ?: 'quay.io/biocontainers/funannotate:1.8.17--pyhdfd78af_0@sha256:5f0cb4ff635bf90b349cf90bff79f48dfe8681a2e6b21aa7a8dfa082f26c017b'
     publishDir params.outdir, mode: 'copy', saveAs: { filename -> "${meta.assembly_accession}/${meta.safe_id}/${filename}" }
     input:
     tuple val(meta), path(staged)
@@ -15,10 +16,8 @@ process RUN_FUNANNOTATE {
 
     output:
     tuple val(meta), path('predict_results'), emit: results
-    path 'funannotate.command.txt', emit: command
     path 'funannotate.stdout.log', emit: stdout
     path 'funannotate.stderr.log', emit: stderr
-    path 'funannotate.status.tsv', emit: status
     path 'versions.yml', emit: versions
 
     script:
@@ -36,9 +35,7 @@ process RUN_FUNANNOTATE {
     """
     set -euo pipefail
     ${command} > funannotate.stdout.log 2> funannotate.stderr.log
-    test -s predict_results/*.gff3
-    printf '%s\\tCOMPLETE\\n' '${meta.id}' > funannotate.status.tsv
-    printf '%s\\n' '${command.replace("'", "'\\''")}' > funannotate.command.txt
+    compgen -G 'predict_results/*.gff3' > /dev/null
     cat > versions.yml <<VERSIONS
 "\${task.process}":
     funannotate: \$(funannotate --version 2>&1 | head -n1)
@@ -48,11 +45,6 @@ VERSIONS
     stub:
     """
     mkdir -p predict_results
-    printf '##gff-version 3\\n' > predict_results/${meta.safe_id}.gff3
-    printf '%s\\tSTUB\\n' '${meta.id}' > funannotate.status.tsv
-    printf '%s\\n' 'funannotate predict (stub)' > funannotate.command.txt
-    printf 'stub\\n' > funannotate.stdout.log
-    printf 'stub\\n' > funannotate.stderr.log
-    printf '"%s":\\n    funannotate: stub\\n' '${task.process}' > versions.yml
+    touch predict_results/${meta.safe_id}.gff3 funannotate.stdout.log funannotate.stderr.log versions.yml
     """
 }

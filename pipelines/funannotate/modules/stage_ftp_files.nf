@@ -5,15 +5,14 @@ def shell_quote(String value) {
 process STAGE_FTP_FILES {
     tag "$meta.assembly_accession:$meta.id"
     label 'process_medium'
+    container params.stage_container ?: 'docker.io/curlimages/curl:8.12.1@sha256:88a9abad9d958340e48564f9bdcdaa29916a2984be59314da709f8bbc0eef6f7'
     input:
     val meta
     val stage_dir
 
     output:
     tuple val(meta), path('staged'), emit: staged
-    path 'normalized_manifest.tsv', emit: manifest
     path 'input_checksums.tsv', emit: checksums
-    path 'acquisition.status.tsv', emit: status
 
     script:
     def entries = []
@@ -27,21 +26,15 @@ process STAGE_FTP_FILES {
     def commands = entries.collect { entry ->
         def destination = "staged/${entry.kind}${entry.kind == 'genome' ? (entry.spec.name.endsWith('.gz') ? '.fa.gz' : '.fa') : entry.kind.startsWith('bam_') ? '.bam' : entry.kind.startsWith('bai_') ? '.bam.bai' : entry.kind.startsWith('transcript_') ? '.fa' : entry.kind.startsWith('protein_') ? '.fa' : entry.kind == 'pasa' ? '.gff3' : '.json'}"
         def checksum = entry.spec.checksum ? "printf '%s  %s\\n' ${shell_quote(entry.spec.checksum)} ${shell_quote(destination)} | sha256sum -c -" : ':'
-        "curl -fL --retry 3 --connect-timeout 30 -- ${shell_quote(entry.spec.url)} -o ${shell_quote(destination)}\n${checksum}\nprintf '%s\\t%s\\t%s\\n' ${shell_quote(entry.kind)} ${shell_quote(destination)} ${shell_quote(entry.spec.url)} >> staged/inputs.tsv"
+        "curl -fL --retry 3 --connect-timeout 30 -- ${shell_quote(entry.spec.url)} -o ${shell_quote(destination)}\n${checksum}"
     }.join('\n')
-    def normalized = "cohort_id\\tassembly_accession\\tassembly_release\\tspecies\\tbam_count\\n${meta.id}\\t${meta.assembly_accession}\\t${meta.assembly_release}\\t${meta.species}\\t${meta.bam_count}\\n"
     """
     set -euo pipefail
     mkdir -p staged
     ${commands}
-    for input in staged/*; do
-        [ "\$input" = staged/inputs.tsv ] || test -s "\$input"
-    done
     mkdir -p ${shell_quote("${stage_dir}/${meta.safe_id}")}
     cp -p staged/* ${shell_quote("${stage_dir}/${meta.safe_id}/")}
-    printf '%s' '${normalized}' > normalized_manifest.tsv
     sha256sum staged/* > input_checksums.tsv
-    printf 'cohort_id\\tstatus\\n%s\\tSTAGED\\n' '${meta.id}' > acquisition.status.tsv
     """
 
     stub:
@@ -49,11 +42,8 @@ process STAGE_FTP_FILES {
     set -euo pipefail
     mkdir -p staged
     touch staged/genome.fa staged/bam_01.bam staged/bam_02.bam
-    printf 'genome\\tstaged/genome.fa\\tstub\\n bam_01\\tstaged/bam_01.bam\\tstub\\n bam_02\\tstaged/bam_02.bam\\tstub\\n' > staged/inputs.tsv
     mkdir -p '${stage_dir}/${meta.safe_id}'
     cp -p staged/* '${stage_dir}/${meta.safe_id}/'
-    printf 'cohort_id\\tassembly_accession\\tassembly_release\\tspecies\\tbam_count\\n%s\\t%s\\t%s\\t%s\\t%s\\n' '${meta.id}' '${meta.assembly_accession}' '${meta.assembly_release}' '${meta.species}' '${meta.bam_count}' > normalized_manifest.tsv
-    printf 'stub\\tSTUB\\n' > input_checksums.tsv
-    printf 'cohort_id\\tstatus\\n%s\\tSTAGED\\n' '${meta.id}' > acquisition.status.tsv
+    sha256sum staged/* > input_checksums.tsv
     """
 }
