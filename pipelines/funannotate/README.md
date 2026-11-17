@@ -11,8 +11,9 @@ semicolon-separated and aligned by position. Index URLs may be omitted; the
 pipeline will create BAI files with samtools.
 
 Optional FTP evidence columns include `stringtie_ftp_url`,
-`protein_alignments_ftp_url`, and `trnascan_ftp_url`; these map to the
-corresponding Funannotate options.
+`protein_alignments_ftp_url`, and `trnascan_ftp_url`. Protein alignment URLs
+may be semicolon-separated; the GTFs are combined and converted to the GFF3
+format required by Funannotate.
 
 Example:
 

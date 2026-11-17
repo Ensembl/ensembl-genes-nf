@@ -24,10 +24,10 @@ process STAGE_FTP_FILES {
     meta.files.pasa_gff.each { entries << [kind: 'pasa', spec: it] }
     meta.files.parameters_json.each { entries << [kind: 'parameters', spec: it] }
     meta.files.stringtie.each { entries << [kind: 'stringtie', spec: it] }
-    meta.files.protein_alignments.each { entries << [kind: 'protein_alignments', spec: it] }
+    meta.files.protein_alignments.eachWithIndex { spec, i -> entries << [kind: "protein_alignment_${String.format('%02d', i + 1)}", spec: spec] }
     meta.files.trnascan.each { entries << [kind: 'trnascan', spec: it] }
     def commands = entries.collect { entry ->
-        def destination = "staged/${entry.kind}${entry.kind == 'genome' ? (entry.spec.name.endsWith('.gz') ? '.fa.gz' : '.fa') : entry.kind.startsWith('bam_') ? '.bam' : entry.kind.startsWith('bai_') ? '.bam.bai' : entry.kind.startsWith('transcript_') ? '.fa' : entry.kind.startsWith('protein_') ? '.fa' : entry.kind == 'pasa' ? '.gff3' : entry.kind == 'parameters' ? '.json' : entry.kind == 'stringtie' ? '.gtf' : entry.kind == 'protein_alignments' ? '.gff3' : '.gff'}"
+        def destination = entry.kind.startsWith('protein_alignment_') ? "staged/${entry.kind}_${entry.spec.name.replaceFirst(/\.[^.]+$/, '')}.gtf" : "staged/${entry.kind}${entry.kind == 'genome' ? (entry.spec.name.endsWith('.gz') ? '.fa.gz' : '.fa') : entry.kind.startsWith('bam_') ? '.bam' : entry.kind.startsWith('bai_') ? '.bam.bai' : entry.kind.startsWith('transcript_') ? '.fa' : entry.kind.startsWith('protein_') ? '.fa' : entry.kind == 'pasa' ? '.gff3' : entry.kind == 'parameters' ? '.json' : entry.kind == 'stringtie' ? '.gtf' : '.gff'}"
         def checksum = entry.spec.checksum ? "echo ${shell_quote(entry.spec.checksum + '  ' + destination)} | sha256sum -c -" : ':'
         "curl -fL --retry 3 --connect-timeout 30 -- ${shell_quote(entry.spec.url)} -o ${shell_quote(destination)}\n${checksum}"
     }.join('\n')

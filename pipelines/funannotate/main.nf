@@ -6,6 +6,9 @@ nextflow.enable.strict = true
 include { validateParameters } from 'plugin/nf-schema'
 include { STAGE_FTP_INPUTS } from './subworkflows/stage_ftp_inputs.nf'
 include { INDEX_AND_VALIDATE_BAMS } from './modules/index_and_validate_bams.nf'
+include { MERGE_BAMS } from './modules/merge_bams.nf'
+include { CONVERT_PROTEIN_ALIGNMENTS } from './modules/convert_protein_alignments.nf'
+include { TRANSFORM_STRINGTE } from './modules/transform_stringte.nf'
 include { RUN_FUNANNOTATE } from './modules/run_funannotate.nf'
 
 def split_list(value) {
@@ -55,7 +58,8 @@ def parse_manifest(manifest_file) {
         bam_checksums.each { if (!(it ==~ /(?i)[0-9a-f]{64}/)) error "Manifest row ${row_number} contains an invalid BAM SHA-256" }
         def optional_urls = ['transcript_evidence_ftp_urls', 'protein_evidence_ftp_urls']
         optional_urls.each { field -> split_list(row[field]).each { require_ftp(it, field, row_number) } }
-        ['pasa_gff_ftp_url', 'parameters_json_ftp_url', 'stringtie_ftp_url', 'protein_alignments_ftp_url', 'trnascan_ftp_url'].each { field -> if (row[field]) require_ftp(row[field], field, row_number) }
+        ['pasa_gff_ftp_url', 'parameters_json_ftp_url', 'stringtie_ftp_url', 'trnascan_ftp_url'].each { field -> if (row[field]) require_ftp(row[field], field, row_number) }
+        split_list(row.protein_alignments_ftp_url).each { require_ftp(it, 'protein_alignments_ftp_url', row_number) }
         def safe = safe_id(row.cohort_id)
         def files = [
             genome: [url: row.genome_ftp_url, checksum: row.genome_sha256, name: row.genome_ftp_url.tokenize('/')[-1]],
@@ -66,7 +70,7 @@ def parse_manifest(manifest_file) {
             pasa_gff: row.pasa_gff_ftp_url ? [[url: row.pasa_gff_ftp_url, checksum: '', name: 'pasa.gff3']] : [],
             parameters_json: row.parameters_json_ftp_url ? [[url: row.parameters_json_ftp_url, checksum: '', name: 'parameters.json']] : [],
             stringtie: row.stringtie_ftp_url ? [[url: row.stringtie_ftp_url, checksum: '', name: 'stringtie.gtf']] : [],
-            protein_alignments: row.protein_alignments_ftp_url ? [[url: row.protein_alignments_ftp_url, checksum: '', name: 'protein_alignments.gff3']] : [],
+            protein_alignments: split_list(row.protein_alignments_ftp_url).withIndex().collect { url, i -> [url: url, checksum: '', name: url.tokenize('/')[-1]] },
             trnascan: row.trnascan_ftp_url ? [[url: row.trnascan_ftp_url, checksum: '', name: 'trnascan.gff']] : []
         ]
         if (files.genome.checksum && !(files.genome.checksum ==~ /(?i)[0-9a-f]{64}/)) error "Manifest row ${row_number} contains an invalid genome SHA-256"
@@ -94,13 +98,20 @@ workflow {
     if (params.parameters && params.parameters.toString().startsWith('ftp://'))
         error '--parameters must be a local parameters JSON path; use parameters_json_ftp_url in the manifest for FTP input'
     def records = parse_manifest(file(params.input_manifest, checkIfExists: true))
+    def cpus = params.cpus.toString().toInteger()
     source = channel.fromList(records)
     STAGE_FTP_INPUTS(source, params.stage_dir)
     INDEX_AND_VALIDATE_BAMS(STAGE_FTP_INPUTS.out.staged)
+    MERGE_BAMS(INDEX_AND_VALIDATE_BAMS.out.indexed)
+    CONVERT_PROTEIN_ALIGNMENTS(
+        MERGE_BAMS.out.merged,
+        file("${projectDir}/pipelines/funannotate/bin/convert_protein_alignments.py")
+    )
+    TRANSFORM_STRINGTE(CONVERT_PROTEIN_ALIGNMENTS.out.converted)
     RUN_FUNANNOTATE(
-        INDEX_AND_VALIDATE_BAMS.out.indexed,
+        TRANSFORM_STRINGTE.out.transformed,
         params.funannotate_db ?: '',
-        params.cpus,
+        cpus,
         params.augustus_species ?: '',
         params.soft_mask,
         params.min_training_models,

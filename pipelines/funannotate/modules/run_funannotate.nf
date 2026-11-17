@@ -5,7 +5,7 @@ def shell_quote(String value) {
 process RUN_FUNANNOTATE {
     tag "$meta.assembly_accession:$meta.id"
     label 'process_high'
-    container params.funannotate_container ?: 'quay.io/biocontainers/funannotate:1.8.17--pyhdfd78af_0@sha256:5f0cb4ff635bf90b349cf90bff79f48dfe8681a2e6b21aa7a8dfa082f26c017b'
+    container 'docker://nextgenusfs/funannotate'
     publishDir params.outdir, mode: 'copy', saveAs: { filename -> "${meta.assembly_accession}/${meta.safe_id}/${filename}" }
     input:
     tuple val(meta), path(staged)
@@ -31,14 +31,15 @@ process RUN_FUNANNOTATE {
         '--out', 'predict_results',
         '--species', shell_quote(meta.species),
         meta.isolate ? "--isolate ${shell_quote(meta.isolate)}" : null,
-        (1..meta.bam_count).collect { index -> "--rna_bam staged/bam_${String.format('%02d', index)}.bam" },
+        '--rna_bam staged/all_runs.merged.sorted.bam',
         meta.files.transcripts.withIndex().collect { pair -> "--transcript_evidence staged/transcript_${String.format('%02d', pair[1] + 1)}.fa" },
+        meta.files.stringtie ? '--transcript_evidence staged/stringtie_transcripts.fa' : null,
         meta.files.proteins.withIndex().collect { pair -> "--protein_evidence staged/protein_${String.format('%02d', pair[1] + 1)}.fa" },
         meta.files.pasa_gff ? '--pasa_gff staged/pasa.gff3' : null,
         meta.files.parameters_json && !parameters ? '--parameters staged/parameters.json' : null,
         parameters ? "--parameters ${shell_quote(parameters)}" : null,
         meta.files.stringtie ? '--stringtie staged/stringtie.gtf' : null,
-        meta.files.protein_alignments ? '--protein_alignments staged/protein_alignments.gff3' : null,
+        meta.files.protein_alignments ? '--protein_alignments staged/genblast_protein_alignments.gff3' : null,
         meta.files.trnascan ? '--trnascan staged/trnascan.gff' : null,
         augustus_species ? "--augustus_species ${shell_quote(augustus_species)}" : null,
         '--soft_mask', soft_mask,
