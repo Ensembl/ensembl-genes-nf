@@ -93,7 +93,7 @@ workflow {
     def records = parse_manifest(file(params.input_manifest, checkIfExists: true))
     source = channel.fromList(records)
     STAGE_FTP_INPUTS(source, params.stage_dir)
-    INDEX_AND_VALIDATE_BAMS(STAGE_FTP_INPUTS.out.staged, params.stage_dir)
+    INDEX_AND_VALIDATE_BAMS(STAGE_FTP_INPUTS.out.staged)
     RUN_FUNANNOTATE(
         INDEX_AND_VALIDATE_BAMS.out.indexed,
         params.funannotate_db ?: '',
