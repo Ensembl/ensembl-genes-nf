@@ -1,7 +1,7 @@
 process CONVERT_PROTEIN_ALIGNMENTS {
     tag "$meta.assembly_accession:$meta.id"
     label 'process_medium'
-    container 'docker://getwilds/gffread'
+    container params.funannotate_container ?: '/nfs/production/flicek/ensembl/shared_data/singularity_images/cache/funannotate_latest.sif'
 
     input:
     tuple val(meta), path(staged)

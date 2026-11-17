@@ -5,7 +5,7 @@ def shell_quote(String value) {
 process RUN_FUNANNOTATE {
     tag "$meta.assembly_accession:$meta.id"
     label 'process_high'
-    container 'docker://nextgenusfs/funannotate'
+    container params.funannotate_container ?: '/nfs/production/flicek/ensembl/shared_data/singularity_images/cache/funannotate_latest.sif'
     publishDir params.outdir, mode: 'copy', saveAs: { filename -> "${meta.assembly_accession}/${meta.safe_id}/${filename}" }
     input:
     tuple val(meta), path(staged)

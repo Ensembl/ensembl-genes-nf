@@ -1,7 +1,7 @@
 process TRANSFORM_STRINGTE {
     tag "$meta.assembly_accession:$meta.id"
     label 'process_medium'
-    container 'biocontainers/samtools:v1.9-4-deb_cv1'
+    container params.gffread_container ?: '/nfs/production/flicek/ensembl/shared_data/singularity_images/cache/gffread_latest.sif'
 
     input:
     tuple val(meta), path(staged)
