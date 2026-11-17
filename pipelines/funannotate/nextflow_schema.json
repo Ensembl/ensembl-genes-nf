@@ -16,6 +16,9 @@
     "soft_mask": {"type": "integer", "minimum": 0, "default": 2000},
     "min_training_models": {"type": "integer", "minimum": 1, "default": 200},
     "busco_db": {"type": ["string", "null"]},
+    "stringtie_ftp_url": {"type": ["string", "null"]},
+    "protein_alignments_ftp_url": {"type": ["string", "null"]},
+    "trnascan_ftp_url": {"type": ["string", "null"]},
     "extra_predict_args": {"type": "string", "default": ""}
   },
   "required": ["input_manifest"],

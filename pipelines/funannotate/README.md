@@ -10,6 +10,10 @@ The genome must be soft-masked. BAM URLs, index URLs, and checksum lists are
 semicolon-separated and aligned by position. Index URLs may be omitted; the
 pipeline will create BAI files with samtools.
 
+Optional FTP evidence columns include `stringtie_ftp_url`,
+`protein_alignments_ftp_url`, and `trnascan_ftp_url`; these map to the
+corresponding Funannotate options.
+
 Example:
 
 ```bash
