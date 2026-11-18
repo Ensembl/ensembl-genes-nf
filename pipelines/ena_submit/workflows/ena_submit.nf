@@ -8,6 +8,8 @@ include { ENA_SUBMIT_WEBIN as ENA_SUBMIT_ANALYSIS } from '../modules/submit_webi
 include { ENA_POLL_WEBIN as ENA_POLL_PROJECT } from '../modules/poll_webin.nf'
 include { ENA_POLL_WEBIN as ENA_POLL_ANALYSIS } from '../modules/poll_webin.nf'
 include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
+include { ENA_GENERATE_UMBRELLA_XML } from '../modules/generate_umbrella_xml.nf'
+include { ENA_LINK_UMBRELLA } from '../modules/link_umbrella.nf'
 include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
 include { ENA_CONVERT_TO_CRAM } from '../modules/convert_to_cram.nf'
 include { ENA_REHEADER_BAM } from '../modules/reheader_bam.nf'
@@ -31,6 +33,13 @@ workflow ENA_SUBMIT_WORKFLOW {
     }
     assert params.mode in ['test', 'prod'] : "--mode must be 'test' or 'prod'"
     assert params.outdir :        "--outdir is required"
+    def release_mode = params.release_mode?.toString()?.trim()?.toLowerCase() ?: 'none'
+    assert release_mode in ['none', 'immediate', 'date'] : "--release_mode must be none, immediate, or date"
+    assert !(params.mode == 'test' && release_mode != 'none') : "Release actions are disabled in --mode test"
+    if (release_mode == 'date') {
+        assert params.release_date?.toString()?.trim() ==~ /\d{4}-\d{2}-\d{2}/ :
+            "--release_date YYYY-MM-DD is required when --release_mode date is supplied"
+    }
 
     def ch_webin_user     = Channel.value(webin_user)
     // Base endpoint derived from mode unless overridden
@@ -275,6 +284,42 @@ workflow ENA_SUBMIT_WORKFLOW {
 
     ENA_POLL_ANALYSIS.out.accessions.view { f -> "Accessions written to: ${f}" }
 
+    // Umbrella linking is deliberately terminal: the child project must have
+    // received a permanent PRJ accession before the official MODIFY request.
+    def umbrella_accession = params.umbrella_study?.toString()?.trim()
+    if (umbrella_accession) {
+        assert params.umbrella_alias?.toString()?.trim() :
+            "--umbrella_alias is required when --umbrella_study is supplied"
+        assert params.umbrella_title?.toString()?.trim() :
+            "--umbrella_title is required when --umbrella_study is supplied"
+        assert params.umbrella_description?.toString()?.trim() :
+            "--umbrella_description is required when --umbrella_study is supplied"
+
+        // Combining the project and analysis receipts makes this stage
+        // genuinely terminal while retaining the project receipt as the
+        // authoritative source of child PRJ accessions.
+        def umbrella_inputs = ENA_POLL_PROJECT.out.accessions
+            .combine(ENA_POLL_ANALYSIS.out.accessions)
+            .map { project_receipt, analysis_receipt ->
+                tuple([id: 'umbrella_link'], project_receipt, analysis_receipt)
+            }
+        ENA_GENERATE_UMBRELLA_XML(
+            umbrella_inputs,
+            Channel.value('modify'),
+            Channel.value(params.umbrella_alias.toString().trim()),
+            Channel.value(params.umbrella_title.toString().trim()),
+            Channel.value(params.umbrella_description.toString().trim())
+        )
+        ENA_LINK_UMBRELLA(
+            ENA_GENERATE_UMBRELLA_XML.out.xml,
+            Channel.value(umbrella_accession),
+            ch_webin_user,
+            Channel.value(release_mode),
+            Channel.value(params.release_date?.toString()?.trim() ?: '')
+        )
+        ENA_LINK_UMBRELLA.out.status.view { f -> "Umbrella status written to: ${f}" }
+    }
+
     def all_versions = channel.empty()
         .mix(ENA_GENERATE_PROJECT_XML.out.versions)
         .mix(ENA_SUBMIT_PROJECT.out.versions)
@@ -285,6 +330,11 @@ workflow ENA_SUBMIT_WORKFLOW {
         .mix(ENA_GENERATE_XML.out.versions)
         .mix(ENA_SUBMIT_ANALYSIS.out.versions)
         .mix(ENA_POLL_ANALYSIS.out.versions)
+    if (umbrella_accession) {
+        all_versions = all_versions
+            .mix(ENA_GENERATE_UMBRELLA_XML.out.versions)
+            .mix(ENA_LINK_UMBRELLA.out.versions)
+    }
     if (reheader_bams) {
         all_versions = all_versions
             .mix(ENA_PREPARE_REFERENCE.out.versions)

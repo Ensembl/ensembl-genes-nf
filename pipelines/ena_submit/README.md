@@ -189,12 +189,52 @@ nextflow run pipelines/ena_submit/main.nf \
   --mode test \
   --webin_user "$WEBIN_USER" \
   --umbrella_study PRJEB000000 \
+  --umbrella_alias ensembl_alignment_evidence_umbrella \
+  --umbrella_title "Ensembl alignment evidence umbrella study" \
+  --umbrella_description "Umbrella study grouping Ensembl alignment evidence projects." \
+  --release_mode none \
   --remote_dir GCA_011064425.1-Ensembl-2025-12 \
   --upload_parallelism 2 \
   --outdir /path/to/ena_submit_results/GCA_011064425.1
 ```
 
 Use `--mode prod` for production endpoints after Webin test validation.
+
+When `--umbrella_study` is supplied, the workflow performs a terminal,
+authenticated ENA `MODIFY` submission after the child project and analyses
+have succeeded. It retrieves the parent project and fails unless the child
+project accession is visible in `RELATED_PROJECTS`. The exact umbrella alias,
+title, and description must be supplied because ENA requires them to match the
+registered parent object.
+
+Release is deliberately opt-in. The default `--release_mode none` preserves
+ENA's private hold. In production, use `--release_mode immediate` to release
+the umbrella and child project after linking, or use
+`--release_mode date --release_date YYYY-MM-DD` to set a common release date.
+Release actions are rejected in test mode. The analysis becomes public when
+its child project is released.
+
+### Create the umbrella once
+
+An umbrella is a project object with no data of its own. Create it once with
+the final alias, title, and description before running a child submission with
+the terminal link stage:
+
+```bash
+python3 pipelines/ena_submit/bin/generate_umbrella_xml.py \\
+  --action add \\
+  --alias ensembl_alignment_evidence_umbrella \\
+  --title "Ensembl alignment evidence umbrella study" \\
+  --description "Umbrella study grouping Ensembl alignment evidence projects." \\
+  --outdir /path/to/umbrella_create
+```
+
+Submit the generated `umbrella_project.xml` with an `ADD` submission through
+the ENA Webin test service first, then production. Record the returned
+`PRJEB...` accession and use it as `--umbrella_study`; use the exact registered
+alias/title/description for the corresponding umbrella parameters. The normal
+child workflow then emits a terminal `MODIFY` request containing the newly
+created child project accession.
 
 ### Optional BAM-to-CRAM conversion
 
@@ -223,7 +263,11 @@ Existing non-BAM inputs are passed through unchanged.
 - `files_tsv`: Path to the file-level manifest.
 - `study`: Existing child study accession/alias. Leave blank to use the generated project alias.
 - `project_alias`: Child project alias, usually `prj_<assembly_accession>_Ensembl_<YYYY_MM>`.
-- `umbrella_study`: Umbrella study accession/alias. Recorded as analysis metadata for now.
+- `umbrella_study`: Existing umbrella project accession. Enables the terminal
+  project-level `MODIFY` link submission.
+- `umbrella_alias`: Exact alias used when the umbrella project was registered.
+- `umbrella_title`: Existing umbrella title; must match the registered object.
+- `umbrella_description`: Existing umbrella description; must match the registered object.
 - `analysis_alias`: Stable ENA analysis alias.
 - `title`: Human-readable analysis title.
 - `description`: Human-readable description.
@@ -298,8 +342,8 @@ Locked in:
 
 Pending:
 
-- Final umbrella study accession/alias.
-- Whether child project-to-umbrella linkage should be represented in ENA XML or handled externally.
+- Whether the umbrella alias/title/description should come from the registry
+  rather than CLI parameters.
 - Whether production submissions should use BAMs as-is or CRAMs.
 - Whether `SAMD...` sample accessions validate as `SAMPLE_REF` in Webin, or need mapping to ENA sample accessions.
 - Which registry fields will replace CLI arguments for assembly/annotation metadata.
