@@ -1,7 +1,7 @@
 process MERGE_BAMS {
     tag "$meta.assembly_accession:$meta.id"
     label 'process_medium'
-    container 'biocontainers/samtools:v1.9-4-deb_cv1'
+    container 'quay.io/biocontainers/samtools:1.20--h50ea8bc_1@sha256:bf80e07e650becfd084db1abde0fe932b50f990a07fa56421ea647b552b5a406'
     input:
     tuple val(meta), path(staged)
 
@@ -17,7 +17,7 @@ process MERGE_BAMS {
     samtools sort -@ ${task.cpus} -o staged/all_runs.merged.sorted.bam staged/all_runs.merged.bam
     samtools index -@ ${task.cpus} staged/all_runs.merged.sorted.bam
     cat > versions.yml <<VERSIONS
-"\${task.process}":
+"${task.process}":
     samtools: \$(samtools --version | head -n1)
 VERSIONS
     """

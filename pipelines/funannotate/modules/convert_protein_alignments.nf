@@ -1,7 +1,6 @@
 process CONVERT_PROTEIN_ALIGNMENTS {
     tag "$meta.assembly_accession:$meta.id"
-    label 'process_medium'
-    container params.funannotate_container ?: '/nfs/production/flicek/ensembl/shared_data/singularity_images/cache/funannotate_latest.sif'
+    label 'python'
 
     input:
     tuple val(meta), path(staged)
@@ -19,7 +18,7 @@ process CONVERT_PROTEIN_ALIGNMENTS {
         [[ -s staged/genblast_protein_alignments.gff3 ]]
     fi
     cat > versions.yml <<VERSIONS
-"\${task.process}":
+"${task.process}":
     python: \$(python --version 2>&1)
 VERSIONS
     """

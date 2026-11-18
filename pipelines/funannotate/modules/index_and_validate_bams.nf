@@ -11,15 +11,12 @@ process INDEX_AND_VALIDATE_BAMS {
 
     script:
     """
-    genome=\$(find staged -maxdepth 1 -type f -name 'genome.fa*' | head -n1)
+    genome=\$(find -L staged -maxdepth 1 -type f -name 'genome.fa*' | head -n1)
     [[ -n "\$genome" && -s "\$genome" ]]
     samtools faidx "\$genome"
-    for bam in staged/bam_*.bam; do
-        [[ -s "\$bam" ]]
-        samtools quickcheck -v "\$bam"
-        samtools view -H "\$bam" | grep -q 'SO:coordinate' || { echo "BAM is not coordinate sorted: \$bam" >&2; exit 1; }
-        bai="\${bam}.bai"
-        if [ ! -s "\$bai" ]; then samtools index -@ ${task.cpus} "\$bam" "\$bai"; fi
+    for cram in staged/cram_*.cram; do
+        [[ -s "\$cram" ]]
+        samtools quickcheck -v "\$cram"
     done
     if [[ "\$genome" == *.gz ]]; then
         gzip -cd "\$genome"
@@ -30,7 +27,7 @@ process INDEX_AND_VALIDATE_BAMS {
         exit 1
     }
     cat > versions.yml <<VERSIONS
-"\${task.process}":
+"${task.process}":
     samtools: \$(samtools --version | head -n1)
 VERSIONS
     """
@@ -38,7 +35,7 @@ VERSIONS
     stub:
     """
     mkdir -p staged
-    touch staged/bam_01.bam.bai staged/bam_02.bam.bai
+    touch staged/cram_01.cram staged/cram_02.cram
     touch versions.yml
     """
 }

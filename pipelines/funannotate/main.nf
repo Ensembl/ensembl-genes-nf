@@ -4,33 +4,37 @@ nextflow.enable.dsl = 2
 nextflow.enable.strict = true
 
 include { validateParameters } from 'plugin/nf-schema'
-include { STAGE_FTP_INPUTS } from './subworkflows/stage_ftp_inputs.nf'
-include { INDEX_AND_VALIDATE_BAMS } from './modules/index_and_validate_bams.nf'
-include { MERGE_BAMS } from './modules/merge_bams.nf'
-include { CONVERT_PROTEIN_ALIGNMENTS } from './modules/convert_protein_alignments.nf'
-include { TRANSFORM_STRINGTE } from './modules/transform_stringte.nf'
-include { RUN_FUNANNOTATE } from './modules/run_funannotate.nf'
+include { RUN_FUNANNOTATE_PIPELINE } from './subworkflows/run_funannotate_pipeline.nf'
 
 def split_list(value) {
     if (!value?.toString()?.trim()) return []
-    value.toString().split(';', -1).collect { it.trim() }.findAll { it }
+    value.toString().split(';', -1).collect { item -> item.trim() }.findAll { item -> item }
 }
 
 def safe_id(String value) {
     value.replaceAll(/[^A-Za-z0-9_.-]/, '_')
 }
 
-def require_ftp(String value, String field, int row) {
+def require_remote_url(String value, String field, int row) {
     if (!value?.trim()) error "Manifest row ${row} requires ${field}"
-    if (!(value ==~ /(?i)ftp:\/\/.+/)) error "Manifest row ${row} ${field} must be an ftp:// URL"
+    if (!(value ==~ /(?i)(ftp|https?):\/\/.+/)) error "Manifest row ${row} ${field} must be an ftp:// or https:// URL"
+}
+
+def local_spec(String value, String field, int row) {
+    if (!value?.trim()) error "Manifest row ${row} requires ${field}"
+    [path: file(value.trim(), checkIfExists: true), name: value.tokenize('/')[-1]]
+}
+
+def local_specs(String value, String field, int row) {
+    split_list(value).collect { path -> local_spec(path, field, row) }
 }
 
 def parse_manifest(manifest_file) {
     def lines = manifest_file.readLines()
     if (!lines) error "Input manifest is empty: ${manifest_file}"
-    def header = lines[0].split('\t', -1).collect { it.trim() }
-    def required = ['cohort_id', 'assembly_accession', 'assembly_release', 'species', 'genome_ftp_url', 'bam_ftp_urls']
-    def missing = required.findAll { !(it in header) }
+    def header = lines[0].split('\t', -1).collect { item -> item.trim() }
+    def required = ['cohort_id', 'assembly_accession', 'species', 'genome_path']
+    def missing = required.findAll { field -> !(field in header) }
     if (missing) error "Manifest is missing required columns: ${missing.join(', ')}"
     if (header.size() != header.toSet().size()) error 'Manifest contains duplicate column names'
     def index = header.withIndex().collectEntries { name, i -> [(name): i] }
@@ -44,40 +48,36 @@ def parse_manifest(manifest_file) {
         def row = header.collectEntries { name -> [(name): values[index[name]].trim()] }
         def key = "${row.assembly_accession}\t${row.cohort_id}"
         if (!seen.add(key)) error "Duplicate cohort_id plus assembly_accession: ${key}"
-        ['cohort_id', 'assembly_accession', 'assembly_release', 'species'].each { field ->
+        ['cohort_id', 'assembly_accession', 'species'].each { field ->
             if (!row[field]) error "Manifest row ${row_number} requires ${field}"
         }
-        require_ftp(row.genome_ftp_url, 'genome_ftp_url', row_number)
-        def bam_urls = split_list(row.bam_ftp_urls)
-        if (!bam_urls) error "Manifest row ${row_number} requires at least one BAM URL"
-        bam_urls.each { require_ftp(it, 'bam_ftp_urls', row_number) }
-        def bai_urls = split_list(row.bai_ftp_urls)
-        if (bai_urls && bai_urls.size() != bam_urls.size()) error "Manifest row ${row_number} bai_ftp_urls must align with bam_ftp_urls"
-        def bam_checksums = split_list(row.bam_sha256s)
-        if (bam_checksums && bam_checksums.size() != bam_urls.size()) error "Manifest row ${row_number} bam_sha256s must align with bam_ftp_urls"
-        bam_checksums.each { if (!(it ==~ /(?i)[0-9a-f]{64}/)) error "Manifest row ${row_number} contains an invalid BAM SHA-256" }
-        def optional_urls = ['transcript_evidence_ftp_urls', 'protein_evidence_ftp_urls']
-        optional_urls.each { field -> split_list(row[field]).each { require_ftp(it, field, row_number) } }
-        ['pasa_gff_ftp_url', 'parameters_json_ftp_url', 'stringtie_ftp_url', 'trnascan_ftp_url'].each { field -> if (row[field]) require_ftp(row[field], field, row_number) }
-        split_list(row.protein_alignments_ftp_url).each { require_ftp(it, 'protein_alignments_ftp_url', row_number) }
+        def cram_urls = split_list(row.cram_ftp_urls)
+        def cram_dir = row.cram_ftp_dir?.trim() ?: ''
+        if (cram_dir && !cram_dir.endsWith('/')) cram_dir += '/'
+        if (!cram_urls && !cram_dir) error "Manifest row ${row_number} requires cram_ftp_urls or cram_ftp_dir"
+        if (cram_urls && cram_dir) error "Manifest row ${row_number} must provide only one of cram_ftp_urls or cram_ftp_dir"
+        cram_urls.each { url -> require_remote_url(url, 'cram_ftp_urls', row_number) }
+        if (cram_dir) require_remote_url(cram_dir, 'cram_ftp_dir', row_number)
+        def cram_checksums = split_list(row.cram_sha256s)
+        if (cram_dir && cram_checksums) error "Manifest row ${row_number} cannot use cram_sha256s with cram_ftp_dir"
+        if (cram_checksums && cram_checksums.size() != cram_urls.size()) error "Manifest row ${row_number} cram_sha256s must align with cram_ftp_urls"
+        cram_checksums.each { checksum -> if (!(checksum ==~ /(?i)[0-9a-f]{64}/)) error "Manifest row ${row_number} contains an invalid CRAM SHA-256" }
         def safe = safe_id(row.cohort_id)
         def files = [
-            genome: [url: row.genome_ftp_url, checksum: row.genome_sha256, name: row.genome_ftp_url.tokenize('/')[-1]],
-            bams: bam_urls.withIndex().collect { url, i -> [url: url, checksum: bam_checksums ? bam_checksums[i] : '', name: "bam_${String.format('%02d', i + 1)}.bam"] },
-            bais: bai_urls.withIndex().collect { url, i -> [url: url, checksum: '', name: "bam_${String.format('%02d', i + 1)}.bam.bai"] },
-            transcripts: split_list(row.transcript_evidence_ftp_urls).withIndex().collect { url, i -> [url: url, checksum: '', name: "transcript_${String.format('%02d', i + 1)}.fa"] },
-            proteins: split_list(row.protein_evidence_ftp_urls).withIndex().collect { url, i -> [url: url, checksum: '', name: "protein_${String.format('%02d', i + 1)}.fa"] },
-            pasa_gff: row.pasa_gff_ftp_url ? [[url: row.pasa_gff_ftp_url, checksum: '', name: 'pasa.gff3']] : [],
-            parameters_json: row.parameters_json_ftp_url ? [[url: row.parameters_json_ftp_url, checksum: '', name: 'parameters.json']] : [],
-            stringtie: row.stringtie_ftp_url ? [[url: row.stringtie_ftp_url, checksum: '', name: 'stringtie.gtf']] : [],
-            protein_alignments: split_list(row.protein_alignments_ftp_url).withIndex().collect { url, i -> [url: url, checksum: '', name: url.tokenize('/')[-1]] },
-            trnascan: row.trnascan_ftp_url ? [[url: row.trnascan_ftp_url, checksum: '', name: 'trnascan.gff']] : []
+            genome: local_spec(row.genome_path, 'genome_path', row_number),
+            crams: cram_urls.withIndex().collect { url, i -> [url: url, checksum: cram_checksums ? cram_checksums[i] : '', name: "cram_${String.format('%02d', i + 1)}.cram"] },
+            cram_dir: cram_dir,
+            transcripts: local_specs(row.transcript_evidence_paths, 'transcript_evidence_paths', row_number),
+            stringtie: row.stringtie_gtf_path ? [local_spec(row.stringtie_gtf_path, 'stringtie_gtf_path', row_number)] : [],
+            scallop: row.scallop_gtf_path ? [local_spec(row.scallop_gtf_path, 'scallop_gtf_path', row_number)] : [],
+            protein_alignments: local_specs(row.protein_alignment_paths, 'protein_alignment_paths', row_number),
+            trnascan: row.trnascan_path ? [local_spec(row.trnascan_path, 'trnascan_path', row_number)] : []
         ]
-        if (files.genome.checksum && !(files.genome.checksum ==~ /(?i)[0-9a-f]{64}/)) error "Manifest row ${row_number} contains an invalid genome SHA-256"
+        def local_files = [files.genome] + files.transcripts + files.stringtie + files.scallop + files.protein_alignments + files.trnascan
         records << [
             id: row.cohort_id, safe_id: safe, assembly_accession: row.assembly_accession,
-            assembly_release: row.assembly_release, species: row.species, isolate: row.isolate ?: '',
-            files: files, genome_name: row.genome_ftp_url.toLowerCase().endsWith('.gz') ? 'genome.fa.gz' : 'genome.fa', bam_count: bam_urls.size(),
+            species: row.species,
+            files: files, local_files: local_files.collect { spec -> spec.path }, genome_name: 'genome.fa', cram_count: cram_urls.size(),
             input_row: row_number
         ]
     }
@@ -85,38 +85,15 @@ def parse_manifest(manifest_file) {
     records
 }
 
-def validate_extra_args(String value) {
-    def owned = ['--input', '--out', '--species', '--isolate', '--rna_bam', '--transcript_evidence', '--protein_evidence', '--pasa_gff', '--parameters', '--cpus']
-    def tokens = value?.trim() ? value.trim().split(/\s+/) : []
-    def bad = tokens.findAll { token -> owned.any { flag -> token == flag || token.startsWith("${flag}=") } }
-    if (bad) error "--extra_predict_args cannot override pipeline-owned arguments: ${bad.unique().join(', ')}"
-}
-
 workflow {
     validateParameters()
-    validate_extra_args(params.extra_predict_args)
-    if (params.parameters && params.parameters.toString().startsWith('ftp://'))
-        error '--parameters must be a local parameters JSON path; use parameters_json_ftp_url in the manifest for FTP input'
     def records = parse_manifest(file(params.input_manifest, checkIfExists: true))
     def cpus = params.cpus.toString().toInteger()
     source = channel.fromList(records)
-    STAGE_FTP_INPUTS(source, params.stage_dir)
-    INDEX_AND_VALIDATE_BAMS(STAGE_FTP_INPUTS.out.staged)
-    MERGE_BAMS(INDEX_AND_VALIDATE_BAMS.out.indexed)
-    CONVERT_PROTEIN_ALIGNMENTS(
-        MERGE_BAMS.out.merged,
-        file("${projectDir}/pipelines/funannotate/bin/convert_protein_alignments.py")
-    )
-    TRANSFORM_STRINGTE(CONVERT_PROTEIN_ALIGNMENTS.out.converted)
-    RUN_FUNANNOTATE(
-        TRANSFORM_STRINGTE.out.transformed,
-        params.funannotate_db ?: '',
-        cpus,
-        params.augustus_species ?: '',
-        params.soft_mask,
-        params.min_training_models,
-        params.busco_db ?: '',
-        params.parameters ?: '',
-        params.extra_predict_args ?: ''
+    RUN_FUNANNOTATE_PIPELINE(
+        source.map { record -> tuple(record, record.local_files) },
+        params.stage_dir,
+        file("${projectDir}/pipelines/funannotate/bin/convert_protein_alignments.py"),
+        cpus
     )
 }

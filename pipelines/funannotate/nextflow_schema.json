@@ -7,23 +7,16 @@
     "stage_dir": {"type": "string", "description": "Persistent directory for FTP inputs and staged BAMs"},
     "outdir": {"type": "string", "default": "./results"},
     "tracedir": {"type": "string"},
-    "funannotate_db": {"type": ["string", "null"], "description": "FUNANNOTATE_DB directory"},
     "cpus": {"oneOf": [{"type": "integer", "minimum": 1}, {"type": "string", "pattern": "^[1-9][0-9]*$"}], "default": 8},
-    "stage_container": {"type": "string", "description": "Pinned container providing curl and checksum utilities for FTP staging"},
-    "gffread_container": {"type": "string", "description": "Container providing gffread for StringTie transcript FASTA conversion"},
-    "funannotate_container": {"type": ["string", "null"], "description": "Pinned funannotate container URI; required for real runs"},
-    "augustus_species": {"type": ["string", "null"]},
-    "parameters": {"type": ["string", "null"], "format": "file-path", "exists": true},
-    "soft_mask": {"type": "integer", "minimum": 0, "default": 2000},
-    "min_training_models": {"type": "integer", "minimum": 1, "default": 200},
-    "busco_db": {"type": ["string", "null"]},
-    "stringtie_ftp_url": {"type": ["string", "null"]},
-    "protein_alignments_ftp_url": {"type": ["string", "null"]},
-    "trnascan_ftp_url": {"type": ["string", "null"]},
-    "extra_predict_args": {"type": "string", "default": ""}
+    "genome_path": {"type": "string", "format": "file-path", "exists": true},
+    "cram_ftp_urls": {"type": "string"},
+    "cram_ftp_dir": {"type": "string"},
+    "cram_sha256s": {"type": ["string", "null"]},
+    "transcript_evidence_paths": {"type": ["string", "null"]},
+    "stringtie_gtf_path": {"type": ["string", "null"], "format": "file-path", "exists": true},
+    "scallop_gtf_path": {"type": ["string", "null"], "format": "file-path", "exists": true},
+    "protein_alignment_paths": {"type": ["string", "null"]},
+    "trnascan_path": {"type": ["string", "null"], "format": "file-path", "exists": true}
   },
-  "required": ["input_manifest"],
-  "allOf": [
-    {"if": {"properties": {"funannotate_container": {"const": null}}}, "then": {"required": []}}
-  ]
+  "required": ["input_manifest"]
 }

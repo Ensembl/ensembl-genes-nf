@@ -5,9 +5,10 @@ def shell_quote(String value) {
 process STAGE_FTP_FILES {
     tag "$meta.assembly_accession:$meta.id"
     label 'process_medium'
-    container params.stage_container ?: 'docker.io/curlimages/curl:8.12.1@sha256:88a9abad9d958340e48564f9bdcdaa29916a2984be59314da709f8bbc0eef6f7'
+    container 'quay.io/biocontainers/curl:7.80.0@sha256:a7e3e10f5b162ac7fdf7fd582056037883e8019611d75a138a7808412161e225'
+    containerOptions '--bind /etc:/etc'
     input:
-    val meta
+    tuple val(meta), path(local_files, stageAs: 'input??')
     val stage_dir
 
     output:
@@ -16,24 +17,53 @@ process STAGE_FTP_FILES {
 
     script:
     def entries = []
-    entries << [kind: 'genome', spec: meta.files.genome]
-    meta.files.bams.eachWithIndex { spec, i -> entries << [kind: "bam_${String.format('%02d', i + 1)}", spec: spec] }
-    meta.files.bais.eachWithIndex { spec, i -> entries << [kind: "bai_${String.format('%02d', i + 1)}", spec: spec] }
-    meta.files.transcripts.eachWithIndex { spec, i -> entries << [kind: "transcript_${String.format('%02d', i + 1)}", spec: spec] }
-    meta.files.proteins.eachWithIndex { spec, i -> entries << [kind: "protein_${String.format('%02d', i + 1)}", spec: spec] }
-    meta.files.pasa_gff.each { entries << [kind: 'pasa', spec: it] }
-    meta.files.parameters_json.each { entries << [kind: 'parameters', spec: it] }
-    meta.files.stringtie.each { entries << [kind: 'stringtie', spec: it] }
-    meta.files.protein_alignments.eachWithIndex { spec, i -> entries << [kind: "protein_alignment_${String.format('%02d', i + 1)}", spec: spec] }
-    meta.files.trnascan.each { entries << [kind: 'trnascan', spec: it] }
+    def local_index = 0
+    local_index = local_index + 1
+    entries << [kind: 'genome', spec: meta.files.genome, local: true, source: "input${String.format('%02d', local_index)}"]
+    meta.files.transcripts.eachWithIndex { spec, i ->
+        local_index = local_index + 1
+        entries << [kind: "transcript_${String.format('%02d', i + 1)}", spec: spec, local: true, source: "input${String.format('%02d', local_index)}"]
+    }
+    meta.files.stringtie.each { spec ->
+        local_index = local_index + 1
+        entries << [kind: 'stringtie', spec: spec, local: true, source: "input${String.format('%02d', local_index)}"]
+    }
+    meta.files.scallop.each { spec ->
+        local_index = local_index + 1
+        entries << [kind: 'scallop', spec: spec, local: true, source: "input${String.format('%02d', local_index)}"]
+    }
+    meta.files.protein_alignments.eachWithIndex { spec, i ->
+        local_index = local_index + 1
+        entries << [kind: "protein_alignment_${String.format('%02d', i + 1)}", spec: spec, local: true, source: "input${String.format('%02d', local_index)}"]
+    }
+    meta.files.trnascan.each { spec ->
+        local_index = local_index + 1
+        entries << [kind: 'trnascan', spec: spec, local: true, source: "input${String.format('%02d', local_index)}"]
+    }
+    meta.files.crams.each { spec -> entries << [kind: spec.name.replace('.cram', ''), spec: spec, local: false] }
+    def cram_directory = meta.files.cram_dir ?: ''
     def commands = entries.collect { entry ->
-        def destination = entry.kind.startsWith('protein_alignment_') ? "staged/${entry.kind}_${entry.spec.name.replaceFirst(/\.[^.]+$/, '')}.gtf" : "staged/${entry.kind}${entry.kind == 'genome' ? (entry.spec.name.endsWith('.gz') ? '.fa.gz' : '.fa') : entry.kind.startsWith('bam_') ? '.bam' : entry.kind.startsWith('bai_') ? '.bam.bai' : entry.kind.startsWith('transcript_') ? '.fa' : entry.kind.startsWith('protein_') ? '.fa' : entry.kind == 'pasa' ? '.gff3' : entry.kind == 'parameters' ? '.json' : entry.kind == 'stringtie' ? '.gtf' : '.gff'}"
+        def destination = entry.kind == 'genome' ? "staged/${meta.genome_name}" : entry.kind.startsWith('protein_alignment_') ? "staged/${entry.kind}_${entry.spec.name.replaceFirst(/\.[^.]+$/, '')}.gtf" : "staged/${entry.kind}${entry.kind.startsWith('cram_') ? '.cram' : entry.kind.startsWith('transcript_') ? '.fa' : entry.kind.startsWith('protein_') ? '.fa' : entry.kind == 'stringtie' ? '.gtf' : entry.kind == 'scallop' ? '.gtf' : '.gff'}"
         def checksum = entry.spec.checksum ? "echo ${shell_quote(entry.spec.checksum + '  ' + destination)} | sha256sum -c -" : ':'
-        "curl -fL --retry 3 --connect-timeout 30 -- ${shell_quote(entry.spec.url)} -o ${shell_quote(destination)}\n${checksum}"
+        def copy = entry.local && entry.kind == 'genome' && entry.spec.name.toLowerCase().endsWith('.gz') ? "gzip -cd ${shell_quote(entry.source)} > ${shell_quote(destination)}" : entry.local ? "cp -p ${shell_quote(entry.source)} ${shell_quote(destination)}" : "curl -fL --retry 3 --connect-timeout 30 -o ${shell_quote(destination)} -- ${shell_quote(entry.spec.url)}"
+        "${copy}\n${checksum}"
     }.join('\n')
+    def directory_commands = cram_directory ? """
+cram_names=\$(mktemp)
+curl -fL --retry 3 --connect-timeout 30 -- ${shell_quote(cram_directory)} | sed -n 's/.*href=\"\\([^\"]*\\.Aligned\\.SortedByCoordinate\\.out\\.cram\\)\".*/\\1/p' | sort > \"\$cram_names\"
+[ -s \"\$cram_names\" ]
+cram_index=1
+while IFS= read -r cram_name; do
+    cram_file=\"staged/cram_\$(printf '%02d' \"\$cram_index\").cram\"
+    curl -fL --retry 3 --connect-timeout 30 -o \"\$cram_file\" -- \"${cram_directory}\$cram_name\"
+    cram_index=\$((cram_index + 1))
+done < \"\$cram_names\"
+rm -f \"\$cram_names\"
+""" : ''
     """
     mkdir -p staged
     ${commands}
+    ${directory_commands}
     mkdir -p ${shell_quote("${stage_dir}/${meta.safe_id}")}
     cp -p staged/* ${shell_quote("${stage_dir}/${meta.safe_id}/")}
     sha256sum staged/* > input_checksums.tsv
@@ -42,7 +72,7 @@ process STAGE_FTP_FILES {
     stub:
     """
     mkdir -p staged
-    touch staged/genome.fa staged/bam_01.bam staged/bam_02.bam
+    touch staged/genome.fa staged/cram_01.cram
     mkdir -p '${stage_dir}/${meta.safe_id}'
     cp -p staged/* '${stage_dir}/${meta.safe_id}/'
     sha256sum staged/* > input_checksums.tsv

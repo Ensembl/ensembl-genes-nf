@@ -1,2 +1,2 @@
-cohort_id	assembly_accession	assembly_release	species	isolate	genome_ftp_url	genome_sha256	bam_ftp_urls	bai_ftp_urls	bam_sha256s	transcript_evidence_ftp_urls	protein_evidence_ftp_urls	pasa_gff_ftp_url	parameters_json_ftp_url
-bad_species	GCA_000000001.1	test-release			ftp://example.org/test/genome.fa		ftp://example.org/test/sample1.bam						
+cohort_id	assembly_accession	species	genome_path	cram_ftp_urls	cram_sha256s	transcript_evidence_paths	stringtie_gtf_path	protein_alignment_paths	trnascan_path
+bad_species	GCA_000000001.1		pipelines/funannotate/test/data/genome.fa	ftp://example.org/test/sample1.cram					pipelines/funannotate/test/data/trnascan.gff

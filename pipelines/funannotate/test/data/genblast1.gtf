@@ -1,0 +1,2 @@
+chr1	genblast	transcript	1	12	42	+	.	transcript_id "prot1";
+chr1	genblast	exon	1	12	42	+	.	transcript_id "prot1";

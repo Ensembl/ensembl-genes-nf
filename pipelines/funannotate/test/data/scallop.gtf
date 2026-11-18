@@ -1,0 +1,2 @@
+chr1	scallop	transcript	1	12	.	+	.	gene_id "gene1"; transcript_id "sc1";
+chr1	scallop	exon	1	12	.	+	.	gene_id "gene1"; transcript_id "sc1";
