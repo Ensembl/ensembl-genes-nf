@@ -11,7 +11,10 @@ and stub checks.
 
 ## Workflow
 
-The orchestration is implemented in `subworkflows/run_funannotate_pipeline.nf`:
+The orchestration is implemented in two subworkflows:
+`subworkflows/prepare_funannotate_inputs.nf` prepares the staged inputs and
+`subworkflows/run_funannotate_pipeline.nf` passes the prepared tuple to the
+Funannotate process.
 
 1. Parse and validate the manifest.
 2. Stage the local genome and optional local evidence files.

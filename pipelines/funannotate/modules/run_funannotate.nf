@@ -1,13 +1,14 @@
-def shell_quote(String value) {
+def shell_quote(value: String) {
     "'${value.replace("'", "'\\''")}'"
 }
 
 process RUN_FUNANNOTATE {
-    tag "$meta.assembly_accession:$meta.id"
+    tag "${meta.assembly_accession}:${meta.id}"
     label 'process_high'
     container 'docker://nextgenusfs/funannotate'
     containerOptions '--cleanenv'
     publishDir params.outdir, mode: 'copy', saveAs: { filename -> "${meta.assembly_accession}/${meta.safe_id}/${filename}" }
+
     input:
     tuple val(meta), path(staged)
     val cpus
@@ -20,18 +21,7 @@ process RUN_FUNANNOTATE {
     path 'versions.yml', emit: versions
 
     script:
-    def args = [
-        '--input', "staged/${meta.genome_name}",
-        '--out', 'predict_results',
-        '--species', shell_quote(meta.species),
-        '--rna_bam staged/all_runs.merged.sorted.bam',
-        meta.files.transcripts.withIndex().collect { pair -> "--transcript_evidence staged/transcript_${String.format('%02d', pair[1] + 1)}.fa" },
-        meta.files.scallop ? '--transcript_evidence staged/scallop_transcripts.fa' : null,
-        meta.files.stringtie ? '--stringtie staged/stringtie.gtf' : null,
-        meta.files.protein_alignments ? '--protein_alignments staged/genblast_protein_alignments.gff3' : null,
-        meta.files.trnascan ? '--trnascan staged/trnascan.gff' : null,
-        '--cpus', cpus
-    ].flatten().findAll { value -> value != null && value.toString() }.collect { value -> value.toString() }.join(' ')
+    def args = ['--input', "staged/${meta.genome_name}", '--out', 'predict_results', '--species', shell_quote(meta.species), '--rna_bam staged/all_runs.merged.sorted.bam', meta.files.transcripts.withIndex().collect { pair -> "--transcript_evidence staged/transcript_${String.format('%02d', pair[1] + 1)}.fa" }, meta.files.scallop ? '--transcript_evidence staged/scallop_transcripts.fa' : null, meta.files.stringtie ? '--stringtie staged/stringtie.gtf' : null, meta.files.protein_alignments ? '--protein_alignments staged/genblast_protein_alignments.gff3' : null, meta.files.trnascan ? '--trnascan staged/trnascan.gff' : null, '--cpus', cpus].flatten().findAll { value -> value != null && value.toString() }.collect { value -> value.toString() }.join(' ')
     """
     # The host-side launcher in .venv/bin/funannotate starts this same image.
     # Nextflow is already inside the image, so call its executable directly.

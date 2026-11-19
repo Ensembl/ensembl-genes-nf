@@ -1,12 +1,13 @@
-def shell_quote(String value) {
+def shell_quote(value: String) {
     "'${value.replace("'", "'\\''")}'"
 }
 
 process STAGE_FTP_FILES {
-    tag "$meta.assembly_accession:$meta.id"
+    tag "${meta.assembly_accession}:${meta.id}"
     label 'process_medium'
     container 'quay.io/biocontainers/curl:7.80.0@sha256:a7e3e10f5b162ac7fdf7fd582056037883e8019611d75a138a7808412161e225'
     containerOptions '--bind /etc:/etc'
+
     input:
     tuple val(meta), path(local_files, stageAs: 'input??')
     val stage_dir
@@ -42,13 +43,16 @@ process STAGE_FTP_FILES {
     }
     meta.files.crams.each { spec -> entries << [kind: spec.name.replace('.cram', ''), spec: spec, local: false] }
     def cram_directory = meta.files.cram_dir ?: ''
-    def commands = entries.collect { entry ->
-        def destination = entry.kind == 'genome' ? "staged/${meta.genome_name}" : entry.kind.startsWith('protein_alignment_') ? "staged/${entry.kind}_${entry.spec.name.replaceFirst(/\.[^.]+$/, '')}.gtf" : "staged/${entry.kind}${entry.kind.startsWith('cram_') ? '.cram' : entry.kind.startsWith('transcript_') ? '.fa' : entry.kind.startsWith('protein_') ? '.fa' : entry.kind == 'stringtie' ? '.gtf' : entry.kind == 'scallop' ? '.gtf' : '.gff'}"
-        def checksum = entry.spec.checksum ? "echo ${shell_quote(entry.spec.checksum + '  ' + destination)} | sha256sum -c -" : ':'
-        def copy = entry.local && entry.kind == 'genome' && entry.spec.name.toLowerCase().endsWith('.gz') ? "gzip -cd ${shell_quote(entry.source)} > ${shell_quote(destination)}" : entry.local ? "cp -p ${shell_quote(entry.source)} ${shell_quote(destination)}" : "curl -fL --retry 3 --connect-timeout 30 -o ${shell_quote(destination)} -- ${shell_quote(entry.spec.url)}"
-        "${copy}\n${checksum}"
-    }.join('\n')
-    def directory_commands = cram_directory ? """
+    def commands = entries
+        .collect { entry ->
+            def destination = entry.kind == 'genome' ? "staged/${meta.genome_name}" : entry.kind.startsWith('protein_alignment_') ? "staged/${entry.kind}_${entry.spec.name.replaceFirst(/\.[^.]+$/, '')}.gtf" : "staged/${entry.kind}${entry.kind.startsWith('cram_') ? '.cram' : entry.kind.startsWith('transcript_') ? '.fa' : entry.kind.startsWith('protein_') ? '.fa' : entry.kind == 'stringtie' ? '.gtf' : entry.kind == 'scallop' ? '.gtf' : '.gff'}"
+            def checksum = entry.spec.checksum ? "echo ${shell_quote(entry.spec.checksum + '  ' + destination)} | sha256sum -c -" : ':'
+            def copy = entry.local && entry.kind == 'genome' && entry.spec.name.toLowerCase().endsWith('.gz') ? "gzip -cd ${shell_quote(entry.source)} > ${shell_quote(destination)}" : entry.local ? "cp -p ${shell_quote(entry.source)} ${shell_quote(destination)}" : "curl -fL --retry 3 --connect-timeout 30 -o ${shell_quote(destination)} -- ${shell_quote(entry.spec.url)}"
+            "${copy}\n${checksum}"
+        }
+        .join('\n')
+    def directory_commands = cram_directory
+        ? """
 cram_names=\$(mktemp)
 curl -fL --retry 3 --connect-timeout 30 -- ${shell_quote(cram_directory)} | sed -n 's/.*href=\"\\([^\"]*\\.Aligned\\.SortedByCoordinate\\.out\\.cram\\)\".*/\\1/p' | sort > \"\$cram_names\"
 [ -s \"\$cram_names\" ]
@@ -59,7 +63,8 @@ while IFS= read -r cram_name; do
     cram_index=\$((cram_index + 1))
 done < \"\$cram_names\"
 rm -f \"\$cram_names\"
-""" : ''
+"""
+        : ''
     """
     mkdir -p staged
     ${commands}

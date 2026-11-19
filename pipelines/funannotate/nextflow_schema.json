@@ -1,22 +1,31 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Funannotate BAM-backed prediction pipeline",
-  "type": "object",
-  "properties": {
-    "input_manifest": {"type": "string", "format": "file-path", "exists": true},
-    "stage_dir": {"type": "string", "description": "Persistent directory for FTP inputs and staged BAMs"},
-    "outdir": {"type": "string", "default": "./results"},
-    "tracedir": {"type": "string"},
-    "cpus": {"oneOf": [{"type": "integer", "minimum": 1}, {"type": "string", "pattern": "^[1-9][0-9]*$"}], "default": 8},
-    "genome_path": {"type": "string", "format": "file-path", "exists": true},
-    "cram_ftp_urls": {"type": "string"},
-    "cram_ftp_dir": {"type": "string"},
-    "cram_sha256s": {"type": ["string", "null"]},
-    "transcript_evidence_paths": {"type": ["string", "null"]},
-    "stringtie_gtf_path": {"type": ["string", "null"], "format": "file-path", "exists": true},
-    "scallop_gtf_path": {"type": ["string", "null"], "format": "file-path", "exists": true},
-    "protein_alignment_paths": {"type": ["string", "null"]},
-    "trnascan_path": {"type": ["string", "null"], "format": "file-path", "exists": true}
-  },
-  "required": ["input_manifest"]
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Funannotate BAM-backed prediction pipeline",
+    "type": "object",
+    "properties": {
+        "input_manifest": { "type": "string", "format": "file-path", "exists": true },
+        "stage_dir": {
+            "type": "string",
+            "description": "Persistent directory for FTP inputs and staged BAMs"
+        },
+        "outdir": { "type": "string", "default": "./results" },
+        "tracedir": { "type": "string" },
+        "cpus": {
+            "oneOf": [
+                { "type": "integer", "minimum": 1 },
+                { "type": "string", "pattern": "^[1-9][0-9]*$" }
+            ],
+            "default": 8
+        },
+        "genome_path": { "type": "string", "format": "file-path", "exists": true },
+        "cram_ftp_urls": { "type": "string" },
+        "cram_ftp_dir": { "type": "string" },
+        "cram_sha256s": { "type": ["string", "null"] },
+        "transcript_evidence_paths": { "type": ["string", "null"] },
+        "stringtie_gtf_path": { "type": ["string", "null"], "format": "file-path", "exists": true },
+        "scallop_gtf_path": { "type": ["string", "null"], "format": "file-path", "exists": true },
+        "protein_alignment_paths": { "type": ["string", "null"] },
+        "trnascan_path": { "type": ["string", "null"], "format": "file-path", "exists": true }
+    },
+    "required": ["input_manifest"]
 }

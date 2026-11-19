@@ -1,5 +1,5 @@
 process TRANSFORM_SCALLOP {
-    tag "$meta.assembly_accession:$meta.id"
+    tag "${meta.assembly_accession}:${meta.id}"
     label 'process_medium'
     container 'docker://getwilds/gffread:0.12.7'
 

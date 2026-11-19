@@ -1,5 +1,5 @@
 process CONVERT_CRAMS {
-    tag "$meta.assembly_accession:$meta.id"
+    tag "${meta.assembly_accession}:${meta.id}"
     label 'process_medium'
     container 'quay.io/biocontainers/samtools:1.20--h50ea8bc_1@sha256:bf80e07e650becfd084db1abde0fe932b50f990a07fa56421ea647b552b5a406'
 
