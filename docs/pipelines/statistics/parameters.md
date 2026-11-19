@@ -170,6 +170,8 @@ nextflow run main.nf \
 | `--apply_ensembl_stats` | boolean | `false` | Insert statistics into the database |
 | `--apply_ensembl_beta_metakeys` | boolean | `false` | Insert beta metakeys into the database |
 | `--apply_busco_metakeys` | boolean | `false` | Create and load BUSCO metakeys JSON |
+| `--update_registry` | boolean | `false` | Load BUSCO genome results into the assembly metadata DB (`assembly_metrics`) and mark `genome_busco.status` as `done` (`assembly_events`). Cannot be used with `--allow_suppressed_accessions` |
+| `--asm_metadata` | string | - | JSON string with assembly metadata DB connection params (`host`, `port`, `user`, `password`, `database`). Required with `--update_registry` |
 
 !!! warning "Database Write Access Required"
     When using `--apply_*` parameters, you must provide `--user` and `--password` with write permissions.
@@ -204,6 +206,7 @@ For BUSCO NCBI mode:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `--ncbiBaseUrl` | string | `https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/` | NCBI API base URL |
+| `--allow_suppressed_accessions` | boolean | `false` | Download NCBI's `currentAccession` for suppressed or previous assemblies. Cannot be used with `--update_registry` |
 
 ### Example
 

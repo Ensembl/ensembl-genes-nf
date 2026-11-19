@@ -37,6 +37,7 @@ Modules for storing results in Ensembl databases:
 | Module | Purpose | Documentation |
 |--------|---------|---------------|
 | **BUSCO_CORE_METAKEYS** | Insert BUSCO results into core database | [View Docs](busco-core-metakeys.md) |
+| **BUSCO_ASSEMBLY_DB** | Insert BUSCO genome results into assembly metadata database | [View Docs](busco-assembly-db.md) |
 | **POPULATE_DB** | Load statistics into database | [View Docs](populate-db.md) |
 
 
@@ -57,7 +58,7 @@ graph LR
     F --> G
 ```
 
-**Modules**: `DB_METADATA`, `BUSCO_DATASET`, `FETCH_GENOME`, `FETCH_PROTEINS`, `BUSCO_GENOME_LINEAGE`, `BUSCO_PROTEIN_LINEAGE`, `BUSCO_CORE_METAKEYS`
+**Modules**: `DB_METADATA`, `BUSCO_DATASET`, `FETCH_GENOME`, `FETCH_PROTEINS`, `BUSCO_GENOME_LINEAGE`, `BUSCO_PROTEIN_LINEAGE`, `BUSCO_CORE_METAKEYS`, `BUSCO_ASSEMBLY_DB`
 
 ### OMArk Workflow
 
@@ -167,6 +168,10 @@ All modules receive and emit a `meta` map containing:
 ### Alphabetical
 
 <div class="grid cards" markdown>
+
+-   [**BUSCO_ASSEMBLY_DB**](busco-assembly-db.md)
+    
+    Insert BUSCO genome results into the assembly metadata database
 
 -   [**BUSCO_CORE_METAKEYS**](busco-core-metakeys.md)
     
