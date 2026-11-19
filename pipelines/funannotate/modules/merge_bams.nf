@@ -14,7 +14,8 @@ process MERGE_BAMS {
     """
     bam_inputs=(staged/bam_*.bam)
     [[ -e "\${bam_inputs[0]}" ]]
-    samtools merge -@ ${task.cpus} -o staged/all_runs.merged.bam "\${bam_inputs[@]}"
+    rm -f staged/all_runs.merged.bam staged/all_runs.merged.sorted.bam staged/all_runs.merged.sorted.bam.bai
+    samtools merge -f -@ ${task.cpus} -o staged/all_runs.merged.bam "\${bam_inputs[@]}"
     samtools sort -@ ${task.cpus} -o staged/all_runs.merged.sorted.bam staged/all_runs.merged.bam
     samtools index -@ ${task.cpus} staged/all_runs.merged.sorted.bam
     cat > versions.yml <<VERSIONS
