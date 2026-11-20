@@ -227,7 +227,7 @@ process ACQUIRE_FASTQ {
     """
     touch acquired.fastq.gz
     printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tacquired.fastq.gz\\tSTUB\\t\\t\\n' '${meta.id}' > acquired_input.tsv
-    printf '"%s":\\n    fastq-dl: stub\\n' '${task.process}' > versions.yml
+    printf '"%s":\\n    fastq-dl: 0.0.0-fixture\\n' '${task.process}' > versions.yml
     """
 }
 

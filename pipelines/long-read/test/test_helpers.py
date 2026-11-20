@@ -126,6 +126,27 @@ def test_manifest_allows_remote_input_only_for_explicit_acquisition(tmp_path: Pa
     assert row["input_sha256"] == ""
 
 
+def test_approved_manifest_preserves_primary_tsv_run_id(tmp_path: Path):
+    manifest = tmp_path / "primary.tsv"
+    manifest.write_text(
+        "run_id\tfastq\ttechnology\tsource_uri\tsample_id\tread_representation\n"
+        "ERR9599165\t\tont\tftp://example.invalid/ERR9599165.fastq.gz\tSAMEA14091971\tfastq\n"
+    )
+    result = run_helper(
+        "normalize_manifest.py", "--manifest", str(manifest), "--mode", "approved_manifest",
+        "--allow-unresolved-inputs", "--cohort-id", "ovis_aries_pilot",
+        "--normalized", str(tmp_path / "normalized.tsv"),
+        "--manifest-checksum", str(tmp_path / "normalized.sha256"),
+        "--checksums", str(tmp_path / "checksums.tsv"),
+        "--status", str(tmp_path / "status.tsv")
+    )
+    assert result.returncode == 0, result.stderr
+    row = next(csv.DictReader((tmp_path / "normalized.tsv").open(), delimiter="\t"))
+    assert row["id"] == "ERR9599165"
+    assert row["run_id"] == "ERR9599165"
+    assert row["sample_id"] == "SAMEA14091971"
+
+
 def test_finalize_prepared_manifest_replaces_input_checksum(tmp_path: Path):
     normalized = tmp_path / "normalized.tsv"
     normalized.write_text("id\tinput\tinput_sha256\nrun1\tremote\t\n")

@@ -31,7 +31,7 @@ def sha256(path: Path) -> str:
 def canonicalize_approved_row(row: dict[str, str], cohort_id: str) -> dict[str, str]:
     """Map the inventory product contract onto the processing manifest contract."""
     row = dict(row)
-    run_id = row.get("id") or row.get("run_accession") or row.get("accession") or row.get("sample_id")
+    run_id = row.get("id") or row.get("run_accession") or row.get("accession") or row.get("run_id") or row.get("sample_id")
     if not run_id:
         raise SystemExit("approved manifest row has no run_accession, accession, id, or sample_id")
     classification = (row.get("classification") or "").strip().upper()
