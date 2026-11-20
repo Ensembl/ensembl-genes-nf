@@ -83,6 +83,7 @@ workflow PREPARE_LONG_READS {
     }
 
     versions = VALIDATE_BAM_INPUT.out.versions
+        .mix(ACQUIRE_FASTQ.out.versions)
         .mix(RUN_PBCCS.out.versions)
         .mix(bam_to_fastq_versions)
 

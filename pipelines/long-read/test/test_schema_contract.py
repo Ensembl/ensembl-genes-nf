@@ -8,6 +8,7 @@ ROOT = Path(__file__).parents[1]
 
 CONCRETE_VERSION_PROCESSES = {
     "ALIGN_FASTQ",
+    "ACQUIRE_FASTQ",
     "BAM_TO_FASTQ",
     "BUILD_MINIMAP_INDEX",
     "COUNT_CONTIG_SHARD_COVERAGE",
@@ -66,6 +67,9 @@ def test_schemas_are_json_and_backend_set_is_unique():
     assert "string" in schema["properties"]["model_backends"]["type"]
     assert "string" in schema["properties"]["backend_scopes"]["type"]
     assert schema["properties"]["fastq_cache_dir"]["format"] == "directory-path"
+    assert schema["properties"]["fastq_dl_provider"]["enum"] == ["ena", "sra"]
+    assert schema["properties"]["fastq_dl_protocol"]["enum"] == ["ftp", "https"]
+    assert schema["properties"]["fastq_dl_max_attempts"]["minimum"] == 1
     assert schema["properties"]["tama_max_retries"]["maximum"] == 5
     mode_rule = schema["allOf"][0]["if"]["properties"]["mode"]
     assert mode_rule.get("enum") == ["fastq"] or mode_rule.get("const") == "fastq"
@@ -73,7 +77,7 @@ def test_schemas_are_json_and_backend_set_is_unique():
     assert "reference_metadata" in schema["properties"]
     assert set(schema["properties"]["tool_containers"]["required"]) == {
         "minimap2", "samtools", "tama", "tmerge", "pbccs", "stringtie2", "stringtie3",
-        "isoquant", "flair", "bambu", "transgram", "diamond", "python_helper"
+        "isoquant", "flair", "bambu", "transgram", "diamond", "fastq_dl", "python_helper"
     }
     assert "transgram" in schema["properties"]["model_backends"]["items"]["enum"]
     assert schema["properties"]["transgram_data_type"]["enum"] == ["auto", "alpha", "beta"]

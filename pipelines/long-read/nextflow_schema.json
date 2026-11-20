@@ -10,6 +10,10 @@
     "manifest": {"type": ["string", "null"], "format": "file-path", "exists": true},
     "approved_manifest": {"type": ["string", "null"], "format": "file-path", "exists": true},
     "fastq_cache_dir": {"type": ["string", "null"], "format": "directory-path", "exists": true},
+    "fastq_dl_provider": {"type": "string", "enum": ["ena", "sra"], "default": "ena"},
+    "fastq_dl_protocol": {"type": "string", "enum": ["ftp", "https"], "default": "https"},
+    "fastq_dl_only_provider": {"type": "boolean", "default": true},
+    "fastq_dl_max_attempts": {"type": "integer", "minimum": 1, "default": 3},
     "retrospective_manifest": {"type": ["string", "null"], "format": "file-path", "exists": true},
     "reference_fasta": {"type": ["string", "null"], "format": "file-path", "exists": true},
     "reference_metadata": {"type": ["string", "null"], "format": "file-path", "exists": true},
@@ -63,7 +67,7 @@
     "diamond_reference_proteins": {"type": ["string", "null"], "format": "file-path", "exists": true},
     "tool_containers": {
       "type": "object",
-      "required": ["minimap2", "samtools", "tama", "tmerge", "pbccs", "stringtie2", "stringtie3", "isoquant", "flair", "bambu", "transgram", "diamond", "python_helper"],
+      "required": ["minimap2", "samtools", "tama", "tmerge", "pbccs", "stringtie2", "stringtie3", "isoquant", "flair", "bambu", "transgram", "diamond", "fastq_dl", "python_helper"],
       "properties": {
         "minimap2": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
         "samtools": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
@@ -77,6 +81,7 @@
         "bambu": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
         "transgram": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$|^https://downloads\\.sourceforge\\.net/project/transgram/Docker/trans_gram-[0-9]{8}\\.sif$"},
         "diamond": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
+        "fastq_dl": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"},
         "python_helper": {"type": "string", "pattern": "^(quay\\.io|docker\\.io)/.+@sha256:[0-9a-f]{64}$"}
       },
       "additionalProperties": false

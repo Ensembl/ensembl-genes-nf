@@ -48,8 +48,14 @@ published when `--evidence_mode enabled`. The output contract, filter rules,
 coordinates, and interpretation limits are in `docs/EVENT_SUPPORT.md`.
 
 Preparation extensions are explicit through `preparation_stages`: `discover`,
-`resolve_metadata`, `acquire`, and `bam_to_fastq`. Acquisition failures are
-terminal and prepared artifacts are checksum-recorded before alignment.
+`resolve_metadata`, `acquire`, and `bam_to_fastq`. FASTQ acquisition uses the
+pinned `fastq-dl` container and the manifest `run_id` as the ENA/SRA accession;
+it defaults to the ENA HTTPS provider with three download attempts and verifies
+the selected artifact MD5 when one is present. Set `fastq_dl_provider`,
+`fastq_dl_protocol`, `fastq_dl_only_provider`, or `fastq_dl_max_attempts` in a
+params file when a site needs different acquisition behavior. Acquisition
+failures are terminal and prepared artifacts are checksum-recorded before
+alignment.
 PBCCS is opt-in through `ccs_mode=pbccs` and is restricted to manifest rows
 marked `read_representation=raw_subreads`; ordinary BAM and canonical CCS rows
 are not converted. Normalized BED12 is the only cross-backend model contract.

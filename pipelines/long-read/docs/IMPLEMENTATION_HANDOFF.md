@@ -45,7 +45,7 @@ and `retrospective_schema.json` for retrospective evidence collection.
 
 | Group | Main-schema parameters |
 |---|---|
-| Input/preparation | `mode`, `manifest`, `approved_manifest`, `reference_fasta`, `reference_metadata`, `reference_fai`, `preparation_stages`, `discovery_query` |
+| Input/preparation | `mode`, `manifest`, `approved_manifest`, `reference_fasta`, `reference_metadata`, `reference_fai`, `preparation_stages`, `discovery_query`, `fastq_dl_provider`, `fastq_dl_protocol`, `fastq_dl_only_provider`, `fastq_dl_max_attempts` |
 | Identity/alignment | `outdir`, `tracedir`, `cohort_id`, `minimap2_preset`, `secondary_mode`, `alignment_qc`, `use_containers` |
 | Sharding/publication | `shard_mode`, `shard_contig_reads`, `shard_very_large_reads`, `shard_max_concurrent`, `publish_native_intermediates` |
 | Backend selection/scope | `model_backends`, `backend_scopes` |

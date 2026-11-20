@@ -189,19 +189,45 @@ process RESOLVE_LONG_READ_METADATA {
 
 process ACQUIRE_FASTQ {
     label 'process_medium'
+    container params.use_containers ? params.tool_containers.fastq_dl : null
     input:
     tuple val(meta), val(source_uri)
     output:
     tuple val(meta), path('acquired.fastq.gz'), emit: reads
     path 'acquired_input.tsv', emit: prepared
+    path 'versions.yml', emit: versions
     script:
+    def only_provider = params.fastq_dl_only_provider ? '--only-provider' : ''
     """
-    python3 ${projectDir}/bin/acquire_input.py --uri '${source_uri}' --output acquired.fastq.gz --run-id '${meta.id}' --metadata acquired_input.tsv
+    set -euo pipefail
+    fastq-dl \\
+        --accession '${meta.run_id}' \\
+        --provider '${params.fastq_dl_provider}' \\
+        --protocol '${params.fastq_dl_protocol}' \\
+        --max-attempts ${params.fastq_dl_max_attempts} \\
+        ${only_provider} \\
+        --outdir fastq_dl
+    mapfile -t fastqs < <(find fastq_dl -maxdepth 1 -type f \\
+        \\( -name '*.fastq.gz' -o -name '*.fq.gz' \\) -print | sort)
+    if (( \${#fastqs[@]} != 1 )); then
+        printf 'expected exactly one FASTQ for %s, found %s\\n' '${meta.run_id}' "\${#fastqs[@]}" >&2
+        printf '%s\\n' "\${fastqs[@]}" >&2
+        exit 1
+    fi
+    cp "\${fastqs[0]}" acquired.fastq.gz
+    expected_md5='${meta.selected_artifact_md5 ?: ''}'
+    if [[ -n "\${expected_md5}" ]]; then
+        printf '%s  %s\\n' "\${expected_md5}" acquired.fastq.gz | md5sum -c -
+    fi
+    test -s acquired.fastq.gz
+    printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tacquired.fastq.gz\\t%s\\t\\t\\n' '${meta.id}' "\$(sha256sum acquired.fastq.gz | cut -d' ' -f1)" > acquired_input.tsv
+    printf '"%s":\\n    fastq-dl: %s\\n' '${task.process}' "\$(fastq-dl --version)" > versions.yml
     """
     stub:
     """
     touch acquired.fastq.gz
     printf 'id\\tinput\\tinput_sha256\\tinput_index\\tinput_index_sha256\\n%s\\tacquired.fastq.gz\\tSTUB\\t\\t\\n' '${meta.id}' > acquired_input.tsv
+    printf '"%s":\\n    fastq-dl: stub\\n' '${task.process}' > versions.yml
     """
 }
 
