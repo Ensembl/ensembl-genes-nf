@@ -13,6 +13,16 @@ from pathlib import Path
 ATTR = re.compile(r'(\w+)\s+"([^"]*)"')
 
 
+def merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    merged: list[tuple[int, int]] = []
+    for start, end in sorted(set(intervals)):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--gtf", required=True, type=Path)
@@ -47,7 +57,7 @@ def main() -> None:
     with args.bed12.open("w", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
         for index, ((chrom, tid, strand), exons) in enumerate(sorted(transcripts.items()), 1):
-            exons = sorted(set(exons))
+            exons = merge_intervals(exons)
             chrom_start, chrom_end = exons[0][0], exons[-1][1]
             sizes = ",".join(str(end - start) for start, end in exons) + ","
             starts = ",".join(str(start - chrom_start) for start, _end in exons) + ","

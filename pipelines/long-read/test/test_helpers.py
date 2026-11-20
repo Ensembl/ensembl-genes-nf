@@ -551,6 +551,23 @@ def test_gtf_to_bed12_and_validation(tmp_path: Path):
     assert validated_manifest.read_text() == model_manifest.read_text()
 
 
+def test_gtf_to_bed12_merges_touching_exons(tmp_path: Path):
+    gtf = tmp_path / "models.gtf"
+    gtf.write_text(
+        'chr1\tpipeline\texon\t1\t10\t.\t+\t.\tgene_id "g"; transcript_id "tx";\n'
+        'chr1\tpipeline\texon\t11\t20\t.\t+\t.\tgene_id "g"; transcript_id "tx";\n'
+    )
+    bed = tmp_path / "models.bed12"
+    result = run_helper(
+        "gtf_to_bed12.py", "--gtf", str(gtf), "--bed12", str(bed), "--backend", "tama", "--scope", "run"
+    )
+    assert result.returncode == 0, result.stderr
+    fields = bed.read_text().rstrip("\n").split("\t")
+    assert fields[9] == "1"
+    assert fields[10] == "20,"
+    assert fields[11] == "0,"
+
+
 def test_bed12_to_gtf_preserves_strand_and_exon_blocks(tmp_path: Path):
     bed = tmp_path / "tama.bed"
     bed.write_text("chr1\t0\t30\tmodel-1\t0\t-\t0\t30\t0\t2\t10,10,\t0,20,\n")
