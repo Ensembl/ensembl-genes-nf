@@ -559,7 +559,8 @@ def test_gtf_to_bed12_merges_touching_exons(tmp_path: Path):
     )
     bed = tmp_path / "models.bed12"
     result = run_helper(
-        "gtf_to_bed12.py", "--gtf", str(gtf), "--bed12", str(bed), "--backend", "tama", "--scope", "run"
+        "gtf_to_bed12.py", "--gtf", str(gtf), "--bed12", str(bed), "--backend", "tama", "--scope", "run",
+        "--merge-touching-blocks",
     )
     assert result.returncode == 0, result.stderr
     fields = bed.read_text().rstrip("\n").split("\t")

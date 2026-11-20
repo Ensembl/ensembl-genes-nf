@@ -91,7 +91,7 @@ process GTF_TO_BED12 {
     path '*.normalization_report.tsv', emit: report
     script:
     """
-    python3 ${projectDir}/bin/gtf_to_bed12.py --gtf ${gtf} --bed12 models.bed12 --backend '${backend}' --scope '${scope}' --report '${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.normalization_report.tsv' --manifest model_manifest.json
+    python3 ${projectDir}/bin/gtf_to_bed12.py --gtf ${gtf} --bed12 models.bed12 --backend '${backend}' --scope '${scope}' --merge-touching-blocks --report '${meta.run_id ?: meta.cohort_id ?: meta.id}.${backend}.${scope}.normalization_report.tsv' --manifest model_manifest.json
     """
     stub:
     """

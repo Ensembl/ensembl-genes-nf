@@ -29,6 +29,7 @@ def main() -> None:
     parser.add_argument("--bed12", required=True, type=Path)
     parser.add_argument("--backend", required=True)
     parser.add_argument("--scope", required=True)
+    parser.add_argument("--merge-touching-blocks", action="store_true")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--manifest", type=Path)
     args = parser.parse_args()
@@ -57,7 +58,7 @@ def main() -> None:
     with args.bed12.open("w", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
         for index, ((chrom, tid, strand), exons) in enumerate(sorted(transcripts.items()), 1):
-            exons = merge_intervals(exons)
+            exons = merge_intervals(exons) if args.merge_touching_blocks else sorted(set(exons))
             chrom_start, chrom_end = exons[0][0], exons[-1][1]
             sizes = ",".join(str(end - start) for start, end in exons) + ","
             starts = ",".join(str(start - chrom_start) for start, _end in exons) + ","
