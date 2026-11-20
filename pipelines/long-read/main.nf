@@ -129,7 +129,7 @@ def reject_pipeline_owned_args(name, value, owned_flags) {
 }
 
 def approved_manifest_id(row) {
-    row.id ?: row.run_accession ?: row.accession ?: row.sample_id
+    row.id ?: row.run_accession ?: row.accession ?: row.run_id ?: row.sample_id
 }
 
 def normalized_read_representation(row, mode) {
@@ -178,7 +178,7 @@ workflow {
         .splitCsv(header: true, sep: '\t')
         .map { row ->
             def row_id = approved_manifest_id(row)
-            if (!row_id) error 'manifest row does not contain id, run_accession, accession, or sample_id'
+            if (!row_id) error 'manifest row does not contain id, run_accession, accession, run_id, or sample_id'
             def source_value = row.source_uri ?: row.selected_artifact_uri ?: row.input ?: row.fastq ?: row.bam ?: row.ccs ?: row.path
             def cached_input = params.mode == 'approved_manifest' ? cached_approved_input(row, cache_dir) : null
             def input_name = cached_input ?: row.input ?: row.fastq ?: row.bam ?: row.ccs ?: row.path ?: source_value
