@@ -298,6 +298,82 @@ def test_explicit_map_without_live_reference_fails(
         )
 
 
+def test_map_same_version_uses_live_reference_and_pre_release_target(
+    monkeypatch,
+) -> None:
+    mock_common_resolution(monkeypatch)
+
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_same_version_live_reference",
+        lambda chain, version, assembly_metadata_db: (
+            "GCA_000000001",
+            3,
+            30,
+        ),
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_live_reference",
+        lambda *_args: pytest.fail("lower-version lookup was called"),
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_ftp_paths",
+        lambda *_args: (Path("reference.fa"), Path("reference.gff3")),
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_pre_release_paths",
+        lambda *_args: (
+            Path("pre-release-target.fa.gz"),
+            Path("pre-release-target.gff3.gz"),
+        ),
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "insert_mapping_session",
+        lambda *_args: 777,
+    )
+
+    result = resolve_species_inputs.resolve_species_inputs(
+        "test_core",
+        requested_mode="map_same_version",
+        assembly_metadata_db=ASSEMBLY_METADATA_DB,
+    )
+
+    assert result.effective_mode == "map"
+    assert result.reference_assembly_id == 30
+    assert result.ref_fasta == "reference.fa"
+    assert result.ref_gff == "reference.gff3"
+    assert result.target_fasta == "pre-release-target.fa.gz"
+    assert result.target_gff == "pre-release-target.gff3.gz"
+    assert result.mapping_session_id == 777
+
+
+def test_map_same_version_rejects_identical_inputs(
+    monkeypatch,
+) -> None:
+    mock_common_resolution(monkeypatch)
+
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_same_version_live_reference",
+        lambda *_args: ("GCA_000000001", 3, 30),
+    )
+
+    with pytest.raises(ValueError, match="requires distinct reference"):
+        resolve_species_inputs.resolve_species_inputs(
+            "test_core",
+            requested_mode="map_same_version",
+            target_fasta_override=Path("same.fa"),
+            target_gff_override=Path("same.gff3"),
+            ref_fasta_override=Path("same.fa"),
+            ref_gff_override=Path("same.gff3"),
+            assembly_metadata_db=ASSEMBLY_METADATA_DB,
+        )
+
+
 def test_resolve_pre_release_paths(
     monkeypatch,
     tmp_path: Path,

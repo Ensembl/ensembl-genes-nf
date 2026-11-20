@@ -23,8 +23,8 @@ workflow RESOLVE_AND_ROUTE {
         : 'auto'
     )
 
-    if (!(default_mode in ['auto', 'map', 'reassign'])) {
-        error "Invalid --mode '${default_mode}'; expected auto, map, or reassign"
+    if (!(default_mode in ['auto', 'map', 'map_same_version', 'reassign'])) {
+        error "Invalid --mode '${default_mode}'; expected auto, map, map_same_version, or reassign"
     }
 
     def direct_overrides = [
@@ -66,10 +66,10 @@ workflow RESOLVE_AND_ROUTE {
                 )
                 def requested_mode = row_mode ?: default_mode
 
-                if (!(requested_mode in ['auto', 'map', 'reassign'])) {
+                if (!(requested_mode in ['auto', 'map', 'map_same_version', 'reassign'])) {
                     error(
                         "Invalid mode '${requested_mode}' for ${db_name}; " +
-                        "expected auto, map, or reassign"
+                        "expected auto, map, map_same_version, or reassign"
                     )
                 }
 

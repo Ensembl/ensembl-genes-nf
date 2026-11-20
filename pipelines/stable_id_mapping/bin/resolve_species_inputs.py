@@ -190,6 +190,41 @@ def resolve_live_reference(
     )
 
 
+def resolve_same_version_live_reference(
+    target_chain: str,
+    target_version: int,
+    assembly_metadata_db: str,
+) -> tuple[str, int, int] | None:
+    """Return the live annotation for exactly the target assembly version."""
+    conn = _connect_reg_ro()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"USE {assembly_metadata_db}")
+            cur.execute(
+                "SELECT a.assembly_id "
+                "FROM assembly a "
+                "INNER JOIN genebuild_status gs "
+                "  ON gs.assembly_id = a.assembly_id "
+                "WHERE a.gca_chain = %s "
+                "  AND a.gca_version = %s "
+                "  AND gs.gb_status = 'live' "
+                "LIMIT 1",
+                (target_chain, target_version),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if row is None:
+        return None
+
+    return (
+        target_chain,
+        target_version,
+        row["assembly_id"],
+    )
+
+
 def resolve_stable_id_ranges(
     gca_accession: str,
     assembly_metadata_db: str,
@@ -417,10 +452,10 @@ def resolve_species_inputs(
     ref_fasta_override: Path | None = None,
     ref_gff_override: Path | None = None,
 ) -> SpeciesInputs:
-    if requested_mode not in {"auto", "map", "reassign"}:
+    if requested_mode not in {"auto", "map", "map_same_version", "reassign"}:
         raise ValueError(
             f"Unknown mode {requested_mode!r}; "
-            "expected auto, map, or reassign"
+            "expected auto, map, map_same_version, or reassign"
         )
 
     meta = fetch_core_db_meta(db_name)
@@ -452,12 +487,26 @@ def resolve_species_inputs(
             target_version,
             assembly_metadata_db,
         )
+    elif requested_mode == "map_same_version":
+        reference = resolve_same_version_live_reference(
+            target_chain,
+            target_version,
+            assembly_metadata_db,
+        )
 
     if requested_mode == "map":
         if reference is None:
             raise NoLiveReferenceError(
                 f"Mode 'map' requested, but no live reference version "
                 f"exists for {target_chain} below version {target_version}"
+            )
+        effective_mode = "map"
+
+    elif requested_mode == "map_same_version":
+        if reference is None:
+            raise NoLiveReferenceError(
+                f"Mode 'map_same_version' requested, but no live reference "
+                f"exists for {target_chain}.{target_version}"
             )
         effective_mode = "map"
     
@@ -487,11 +536,18 @@ def resolve_species_inputs(
             target_fasta = target_fasta_override
             target_gff = target_gff_override
         elif target_fasta_override is None and target_gff_override is None:
-            target_fasta, target_gff = resolve_target_paths(
-                binomial_name,
-                target_chain,
-                target_version,
-            )
+            if requested_mode == "map_same_version":
+                target_fasta, target_gff = resolve_pre_release_paths(
+                    binomial_name,
+                    target_chain,
+                    target_version,
+                )
+            else:
+                target_fasta, target_gff = resolve_target_paths(
+                    binomial_name,
+                    target_chain,
+                    target_version,
+                )
         else:
             raise ValueError(
                 "Provide both target_fasta and target_gff, or neither"
@@ -510,6 +566,23 @@ def resolve_species_inputs(
             raise ValueError(
                 "Provide both ref_fasta and ref_gff, or neither"
             )
+
+        if requested_mode == "map_same_version":
+            duplicate_inputs = [
+                label
+                for label, reference_path, target_path in (
+                    ("FASTA", ref_fasta, target_fasta),
+                    ("GFF3", ref_gff, target_gff),
+                )
+                if reference_path.resolve() == target_path.resolve()
+            ]
+            if duplicate_inputs:
+                raise ValueError(
+                    "Mode 'map_same_version' requires distinct reference and "
+                    "target inputs; identical "
+                    + ", ".join(duplicate_inputs)
+                    + " path(s) were resolved"
+                )
     
         if mapping_session_id_override is not None:
             mapping_session_id = mapping_session_id_override
@@ -593,7 +666,7 @@ def main() -> None:
     parser.add_argument("--assembly-metadata-db", required=True)
     parser.add_argument(
         "--mode",
-        choices=("auto", "map", "reassign"),
+        choices=("auto", "map", "map_same_version", "reassign"),
         default="auto",
     )
     parser.add_argument("--output-json", type=Path, required=True)
