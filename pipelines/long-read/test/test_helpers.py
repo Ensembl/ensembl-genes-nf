@@ -569,6 +569,18 @@ def test_gtf_to_bed12_merges_touching_exons(tmp_path: Path):
     assert fields[11] == "0,"
 
 
+def test_count_model_records_hits_only_accepts_backend_and_scope(tmp_path: Path):
+    hits = tmp_path / "diamond.tsv"
+    report = tmp_path / "diamond_model_report.tsv"
+    hits.write_text("query\ttarget\tscore\nmodel1\tprotein1\t10\n")
+    result = run_helper(
+        "count_model_records.py", "--hits", str(hits), "--hits-only",
+        "--backend", "transgram", "--scope", "run", "--report", str(report),
+    )
+    assert result.returncode == 0, result.stderr
+    assert report.read_text() == "status\tmodels\nCOMPLETE\t1\n"
+
+
 def test_bed12_to_gtf_preserves_strand_and_exon_blocks(tmp_path: Path):
     bed = tmp_path / "tama.bed"
     bed.write_text("chr1\t0\t30\tmodel-1\t0\t-\t0\t30\t0\t2\t10,10,\t0,20,\n")

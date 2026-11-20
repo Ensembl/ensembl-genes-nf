@@ -196,7 +196,7 @@ process REPORT_COMBINED_DIAMOND_MODELS {
     tuple val(meta), val(backend), val(scope), path('diamond_model_report.tsv'), emit: report
     script:
     """
-    python3 ${projectDir}/bin/count_model_records.py --hits ${hits} --hits-only --report diamond_model_report.tsv
+    python3 ${projectDir}/bin/count_model_records.py --hits ${hits} --hits-only --backend '${backend}' --scope '${scope}' --report diamond_model_report.tsv
     """
     stub:
     """
