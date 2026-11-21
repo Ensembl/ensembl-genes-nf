@@ -90,7 +90,7 @@ def read_references(path):
             if not SLUG.fullmatch(slug) or slug in references:
                 raise ValueError(f"Invalid or repeated reference slug {slug!r}")
             ref["reference_id"] = ""
-            if ref["config_status"] == "beta_url_config":
+            if ref["config_status"] in {"beta_url_config", "pre_release_url_config"}:
                 if not all(ref[key] for key in REFERENCE_COLUMNS[4:9]):
                     raise ValueError(f"Incomplete Beta reference for {slug}")
                 migrate_ensembl_urls(ref)

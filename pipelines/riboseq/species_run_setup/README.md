@@ -12,7 +12,7 @@ From the `ensembl-genes-nf` checkout with Python 3.9 or later:
 
 ```bash
 RDP=/Users/jackt/projects/RiboSeqOrg-DataPortal/build/metadata_rebuild/release_2026-11/output
-BUNDLE="$PWD/results/rdp-production/release_2026-11-v3"
+BUNDLE="$PWD/results/rdp-production/release_2026-11-v4"
 python3 pipelines/riboseq/bin/prepare_rdp_processing.py \
   --db "$RDP/db.sqlite3" \
   --review-queue "$RDP/review_queue.csv" \
@@ -54,8 +54,8 @@ success rates.
 
 ## Build references and run the controls
 
-The v3 export contains the GRCz13ab reference choice. Stage it on Codon at
-`/homes/jackt/rdp-production/inputs/release_2026-11-v3`. Set `OUT` to a
+The v4 export contains the GRCz13ab reference choice. Stage it on Codon at
+`/homes/jackt/rdp-production/inputs/release_2026-11-v4`. Set `OUT` to a
 writable execution directory for reference and control outputs.
 
 For mouse, reuse the matching GRCm39 / Ensembl `2026_04` bundle with
@@ -70,7 +70,7 @@ Use the pinned workflow checkout and a persistent Nextflow work directory:
 
 ```bash
 export NXF_VER=26.04.6
-BUNDLE=/homes/jackt/rdp-production/inputs/release_2026-11-v3
+BUNDLE=/homes/jackt/rdp-production/inputs/release_2026-11-v4
 SPECIES=danio_rerio
 REF="$OUT/references/$SPECIES"
 nextflow run pipelines/riboseq/main.nf -profile slurm \
