@@ -24,6 +24,7 @@ workflow PREPARE_LONG_READS {
 
     acquired_fastq = channel.empty()
     acquired_bam = channel.empty()
+    acquire_versions = channel.empty()
     if (preparation_stages.contains('acquire')) {
         acquire_fastq_requests = input_runs.filter { item -> item[0].read_representation == 'fastq' }
             .map { meta, _source -> tuple(meta, meta.source_uri) }
@@ -33,6 +34,7 @@ workflow PREPARE_LONG_READS {
         ACQUIRE_BAM(acquire_bam_requests)
         acquired_fastq = ACQUIRE_FASTQ.out.reads
         acquired_bam = ACQUIRE_BAM.out.bam
+        acquire_versions = ACQUIRE_FASTQ.out.versions.mix(ACQUIRE_BAM.out.versions)
     }
 
     fastq_inputs = preparation_stages.contains('acquire')
@@ -83,7 +85,7 @@ workflow PREPARE_LONG_READS {
     }
 
     versions = VALIDATE_BAM_INPUT.out.versions
-        .mix(ACQUIRE_FASTQ.out.versions)
+        .mix(acquire_versions)
         .mix(RUN_PBCCS.out.versions)
         .mix(bam_to_fastq_versions)
 
