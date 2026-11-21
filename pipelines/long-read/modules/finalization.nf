@@ -60,13 +60,12 @@ process COLLECT_SOFTWARE_VERSIONS {
     label 'process_light'
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
     input:
-    val versions_text
+    path versions_file
     output:
     path 'software_versions.yml', emit: software_versions
     script:
-    def encoded_versions = versions_text.bytes.encodeBase64().toString()
     """
-    python3 ${projectDir}/bin/write_text.py --base64 '${encoded_versions}' --output software_versions.yml
+    cp ${versions_file} software_versions.yml
     """
     stub:
     """
