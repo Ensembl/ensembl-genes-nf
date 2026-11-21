@@ -24,6 +24,7 @@ params {
     generate_trackhub: Boolean = false
     fetch: Boolean = true
     force_fetch: Boolean = false
+    exact_ena_fastq: Boolean = false
     getrpf_max_reads: Integer = 5000
     getrpf_preserve_umi: Boolean = false
     getrpf_infer_reads: Integer = 1000000

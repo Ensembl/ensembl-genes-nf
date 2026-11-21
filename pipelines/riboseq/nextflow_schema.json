@@ -146,6 +146,11 @@
       "default": false,
       "description": "Force reprocessing of existing collapsed reads"
     },
+    "exact_ena_fastq": {
+      "type": "boolean",
+      "default": false,
+      "description": "Require one exact, checksum-verified single-end FASTQ from ENA for each run"
+    },
     "collapsed_read_path": {
       "type": "string",
       "description": "Path to directory containing pre-collapsed reads"

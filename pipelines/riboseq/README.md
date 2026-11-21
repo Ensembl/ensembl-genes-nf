@@ -12,6 +12,8 @@ The final indexed STAR genome and transcriptome BAMs are published under
 nextflow run main.nf -stub --outdir results
 ```
 
+For RDP-backed production inputs, see the [release export and control run instructions](species_run_setup/README.md).
+
 ## Reusing an existing run context
 
 For a rerun, generate a small config from the reference bundle, sample sheet,

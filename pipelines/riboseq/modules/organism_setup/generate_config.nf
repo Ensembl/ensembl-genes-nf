@@ -29,7 +29,9 @@ process GENERATE_CONFIG {
     task.ext.when == null || task.ext.when
 
     script:
-    def base_path = "${params.outdir}/organism_setup/${organism}/${version}"
+    // Organism setup publishes all reference artefacts directly under
+    // organism_setup/. Keep the reusable config aligned with those outputs.
+    def base_path = "${params.outdir}/organism_setup"
     """
 #!/usr/bin/env python3
 
@@ -46,7 +48,6 @@ config_content = f'''// Auto-generated params.config for riboseq pipeline
 params {{
     // Reference Genome Paths
     star_index = "{base_path}/${star_index}"
-    bowtie_index = "{base_path}/${bowtie_index}"
     rrna_index = "{base_path}/${rrna_index}"
     gtf = "{base_path}/${gtf}"
     fasta = "{base_path}/${genome_fasta}"

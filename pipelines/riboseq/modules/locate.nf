@@ -51,9 +51,9 @@ process LOCATE {
     """
 
     stub:
+    def mock_file = params.fetch ? "${run}_needs_processing" : "${run}.collapsed.fa.gz"
     """
-    touch "${run}.collapsed.fa.gz"
-    touch "${run}_needs_processing"
+    touch "${mock_file}"
     printf 'Run\\tStatus\\tPath\\n%s\\tSTUB\\t\\n' "${run}" > "${run}_input_resolution.tsv"
     """
 }

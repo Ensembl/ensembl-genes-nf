@@ -1,26 +1,109 @@
-# RiboSeq Ensembl Beta species run setup
+# RDP production run setup
 
-Generated from `/Users/jackt/FINAL_LIST.csv` and Ensembl Beta FTP (`https://ftp.ebi.ac.uk/pub/ensemblorganisms/`).
+Use the local RiboSeq Data Portal release SQLite database as the run inventory.
+The exporter opens it read-only and records the SHA-256 of the release, the
+reference manifest, the exporter and any optional review or selection input.
+It publishes a complete bundle to a new directory after the inputs and quotas
+validate.
 
-## Contents
+## Export a release
 
-- `sample_sheets/*_samplesheet.csv`: pipeline-ready CSVs with exactly `Run,study_accession`.
-- `configs/*_beta_params.config`: URL-based configs that use Ensembl Beta FTP files directly.
-- `species_manifest.tsv`: run counts, TaxIDs, inhibitor summaries, chosen Beta species directory, assembly, provider, geneset date, FASTA URL, and GTF URL.
-
-## Run pattern on Codon
+From the `ensembl-genes-nf` checkout with Python 3.9 or later:
 
 ```bash
-nextflow run /hps/software/users/ensembl/genebuild/jackt/ensembl-genes-nf/pipelines/riboseq/main.nf \
-  -c /homes/jackt/riboseq_species_runs/configs/<slug>_beta_params.config \
-  -profile slurm
+RDP=/path/to/rdp/release/output
+BUNDLE="$PWD/results/rdp-production/release_2026-11-v2"
+python3 pipelines/riboseq/bin/prepare_rdp_processing.py \
+  --db "$RDP/db.sqlite3" \
+  --review-queue "$RDP/review_queue.csv" \
+  --pilot-plan pipelines/riboseq/species_run_setup/rdp_pilot_plan.json \
+  --out-dir "$BUNDLE"
 ```
 
-The configs intentionally use `download_method = "url"` and direct Beta FTP URLs. They do not use `gget` or old Ensembl release-number FTP paths.
+Use a fresh, versioned destination when regenerating an export. The SQLite
+release and its optional review queue stay local. Stage the generated bundle
+on the cluster filesystem.
 
-## Default reference rules
+| Output | Use |
+| --- | --- |
+| `run_inventory.tsv` | One row per portal accession with curated library type, source metadata, reference ID, hold reasons and raw-input status. |
+| `species_summary.tsv` | Counts by portal scientific name and TaxID, including pending reference mappings. |
+| `references.tsv` and `organism_setup/*.json` | Pinned assembly, geneset and current file URLs with setup-only Nextflow parameters. |
+| `sample_sheets/*_samplesheet.csv` | Full candidate list per configured species. |
+| `controls/*_samplesheet.csv` and `pilot/*_samplesheet.csv` | Named-control and draft pilot sheets. The 12 controls are included in the 225 human, 225 mouse and 50 zebrafish quotas. |
+| `pilot/selection.tsv` and `provenance.json` | Named control intent, selection strata, seed, source hashes and release totals. |
+| `processing.json` | Per-sample getRPF settings and exact single-end ENA acquisition. |
 
-- Use canonical/reference assembly where the species has a clear standard assembly, for example human GRCh38.p14, mouse GRCm39, and zebrafish GRCz11.
-- Otherwise use the newest complete Beta `genes.gtf.gz` record discoverable for the selected species/strain directory.
-- Use `genes.gtf.gz`, not `genes-including_alt.gtf.gz`, for clean cross-species defaults and to avoid alt-locus duplicate annotation in ordinary Ribo-seq runs.
-- Species without a confident Beta mapping remain sample-sheet-only in the manifest.
+Pass the `*_samplesheet.csv` files directly to `--sample_sheet`. They follow
+the checked-in species sheets with exactly two columns, `Run,study_accession`,
+and CRLF line endings. `Run` is an archive run accession and
+`study_accession` is its BioProject accession.
+
+The baseline uses the portal's curated `Ribo-Seq` label, `SINGLE` layout and
+a BioProject. It holds unresolved review-queue rows, other assays and layouts,
+and taxa without a configured mapping. Reference joins require both a TaxID
+listed in the manifest and a matching scientific name. Review unmapped taxa
+and strain assignments before expanding the reference catalog. Portal
+processing status is historical evidence. All raw inputs start as unresolved.
+
+The pilot selection cycles through studies and spreads each round across
+inhibitor, nuclease, raw read length and depth bins. Missing measurements have
+their own bins. This is a study-balanced draft for evaluating coverage across
+protocols. Keep the named controls visible when calculating routine-stratum
+success rates.
+
+## Build references and run the controls
+
+Set `BUNDLE` to the exported inputs on the execution filesystem and `OUT` to a
+writable output directory. For a matching existing reference bundle, skip
+organism setup and pass its generated reference config with `-c`.
+
+Build the pinned GRCh38.p14 / Ensembl `2026_04` human and GRCz11 / Ensembl
+`2018_04` zebrafish references with their setup JSONs. Use the pinned workflow
+checkout and a persistent Nextflow work directory:
+
+```bash
+export NXF_VER=26.04.6
+BUNDLE=/path/to/staged/release_2026-11-v2
+SPECIES=danio_rerio
+REF="$OUT/references/$SPECIES"
+nextflow run pipelines/riboseq/main.nf -profile slurm \
+  -params-file "$BUNDLE/organism_setup/$SPECIES.json" \
+  -work-dir "$OUT/work/references/$SPECIES" --outdir "$REF"
+
+nextflow run pipelines/riboseq/main.nf -profile slurm \
+  -c "$REF/pipeline_info/riboseq_params.config" \
+  -params-file "$BUNDLE/processing.json" \
+  -work-dir "$OUT/work/controls/$SPECIES" \
+  --sample_sheet "$BUNDLE/controls/${SPECIES}_samplesheet.csv" \
+  --outdir "$OUT/controls/$SPECIES"
+```
+
+Capture reference checksums and the resolved pipeline config with each
+attempt. Exact acquisition uses the ENA file report for the requested run,
+checks that the archive reports one single-end FASTQ, and verifies its MD5
+before downstream processing. The successful source record, including a
+local SHA-256, is published under `pipeline_info/fastq_sources/`. Missing
+ENA FASTQs, ambiguous files and unsupported layouts are acquisition failures
+with the accession and reason in the task log. The exact-acquisition mode
+currently requires an ENA-hosted FASTQ. Keep accessions that need another
+acquisition route in the review ledger.
+
+Look up a control's source without downloading its library:
+
+```bash
+python3 pipelines/riboseq/bin/fetch_ena_run.py SRR11798519 --metadata-only
+```
+
+Use the control results to close the acquisition, trimming, contaminant,
+alignment-count and P-site checks before freezing the pilot. The generated
+processing parameters use per-sample mode.
+
+## Reference snapshot
+
+`species_manifest.tsv` preserves the earlier `FINAL_LIST.csv` discovery
+snapshot and its pinned reference choices. The checked-in `sample_sheets/`
+and `configs/` next to it record that historical setup. The exporter carries
+forward the assembly and geneset, translating retired species-based FTP paths
+to Ensembl's accession-based tree. It uses the unmasked genome and
+`genes.gtf.gz` annotations. [Ensembl FTP migration](https://www.ensembl.info/2026/06/)

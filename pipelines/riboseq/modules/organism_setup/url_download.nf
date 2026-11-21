@@ -1,7 +1,7 @@
 /*
  * URL_DOWNLOAD
  * Download genome and annotation files from custom URLs
- * Supports gzipped files (auto-decompressed)
+ * Supports gzip and BGZF files (auto-decompressed)
  */
 
 process URL_DOWNLOAD {
@@ -25,8 +25,8 @@ process URL_DOWNLOAD {
     task.ext.when == null || task.ext.when
 
     script:
-    def fasta_filename = fasta_url.tokenize('/')[-1].replaceAll(/\.gz$/, '')
-    def gtf_filename = gtf_url.tokenize('/')[-1].replaceAll(/\.gz$/, '')
+    def fasta_filename = fasta_url.tokenize('/')[-1].replaceAll(/\.(?:gz|bgz)$/, '')
+    def gtf_filename = gtf_url.tokenize('/')[-1].replaceAll(/\.(?:gz|bgz)$/, '')
     """
     # Download genome FASTA
     curl --silent --fail -L -o genome_download.fa.gz "${fasta_url}" || \\
@@ -55,8 +55,8 @@ process URL_DOWNLOAD {
     """
 
     stub:
-    def fasta_filename = fasta_url.tokenize('/')[-1].replaceAll(/\.gz$/, '')
-    def gtf_filename = gtf_url.tokenize('/')[-1].replaceAll(/\.gz$/, '')
+    def fasta_filename = fasta_url.tokenize('/')[-1].replaceAll(/\.(?:gz|bgz)$/, '')
+    def gtf_filename = gtf_url.tokenize('/')[-1].replaceAll(/\.(?:gz|bgz)$/, '')
     """
     touch ${fasta_filename}
     touch ${gtf_filename}

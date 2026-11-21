@@ -1,0 +1,22 @@
+{
+  "seed": 20261121,
+  "quotas": {
+    "homo_sapiens": 225,
+    "mus_musculus": 225,
+    "danio_rerio": 50
+  },
+  "controls": {
+    "SRR11005875": "Human historical count and coordinate contrast",
+    "SRR11005904": "Human historical count and coordinate contrast",
+    "SRR11005889": "Human acquisition failure and recovery",
+    "SRR12693498": "Human getRPF trimming truth",
+    "SRR23242345": "Human getRPF trimming truth",
+    "ERR1190989": "Mouse supported offsets",
+    "SRR8494680": "Mouse header-only good offset table",
+    "SRR11798519": "Mouse exact-run acquisition with sibling runs",
+    "SRR26055539": "Mouse RiboMetric resource case",
+    "SRR315601": "Mouse cycloheximide control",
+    "SRR315604": "Mouse harringtonine control per planning brief",
+    "SRR836195": "Zebrafish transfer control"
+  }
+}
