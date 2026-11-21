@@ -11,8 +11,8 @@ validate.
 From the `ensembl-genes-nf` checkout with Python 3.9 or later:
 
 ```bash
-RDP=/path/to/rdp/release/output
-BUNDLE="$PWD/results/rdp-production/release_2026-11-v2"
+RDP=/Users/jackt/projects/RiboSeqOrg-DataPortal/build/metadata_rebuild/release_2026-11/output
+BUNDLE="$PWD/results/rdp-production/release_2026-11-v3"
 python3 pipelines/riboseq/bin/prepare_rdp_processing.py \
   --db "$RDP/db.sqlite3" \
   --review-queue "$RDP/review_queue.csv" \
@@ -22,7 +22,7 @@ python3 pipelines/riboseq/bin/prepare_rdp_processing.py \
 
 Use a fresh, versioned destination when regenerating an export. The SQLite
 release and its optional review queue stay local. Stage the generated bundle
-on the cluster filesystem.
+on the execution filesystem when launching on Codon.
 
 | Output | Use |
 | --- | --- |
@@ -54,17 +54,23 @@ success rates.
 
 ## Build references and run the controls
 
-Set `BUNDLE` to the exported inputs on the execution filesystem and `OUT` to a
-writable output directory. For a matching existing reference bundle, skip
-organism setup and pass its generated reference config with `-c`.
+The v3 export contains the GRCz13ab reference choice. Stage it on Codon at
+`/homes/jackt/rdp-production/inputs/release_2026-11-v3`. Set `OUT` to a
+writable execution directory for reference and control outputs.
 
-Build the pinned GRCh38.p14 / Ensembl `2026_04` human and GRCz11 / Ensembl
-`2018_04` zebrafish references with their setup JSONs. Use the pinned workflow
-checkout and a persistent Nextflow work directory:
+For mouse, reuse the matching GRCm39 / Ensembl `2026_04` bundle with
+`/homes/jackt/rdp-production/reference-configs/release_2026-11-v2/mus_musculus.config`.
+Its paths point to the verified, flat October reference directory. Skip the
+setup command and pass this file with `-c` for the mouse controls.
+
+Build the pinned GRCh38.p14 / Ensembl `2026_04` human and GRCz13ab
+pre-release zebrafish reference with their setup JSONs. The zebrafish files
+are the soft-masked FASTA and GTF under the Ensembl pre-release directory.
+Use the pinned workflow checkout and a persistent Nextflow work directory:
 
 ```bash
 export NXF_VER=26.04.6
-BUNDLE=/path/to/staged/release_2026-11-v2
+BUNDLE=/homes/jackt/rdp-production/inputs/release_2026-11-v3
 SPECIES=danio_rerio
 REF="$OUT/references/$SPECIES"
 nextflow run pipelines/riboseq/main.nf -profile slurm \

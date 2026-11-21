@@ -119,3 +119,17 @@ def test_ena_download_checks_archive_and_local_digests(modules, monkeypatch, tmp
     assert path.read_bytes() == data
     with pytest.raises(ValueError, match="MD5 mismatch"):
         fetch.download({**record, "archive_md5": "0" * 32}, path)
+
+
+def test_pre_release_reference_urls_are_preserved(modules):
+    _, exporter = modules
+    ref = {
+        "beta_assembly": "GCA_052040795.2",
+        "beta_provider": "pre_release",
+        "beta_geneset_date": "2026-10-06",
+        "genome_fasta_url": "https://ftp.ebi.ac.uk/pub/databases/ensembl/pre-release/Danio_rerio/GCA_052040795.2/danio_rerio_gca052040795v2.dna.softmasked.fa.gz",
+        "gtf_url": "https://ftp.ebi.ac.uk/pub/databases/ensembl/pre-release/Danio_rerio/GCA_052040795.2/danio_rerio_gca052040795v2.gtf.gz",
+    }
+    exporter.migrate_ensembl_urls(ref)
+    assert ref["genome_fasta_url"].endswith("danio_rerio_gca052040795v2.dna.softmasked.fa.gz")
+    assert ref["gtf_url"].endswith("danio_rerio_gca052040795v2.gtf.gz")

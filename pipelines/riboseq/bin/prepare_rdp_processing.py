@@ -94,7 +94,10 @@ def read_references(path):
                 if not all(ref[key] for key in REFERENCE_COLUMNS[4:9]):
                     raise ValueError(f"Incomplete Beta reference for {slug}")
                 migrate_ensembl_urls(ref)
-                version = "beta_{beta_geneset_date}_{beta_assembly}_{beta_provider}".format(**ref)
+                prefix = "pre_release" if ref["beta_provider"] == "pre_release" else "beta"
+                version = "{prefix}_{beta_geneset_date}_{beta_assembly}_{beta_provider}".format(
+                    prefix=prefix, **ref
+                )
                 ref["reference_id"] = f"{slug}__{version}"
             taxids = [item.partition(":")[0] for item in ref["taxids"].split(";")]
             if any(not taxid.isdecimal() or int(taxid) < 1 for taxid in taxids):
