@@ -12,7 +12,13 @@ This document captures decisions and conventions for submitting alignment eviden
 ## Projects / Studies
 - Model: one ENA Project (Study) per assembly + Ensembl partial release (e.g., `prj_GCA_052040795.1-Ensembl-2025-12`).
 - The workflow derives and registers this Project automatically before any analyses.
-- An umbrella study for Ensembl RNA-seq submissions is expected. The workflow accepts this as `--umbrella_study` and records it as analysis metadata until the official ENA cross-linking model is confirmed.
+- An umbrella study for Ensembl RNA-seq submissions is expected. Supply its
+  accession, exact alias, title, and description with `--umbrella_study`,
+  `--umbrella_alias`, `--umbrella_title`, and `--umbrella_description`.
+- The workflow links the newly created child project in a terminal ENA
+  `MODIFY` submission after project and analysis polling have completed. The
+  official umbrella relationship is retained as its own XML, receipt, and
+  accession table.
 
 Rationale: keeps evidence for a given assembly/release discoverable and isolated; avoids alias collisions across releases.
 
@@ -46,7 +52,8 @@ Defaults applied by the workflow:
 - Outputs: XML per analysis, queue responses, and consolidated `accessions.tsv`.
 
 ## Open questions
-- Final umbrella study accession/alias and whether child project-to-umbrella linkage should be emitted in ENA XML.
+- Whether the umbrella alias/title/description should come from the registry
+  rather than CLI parameters.
 - Whether production submissions should use BAMs as-is or CRAMs.
 - Whether `SAMD...` sample accessions validate as `SAMPLE_REF`, or need mapping to ENA sample accessions.
 - Which registry fields will replace CLI arguments for assembly/annotation metadata.

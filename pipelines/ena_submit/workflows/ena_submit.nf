@@ -9,8 +9,7 @@ include { ENA_POLL_WEBIN as ENA_POLL_PROJECT } from '../modules/poll_webin.nf'
 include { ENA_POLL_WEBIN as ENA_POLL_ANALYSIS } from '../modules/poll_webin.nf'
 include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
 include { ENA_GENERATE_UMBRELLA_XML } from '../modules/generate_umbrella_xml.nf'
-include { ENA_SUBMIT_WEBIN as ENA_SUBMIT_UMBRELLA } from '../modules/submit_webin.nf'
-include { ENA_POLL_WEBIN as ENA_POLL_UMBRELLA } from '../modules/poll_webin.nf'
+include { ENA_LINK_UMBRELLA } from '../modules/link_umbrella.nf'
 include { ENA_RESOLVE_METADATA } from '../modules/resolve_metadata.nf'
 include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
 include { ENA_CONVERT_TO_CRAM } from '../modules/convert_to_cram.nf'
@@ -36,6 +35,13 @@ workflow ENA_SUBMIT_WORKFLOW {
     assert params.mode in ['test', 'prod'] : "--mode must be 'test' or 'prod'"
     assert params.outdir :        "--outdir is required"
     def create_project = params.create_project?.toString()?.toLowerCase() in ['1', 'true', 'yes']
+    def release_mode = params.release_mode?.toString()?.trim()?.toLowerCase() ?: 'none'
+    assert release_mode in ['none', 'immediate', 'date'] : "--release_mode must be none, immediate, or date"
+    assert !(params.mode == 'test' && release_mode != 'none') : "Release actions are disabled in --mode test"
+    if (release_mode == 'date') {
+        assert params.release_date?.toString()?.trim() ==~ /\d{4}-\d{2}-\d{2}/ :
+            "--release_date YYYY-MM-DD is required when --release_mode date is supplied"
+    }
 
     def ch_webin_user     = Channel.value(webin_user)
     // Base endpoint derived from mode unless overridden
@@ -107,28 +113,6 @@ workflow ENA_SUBMIT_WORKFLOW {
         ch_project_gate = ENA_POLL_PROJECT.out.accessions
     } else {
         ch_project_gate = Channel.value('existing-study')
-    }
-
-    if (params.umbrella_study) {
-        assert create_project : "--umbrella_study currently requires --create_project true so new child accessions can be verified"
-        assert params.umbrella_title : "--umbrella_title is required with --umbrella_study"
-        assert params.umbrella_description : "--umbrella_description is required with --umbrella_study"
-        def umbrella_meta = [id: 'umbrella_update', alias: params.umbrella_study]
-        def umbrella_inputs = ENA_POLL_PROJECT.out.accessions
-            .map { accession_file -> tuple(umbrella_meta, accession_file) }
-        ENA_GENERATE_UMBRELLA_XML(
-            umbrella_inputs,
-            Channel.value(params.umbrella_study),
-            Channel.value(params.umbrella_title),
-            Channel.value(params.umbrella_description)
-        )
-        ENA_SUBMIT_UMBRELLA(ENA_GENERATE_UMBRELLA_XML.out.xml, ch_webin_base, ch_webin_user)
-        ENA_POLL_UMBRELLA(
-            ENA_SUBMIT_UMBRELLA.out.queued.map { meta, f -> f }.collect(),
-            ch_webin_user,
-            Channel.value(params.poll_interval ?: 20),
-            Channel.value(params.poll_max_attempts ?: 30)
-        )
     }
 
     def ch_expander_script = Channel.value(file("${projectDir}/bin/expand_file_manifest.py"))
@@ -342,6 +326,37 @@ workflow ENA_SUBMIT_WORKFLOW {
 
     ENA_POLL_ANALYSIS.out.accessions.view { f -> "Accessions written to: ${f}" }
 
+    // Umbrella linking is terminal: the child project and all analyses must
+    // have permanent accessions before the umbrella MODIFY request is made.
+    def umbrella_accession = params.umbrella_study?.toString()?.trim()
+    if (umbrella_accession) {
+        assert create_project : "--umbrella_study currently requires --create_project true so new child accessions can be verified"
+        assert params.umbrella_alias?.toString()?.trim() : "--umbrella_alias is required when --umbrella_study is supplied"
+        assert params.umbrella_title?.toString()?.trim() : "--umbrella_title is required when --umbrella_study is supplied"
+        assert params.umbrella_description?.toString()?.trim() : "--umbrella_description is required when --umbrella_study is supplied"
+
+        def umbrella_inputs = ENA_POLL_PROJECT.out.accessions
+            .combine(ENA_POLL_ANALYSIS.out.accessions)
+            .map { project_receipt, analysis_receipt ->
+                tuple([id: 'umbrella_link'], project_receipt, analysis_receipt)
+            }
+        ENA_GENERATE_UMBRELLA_XML(
+            umbrella_inputs,
+            Channel.value('modify'),
+            Channel.value(params.umbrella_alias.toString().trim()),
+            Channel.value(params.umbrella_title.toString().trim()),
+            Channel.value(params.umbrella_description.toString().trim())
+        )
+        ENA_LINK_UMBRELLA(
+            ENA_GENERATE_UMBRELLA_XML.out.xml,
+            Channel.value(umbrella_accession),
+            ch_webin_user,
+            Channel.value(release_mode),
+            Channel.value(params.release_date?.toString()?.trim() ?: '')
+        )
+        ENA_LINK_UMBRELLA.out.status.view { f -> "Umbrella status written to: ${f}" }
+    }
+
     def all_versions = channel.empty()
     if (create_project) {
         all_versions = all_versions
@@ -371,11 +386,10 @@ workflow ENA_SUBMIT_WORKFLOW {
             .mix(ENA_CONVERT_TO_CRAM.out.versions)
             .mix(ENA_INDEX_CRAM.out.versions)
     }
-    if (params.umbrella_study) {
+    if (umbrella_accession) {
         all_versions = all_versions
             .mix(ENA_GENERATE_UMBRELLA_XML.out.versions)
-            .mix(ENA_SUBMIT_UMBRELLA.out.versions)
-            .mix(ENA_POLL_UMBRELLA.out.versions)
+            .mix(ENA_LINK_UMBRELLA.out.versions)
     }
     COLLECT_SOFTWARE_VERSIONS(all_versions.collect())
 

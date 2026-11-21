@@ -199,6 +199,10 @@ nextflow run pipelines/ena_submit/main.nf \
   --mode test \
   --webin_user "$WEBIN_USER" \
   --umbrella_study PRJEB000000 \
+  --umbrella_alias ensembl_alignment_evidence_umbrella \
+  --umbrella_title "Ensembl alignment evidence umbrella study" \
+  --umbrella_description "Umbrella study grouping Ensembl alignment evidence projects." \
+  --release_mode none \
   --remote_dir GCA_011064425.1-Ensembl-2025-12 \
   --upload_parallelism 2 \
   --outdir /path/to/ena_submit_results/GCA_011064425.1
@@ -207,15 +211,20 @@ nextflow run pipelines/ena_submit/main.nf \
 Use `--mode prod` for production endpoints after Webin test validation.
 
 When adding a child project to an existing ENA umbrella study, provide the
-umbrella accession plus its existing title and description. The workflow then
-submits a project-level `MODIFY` request containing the verified child project
-accessions:
+umbrella accession, exact registered alias, title, and description. After the
+child project and analyses have succeeded, the workflow submits a terminal
+project-level `MODIFY` request containing the verified child project accession:
 
 ```bash
 --umbrella_study PRJEB000000 \\
+--umbrella_alias ensembl_alignment_evidence_umbrella \\
 --umbrella_title "Ensembl alignment evidence umbrella study" \\
 --umbrella_description "Umbrella study grouping Ensembl alignment evidence projects."
 ```
+
+Release is opt-in. Use `--release_mode immediate` in production to release the
+umbrella and child project, or `--release_mode date --release_date YYYY-MM-DD`
+to set a common release date. Release actions are rejected in TEST mode.
 
 ### Optional BAM-to-CRAM conversion
 
@@ -244,7 +253,11 @@ Existing non-BAM inputs are passed through unchanged.
 - `files_tsv`: Path to the file-level manifest.
 - `study`: Existing child study accession/alias. Leave blank to use the generated project alias.
 - `project_alias`: Child project alias, usually `prj_<assembly_accession>_Ensembl_<YYYY_MM>`.
-- `umbrella_study`: Existing umbrella project accession. With `--create_project true`, the workflow updates it with the newly verified child project accessions.
+- `umbrella_study`: Existing umbrella project accession. Enables the terminal
+  project-level `MODIFY` link submission.
+- `umbrella_alias`: Exact alias used when the umbrella project was registered.
+- `umbrella_title`: Existing umbrella title; must match the registered object.
+- `umbrella_description`: Existing umbrella description; must match the registered object.
 - `analysis_alias`: Stable ENA analysis alias.
 - `title`: Human-readable analysis title.
 - `description`: Human-readable description.
