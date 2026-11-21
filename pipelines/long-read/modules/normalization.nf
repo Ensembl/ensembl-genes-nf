@@ -51,7 +51,7 @@ process AUDIT_BACKEND_SHARD_PLAN {
     script:
     def backend_args = backends.join(' ')
     """
-    python3 ${projectDir}/bin/audit_backend_shards.py --plan ${shard_plan} --run-id '${meta.run_id}' --backends ${backend_args} --audits ${native_audits} --report backend_shard_plan.tsv
+    python3 ${projectDir}/bin/audit_backend_shards.py --plan ${shard_plan} --run-id '${meta.run_id}' --backends ${backend_args} --audits-dir . --report backend_shard_plan.tsv
     """
     stub:
     """

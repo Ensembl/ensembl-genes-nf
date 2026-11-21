@@ -34,6 +34,7 @@ def main() -> None:
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--backends", nargs="+", required=True)
     parser.add_argument("--audits", nargs="*", type=Path, default=[])
+    parser.add_argument("--audits-dir", type=Path)
     parser.add_argument("--report", required=True, type=Path)
     args = parser.parse_args()
     with args.plan.open(newline="") as handle:
@@ -44,7 +45,8 @@ def main() -> None:
     errors: list[str] = []
     if len(ids) != len(set(ids)):
         errors.append("shard IDs are not unique")
-    audits = read_audits(args.audits, args.run_id)
+    audit_paths = sorted(args.audits_dir.glob("*.audit.tsv")) if args.audits_dir else args.audits
+    audits = read_audits(audit_paths, args.run_id)
     report_rows: list[dict[str, str]] = []
     for backend in args.backends:
         observed = defaultdict(list)

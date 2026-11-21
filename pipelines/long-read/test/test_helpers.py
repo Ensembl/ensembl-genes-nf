@@ -256,7 +256,7 @@ def test_normalize_gtf_allows_in_place_outputs(tmp_path: Path):
 def test_audit_gtf_allows_in_place_outputs(tmp_path: Path):
     gtf = tmp_path / "native.gtf"
     status = tmp_path / "status.tsv"
-    audit = tmp_path / "audit.tsv"
+    audit = tmp_path / "native.run1.tama.chr1.audit.tsv"
     gtf.write_text("chr1\tsource\texon\t1\t10\t.\t+\t.\tgene_id \\\"g1\\\";\n")
     status.write_text("isoquant\tSUCCESS\n")
     result = run_helper(
@@ -529,10 +529,10 @@ def test_shard_coverage_allows_a_valid_zero_read_plan(tmp_path: Path):
 def test_backend_shard_audit_reports_skipped_and_attempted_shards(tmp_path: Path):
     plan = tmp_path / "plan.tsv"
     plan.write_text("shard_id\tcontig\treference_length\tmapped_reads\teligible\tresource_class\tsource_run_id\tshard_status\nrun1__chr1\tchr1\t100\t2\ttrue\tsmall\trun1\tPLANNED\nrun1__chr2\tchr2\t50\t0\tfalse\tempty\trun1\tEMPTY\n")
-    audit = tmp_path / "audit.tsv"
+    audit = tmp_path / "native.run1.tama.chr1.audit.tsv"
     audit.write_text("backend\tshard_id\tstatus\ntama\trun1__chr1\tSUCCESS\n")
     report = tmp_path / "audit.report.tsv"
-    result = run_helper("audit_backend_shards.py", "--plan", str(plan), "--run-id", "run1", "--backends", "tama", "--audits", str(audit), "--report", str(report))
+    result = run_helper("audit_backend_shards.py", "--plan", str(plan), "--run-id", "run1", "--backends", "tama", "--audits-dir", str(tmp_path), "--report", str(report))
     assert result.returncode == 0, result.stderr
     assert "run1__chr2\tSKIPPED\tNO\tSKIPPED" in report.read_text()
 
