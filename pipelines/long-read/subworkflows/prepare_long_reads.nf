@@ -34,7 +34,7 @@ workflow PREPARE_LONG_READS {
         ACQUIRE_BAM(acquire_bam_requests)
         acquired_fastq = ACQUIRE_FASTQ.out.reads
         acquired_bam = ACQUIRE_BAM.out.bam
-        acquire_versions = ACQUIRE_FASTQ.out.versions.mix(ACQUIRE_BAM.out.versions)
+        acquire_versions = ACQUIRE_FASTQ.out.versions
     }
 
     fastq_inputs = preparation_stages.contains('acquire')
