@@ -29,8 +29,13 @@ Rationale: keeps evidence for a given assembly/release discoverable and isolated
 
 ## Linking rules
 - RUN_REF: include by default in both PROD and TEST. Set `omit_run_refs_in_test=true` for a TEST submission whose source runs are not available in the TEST environment.
-- SAMPLE_REF: include when the BioSample is known; otherwise omit for cross‑sample evidence.
+- SAMPLE_REF: include the linked ENA Sample accession (`ERS`/`SRS`/`DRS`), not
+  the BioSample accession (`SAMEA`/`SAMN`/`SAMD`). Retain the BioSample ID as
+  provenance or an analysis attribute.
 - EXPERIMENT_REF: optional; use if you prefer experiment‑level links.
+- Existing-study submissions use `--create_project false` and a study accession or
+  alias in each manifest row. A row must not provide `study` while
+  `--create_project true`, because that would make the target study ambiguous.
 
 ## Assembly requirements
 - Preferred: `assembly_accession` (GCA/GCF) present in ENA. The XML uses `<ASSEMBLY><STANDARD accession=.../>`.
@@ -41,6 +46,12 @@ The workflow uses a two-step manifest:
 
 - `manifest.tsv`: one row per annotation-level release/project, with `files_tsv`, `assembly_accession`, `last_geneset_update`, `partial_release_label`, project/study fields, and shared analysis metadata. The workflow expands this into one analysis per file.
 - `files.tsv`: one row per BAM/CRAM with local file path, remote filename, run accession, sample accession, and optional header-derived alignment metadata.
+
+Source sample and experiment values are resolved from ENA by run accession. Any
+valid accession supplied by the manifest is checked against the ENA response;
+the XML uses the resolved values, not stale local values. The resolver also
+retains secondary sample/study accessions and the library/instrument fields
+returned by the Portal API.
 
 Defaults applied by the workflow:
 - `analysis_type` coerced to `REFERENCE_ALIGNMENT` (ENA schema requirement).
@@ -55,5 +66,9 @@ Defaults applied by the workflow:
 - Whether the umbrella alias/title/description should come from the registry
   rather than CLI parameters.
 - Whether production submissions should use BAMs as-is or CRAMs.
-- Whether `SAMD...` sample accessions validate as `SAMPLE_REF`, or need mapping to ENA sample accessions.
+- Whether a separate sample-registration workflow is required. Registering new
+  sample objects needs a checklist-aware sample manifest; analysis manifests
+  should only reference existing samples.
+- BioSample-to-ENA-Sample mapping is resolved from the ENA Portal API before
+  XML generation; direct BioSample values are rejected as `SAMPLE_REF`.
 - Which registry fields will replace CLI arguments for assembly/annotation metadata.

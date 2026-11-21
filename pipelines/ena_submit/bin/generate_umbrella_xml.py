@@ -73,7 +73,15 @@ def build_submission(action):
     return root
 
 
-def build_xml(action, alias, title, description, children, accession=None):
+def build_xml(action, alias, title, description, children=None, accession=None):
+    # Keep compatibility with the original helper API:
+    # build_xml(umbrella_accession, child_accessions, title, description).
+    if children is None and isinstance(alias, (list, tuple)):
+        root = ET.Element("WEBIN")
+        submission_set = ET.SubElement(root, "SUBMISSION_SET")
+        submission_set.append(build_submission("modify"))
+        root.append(build_project("legacy_umbrella", title, description, alias, action))
+        return ET.ElementTree(root)
     root = ET.Element("WEBIN_SUBMISSION")
     submission = build_submission(action)
     project_set = build_project(alias, title, description, children, accession)
@@ -97,13 +105,11 @@ def main():
     parser.add_argument("--format", choices=["webin", "dropbox"], default="webin")
     parser.add_argument("--outdir", required=True)
     args = parser.parse_args()
-
     children = child_accessions(args.project_accessions) if args.project_accessions else []
     if args.action == "modify" and not children:
         parser.error("--action modify requires project poll output containing a child PRJ accession")
     if args.action == "modify" and args.analysis_accessions:
         validate_analysis(args.analysis_accessions)
-
     os.makedirs(args.outdir, exist_ok=True)
     output = os.path.join(args.outdir, "umbrella_project.xml")
     if args.format == "dropbox":

@@ -28,13 +28,24 @@ def normalise_attribute_key(key):
     return key[5:] if key.startswith('attr_') else key
 
 
+ENA_SAMPLE_RE = re.compile(r'^(ERS|SRS|DRS)\d+$', re.IGNORECASE)
+BIO_SAMPLE_RE = re.compile(r'^SAM(?:EA|D|N)\d+$', re.IGNORECASE)
+
+
 def looks_like_sample_accession(value):
-    return bool(re.match(r'^(SAMEA|SAMD|SAMN|ERS|SRS|DRS)\d+$', (value or '').strip(), flags=re.IGNORECASE))
+    """Return whether value is an ENA Sample accession usable in SAMPLE_REF."""
+    return bool(ENA_SAMPLE_RE.match((value or '').strip()))
 
 
 def read_md5(path):
     with open(path) as handle:
         return handle.read().split()[0]
+
+
+def validate_md5(value, remote_path):
+    if not re.fullmatch(r"[0-9a-fA-F]{32}", value or ""):
+        raise RuntimeError(f"invalid MD5 checksum for {remote_path}: {value!r}")
+    return value.lower()
 
 
 def read_files_manifest(path):
@@ -52,10 +63,15 @@ def read_files_manifest(path):
                 md5 = read_md5(row['md5_path'].strip())
             else:
                 raise RuntimeError(f"files manifest row missing md5/md5_path for {row.get('remote_path')}")
-            row['md5'] = md5
+            row['md5'] = validate_md5(md5, row['remote_path'])
             rows.append(row)
     if not rows:
         raise RuntimeError(f"No files found in files manifest: {path}")
+    if len(rows) != 1:
+        raise RuntimeError(
+            f"Each ENA REFERENCE_ALIGNMENT analysis must contain exactly one BAM or CRAM; "
+            f"found {len(rows)} in {path}"
+        )
     return rows
 
 
@@ -67,6 +83,8 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
     mk_text(analysis, 'DESCRIPTION', row.get('description') or 'Alignment of public runs')
 
     study = (row.get('study') or '').strip()
+    if not study:
+        raise RuntimeError('REFERENCE_ALIGNMENT analysis requires a study')
     if study:
         # Treat as accession only if it matches an INSDC study/project accession pattern
         # e.g., PRJEB12345, PRJNA12345, ERP123456, SRP123456, DRP123456
@@ -80,9 +98,22 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
     for file_row in files:
         samples.extend(split_values(file_row.get('sample_accession')))
         samples.extend(split_values(file_row.get('sample_accessions')))
-    for s in unique(samples):
+    invalid_sample_refs = [s for s in unique(samples) if BIO_SAMPLE_RE.match(s)]
+    if invalid_sample_refs:
+        raise RuntimeError(
+            "BioSample accession(s) cannot be emitted as ANALYSIS/SAMPLE_REF; "
+            "resolve each source run to its ENA Sample accession (ERS/SRS/DRS): "
+            + ", ".join(invalid_sample_refs)
+        )
+    sample_accessions = unique(samples)
+    biosample_accessions = split_values(row.get('biosample_accessions'))
+    for index, s in enumerate(sample_accessions):
         if looks_like_sample_accession(s):
-            mk_text(analysis, 'SAMPLE_REF', accession=s)
+            sample_ref = mk_text(analysis, 'SAMPLE_REF', accession=s)
+            if len(sample_accessions) == len(biosample_accessions):
+                identifiers = mk_text(sample_ref, 'IDENTIFIERS')
+                mk_text(identifiers, 'PRIMARY_ID', s)
+                mk_text(identifiers, 'EXTERNAL_ID', biosample_accessions[index], namespace='BioSample')
         elif s:
             print(f"WARNING: ignoring non-accession sample value '{s}'", file=sys.stderr)
 
@@ -117,7 +148,12 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
 
     # ANALYSIS_TYPE followed by FILES
     atype = mk_text(analysis, 'ANALYSIS_TYPE')
-    assembly = row.get('assembly_accession')
+    assembly = (row.get('assembly_accession') or '').strip()
+    ref_seqs = [s.strip() for s in (row.get('ref_seqs') or '').split(',') if s.strip()]
+    if not assembly and not ref_seqs:
+        raise RuntimeError(
+            'REFERENCE_ALIGNMENT analysis requires assembly_accession or ref_seqs'
+        )
     analysis_type_tag = (mode or 'REFERENCE_ALIGNMENT').strip().upper()
     if analysis_type_tag == 'READ_ALIGNMENT':
         print('WARNING: READ_ALIGNMENT not supported by current ENA schema; mapping to REFERENCE_ALIGNMENT', file=sys.stderr)
@@ -129,8 +165,7 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
     if assembly:
         asm = mk_text(ra, 'ASSEMBLY')
         mk_text(asm, 'STANDARD', accession=assembly)
-    seqs = [s.strip() for s in (row.get('ref_seqs') or '').split(',') if s.strip()]
-    for s in seqs:
+    for s in ref_seqs:
         mk_text(ra, 'SEQUENCE', accession=s)
 
     # FILES must appear before ANALYSIS_LINKS / ANALYSIS_ATTRIBUTES
@@ -186,7 +221,11 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
     # biological taxonomy remains on the referenced SAMPLE records.
     for key in ('scientific_name', 'species', 'taxon_id', 'aggregation_scope', 'metadata_source',
                 'platform', 'source_fastq_count', 'alignment_software', 'alignment_software_version',
-                'bam_sort_order', 'bam_pg_programs'):
+                'bam_sort_order', 'bam_pg_programs', 'source_metadata_count',
+                'library_strategies', 'library_sources', 'instrument_platforms',
+                'instrument_models', 'source_study_accessions',
+                'secondary_study_accessions', 'secondary_sample_accessions',
+                'biosample_accessions'):
         value = (row.get(key) or '').strip()
         if value and not any(existing == key for existing, _ in attrs):
             attrs.append((key, value))

@@ -20,6 +20,7 @@ include { ENA_EXTRACT_BAM_HEADER } from '../modules/extract_bam_header.nf'
 include { ENA_BUILD_BAM_HEADER } from '../modules/build_bam_header.nf'
 include { ENA_INDEX_BAM } from '../modules/index_bam.nf'
 include { ENA_INDEX_CRAM } from '../modules/index_cram.nf'
+include { ENA_VALIDATE_ALIGNMENT } from '../modules/validate_alignment.nf'
 include { COLLECT_SOFTWARE_VERSIONS } from '../modules/collect_software_versions.nf'
 
 // Parse an annotation-level manifest and dispatch one ENA analysis per file.
@@ -56,6 +57,9 @@ workflow ENA_SUBMIT_WORKFLOW {
           if (!row.last_geneset_update && !row.partial_release_label) { throw new RuntimeException("Manifest row missing last_geneset_update/partial_release_label") }
           def release = row.partial_release_label ?: "${row.assembly_accession}-Ensembl-${row.last_geneset_update}"
           def prj_alias = row.project_alias ?: ("prj_${release}").replaceAll('[^A-Za-z0-9._-]', '_')
+          if (create_project && row.study) {
+              throw new RuntimeException("Manifest row ${prj_alias} supplies study='${row.study}' while --create_project is true; leave study blank for a new child project or set --create_project false")
+          }
           if (!create_project && !row.study) {
               throw new RuntimeException("Manifest row must provide study when --create_project is false")
           }
@@ -147,7 +151,21 @@ workflow ENA_SUBMIT_WORKFLOW {
                 scientific_name: file_row.scientific_name,
                 aggregation_scope: file_row.aggregation_scope,
                 metadata_source: file_row.metadata_source,
+                sample_accession: file_row.sample_accession,
+                sample_accessions: file_row.sample_accessions,
+                secondary_sample_accessions: file_row.secondary_sample_accessions,
+                experiment_accession: file_row.experiment_accession,
+                experiment_accessions: file_row.experiment_accessions,
+                source_study_accessions: file_row.source_study_accessions,
+                secondary_study_accessions: file_row.secondary_study_accessions,
                 platform: file_row.platform,
+                manifest_platform: file_row.manifest_platform,
+                library_strategies: file_row.library_strategies,
+                library_sources: file_row.library_sources,
+                instrument_platforms: file_row.instrument_platforms,
+                instrument_models: file_row.instrument_models,
+                source_metadata_count: file_row.source_metadata_count,
+                source_metadata_json: file_row.source_metadata_json,
                 source_fastq_count: file_row.source_fastq_count,
                 source_fastq_urls: file_row.source_fastq_urls,
                 source_fastq_md5s: file_row.source_fastq_md5s,
@@ -170,8 +188,11 @@ workflow ENA_SUBMIT_WORKFLOW {
                 sample_accession: file_row.sample_accession,
                 sample_accessions: file_row.sample_accessions,
                 biosample_accessions: file_row.biosample_accessions,
+                secondary_sample_accessions: file_row.secondary_sample_accessions,
                 experiment_accession: file_row.experiment_accession,
                 experiment_accessions: file_row.experiment_accessions,
+                source_study_accessions: file_row.source_study_accessions,
+                secondary_study_accessions: file_row.secondary_study_accessions,
                 is_index: false,
             ]
             tuple(meta, row, file_meta, file(file_row.file_path))
@@ -181,8 +202,8 @@ workflow ENA_SUBMIT_WORKFLOW {
     def reheader_bams = params.reheader_bams?.toString()?.toLowerCase() in ['1', 'true', 'yes']
     if (reheader_bams) {
         def header_script = file("${projectDir}/bin/build_reheader_header.py")
-        def bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
-            (file_meta.file_type ?: '').toString().toLowerCase() == 'bam'
+        def alignment_inputs = file_inputs.filter { meta, row, file_meta, file ->
+            (file_meta.file_type ?: '').toString().toLowerCase() in ['bam', 'cram']
         }.map { meta, row, file_meta, bam ->
             def fasta_path = params.reference_fasta ?: row.reference_fasta
             def report_path = params.reference_assembly_report ?: row.assembly_report
@@ -199,28 +220,32 @@ workflow ENA_SUBMIT_WORKFLOW {
             def reference_key = "${fasta_path}|${report_path}|${supplement_path}"
             tuple(reference_key, meta, row, file_meta, bam, fasta, report, supplement)
         }
-        def non_bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
-            (file_meta.file_type ?: '').toString().toLowerCase() != 'bam'
+        def non_alignment_inputs = file_inputs.filter { meta, row, file_meta, file ->
+            !((file_meta.file_type ?: '').toString().toLowerCase() in ['bam', 'cram'])
         }
-        def reference_inputs = bam_inputs
+        def reference_inputs = alignment_inputs
             .map { reference_key, meta, row, file_meta, bam, fasta, report, supplement -> tuple(reference_key, fasta, report, supplement) }
             .distinct()
         ENA_PREPARE_REFERENCE(reference_inputs)
         ENA_INDEX_REFERENCE(ENA_PREPARE_REFERENCE.out.prepared)
         prepared_references = ENA_INDEX_REFERENCE.out.indexed
-        def prepared_bams = bam_inputs
-            .join(prepared_references, by: 0)
+        def prepared_alignments = alignment_inputs
+            .combine(prepared_references, by: 0)
             .map { reference_key, meta, row, file_meta, bam, fasta, report, supplement, prepared_fasta, reference_fai, prepared_report, reference_names ->
                 tuple(reference_key, meta, row, file_meta, bam)
             }
-        ENA_EXTRACT_BAM_HEADER(prepared_bams)
+        ENA_EXTRACT_BAM_HEADER(prepared_alignments)
         def header_inputs = ENA_EXTRACT_BAM_HEADER.out.extracted
-            .join(prepared_references, by: 0)
+            .combine(prepared_references, by: 0)
             .map { reference_key, meta, row, file_meta, bam, header, prepared_fasta, reference_fai, prepared_report, reference_names ->
                 tuple(reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report, reference_names, header_script)
             }
         ENA_BUILD_BAM_HEADER(header_inputs)
-        def reheader_inputs = ENA_BUILD_BAM_HEADER.out.built
+        def built_alignments = ENA_BUILD_BAM_HEADER.out.built
+        def reheader_inputs = built_alignments
+            .filter { reference_key, meta, row, file_meta, bam, header ->
+                (file_meta.file_type ?: '').toString().toLowerCase() == 'bam'
+            }
             .map { reference_key, meta, row, file_meta, bam, header ->
                 tuple(reference_key, meta, row, file_meta, bam, header)
             }
@@ -229,7 +254,19 @@ workflow ENA_SUBMIT_WORKFLOW {
         def reheadered_bams = ENA_INDEX_BAM.out.indexed.map { reference_key, meta, row, file_meta, bam, bai ->
             tuple(meta, row, file_meta, bam)
         }
-        file_inputs = reheadered_bams.mix(non_bam_inputs)
+        def cram_validation_inputs = built_alignments
+            .filter { reference_key, meta, row, file_meta, bam, header ->
+                (file_meta.file_type ?: '').toString().toLowerCase() == 'cram'
+            }
+            .combine(prepared_references, by: 0)
+            .map { reference_key, meta, row, file_meta, bam, header, prepared_fasta, reference_fai, prepared_report, reference_names ->
+                tuple(reference_key, meta, row, file_meta, bam, reference_fai, prepared_report, reference_names, header_script)
+            }
+        ENA_VALIDATE_ALIGNMENT(cram_validation_inputs)
+        def validated_crams = ENA_VALIDATE_ALIGNMENT.out.validated.map { meta, row, file_meta, cram ->
+            tuple(meta, row, file_meta, cram)
+        }
+        file_inputs = reheadered_bams.mix(validated_crams).mix(non_alignment_inputs)
     }
 
     // Optionally convert BAMs to CRAM and retain the CRAI as an upload-only
@@ -260,7 +297,7 @@ workflow ENA_SUBMIT_WORKFLOW {
                 .map { reference_key, meta, row, file_meta, bam, bai ->
                     tuple(reference_key, meta, row, file_meta, bam)
                 }
-                .join(prepared_references, by: 0)
+                .combine(prepared_references, by: 0)
                 .map { reference_key, meta, row, file_meta, bam, prepared_fasta, prepared_fai, report, names ->
                     tuple(meta, row, file_meta, bam, prepared_fasta, prepared_fai)
                 }
@@ -380,6 +417,7 @@ workflow ENA_SUBMIT_WORKFLOW {
             .mix(ENA_BUILD_BAM_HEADER.out.versions)
             .mix(ENA_REHEADER_BAM.out.versions)
             .mix(ENA_INDEX_BAM.out.versions)
+            .mix(ENA_VALIDATE_ALIGNMENT.out.versions)
     }
     if (convert_to_cram) {
         all_versions = all_versions

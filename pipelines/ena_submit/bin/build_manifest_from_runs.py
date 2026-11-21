@@ -43,7 +43,7 @@ def build_alias(species, assembly, release, group_label=None):
 def main():
     ap = argparse.ArgumentParser(description='Build ENA submission manifest from a runs/tissue CSV')
     ap.add_argument('--input', required=True, help='Input CSV with columns including run_accession, sample_accession, assembly_accession, taxon_id, tissue_prediction')
-    ap.add_argument('--study', required=True, help='ENA Study accession or alias (PRJ...) to assign to all rows, or use --study-map')
+    ap.add_argument('--study', default='', help='Existing ENA Study accession or alias (PRJ...) to assign to all rows; leave blank when the submission pipeline will create a child project.')
     ap.add_argument('--study-map', help='TSV/CSV mapping of assembly_accession or taxon_id to study; columns: key,study. Overrides --study per matching row.')
     ap.add_argument('--species-map', help='TSV/CSV mapping of taxon_id to species; columns: taxon_id,species')
     ap.add_argument('--release', default='Ensembl_release', help='Release label used in titles/descriptions (e.g., Ensembl_110)')
@@ -56,6 +56,7 @@ def main():
     ap.add_argument('--links-prefix', help='Optional URL prefix where run lists will be hosted; used to populate analysis_links')
     ap.add_argument('--min-pass', action='store_true', help='Filter rows to those with passed_both==True when column exists')
     ap.add_argument('--priority-max', type=int, default=None, help='Filter rows to priority <= N when column exists')
+    ap.add_argument('--omit-run-refs-in-test', action='store_true', help='Omit RUN_REF links in TEST XML when source runs are unavailable in the ENA test service.')
 
     args = ap.parse_args()
     group_by = [g.strip() for g in args.group_by.split(',') if g.strip()]
@@ -244,7 +245,8 @@ def main():
                 'partial_release_label': args.release, 'species': species, 'taxon_id': taxon_id,
                 'analysis_links': manifest_info['analysis_links'],
                 'analysis_attributes': manifest_info['analysis_attributes'],
-                'analysis_type': 'REFERENCE_ALIGNMENT', 'omit_run_refs_in_test': 'true',
+                'analysis_type': 'REFERENCE_ALIGNMENT',
+                'omit_run_refs_in_test': str(args.omit_run_refs_in_test).lower(),
             })
 
     print(manifest_path)

@@ -37,8 +37,15 @@ instrument_platform
 instrument_model
 ```
 
-Manifest values may be supplied as expected values, but disagreement with ENA
-is a validation error unless an explicit, reviewed override is added later.
+Manifest values may be supplied as expected values. Valid sample and experiment
+accession disagreements with ENA are validation errors; descriptive labels are
+retained as manifest provenance but are never emitted as references. For a
+registered ENA sample, the XML uses its ENA Sample accession (`ERS`/`SRS`/`DRS`)
+for `SAMPLE_REF`, while the linked BioSample accession (`SAMEA`/`SAMN`/`SAMD`)
+is retained in provenance and analysis attributes.
+
+The resolved record also retains secondary sample/study accessions, aggregate
+library/instrument values, and a per-run JSON provenance record.
 
 ## Aggregation scopes
 

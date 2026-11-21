@@ -22,6 +22,10 @@ Before project and analysis XML is generated, source run metadata is resolved
 from the ENA Portal API. This supplies the authoritative BioSample, sample,
 experiment, study, scientific-name, and taxon relationships. The resolved
 file-level metadata is published under `ena_submission/metadata/` for audit.
+Accession values supplied in the manifest are treated as expectations: valid
+sample and experiment accession disagreements fail the run, while non-accession
+labels are retained only as manifest provenance. XML is generated from the
+resolved ENA values.
 
 Aggregates use explicit source relationships: all represented source runs are
 retained, and unique BioSamples are included when they can be represented
@@ -94,6 +98,68 @@ Use `--mode prod` only after the TEST submission has been inspected and the
 resulting metadata has been accepted. Never put a password on the command
 line; the full credential setup is in [WALKTHROUGH.md](WALKTHROUGH.md).
 
+### Add alignment analyses to an existing study
+
+To submit new alignment analyses to a study that already exists and is owned by
+the Webin account, put that study accession or alias in `study` and run with
+`--create_project false`. The resolver will attach the authoritative existing
+sample and run accessions from ENA to each analysis; it will not create or
+duplicate samples.
+
+Registering genuinely new ENA sample objects is a separate sample submission.
+It requires a checklist-aware sample manifest containing taxon and sample
+attributes, and should be completed before the associated analysis submission.
+
+### Repair an existing analysis sample link
+
+If an analysis was accepted without a `SAMPLE_REF`, retrieve its current XML
+and prepare a Webin V1 `MODIFY` request. `SAMPLE_REF` must contain the ENA
+Sample accession (`ERS`, `SRS`, or `DRS`), not the linked BioSample accession
+(`SAMEA`, `SAMN`, or `SAMD`). The helper resolves the source `RUN_REF` through
+the ENA Portal API, preserves the existing `FILE` declarations, and records
+the BioSample accession as analysis-level provenance.
+
+```bash
+modify_dir=/tmp/ena-modify_ERZ30663408
+mkdir -p "$modify_dir"
+
+# This endpoint requires the Webin account that owns the analysis.
+# `curl` prompts for the password without placing it in the process arguments.
+curl --user "$WEBIN_USER" \
+  "https://www.ebi.ac.uk/ena/submit/drop-box/analyses/ERZ30663408" \
+  -o "$modify_dir/analysis.xml"
+
+python3 pipelines/ena_submit/bin/generate_analysis_modify_xml.py \
+  --analysis-xml "$modify_dir/analysis.xml" \
+  --outdir "$modify_dir"
+```
+
+Inspect `analysis_modify.xml` before submitting. Validate the payload first:
+
+```bash
+curl --user "$WEBIN_USER" \
+  -F "SUBMISSION=@$modify_dir/submission_validate.xml" \
+  -F "ANALYSIS=@$modify_dir/analysis_modify.xml" \
+  https://www.ebi.ac.uk/ena/submit/drop-box/submit/ \
+  -o "$modify_dir/validation_receipt.xml"
+```
+
+Only after validation succeeds, submit the update with the `MODIFY` action:
+
+```bash
+curl --user "$WEBIN_USER" \
+  -F "SUBMISSION=@$modify_dir/submission_modify.xml" \
+  -F "ANALYSIS=@$modify_dir/analysis_modify.xml" \
+  https://www.ebi.ac.uk/ena/submit/drop-box/submit/ \
+  -o "$modify_dir/modify_receipt.xml"
+```
+
+The modify helper intentionally does not change analysis files. ENA treats a
+file change as a new analysis submission; this repair is only for metadata
+relationships. After ENA processes the request, confirm that the analysis XML
+contains `SAMPLE_REF accession="ERS..."` and retains its original file path
+and checksum.
+
 ## Step 1: Build The Annotation Manifest
 
 For an Ensembl genebuild RNA-seq directory like:
@@ -147,7 +213,8 @@ If `samtools` is available, the builder inspects BAM/CRAM headers for basic alig
 ### BAM reference-name preparation
 
 By default, BAM files are reheadered before checksumming and upload so their
-`@SQ SN:` values match the INSDC reference FASTA. The manifest builder
+`@SQ SN:` values match the INSDC reference FASTA. CRAM files are validated
+against the same reference but are not rewritten. The manifest builder
 automatically finds the matching genomic FASTA and NCBI assembly report beside
 the assembly directory. The workflow creates the FASTA `.fai` index once in a
 reference-preparation task and shares it with the reheadering tasks.
@@ -159,10 +226,10 @@ Use these options only to override automatic manifest discovery:
 --reference_assembly_report /path/to/GCA_xxx_assembly_report.txt
 ```
 
-The process validates every BAM reference name and sequence length, preserves
-`@SQ` order and all other header records, writes a new BAM, and rebuilds its
-index. Set `--reheader_bams false` only when the input BAMs have already been
-validated against the exact INSDC reference.
+The process validates every alignment reference name and sequence length. For
+BAMs it preserves `@SQ` order and other header records, writes a new BAM, and
+rebuilds its index. Set `--reheader_bams false` only when all input alignments
+have already been validated against the exact INSDC reference.
 
 Before submitting, store the Webin password in Nextflow's local secrets store. This
 keeps it out of command-line parameters, `.command.sh` files, and task arguments:
@@ -251,7 +318,9 @@ Existing non-BAM inputs are passed through unchanged.
 `manifest.tsv` has one row per annotation/release:
 
 - `files_tsv`: Path to the file-level manifest.
-- `study`: Existing child study accession/alias. Leave blank to use the generated project alias.
+- `study`: Existing child study accession/alias. It must be blank when
+  `--create_project true`; use `--create_project false` to add analyses to an
+  existing study.
 - `project_alias`: Child project alias, usually `prj_<assembly_accession>_Ensembl_<YYYY_MM>`.
 - `umbrella_study`: Existing umbrella project accession. Enables the terminal
   project-level `MODIFY` link submission.
@@ -299,6 +368,12 @@ run-list layout is no longer sufficient.
 - `alignment_software`: Header-derived aligner name when available.
 - `alignment_software_version`: Header-derived aligner version when available.
 
+The resolved metadata also retains secondary sample/study accessions, library
+strategy/source, instrument platform/model, and a per-run JSON provenance record.
+For registered ENA samples, `sample_accessions` contains the ENA Sample
+accession (`ERS`/`SRS`/`DRS`) used in `SAMPLE_REF`; `biosample_accessions`
+contains the linked BioSample accession (`SAMEA`/`SAMN`/`SAMD`).
+
 Only values matching ENA sample accession formats are emitted as `SAMPLE_REF`
 elements. Tissue labels or other descriptive values in the source CSV are ignored.
 Aggregated alignments do not receive synthetic BioSamples: the resolver emits
@@ -314,7 +389,7 @@ run list and resolved metadata as provenance.
 | `--mode` | no | `test` by default; use `prod` for the production endpoint |
 | `--outdir` | no | Published output directory, default `./results` |
 | `--create_project` | no | Create a child project (`true`) or reuse the study in each manifest row (`false`). |
-| `--reheader_bams` | no | Validate/reheader BAM inputs against the INSDC reference, default `true` |
+| `--reheader_bams` | no | Validate BAM/CRAM inputs against the INSDC reference and reheader BAMs, default `true` |
 | `--convert_to_cram` | no | Convert BAM inputs to CRAM before upload, default `false` |
 | `--reference_fasta` | conditional | Required for CRAM conversion unless discovered from the manifest |
 | `--upload_parallelism` | no | Maximum number of concurrent uploads |
@@ -343,6 +418,9 @@ Locked in:
   local RNA-seq metadata as an auditable input.
 - Support explicit creation of a child project or reuse of an existing study
   with `--create_project`.
+- Add analyses to an existing study by setting `--create_project false` and
+  supplying that study in each manifest row. Existing source samples are
+  referenced by accession; they are not copied or recreated.
 - Support project-level umbrella updates using verified child accessions.
 - Accept registry/core metadata later through CLI-compatible fields.
 
@@ -352,4 +430,7 @@ Pending:
 - Confirm service-level acceptance of cross-archive `SAMD...`/`SAMN...`
   identifiers as direct `SAMPLE_REF` values with representative Webin TEST
   submissions.
+- Registering new sample objects is a separate ENA sample submission and is
+  not inferred from alignment manifests. It requires a sample metadata/checklist
+  input and must not create synthetic samples for aggregate alignments.
 - Which registry fields will replace CLI arguments for assembly/annotation metadata.

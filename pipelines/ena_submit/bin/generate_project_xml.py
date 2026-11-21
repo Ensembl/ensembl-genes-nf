@@ -16,8 +16,9 @@ def validate_text(name, value, minimum, maximum):
 
 
 def build_webin_project(alias, name, title, description, hold_until=None, scientific_name=None, taxon_id=None):
-    validate_text('TITLE', title, 20, 250)
-    validate_text('DESCRIPTION', description, 20, 4000)
+    # ENA's project guidance requires both fields to be >20 and <250 chars.
+    validate_text('TITLE', title, 21, 249)
+    validate_text('DESCRIPTION', description, 21, 249)
     root = ET.Element('WEBIN')
 
     # SUBMISSION with ADD (and optional HOLD)
