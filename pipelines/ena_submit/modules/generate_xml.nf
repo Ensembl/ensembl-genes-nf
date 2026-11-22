@@ -35,6 +35,7 @@ process ENA_GENERATE_XML {
             (fm.run_accessions ?: '').toString().replace('\t', ' ').replace('\n', ' '),
             (fm.sample_accession ?: '').toString().replace('\t', ' ').replace('\n', ' '),
             (fm.sample_accessions ?: '').toString().replace('\t', ' ').replace('\n', ' '),
+            (fm.biosample_accessions ?: '').toString().replace('\t', ' ').replace('\n', ' '),
             (fm.experiment_accession ?: '').toString().replace('\t', ' ').replace('\n', ' '),
             (fm.experiment_accessions ?: '').toString().replace('\t', ' ').replace('\n', ' ')
         ].join('\t')
@@ -49,7 +50,7 @@ ${vals}
 EOF
 
 cat > files.tsv <<'EOF'
-remote_path	file_type	md5_path	run_accession	run_accessions	sample_accession	sample_accessions	experiment_accession	experiment_accessions
+remote_path	file_type	md5_path	run_accession	run_accessions	sample_accession	sample_accessions	biosample_accessions	experiment_accession	experiment_accessions
 ${fileRows}
 EOF
 

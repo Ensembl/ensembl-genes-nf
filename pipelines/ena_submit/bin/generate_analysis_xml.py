@@ -107,6 +107,9 @@ def build_analysis_xml(row, files, mode='REFERENCE_ALIGNMENT'):
         )
     sample_accessions = unique(samples)
     biosample_accessions = split_values(row.get('biosample_accessions'))
+    for file_row in files:
+        biosample_accessions.extend(split_values(file_row.get('biosample_accessions')))
+    biosample_accessions = unique(biosample_accessions)
     for index, s in enumerate(sample_accessions):
         if looks_like_sample_accession(s):
             sample_ref = mk_text(analysis, 'SAMPLE_REF', accession=s)

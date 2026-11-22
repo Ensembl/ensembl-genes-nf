@@ -153,6 +153,7 @@ workflow ENA_SUBMIT_WORKFLOW {
                 metadata_source: file_row.metadata_source,
                 sample_accession: file_row.sample_accession,
                 sample_accessions: file_row.sample_accessions,
+                biosample_accessions: file_row.biosample_accessions,
                 secondary_sample_accessions: file_row.secondary_sample_accessions,
                 experiment_accession: file_row.experiment_accession,
                 experiment_accessions: file_row.experiment_accessions,

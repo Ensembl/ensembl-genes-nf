@@ -146,6 +146,24 @@ class MetadataResolutionTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "BioSample accession"):
             generate_analysis_xml.build_analysis_xml(row, files)
 
+    def test_analysis_reads_biosample_from_file_manifest(self):
+        row = {
+            "analysis_alias": "file_metadata_link",
+            "study": "ERP123456",
+            "assembly_accession": "GCA_000001405.28",
+        }
+        files = [{
+            "remote_path": "alignment.cram",
+            "file_type": "cram",
+            "md5": "a" * 32,
+            "sample_accessions": "ERS1",
+            "biosample_accessions": "SAMEA1",
+        }]
+        root = generate_analysis_xml.build_analysis_xml(row, files)
+        sample_ref = root.getroot().find("ANALYSIS/SAMPLE_REF")
+        self.assertEqual(sample_ref.attrib["accession"], "ERS1")
+        self.assertEqual(sample_ref.findtext("IDENTIFIERS/EXTERNAL_ID"), "SAMEA1")
+
     def test_modify_resolves_ena_sample_and_preserves_file(self):
         root = ET.Element("ANALYSIS_SET")
         analysis = ET.SubElement(
