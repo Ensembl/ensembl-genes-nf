@@ -183,6 +183,17 @@ python3 pipelines/ena_submit/bin/build_manifest_from_rnaseq_annotation.py \
   --outdir /path/to/ena_manifest/GCA_011064425.1
 ```
 
+When BAM/CRAM files have been copied away from the original assembly tree, keep
+`--rnaseq-dir` on the original tree for the reference genome and report, and
+add `--alignment-dir` pointing to the copied tree containing `output/`:
+
+```bash
+--rnaseq-dir /path/to/original/GCA_011064425.1/rnaseq \
+--alignment-dir /path/to/copied/GCA_011064425.1/rnaseq \
+--reference-fasta /path/to/original/GCA_011064425.1/GCA_011064425.1_genomic.fna.gz \
+--assembly-report /path/to/original/GCA_011064425.1/GCA_011064425.1_assembly_report.txt
+```
+
 Outputs:
 
 - `manifest.tsv`: one row for the annotation-level release/project metadata.

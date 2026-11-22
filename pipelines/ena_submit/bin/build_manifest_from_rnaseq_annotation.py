@@ -383,6 +383,10 @@ def main() -> int:
         description="Build an annotation-level ENA manifest from an Ensembl genebuild RNA-seq directory."
     )
     parser.add_argument("--rnaseq-dir", required=True, help="Path to .../<species>/<assembly>/rnaseq")
+    parser.add_argument(
+        "--alignment-dir",
+        help="Optional alternate .../<species>/<assembly>/rnaseq tree containing the copied output BAM/CRAM files.",
+    )
     parser.add_argument("--runs-csv", help="Headerless RNA-seq run metadata TSV; defaults to <species>.csv")
     parser.add_argument("--assembly-accession", required=True)
     parser.add_argument("--reference-fasta", help="INSDC genomic FASTA; auto-discovered beside the assembly")
@@ -422,11 +426,12 @@ def main() -> int:
     args = parser.parse_args()
 
     rnaseq_dir = Path(args.rnaseq_dir).resolve()
+    alignment_dir = Path(args.alignment_dir).expanduser().resolve() if args.alignment_dir else rnaseq_dir
     assembly_dir = rnaseq_dir.parent
     reference_fasta, assembly_report = find_reference_files(
         assembly_dir, args.assembly_accession, args.reference_fasta, args.assembly_report
     )
-    output_dir = rnaseq_dir / args.output_subdir
+    output_dir = alignment_dir / args.output_subdir
     if not output_dir.exists():
         raise FileNotFoundError(f"Alignment output directory not found: {output_dir}")
 
