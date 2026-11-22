@@ -66,19 +66,26 @@ setup command and pass this file with `-c` for the mouse controls.
 Build the pinned GRCh38.p14 / Ensembl `2026_04` human and GRCz13ab
 pre-release zebrafish reference with their setup JSONs. The zebrafish files
 are the soft-masked FASTA and GTF under the Ensembl pre-release directory.
-Use the pinned workflow checkout and a persistent Nextflow work directory:
+Use the pinned workflow checkout and a persistent Nextflow work directory.
+When launching from the repository root, pass the Ribo-seq pipeline config as
+a global `-c` option before `run`; this is what enables the Singularity profile
+for the `gffread`, Bowtie, RiboMetric and version-collation containers.
 
 ```bash
 export NXF_VER=26.04.6
 BUNDLE=/homes/jackt/rdp-production/inputs/release_2026-11-v4
 SPECIES=danio_rerio
 REF="$OUT/references/$SPECIES"
-nextflow run pipelines/riboseq/main.nf -profile slurm \
+/hps/software/spack/opt/spack/linux-rhel9-zen5/none-none/nextflow-26.04.0-5if3abirupmf5qdo2jpsqte52235gjpy/bin/nextflow \
+  -c /hps/software/users/ensembl/genebuild/jackt/ensembl-genes-nf/pipelines/riboseq/nextflow.config \
+  run pipelines/riboseq/main.nf -profile slurm \
   -params-file "$BUNDLE/organism_setup/$SPECIES.json" \
   -work-dir "$OUT/work/references/$SPECIES" --outdir "$REF"
 
-nextflow run pipelines/riboseq/main.nf -profile slurm \
+/hps/software/spack/opt/spack/linux-rhel9-zen5/none-none/nextflow-26.04.0-5if3abirupmf5qdo2jpsqte52235gjpy/bin/nextflow \
+  -c /hps/software/users/ensembl/genebuild/jackt/ensembl-genes-nf/pipelines/riboseq/nextflow.config \
   -c "$REF/pipeline_info/riboseq_params.config" \
+  run pipelines/riboseq/main.nf -profile slurm \
   -params-file "$BUNDLE/processing.json" \
   -work-dir "$OUT/work/controls/$SPECIES" \
   --sample_sheet "$BUNDLE/controls/${SPECIES}_samplesheet.csv" \
