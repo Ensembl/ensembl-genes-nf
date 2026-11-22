@@ -344,6 +344,12 @@ Existing non-BAM inputs are passed through unchanged.
 - `analysis_type`: `REFERENCE_ALIGNMENT`.
 - `omit_run_refs_in_test`: `false` by default, so generated TEST analyses retain their source `RUN_REF` links. Set it to `true` when testing with runs that are absent from ENA TEST.
 
+Every generated project and analysis description includes the assembly-specific
+Ensembl genome browser URL, for example
+`https://www.ensembl.org/genome/GCA_018350175.1`. The same URL is also emitted
+as an `ANALYSIS_LINK`, so the relationship remains discoverable without relying
+on the free-text description.
+
 The run-manifest builder writes this nested `manifest.tsv` plus one `files/*.tsv`
 per analysis. This is the format consumed by the workflow; the older flat
 run-list layout is no longer sufficient.

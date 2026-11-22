@@ -57,6 +57,16 @@ workflow ENA_SUBMIT_WORKFLOW {
           if (!row.last_geneset_update && !row.partial_release_label) { throw new RuntimeException("Manifest row missing last_geneset_update/partial_release_label") }
           def release = row.partial_release_label ?: "${row.assembly_accession}-Ensembl-${row.last_geneset_update}"
           def prj_alias = row.project_alias ?: ("prj_${release}").replaceAll('[^A-Za-z0-9._-]', '_')
+          def ensembl_url = row.ensembl_url ?: "https://www.ensembl.org/genome/${row.assembly_accession}"
+          def annotation_suffix = "Ensembl annotation: ${ensembl_url}"
+          if (!(row.description ?: '').contains(ensembl_url)) {
+              row.description = [row.description?.trim(), annotation_suffix].findAll { it }.join(' ')
+          }
+          def annotation_link = "Ensembl annotation|${ensembl_url}"
+          if (!(row.analysis_links ?: '').contains(ensembl_url)) {
+              row.analysis_links = [row.analysis_links?.trim(), annotation_link].findAll { it }.join('; ')
+          }
+          row.ensembl_url = ensembl_url
           if (create_project && row.study) {
               throw new RuntimeException("Manifest row ${prj_alias} supplies study='${row.study}' while --create_project is true; leave study blank for a new child project or set --create_project false")
           }
@@ -89,7 +99,11 @@ workflow ENA_SUBMIT_WORKFLOW {
             .map { summary ->
                 def alias = summary.project_alias
                 def title = "Annotation evidence project for ${summary.assembly_accession}, ${summary.release}"
-                def description = params.project_description ?: "Annotation evidence project for ${summary.assembly_accession}, ${summary.release}; processed RNA-seq alignment evidence with ENA-resolved source metadata."
+                def ensembl_url = "https://www.ensembl.org/genome/${summary.assembly_accession}"
+                def annotation_suffix = "Annotation browser: ${ensembl_url}"
+                def project_base = params.project_description ?: "Annotation evidence project for ${summary.assembly_accession}, ${summary.release}; processed RNA-seq alignment evidence with ENA-resolved source metadata."
+                def description = project_base.contains(ensembl_url) ? project_base :
+                    "${project_base.take(Math.max(0, 248 - annotation_suffix.size())).trim()} ${annotation_suffix}"
                 tuple(alias, [ alias: alias, name: alias, title: title, description: description,
                                scientific_name: summary.scientific_name, taxon_id: summary.taxon_id,
                                hold_until: params.hold_until ?: '' ])
