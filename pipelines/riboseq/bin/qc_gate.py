@@ -248,7 +248,11 @@ def main():
             for read_len in sorted(keep_lengths):
                 handle.write(f"{read_len}\n")
 
-        write_filtered_offsets(args.best_offset, f"{args.out_prefix}.offsets.{tier_name}.tsv", keep_lengths)
+        # Do not emit empty tier files.  Downstream post-processing consumes
+        # these files as an instruction to make tracks; an empty file causes
+        # a task to be scheduled and fail later with "no usable offsets".
+        if keep_lengths:
+            write_filtered_offsets(args.best_offset, f"{args.out_prefix}.offsets.{tier_name}.tsv", keep_lengths)
 
     primary_result = tier_results.get("good", next(iter(tier_results.values())))
     keep_lengths = primary_result["keep_lengths"]

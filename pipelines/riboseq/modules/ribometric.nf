@@ -41,6 +41,11 @@ process RIBOMETRIC {
     def output_offsets_arg = (offset_file && offset_file.name != 'NO_OFFSET_FILE') ? '' : "--output-offsets ${prefix}.offsets.tsv"
     def offset_target = params.ribometric_offset_target ?: 'a_site'
     """
+    # RiboMetric 1.5 can fail while serialising its optional CSV report when a
+    # score is null (TypeError: NoneType > int).  Preserve the JSON/HTML
+    # results and retry without CSV; the small fallback below recreates the
+    # metric/score table used by collect_qc_metrics.py from the JSON report.
+    set +e
     RiboMetric run \\
         --bam ${transcriptome_bam} \\
         --annotation ${ribometric_annotation} \\
@@ -53,6 +58,85 @@ process RIBOMETRIC {
         ${output_offsets_arg} \\
         -S ${sample_size} \\
         $args
+    ribometric_status=\$?
+    set -e
+
+    json_file=\$(find . -maxdepth 1 -type f -name '*RiboMetric.json' | head -n 1)
+    if [ "\$ribometric_status" -ne 0 ] && [ -z "\$json_file" ]; then
+        set +e
+        RiboMetric run \\
+            --bam ${transcriptome_bam} \\
+            --annotation ${ribometric_annotation} \\
+            --threads $task.cpus \\
+            --html \\
+            --json \\
+            --offset-target ${offset_target} \\
+            ${offset_args} \\
+            ${output_offsets_arg} \\
+            -S ${sample_size} \\
+            $args
+        retry_status=\$?
+        set -e
+        ribometric_status=\$retry_status
+        json_file=\$(find . -maxdepth 1 -type f -name '*RiboMetric.json' | head -n 1)
+    fi
+
+    if [ "\$ribometric_status" -ne 0 ] && [ -z "\$json_file" ]; then
+        echo "RiboMetric failed and produced no JSON report" >&2
+        exit "\$ribometric_status"
+    fi
+
+    csv_file=\$(find . -maxdepth 1 -type f -name '*RiboMetric.csv' | head -n 1)
+    if [ "\$ribometric_status" -ne 0 ] || [ -z "\$csv_file" ] || [ ! -s "\$csv_file" ]; then
+        csv_file="${prefix}_RiboMetric.csv"
+        python3 - "\$json_file" "\$csv_file" <<'PY'
+import csv
+import json
+import sys
+
+source, destination = sys.argv[1:]
+payload = json.load(open(source))
+results = payload.get("results", payload)
+rows = []
+
+def add(metric, value):
+    if value is None or isinstance(value, (dict, list)):
+        return
+    rows.append((str(metric), value))
+
+metrics = results.get("metrics", {}) if isinstance(results, dict) else {}
+if isinstance(metrics, dict):
+    for metric, value in metrics.items():
+        if isinstance(value, dict):
+            for key, nested in value.items():
+                add(f"{metric}_{key}", nested)
+        else:
+            add(metric, value)
+
+for metric in (
+    "recommended_read_proportion",
+    "n_recommended_read_lengths",
+    "information_content",
+    "periodicity_information",
+    "periodicity_dominance",
+):
+    if isinstance(results, dict) and metric in results:
+        value = results[metric]
+        if isinstance(value, dict):
+            for key, nested in value.items():
+                add(f"{metric}_{key}", nested)
+        else:
+            add(metric, value)
+
+with open(destination, "w", newline="") as handle:
+    writer = csv.writer(handle)
+    writer.writerow(["metric", "score"])
+    writer.writerows(rows)
+PY
+    fi
+    if [ "\$ribometric_status" -ne 0 ]; then
+        echo "RiboMetric CSV generation failed; continuing with JSON-derived metrics" >&2
+    fi
 
     if [ "${offset_file.name}" != "NO_OFFSET_FILE" ]; then
         cp ${offset_file} ${prefix}.best_offset.txt

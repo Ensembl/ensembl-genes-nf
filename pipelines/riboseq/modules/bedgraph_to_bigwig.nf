@@ -31,7 +31,7 @@ process BEDGRAPH_TO_BIGWIG {
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            bedGraphToBigWig: \$(bedGraphToBigWig 2>&1 | grep "bedGraphToBigWig v" | sed 's/^.*v//; s/ .*\$//')
+            bedGraphToBigWig: \$(version=\$(bedGraphToBigWig 2>&1 | sed -nE 's/.*version:[[:space:]]*([0-9][0-9.]*)/\\1/p; s/.*v([0-9][0-9.]*)[^0-9.].*/\\1/p' | head -n 1); printf '%s' "\${version:-unknown}")
         END_VERSIONS
         """
     } else {
@@ -42,7 +42,7 @@ process BEDGRAPH_TO_BIGWIG {
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            bedGraphToBigWig: \$(bedGraphToBigWig 2>&1 | grep "bedGraphToBigWig v" | sed 's/^.*v//; s/ .*\$//')
+            bedGraphToBigWig: \$(version=\$(bedGraphToBigWig 2>&1 | sed -nE 's/.*version:[[:space:]]*([0-9][0-9.]*)/\\1/p; s/.*v([0-9][0-9.]*)[^0-9.].*/\\1/p' | head -n 1); printf '%s' "\${version:-unknown}")
         END_VERSIONS
         """
     }

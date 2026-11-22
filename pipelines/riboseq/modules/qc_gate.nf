@@ -13,8 +13,8 @@ process QC_GATE {
     output:
     tuple val(meta), path("*.offsets.pass.tsv"), emit: filtered_offsets
     tuple val(meta), path("*.offsets.selected.tsv"), optional: true, emit: selected_offsets
-    tuple val(meta), path("*.offsets.good.tsv"), emit: good_offsets
-    tuple val(meta), path("*.offsets.great.tsv"), emit: great_offsets
+    tuple val(meta), path("*.offsets.good.tsv"), optional: true, emit: good_offsets
+    tuple val(meta), path("*.offsets.great.tsv"), optional: true, emit: great_offsets
     tuple val(meta), path("*.translon.selected.txt"), optional: true, emit: translon_selected
     tuple val(meta), path("*.pass_lengths.tsv"), emit: pass_lengths
     tuple val(meta), path("*.qc.json"), emit: qc_json

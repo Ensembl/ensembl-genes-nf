@@ -125,6 +125,8 @@ def test_qc_gate_emits_no_selected_offsets_when_periodicity_fails(tmp_path):
     gate_prefix = run_gate(tmp_path, "SRR11005904", metrics_tsv)
 
     assert not Path(f"{gate_prefix}.offsets.selected.tsv").exists()
+    assert not Path(f"{gate_prefix}.offsets.good.tsv").exists()
+    assert not Path(f"{gate_prefix}.offsets.great.tsv").exists()
     assert Path(f"{gate_prefix}.offsets.pass.tsv").read_text().splitlines() == ["read_len\toffset"]
     qc = json.loads(Path(f"{gate_prefix}.qc.json").read_text())
     assert qc["selected_for_translon"] is False
