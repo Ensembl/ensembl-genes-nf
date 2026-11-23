@@ -51,7 +51,7 @@ def read_selection(path):
 def sample_from_name(path):
     name = path.name
     sample = None
-    for suffix in ("_extraction_report.json", ".extraction_report.json", "_qc_metrics.tsv", "_qc_artifacts.tsv", "_gate_selection.tsv", "_qc_eval.tsv"):
+    for suffix in ("_extraction_report.json", ".extraction_report.json", "_rpf_20_40.summary.tsv", "_qc_metrics.tsv", "_qc_artifacts.tsv", "_gate_selection.tsv", "_qc_eval.tsv"):
         if name.endswith(suffix):
             sample = name[: -len(suffix)]
             break
@@ -76,7 +76,10 @@ def load_extraction(root):
         report = payload.get("results", payload) if isinstance(payload, dict) else {}
         if not isinstance(report, dict):
             report = {}
+        extraction = report.get("extraction") if isinstance(report.get("extraction"), dict) else {}
+        transform = report.get("transform") if isinstance(report.get("transform"), dict) else {}
         reasons = report.get("withheld_reasons") or report.get("withhold_reasons") or report.get("reasons") or []
+        reasons = reasons or transform.get("reasons") or []
         if isinstance(reasons, str):
             reasons = [reasons]
         status = str(report.get("status") or report.get("decision") or "").lower()
@@ -90,6 +93,10 @@ def load_extraction(root):
         reports[sample] = {
             "extraction_outcome": outcome,
             "extraction_reasons": ";".join(str(item) for item in reasons),
+            "extraction_input_reads": extraction.get("input_reads", ""),
+            "extraction_accepted_reads": extraction.get("accepted", ""),
+            "extraction_accepted_fraction": extraction.get("accepted_fraction", ""),
+            "extraction_architecture": report.get("architecture", ""),
             "extraction_path": str(path),
         }
     return reports
@@ -106,6 +113,24 @@ def load_metrics(root):
             if name and value != "":
                 row[name] = value
     return metrics
+
+
+def load_gated(root):
+    gated = {}
+    for path in sorted((root / "getRPF" / "gated").glob("*_rpf_20_40.summary.tsv")):
+        sample = sample_from_name(path)
+        rows = read_tsv(path)
+        if rows:
+            row = rows[0]
+            gated[sample] = {
+                "gated_summary_path": str(path),
+                "gated_total_reads": row.get("total_reads", ""),
+                "gated_kept_reads_20_40": row.get("kept_reads_20_40", ""),
+                "gated_kept_fraction_20_40": row.get("kept_read_fraction", ""),
+                "gated_total_unique": row.get("total_unique", ""),
+                "gated_kept_unique_20_40": row.get("kept_unique_20_40", ""),
+            }
+    return gated
 
 
 def load_gate(root):
@@ -169,6 +194,7 @@ def main():
 
     selection = read_selection(args.selection)
     extraction = load_extraction(args.pilot_root)
+    gated = load_gated(args.pilot_root)
     metrics = load_metrics(args.pilot_root)
     gate = load_gate(args.pilot_root)
     failed_rules = load_failed_rules(args.pilot_root)
@@ -179,6 +205,7 @@ def main():
     for sample in sorted(samples):
         row = dict(selection.get(sample, {"run_id": sample}))
         row.update(extraction.get(sample, {}))
+        row.update(gated.get(sample, {}))
         row.update(metrics.get(sample, {}))
         row.update(gate.get(sample, {}))
         row["failed_qc_rules"] = failed_rules.get(sample, "")
@@ -190,6 +217,9 @@ def main():
     preferred = [
         "run_id", "study_accession", "organism", "depth_bin", "diagnosis",
         "extraction_outcome", "extraction_reasons", "status",
+        "extraction_input_reads", "extraction_accepted_reads", "extraction_accepted_fraction",
+        "extraction_architecture", "gated_total_reads", "gated_kept_reads_20_40",
+        "gated_kept_fraction_20_40",
         "gate_selected", "gate_reason", "failed_qc_rules",
         "star.unique_mapped_pct", "getrpf.checks_pass_frac",
         "ribometric.periodicity_dominance", "ribometric.information_content",
