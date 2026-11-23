@@ -13,7 +13,7 @@ All public tuples retain the first `meta` map. Transformed maps use
 | `AUDIT_NATIVE_SHARDS` | native model tuples, empty-plan records, shard plans, backend list | audited native tuples |
 | `MERGE_LONG_READ_MODELS` | audited native tuples, scope policy, merge arguments | normalized-input GTF tuples with file lists/checksums, versions |
 | `NORMALIZE_VALIDATE_MODELS` | merged GTF tuples, reference dictionary | validated normalized-model tuples, reports, versions |
-| `COLLECT_LONG_READ_EVIDENCE_PRODUCTS` | validated models, normalized manifest, alignment manifests, reference identity, direct support, reference FASTA | verified evidence package and model/event support tables |
+| `COLLECT_LONG_READ_EVIDENCE_PRODUCTS` | validated models, normalized manifest, alignment manifests, reference identity, direct support, reference FASTA | verified evidence package and model/event support tables (available but not invoked by the primary model workflow) |
 | `RUN_DIAMOND_QC` | validated normalized models and optional protein database | backend/scope-separated ORF, DIAMOND, and comparison products |
 | `FINALIZE_LONG_READ_PIPELINE` | normalized inputs, shard plans, model artifacts, published-model mapping, merge provenance, reference identity, stage/evidence status | run manifest, final checksums, checksum verification, software versions |
 

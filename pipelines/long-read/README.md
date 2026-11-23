@@ -4,8 +4,9 @@ This is the strict DSL2 replacement for `pipelines/long_read_tama/`. It accepts
 explicit FASTQ, indexed BAM, approved-manifest, and retrospective inputs and
 publishes normalized BED12 products under run- and cohort-namespaced paths.
 
-The default reconstruction set is IsoQuant, StringTie3, and TransGram. The
-manifest is the source of truth for per-run technology settings. `technology`
+The default reconstruction set is StringTie3. Other backends remain available
+through explicit `--model_backends` selection. The manifest is the source of
+truth for per-run technology settings. `technology`
 must be `ont` or `pacbio`; optional `minimap2_preset` and `isoquant_data_type`
 columns override the technology-derived values. If omitted, ONT uses minimap2
 `splice` and IsoQuant `nanopore`, while PacBio uses minimap2 `splice:hq` and
@@ -36,16 +37,18 @@ run1	cohort1	run1	pacbio	splice:hq	pacbio_ccs	auto	GRCh38	set1	sample1	lib1	bam	
 nextflow run pipelines/long-read/main.nf \
   --mode bam --manifest /data/samples.tsv \
   --reference_fasta /data/GRCh38.fa --cohort_id cohort1 \
-  --evidence_mode enabled --outdir /data/results
+  --model_backends stringtie3 --outdir /data/results
 ```
 
 The BAM path skips minimap2 alignment. The pipeline checks the BAM and index,
 sorts and indexes a working copy, and checks its reference contigs and lengths
 against the FASTA before downstream analysis.
 
-Direct chain, junction, and end-pair evidence plus model/event support is
-published when `--evidence_mode enabled`. The output contract, filter rules,
-coordinates, and interpretation limits are in `docs/EVENT_SUPPORT.md`.
+The primary reconstruction workflow publishes normalized model products and
+does not run the optional direct-evidence/model-event join. The evidence
+modules remain available for the separate retrospective workflow; the output
+contract, filter rules, coordinates, and interpretation limits are in
+`docs/EVENT_SUPPORT.md`.
 
 Preparation extensions are explicit through `preparation_stages`: `discover`,
 `resolve_metadata`, `acquire`, and `bam_to_fastq`. FASTQ acquisition uses the
@@ -102,7 +105,7 @@ Exhausted required tasks terminate the run rather than being silently ignored.
 | TAMA, StringTie2, StringTie3, tmerge | Ported as independent backend subworkflows with native status/checksum products. |
 | IsoQuant, FLAIR, Bambu, TransGram | Ported as optional backend subworkflows with pinned runtime references and backend-specific products. |
 | Run/cohort merges and candidate comparison | Ported into merge, normalization, validation, and comparison subworkflows; run/cohort paths are isolated. |
-| Evidence graph and retrospective evidence | Ported with explicit IDs/relations and post-run Parquet/publication verification. |
+| Evidence graph and retrospective evidence | Retained for the separate retrospective workflow; skipped in the primary StringTie3 model workflow. |
 | ORF and DIAMOND annotation QC | Ported as optional downstream QC over validated normalized models. |
 | Legacy soft-failure/recovery shortcuts and flat publication paths | Deliberately not retained; required failures terminate and outputs are namespaced. |
 

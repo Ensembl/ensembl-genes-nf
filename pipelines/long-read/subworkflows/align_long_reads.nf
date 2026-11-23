@@ -8,6 +8,7 @@ workflow ALIGN_LONG_READS {
     minimap2_preset
     secondary_mode
     _run_qc
+    evidence_enabled
 
     main:
     BUILD_MINIMAP_INDEX(reference)
@@ -33,7 +34,7 @@ workflow ALIGN_LONG_READS {
         .map { meta, bam, bai, idxstats -> tuple(meta, bam, bai, idxstats) }
     SAMTOOLS_QC_SUMMARY(qc_inputs)
     SAMTOOLS_VIEW_ALIGNMENT(alignments)
-    EXTRACT_ALIGNMENT_FEATURES(SAMTOOLS_VIEW_ALIGNMENT.out.sam)
+    EXTRACT_ALIGNMENT_FEATURES(SAMTOOLS_VIEW_ALIGNMENT.out.sam, evidence_enabled)
 
     emit:
     alignment = alignments

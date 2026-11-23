@@ -19,7 +19,6 @@ include { NORMALIZE_VALIDATE_MODELS } from './subworkflows/normalize_validate_mo
 include { AUDIT_NATIVE_SHARDS } from './subworkflows/audit_native_shards.nf'
 include { COMPARE_MODELS } from './subworkflows/compare_normalized_models.nf'
 include { FINALIZE_LONG_READ_PIPELINE } from './subworkflows/evidence_finalize.nf'
-include { COLLECT_LONG_READ_EVIDENCE_PRODUCTS } from './subworkflows/evidence_collection.nf'
 include { RUN_DIAMOND_QC } from './subworkflows/run_diamond_qc.nf'
 
 def selected_backends(value) {
@@ -161,6 +160,8 @@ workflow {
     def backend_scopes = runtime_options.backend_scopes
     def preparation_stages = runtime_options.preparation_stages
     log.info(paramsSummaryLog(workflow))
+    if (params.evidence_mode == 'enabled')
+        log.warn('evidence_mode=enabled is ignored by the primary workflow; model-evidence collection is disabled')
 
     def manifest_path = params.mode == 'approved_manifest' ? params.approved_manifest : params.manifest
     manifest_file = file(manifest_path, checkIfExists: true)
@@ -234,7 +235,9 @@ workflow {
         }
 
     PREPARE_LONG_READS(manifest_file, input_runs, params.mode, params.cohort_id, manifest_file.parent.toString(), params.ccs_mode, preparation_stages, params.discovery_query, cache_dir ?: '')
-    ALIGN_LONG_READS(PREPARE_LONG_READS.out.reads, reference_file, params.mode, params.minimap2_preset, params.secondary_mode, params.alignment_qc)
+    // The primary deliverable is the StringTie3 model set; do not record the
+    // optional direct-support evidence view on this path.
+    ALIGN_LONG_READS(PREPARE_LONG_READS.out.reads, reference_file, params.mode, params.minimap2_preset, params.secondary_mode, params.alignment_qc, false)
     PREPARE_CONTIG_SHARDS(ALIGN_LONG_READS.out.alignment, params.shard_mode, params.shard_contig_reads, params.shard_very_large_reads)
 
     native_models = channel.empty()
@@ -299,11 +302,6 @@ workflow {
     COMPARE_MODELS(comparison_records.map { groovy.json.JsonOutput.toJson(it) }, params.cohort_id)
     versions = versions.mix(COMPARE_MODELS.out.versions)
     evidence_status = channel.of('DISABLED')
-    if (params.evidence_mode == 'enabled') {
-        COLLECT_LONG_READ_EVIDENCE_PRODUCTS(NORMALIZE_VALIDATE_MODELS.out.validated, PREPARE_LONG_READS.out.normalized, ALIGN_LONG_READS.out.alignment_manifest.collect(), ALIGN_LONG_READS.out.reference_identity, ALIGN_LONG_READS.out.direct_support.map { meta, support -> support }.collect(), reference_file, params.cohort_id)
-        evidence_status = COLLECT_LONG_READ_EVIDENCE_PRODUCTS.out.evidence.map { _evidence -> 'COMPLETE' }
-        versions = versions.mix(COLLECT_LONG_READ_EVIDENCE_PRODUCTS.out.versions)
-    }
     if (params.diamond_mode == 'enabled' || params.orf_mode == 'enabled') {
         diamond_db = params.diamond_database ? file(params.diamond_database, checkIfExists: true) : null
         diamond_proteins = params.diamond_reference_proteins ? file(params.diamond_reference_proteins, checkIfExists: true) : null
@@ -337,7 +335,7 @@ workflow {
         preparation_stages: preparation_stages,
         discovery_query: params.discovery_query,
         publish_native_intermediates: params.publish_native_intermediates,
-        evidence_mode: params.evidence_mode,
+        evidence_mode: 'disabled',
         evidence_min_mapq: params.evidence_min_mapq,
         orf_mode: params.orf_mode,
         diamond_mode: params.diamond_mode,
@@ -363,7 +361,7 @@ workflow {
         validation: 'COMPLETE',
         orf: params.orf_mode == 'enabled' ? 'COMPLETE' : 'DISABLED',
         diamond: params.diamond_mode == 'enabled' ? 'COMPLETE' : 'DISABLED',
-        evidence: params.evidence_mode == 'enabled' ? 'COMPLETE' : 'DISABLED',
+        evidence: 'DISABLED',
         finalization: 'COMPLETE'
     ])
     normalized_pair = PREPARE_LONG_READS.out.normalized.map { normalized, checksum, input_checksums, status -> tuple(normalized, input_checksums, status) }

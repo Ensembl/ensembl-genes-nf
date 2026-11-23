@@ -301,16 +301,17 @@ process EXTRACT_ALIGNMENT_FEATURES {
     tag "${meta.run_id}"
     input:
     tuple val(meta), path(sam)
+    val evidence_enabled
     output:
     tuple val(meta), path('read_features.tsv.gz'), path('five_prime_ends.bed'), path('three_prime_ends.bed'), path('junctions.bed'), path('feature_summary.tsv'), emit: features
     tuple val(meta), path("${meta.run_id}.direct_support"), emit: direct_support
     script:
-    def support_arg = params.evidence_mode == 'enabled' ? '' : '--skip-support'
+    def support_arg = evidence_enabled ? '' : '--skip-support'
     """
     python3 ${projectDir}/bin/bam_to_features.py --sam ${sam} --read-features read_features.tsv.gz --five-prime five_prime_ends.bed --three-prime three_prime_ends.bed --junctions junctions.bed --summary feature_summary.tsv --support-dir '${meta.run_id}.direct_support' --run-id '${meta.run_id}' --assembly-id '${meta.assembly_id}' --sample-id '${meta.sample_id}' --library-id '${meta.library_id}' --read-set-id '${meta.read_set_id}' --technology '${meta.technology}' --min-mapq ${params.evidence_min_mapq} ${support_arg}
     """
     stub:
-    def support_arg = params.evidence_mode == 'enabled' ? '' : '--skip-support'
+    def support_arg = evidence_enabled ? '' : '--skip-support'
     """
     python3 ${projectDir}/bin/bam_to_features.py --sam ${sam} --read-features read_features.tsv.gz --five-prime five_prime_ends.bed --three-prime three_prime_ends.bed --junctions junctions.bed --summary feature_summary.tsv --support-dir '${meta.run_id}.direct_support' --run-id '${meta.run_id}' --assembly-id '${meta.assembly_id}' --sample-id '${meta.sample_id}' --library-id '${meta.library_id}' --read-set-id '${meta.read_set_id}' --technology '${meta.technology}' --min-mapq ${params.evidence_min_mapq} ${support_arg}
     """

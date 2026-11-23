@@ -21,7 +21,7 @@
     "cohort_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
     "minimap2_preset": {"type": "string", "enum": ["splice:hq", "splice", "map-ont", "map-pb"], "description": "Fallback minimap2 preset; a manifest row's minimap2_preset takes precedence and is otherwise derived from technology"},
     "secondary_mode": {"type": "boolean", "default": false},
-    "model_backends": {"type": ["array", "string"], "minItems": 1, "uniqueItems": true, "default": ["isoquant", "stringtie3", "transgram"], "items": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "isoquant", "flair", "bambu", "transgram", "all"]}},
+    "model_backends": {"type": ["array", "string"], "minItems": 1, "uniqueItems": true, "default": ["stringtie3"], "items": {"type": "string", "enum": ["tama", "stringtie2", "stringtie3", "tmerge", "isoquant", "flair", "bambu", "transgram", "all"]}},
     "backend_scopes": {"type": ["array", "string"], "minItems": 1, "uniqueItems": true, "items": {"type": "string", "enum": ["run", "cohort"]}},
     "shard_mode": {"type": "string", "enum": ["contig", "none"], "default": "contig"},
     "shard_contig_reads": {"type": "integer", "minimum": 0, "default": 1000000},
