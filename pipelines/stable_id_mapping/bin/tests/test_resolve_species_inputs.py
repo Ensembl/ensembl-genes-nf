@@ -98,6 +98,11 @@ def mock_common_resolution(monkeypatch) -> None:
             "translation": "ENSXP:00000000100-00000000199",
         },
     )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "validate_target_gff_gene_ids",
+        lambda db_name, target_gff: None,
+    )
 
 
 def mock_nonconforming_stable_ids(monkeypatch) -> None:
@@ -372,6 +377,35 @@ def test_map_same_version_rejects_identical_inputs(
             ref_gff_override=Path("same.gff3"),
             assembly_metadata_db=ASSEMBLY_METADATA_DB,
         )
+
+
+def test_target_gff_gene_ids_must_match_core_database(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    target_gff = tmp_path / "target.gff3"
+    target_gff.write_text(
+        "1\t.\tgene\t1\t10\t.\t+\t.\tID=gene:ENSXG00000000100\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "load_current_features",
+        lambda db_name: {
+            "gene": [
+                {"feature_id": 1, "stable_id": "ENSXG00000000101"},
+            ],
+        },
+    )
+
+    with pytest.raises(ValueError, match="gene IDs do not match") as error:
+        resolve_species_inputs.validate_target_gff_gene_ids(
+            "test_core",
+            target_gff,
+        )
+
+    assert "Core-only genes: 1" in str(error.value)
+    assert "GFF3-only genes: 1" in str(error.value)
 
 
 def test_resolve_ftp_paths_uses_accession_based_layout(

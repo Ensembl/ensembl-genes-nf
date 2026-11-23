@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import re
 import sys
@@ -97,6 +98,90 @@ def optional_path(value: str) -> Path | None:
     if value is None or value.strip() == "":
         return None
     return Path(value)
+
+
+def split_gff_stable_id(value: str) -> str:
+    stable_id = value.split(":", 1)[-1]
+    identifier, separator, version = stable_id.rpartition(".")
+    if separator and version.isdigit():
+        return identifier
+    return stable_id
+
+
+def target_gff_gene_ids(path: Path) -> set[str]:
+    opener = gzip.open if path.suffix in {".gz", ".bgz"} else open
+    gene_ids: set[str] = set()
+
+    with opener(path, "rt", encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, start=1):
+            if line.startswith("#"):
+                continue
+
+            fields = line.rstrip("\n").split("\t")
+            if len(fields) != 9 or fields[2].lower() not in {
+                "gene",
+                "ncrna_gene",
+                "pseudogene",
+            }:
+                continue
+
+            attributes = {
+                key: value
+                for item in fields[8].split(";")
+                if "=" in item
+                for key, value in [item.split("=", 1)]
+            }
+            raw_id = attributes.get("ID")
+            if not raw_id:
+                raise ValueError(
+                    f"{path}:{line_number}: gene feature has no ID attribute"
+                )
+
+            stable_id = split_gff_stable_id(raw_id)
+            if stable_id in gene_ids:
+                raise ValueError(
+                    f"{path}:{line_number}: duplicate gene ID {stable_id!r}"
+                )
+            gene_ids.add(stable_id)
+
+    return gene_ids
+
+
+def validate_target_gff_gene_ids(db_name: str, target_gff: Path) -> None:
+    core_rows = load_current_features(db_name)["gene"]
+    missing_core_ids = [
+        row["feature_id"]
+        for row in core_rows
+        if not row.get("stable_id")
+    ]
+    if missing_core_ids:
+        examples = ", ".join(str(value) for value in missing_core_ids[:10])
+        raise ValueError(
+            f"Target core database {db_name} has {len(missing_core_ids)} gene "
+            f"row(s) without a stable ID (examples: {examples})"
+        )
+
+    core_gene_ids = {row["stable_id"] for row in core_rows}
+    gff_gene_ids = target_gff_gene_ids(target_gff)
+    core_only = core_gene_ids - gff_gene_ids
+    gff_only = gff_gene_ids - core_gene_ids
+
+    if core_only or gff_only:
+        details = [
+            "Target GFF3 gene IDs do not match the target core database.",
+            f"Core genes: {len(core_gene_ids)}; GFF3 genes: {len(gff_gene_ids)}.",
+        ]
+        if core_only:
+            details.append(
+                f"Core-only genes: {len(core_only)} "
+                f"(examples: {', '.join(sorted(core_only)[:10])})"
+            )
+        if gff_only:
+            details.append(
+                f"GFF3-only genes: {len(gff_only)} "
+                f"(examples: {', '.join(sorted(gff_only)[:10])})"
+            )
+        raise ValueError("\n".join(details))
 
 
 def parse_gca_accession(accession: str) -> tuple[str, int]:
@@ -657,6 +742,8 @@ def resolve_species_inputs(
                     + ", ".join(duplicate_inputs)
                     + " path(s) were resolved"
                 )
+
+        validate_target_gff_gene_ids(db_name, target_gff)
     
         if mapping_session_id_override is not None:
             mapping_session_id = mapping_session_id_override
