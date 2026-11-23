@@ -4,7 +4,7 @@ minimap2: quay.io/biocontainers/minimap2@sha256:0c397895db3b494baa4f78de7110d516
 samtools: quay.io/biocontainers/samtools@sha256:783c6646029a306ec5e4162009dc1a20d8f6c528f7c380e5b4affbf12d9112e5
 tama: docker.io/sguizard/tama@sha256:66a05355155f5ecef2f585736e7fe3d9d9ad38b566f1179437828ad2d7bfd123
 stringtie2: quay.io/biocontainers/stringtie@sha256:84207eb013dbcff90928d8ddc75902580d3885ce8edaa36b8fab7665a3dc2e3c
-stringtie3: quay.io/biocontainers/stringtie@sha256:1e2d08591607f70ee10b830a5fd17eaa3c1c34d25ca28cb224a73658053a1f31
+stringtie3: quay.io/biocontainers/stringtie@sha256:221523fd04f7ffaf76e78617cbb6069e002ee0f16b0068c3033e4bb0869014ee
 # The official v1.0 tmerge Perl entry point is vendored in bin/tmerge.
 tmerge: docker.io/library/perl@sha256:587c0c65838dca2fa760e0a0ab169f7260894f208e68f38535ca644f397470c7
 pbccs: quay.io/biocontainers/pbccs@sha256:6876708af8f1bd3af45740d86fa2f0479bea48e72bc97118240cb9f4fbd5e13b
