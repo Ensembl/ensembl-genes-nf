@@ -7,13 +7,14 @@ process PUBLISH_STAR_ALIGNMENTS {
     label 'process_low'
 
     publishDir "${params.outdir}/star_align", mode: 'copy', saveAs: { filename ->
+        def root = meta.alignment_purpose == 'getrpf_hold_diagnostic' ? 'getrpf_holds/' : ''
         def suffix = bam_type == 'genome'
             ? 'Aligned.sortedByCoord.out'
             : 'Aligned.toTranscriptome.out'
         def published_name = filename.endsWith('.bai')
             ? "${meta.id}.${suffix}.bam.bai"
             : "${meta.id}.${suffix}.bam"
-        "${bam_type}/${meta.id}/${published_name}"
+        "${root}${bam_type}/${meta.id}/${published_name}"
     }
 
     input:

@@ -28,6 +28,7 @@ params {
     getrpf_max_reads: Integer = 5000
     getrpf_preserve_umi: Boolean = false
     getrpf_infer_reads: Integer = 1000000
+    align_getrpf_holds: Boolean = false
     min_read_length: Integer = 20
     max_read_length: Integer = 0
     run_rrna_filter: Boolean = false
@@ -89,6 +90,7 @@ include { ORGANISM_SETUP } from './subworkflows/organism_setup.nf'
 include { DATA_ACQUISITION } from './subworkflows/data_acquisition.nf'
 include { QUALITY_CONTROL } from './subworkflows/quality_control.nf'
 include { ALIGNMENT } from './subworkflows/alignment.nf'
+include { ALIGNMENT_GETRPF_HOLDS } from './subworkflows/alignment.nf'
 include { ANALYSIS } from './subworkflows/analysis.nf'
 include { POST_PROCESSING } from './subworkflows/post_processing.nf'
 include { TRACKHUB_GENERATION } from './subworkflows/trackhub_generation.nf'
@@ -265,6 +267,17 @@ workflow {
         file(params.adapter_list),
         star_index_ch
     )
+
+    // Optional diagnostic branch: align raw reads for samples whose getRPF
+    // transform was withheld. These alignments are deliberately isolated from
+    // production samples and are used only to inspect Local-STAR soft clips.
+    if (params.align_getrpf_holds) {
+        ALIGNMENT_GETRPF_HOLDS(
+            DATA_ACQUISITION.out.getrpf_hold_reads,
+            star_index_ch,
+            gtf_ch
+        )
+    }
 
     //
     // SUBWORKFLOW: Quality control of collapsed reads

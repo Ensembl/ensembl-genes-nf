@@ -28,7 +28,9 @@ process STAR_ALIGN {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     def trim_front = params.trim_front > 0 ? "--clip3pNbases ${params.trim_front}" : ''
-    def alignment_type = params.alignment_type == 'Local' ? '--alignEndsType Local' : ''
+    // STAR defaults to Local; pass EndToEnd explicitly so the pipeline
+    // parameter is faithful when production alignment is meant to be strict.
+    def alignment_type = params.alignment_type == 'Local' ? '--alignEndsType Local' : '--alignEndsType EndToEnd'
     def allow_introns = params.allow_introns ? '--alignIntronMax 1000000 --alignMatesGapMax 1000000' : ''
     def unzip_command = reads.name.endsWith('.gz') ? 'zcat' : 'cat'
 

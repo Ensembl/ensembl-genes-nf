@@ -6,6 +6,31 @@ The final indexed STAR genome and transcriptome BAMs are published under
 `star_align/<genome|transcriptome>/<sample>/` for downstream workflows such as
 `pipelines/translon-analysis`.
 
+When investigating samples withheld by getRPF, enable the opt-in diagnostic
+branch with `--align_getrpf_holds true`. It exports the original raw reads for
+held samples and aligns them with STAR in `Local` mode so end soft clips can be
+inspected. These BAMs are published separately under
+`star_align/getrpf_holds/<genome|transcriptome>/<sample>/` and are not connected
+to production QC, RiboMetric, or downstream analysis.
+
+```bash
+nextflow run pipelines/riboseq/main.nf \
+  -profile slurm \
+  --sample_sheet "$MANIFEST" \
+  --star_index "$STAR_INDEX" \
+  --gtf "$GTF" \
+  --fasta "$FASTA" \
+  --chrom_sizes_file "$CHROM_SIZES" \
+  --fetch true \
+  --rpf_extraction_method getrpf \
+  --align_getrpf_holds true \
+  --outdir "$OUT"
+```
+
+The regular production alignment now passes `--alignEndsType EndToEnd` when
+`alignment_type` is `EndToEnd`; the diagnostic hold branch always passes
+`--alignEndsType Local` deliberately.
+
 ## Quick Start
 
 ```bash

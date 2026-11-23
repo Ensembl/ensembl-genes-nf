@@ -112,6 +112,9 @@ workflow DATA_ACQUISITION {
             // Preserve all trimmed reads from getRPF, then gate the downstream RPF set.
             FILTER_RPF_LENGTHS(EXTRACT_RPFS.out.trimmed_collapsed)
             newly_collapsed_reads = FILTER_RPF_LENGTHS.out.collapsed_fasta
+            getrpf_hold_reads = params.align_getrpf_holds
+                ? EXTRACT_RPFS.out.getrpf_hold_reads
+                : channel.empty()
         } else {
             // Traditional fastp-based approach
             // Determine adapter source based on params:
@@ -176,6 +179,7 @@ workflow DATA_ACQUISITION {
             // Collapse after trimming and filtering
             COLLAPSE_FASTQ_FINAL(filtered_fastq)
             newly_collapsed_reads = COLLAPSE_FASTQ_FINAL.out.collapsed_fasta
+            getrpf_hold_reads = channel.empty()
         }
     } else {
         if (params.force_fetch) {
@@ -186,6 +190,7 @@ workflow DATA_ACQUISITION {
 
         newly_collapsed_reads = channel.empty()
         collapsed_reads = LOCATE.out.collapsed_reads
+        getrpf_hold_reads = channel.empty()
     }
 
     // Combine generations without allowing a reused output directory to pick
@@ -211,4 +216,5 @@ workflow DATA_ACQUISITION {
     emit:
     samples = all_collapsed_reads
     expected = expected_samples
+    getrpf_hold_reads = getrpf_hold_reads
 }

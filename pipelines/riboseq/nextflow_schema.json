@@ -191,6 +191,11 @@
       "default": 1000000,
       "description": "Reads sampled for getRPF read-structure inference"
     },
+    "align_getrpf_holds": {
+      "type": "boolean",
+      "default": false,
+      "description": "Run diagnostic Local-STAR alignment on raw reads from samples whose getRPF transform was withheld; outputs are isolated from production QC and downstream analysis"
+    },
     "adapter_detection_method": {
       "type": "string",
       "enum": ["auto", "fastqc_tophit", "explicit", "fasta"],
