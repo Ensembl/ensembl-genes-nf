@@ -126,7 +126,7 @@ def test_manifest_allows_remote_input_only_for_explicit_acquisition(tmp_path: Pa
     assert row["input_sha256"] == ""
 
 
-def test_approved_manifest_rejects_raw_subread_fastq(tmp_path: Path):
+def test_approved_manifest_accepts_explicit_raw_subread_fastq(tmp_path: Path):
     manifest = tmp_path / "raw_subreads_fastq.tsv"
     manifest.write_text(
         "run_id\ttechnology\tassembly_id\tread_set_id\tsample_id\tlibrary_id\tread_representation\tsource_uri\n"
@@ -134,12 +134,42 @@ def test_approved_manifest_rejects_raw_subread_fastq(tmp_path: Path):
     )
     result = run_helper(
         "normalize_manifest.py", "--manifest", str(manifest), "--mode", "approved_manifest",
-        "--allow-unresolved-inputs", "--ccs-mode", "pbccs", "--cohort-id", "fixture",
+        "--allow-unresolved-inputs", "--ccs-mode", "disabled", "--cohort-id", "fixture",
         "--normalized", str(tmp_path / "normalized.tsv"), "--manifest-checksum", str(tmp_path / "normalized.sha256"),
         "--checksums", str(tmp_path / "checksums.tsv"), "--status", str(tmp_path / "status.tsv")
     )
-    assert result.returncode != 0
-    assert "raw-subread FASTQ cannot enter the PBCCS path" in result.stderr
+    assert result.returncode == 0, result.stderr
+    row = next(csv.DictReader((tmp_path / "normalized.tsv").open(), delimiter="\t"))
+    assert row["read_representation"] == "raw_subreads_fastq"
+    assert row["source_read_representation"] == "raw_subreads"
+    assert row["preprocessing_state"] == "ccs_not_applied"
+    assert row["observation_unit"] == "subread_record"
+
+
+def test_priority_manifest_requires_explicit_raw_subread_fastq_opt_in(tmp_path: Path):
+    candidate = tmp_path / "candidate.tsv"
+    candidate.write_text(
+        "run_accession\turl\tmd5\trepresentation_class\tprocessing_status\tplatform_priority\n"
+        "SRR00000001\tftp.sra.ebi.ac.uk/example.fastq.gz\t" + "a" * 32 +
+        "\tPACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE\tREVIEW_ONLY_RAW_SUBREAD_FASTQ\t2\n"
+    )
+    rejected = run_helper(
+        "make_priority_manifest.py", "--input", str(candidate), "--output", str(tmp_path / "rejected.tsv"),
+        "--cohort-id", "fixture", "--assembly-id", "reference"
+    )
+    assert rejected.returncode != 0
+    assert "--allow-raw-subread-fastq" in rejected.stderr
+
+    accepted = run_helper(
+        "make_priority_manifest.py", "--input", str(candidate), "--output", str(tmp_path / "accepted.tsv"),
+        "--cohort-id", "fixture", "--assembly-id", "reference", "--allow-raw-subread-fastq"
+    )
+    assert accepted.returncode == 0, accepted.stderr
+    row = next(csv.DictReader((tmp_path / "accepted.tsv").open(), delimiter="\t"))
+    assert row["read_representation"] == "raw_subreads"
+    assert row["preprocessing_state"] == "ccs_not_applied"
+    assert row["observation_unit"] == "subread_record"
+    assert row["proposed_action"] == "ALIGN_PACBIO_SUBREAD_FASTQ"
 
 
 def test_approved_manifest_preserves_primary_tsv_run_id(tmp_path: Path):

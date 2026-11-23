@@ -12,7 +12,7 @@ workflow ALIGN_LONG_READS {
     main:
     BUILD_MINIMAP_INDEX(reference)
     BUILD_REFERENCE_IDENTITY(reference)
-    fastq_inputs = input_runs.filter { meta, _reads -> meta.read_representation == 'fastq' }
+    fastq_inputs = input_runs.filter { meta, _reads -> meta.read_representation in ['fastq', 'raw_subreads_fastq'] }
     bam_inputs = input_runs.filter { meta, _bam -> meta.read_representation in ['bam', 'ccs'] }
     ALIGN_FASTQ(fastq_inputs, reference, BUILD_MINIMAP_INDEX.out.index, minimap2_preset, secondary_mode)
     SORT_FASTQ_ALIGNMENT(ALIGN_FASTQ.out.sam, reference, minimap2_preset, secondary_mode)

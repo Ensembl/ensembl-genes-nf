@@ -11,6 +11,7 @@ from pathlib import Path
 
 REQUIRED = {"id", "run_id", "cohort_id", "technology", "assembly_id", "read_set_id", "sample_id", "library_id", "read_representation", "source_uri"}
 BAM_REPRESENTATIONS = {"bam", "ccs", "raw_subreads"}
+FASTQ_REPRESENTATIONS = {"fastq", "raw_subreads_fastq"}
 
 
 def md5(path: Path) -> str:
@@ -47,10 +48,9 @@ def canonicalize_approved_row(row: dict[str, str], cohort_id: str) -> dict[str, 
     )
     declares_raw_subreads = representation in {"raw_subread", "raw_subreads"} or "SUBREAD" in classification
     if declares_raw_subreads and not is_bam:
-        raise SystemExit(
-            f"approved manifest row {run_id} declares raw_subreads but does not identify a BAM input; "
-            "raw-subread FASTQ cannot enter the PBCCS path"
-        )
+        # Explicit non-consensus route. Keep this distinct from ordinary
+        # FASTQ internally so CCS provenance cannot be implied downstream.
+        representation = "raw_subreads_fastq"
     if is_bam:
         if declares_raw_subreads:
             representation = "raw_subreads"
@@ -58,7 +58,7 @@ def canonicalize_approved_row(row: dict[str, str], cohort_id: str) -> dict[str, 
             representation = "ccs"
         else:
             representation = "bam"
-    else:
+    elif representation != "raw_subreads_fastq":
         representation = "fastq"
     source_uri = row.get("source_uri") or row.get("selected_artifact_uri") or row.get("input", "")
     row.update(
@@ -76,6 +76,9 @@ def canonicalize_approved_row(row: dict[str, str], cohort_id: str) -> dict[str, 
             "source_read_representation": row.get("read_representation", ""),
         }
     )
+    if representation == "raw_subreads_fastq":
+        row["preprocessing_state"] = row.get("preprocessing_state") or "ccs_not_applied"
+        row["observation_unit"] = row.get("observation_unit") or "subread_record"
     if not row.get("input"):
         row["input"] = source_uri
     return row
@@ -173,10 +176,12 @@ def main() -> None:
                 row[model_column] = str(model_path)
                 row[f"{model_column}_sha256"] = sha256(model_path)
         representation = row.get("read_representation")
-        if representation not in {"fastq", *BAM_REPRESENTATIONS}:
+        if representation not in {*FASTQ_REPRESENTATIONS, *BAM_REPRESENTATIONS}:
             raise SystemExit(f"row {row.get('id')} has unsupported read_representation: {representation}")
         if representation == "raw_subreads" and args.ccs_mode != "pbccs":
             raise SystemExit(f"row {row.get('id')} contains raw_subreads but --ccs-mode is not pbccs")
+        if representation == "raw_subreads_fastq" and args.ccs_mode != "disabled":
+            raise SystemExit(f"row {row.get('id')} contains raw-subread FASTQ but --ccs-mode is not disabled")
         if args.mode in {"bam", "approved_manifest", "retrospective"} and representation in BAM_REPRESENTATIONS and input_path.is_file():
             suffixes = [".pbi", ".csi", ".bai"] if representation == "raw_subreads" and args.ccs_mode == "pbccs" else [".csi", ".bai"]
             candidates = [input_path.with_name(input_path.name + suffix) for suffix in suffixes]

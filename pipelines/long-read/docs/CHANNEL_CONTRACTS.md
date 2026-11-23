@@ -28,7 +28,10 @@ serialization and validation helpers independently.
   from manifest columns, with technology-aware defaults for the first two and
   `auto` for TransGram. `raw_subreads` is accepted only
   when `ccs_mode=pbccs`; it must carry a PBI sidecar and is replaced by the
-  generated CCS BAM before alignment.
+  generated CCS BAM before alignment. Explicitly approved raw-subread FASTQ is
+  normalized internally as `raw_subreads_fastq`, must use `ccs_mode=disabled`,
+  bypasses PBCCS, and is aligned as repeated `subread_record` observations
+  with `ccs_not_applied` provenance.
   When `preparation_stages` includes `acquire`, the preparation request is
   `tuple(meta, source_uri)` and acquisition emits the canonical artifact tuple
   after a non-empty download/copy plus a checksum-bearing manifest row.

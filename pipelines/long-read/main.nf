@@ -141,6 +141,7 @@ def normalized_read_representation(row, mode) {
         if (raw == 'ccs' || classification.contains('CCS')) return 'ccs'
         return 'bam'
     }
+    if (raw in ['raw_subread', 'raw_subreads', 'raw_subreads_fastq'] || classification.contains('SUBREAD')) return 'raw_subreads_fastq'
     mode == 'bam' && raw == 'bam' ? 'bam' : 'fastq'
 }
 
@@ -189,6 +190,8 @@ workflow {
             def index_value = row.index_uri ?: row.bai ?: row.pbi
             def source_index_uri = index_value ? ((index_value.startsWith('/') || index_value.contains('://')) ? index_value : file("${manifest_file.parent}/${index_value}").toString()) : "${source_uri}.bai"
             def read_representation = normalized_read_representation(row, params.mode)
+            if (read_representation == 'raw_subreads_fastq' && params.ccs_mode != 'disabled')
+                error "manifest row ${row_id} contains raw-subread FASTQ but --ccs_mode is not disabled"
             def technology = normalized_technology(row.technology, row_id)
             def meta = [
                 id: row_id,
@@ -204,6 +207,8 @@ workflow {
                 library_id: row.library_id ?: row_id,
                 read_representation: read_representation,
                 source_read_representation: row.read_representation ?: '',
+                preprocessing_state: row.preprocessing_state ?: (read_representation == 'raw_subreads_fastq' ? 'ccs_not_applied' : ''),
+                observation_unit: row.observation_unit ?: (read_representation == 'raw_subreads_fastq' ? 'subread_record' : ''),
                 classification: row.classification ?: '',
                 selected_artifact_md5: row.selected_artifact_md5 ?: '',
                 selected_artifact_basename: row.selected_artifact_basename ?: '',

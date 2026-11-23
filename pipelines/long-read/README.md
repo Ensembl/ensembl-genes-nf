@@ -57,8 +57,13 @@ params file when a site needs different acquisition behavior. Acquisition
 failures are terminal and prepared artifacts are checksum-recorded before
 alignment.
 PBCCS is opt-in through `ccs_mode=pbccs` and is restricted to manifest rows
-marked `read_representation=raw_subreads`; ordinary BAM and canonical CCS rows
-are not converted. Normalized BED12 is the only cross-backend model contract.
+marked `read_representation=raw_subreads` with a BAM input; ordinary BAM and
+canonical CCS rows are not converted. Explicitly approved raw-subread FASTQ
+rows retain `read_representation=raw_subreads`, use
+`preprocessing_state=ccs_not_applied` and `observation_unit=subread_record`,
+and are aligned directly with `ccs_mode=disabled`. They are not consensus
+molecules, and their repeated passes must remain visible in provenance and QC.
+Normalized BED12 is the only cross-backend model contract.
 `reference_metadata` may supply a JSON record containing `reference_fasta`,
 `fasta`, or `path` when `reference_fasta` is not supplied. ORF products can be
 published independently with `orf_mode=enabled`; DIAMOND QC consumes validated
