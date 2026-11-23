@@ -133,7 +133,7 @@ process STRINGTIE3_COLLAPSE {
     path 'versions.yml', emit: versions
     script:
     """
-    stringtie ${shard_bam} -o native.gtf
+    stringtie -L ${shard_bam} -o native.gtf
     printf '"%s":\\n    stringtie: %s\\n' '${task.process}' "\$(stringtie --version 2>&1 | head -n1)" > versions.yml
     """
     stub:

@@ -61,6 +61,12 @@ def test_versions_only_report_concrete_tools():
             assert not any(forbidden_label.search(line) for line in version_lines)
 
 
+def test_stringtie3_uses_long_read_mode():
+    source = (ROOT / "modules" / "models.nf").read_text()
+    block = source.split("process STRINGTIE3_COLLAPSE {", 1)[1].split("\n}", 1)[0]
+    assert "stringtie -L ${shard_bam} -o native.gtf" in block
+
+
 def test_schemas_are_json_and_backend_set_is_unique():
     schema = json.loads((ROOT / "nextflow_schema.json").read_text())
     assert schema["properties"]["model_backends"]["uniqueItems"] is True
