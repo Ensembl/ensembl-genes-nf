@@ -1,7 +1,7 @@
 process ENA_PREPARE_REFERENCE {
     label 'process_single_long'
     tag { reference_key }
-    container 'docker.io/library/python:3.11.13-slim-bookworm'
+    container 'docker.io/library/python:3.11.13-bookworm'
 
     input:
     tuple val(reference_key), path(reference_fasta), path(assembly_report), path(reference_supplement)

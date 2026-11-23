@@ -1,7 +1,7 @@
 process ENA_RESOLVE_METADATA {
     label 'process_light'
     tag { meta.id }
-    container 'docker.io/library/python:3.11.13-slim-bookworm'
+    container 'docker.io/library/python:3.11.13-bookworm'
     publishDir "${params.outdir}/ena_submission/metadata", mode: 'copy', pattern: 'resolved_*.tsv', saveAs: { fn -> "${meta.id}/${fn}" }
 
     input:

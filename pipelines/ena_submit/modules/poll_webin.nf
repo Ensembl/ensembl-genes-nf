@@ -1,7 +1,7 @@
 process ENA_POLL_WEBIN {
     label 'process_light'
     tag 'poll'
-    container 'docker.io/library/python:3.11.13-slim-bookworm'
+    container 'docker.io/library/python:3.11.13-bookworm'
     secret 'ENA_WEBIN_PASSWORD'
     publishDir "${params.outdir}/ena_submission", mode: 'copy', pattern: 'accessions.tsv'
 

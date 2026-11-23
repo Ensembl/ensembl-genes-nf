@@ -1,7 +1,7 @@
 process ENA_BUILD_BAM_HEADER {
     label 'process_light'
     tag { file_meta.remote_name ?: file.getName() }
-    container 'docker.io/library/python:3.11.13-slim-bookworm'
+    container 'docker.io/library/python:3.11.13-bookworm'
 
     input:
     tuple val(reference_key), val(meta), val(row), val(file_meta), path(file), path(header), path(reference_fai), path(assembly_report), path(reference_names), path(script)

@@ -1,7 +1,7 @@
 process ENA_EXPAND_FILE_MANIFEST {
     label 'process_light'
     tag { meta.id }
-    container 'docker.io/library/python:3.11.13-slim-bookworm'
+    container 'docker.io/library/python:3.11.13-bookworm'
 
     input:
     tuple val(meta), val(row), path(files_manifest)

@@ -1,7 +1,7 @@
 process ENA_GENERATE_PROJECT_XML {
     label 'process_light'
     tag { meta.alias }
-    container 'docker.io/library/python:3.11.13-slim-bookworm'
+    container 'docker.io/library/python:3.11.13-bookworm'
     publishDir "${params.outdir}/ena_submission/projects", mode: 'copy', pattern: '*.xml', saveAs: { fn -> "${meta.alias}/$fn" }
 
     input:
