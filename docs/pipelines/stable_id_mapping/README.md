@@ -97,7 +97,7 @@ Samplesheet optional columns:
 | Column | Required | Meaning |
 |---|---:|---|
 | `db_name` | Yes | Target Ensembl core database. Every row must contain it. |
-| `mode` | No | `auto`, `map` or `reassign`. A non-empty row value overrides the global `--mode`. |
+| `mode` | No | `auto`, `map`, `map_same_version` or `reassign`. A non-empty row value overrides the global `--mode`. |
 | `target_fasta` | No | Target assembly FASTA override. Must be accompanied by `target_gff`. |
 | `target_gff` | No | Target annotation GFF3 override. Must be accompanied by `target_fasta`. |
 | `mapping_session_id` | No | Reuse an existing mapping session instead of creating one. Used only for mapping. |
@@ -122,6 +122,14 @@ Force stable-ID mapping. *An earlier live assembly version must exist*. If it do
 
 If `mapping_session_id` is not supplied, the resolver inserts a new `stable_id_mapping` event in `gb_assembly_metadata.annotation_events` and uses its ID. A fresh, non-resumed run can therefore create a new mapping session.
 
+### `map_same_version`
+
+Force stable-ID mapping between annotations for the same GCA chain and version. The reference must be a `live` annotation for exactly the target `GCA.version`; the automatically resolved target must be available in the pre-release FTP tree.
+
+This mode never falls back to the standard FTP target files, because they could be the same live annotation selected as the reference. It also fails if the resolved reference and target FASTA or GFF3 paths are identical. Supply both reference files and/or both target files explicitly when the required annotations are stored elsewhere.
+
+Like `map`, this mode creates a mapping-session record unless `mapping_session_id` is supplied.
+
 ### `reassign`
 
 Generate SQL for a complete registry-based reassignment of gene, transcript, translation and exon stable IDs. The reassignment is ordered by each feature table's internal primary key and assigns version `1`.
@@ -134,11 +142,18 @@ If the database already conforms, the generator produces a no-op result rather t
 
 The resolver reads `assembly.accession` and `species.scientific_name` from the target core database. It obtains stable-ID prefixes and numeric ranges from `gb_assembly_metadata`.
 
-For a mapping run, omitted files are resolved as follows.
+For mapping runs, omitted standard FTP files are resolved from the current accession-based layout:
 
 ### Reference files
 
-The reference is the newest lower version of the same GCA chain whose genebuild status is `live`. Its files are taken from:
+For `map`, the reference is the newest lower version of the same GCA chain whose genebuild status is `live`. For `map_same_version`, it is the `live` annotation for the exact target version. The preferred standard FTP layout is:
+
+```text
+/nfs/ftp/public/ensemblorganisms/GCA/<xxx>/<xxx>/<xxx>/<version>/ensembl/<latest>/genome/unmasked.fa.bgz
+/nfs/ftp/public/ensemblorganisms/GCA/<xxx>/<xxx>/<xxx>/<version>/ensembl/<latest>/geneset/genes.gff3.gz
+```
+
+For example, `GCA_000003025.6` is stored below `GCA/000/003/025/6/`. The resolver retains support for the older species-name layout as a fallback:
 
 ```text
 /nfs/ftp/public/ensemblorganisms/<Species_name>/<GCA.version>/genome/unmasked.fa.gz
@@ -147,13 +162,13 @@ The reference is the newest lower version of the same GCA chain whose genebuild 
 
 ### Target files
 
-The resolver first checks the same standard FTP structure. If the target files are unavailable there, it falls back to:
+For `map`, the resolver first checks the same standard FTP structure. If the target files are unavailable there, it falls back to:
 
 ```text
 /nfs/ftp/public/databases/ensembl/pre-release/<Species_name>/<GCA.version>/
 ```
 
-The pre-release directory must contain exactly one `*.dna.softmasked.fa.gz` and exactly one `*.gff3.gz`. Reference files do not use this pre-release fallback.
+For `map_same_version`, the resolver uses this pre-release location directly. The pre-release directory must contain exactly one `*.dna.softmasked.fa.gz` and exactly one `*.gff3.gz`. Reference files do not use this pre-release fallback.
 
 ## Pipeline parameters
 
@@ -173,7 +188,7 @@ For ease of access to the results, `--output_dir` is highly recomended. For use 
 
 | Parameter | Default | Applies to | Description |
 |---|---|---|---|
-| `--mode` | `auto` | Routing | Global mode: `auto`, `map` or `reassign`. A samplesheet row can override it. |
+| `--mode` | `auto` | Routing | Global mode: `auto`, `map`, `map_same_version` or `reassign`. A samplesheet row can override it. |
 | `--target_fasta` | `null` | Mapping, single database | Target FASTA override. Requires `--target_gff`. |
 | `--target_gff` | `null` | Mapping or reassignment, single database | Target GFF3 override. Mapping requires `--target_fasta`; reassignment uses this file alone. |
 | `--ref_fasta` | `null` | Mapping, single database | Reference FASTA override. Requires `--ref_gff`. |
@@ -223,7 +238,7 @@ For every database, the pipeline:
 
 1. reads the target assembly and species metadata;
 2. obtains the registry stable-ID allocations;
-3. finds an earlier live reference assembly when applicable;
+3. finds an earlier live reference assembly, or an exact-version live reference for `map_same_version`, when applicable;
 4. validates the current database ID populations when reassignment may be needed;
 5. resolves files and a mapping session for mapping runs; and
 6. routes the database to mapping, reassignment or no action.
@@ -232,7 +247,7 @@ Duplicate stable IDs across gene, transcript, translation and exon tables are tr
 
 ### Mapping branch
 
-1. **Stage inputs:** copy or decompress the reference and target FASTA/GFF files into consistently named files.
+1. **Stage inputs:** copy or decompress the reference and target FASTA/GFF files into consistently named files. Both gzip (`.gz`) and bgzip (`.bgz`) inputs are decompressed.
 2. **LiftOn projection:** project the reference annotation onto the target assembly and record reference genes that could not be projected.
 3. **Structural matching:** compare projected transcripts with nearby target transcripts. Combine transcript evidence into candidate gene pairs and produce a gene-locus comparison table.
 4. **Stable-ID decisions:** attempt structural matching first. If no available structural match is accepted, use coordinate overlap as a fallback. A target feature can be assigned to only one reference feature.
