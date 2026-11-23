@@ -142,6 +142,7 @@ workflow POST_PROCESSING {
     filtered_bams = FILTER_BAM.out.all_bams                    // tuple: [ meta, bams[] ]
     bedgraphs = BAM_TO_BED.out.bedgraph                        // tuple: [ meta, bedgraph ]
     bigwigs = BEDGRAPH_TO_BIGWIG.out.bigwig                    // tuple: [ meta, bigwig ]
+    projection_stats = BAM_TO_BED.out.projection_stats          // tuple: [ meta, projection_stats.json ]
     merged_bedgraphs = MERGE_BEDGRAPHS.out.bedgraph            // tuple: [ meta, merged_bedgraph ]
     merged_bigwigs = BEDGRAPH_TO_BIGWIG_MERGED.out.bigwig      // tuple: [ meta, merged_bigwig ]
     unique_reads_fasta = unique_reads_fasta_out                // path: unique_reads.fa (empty if disabled)

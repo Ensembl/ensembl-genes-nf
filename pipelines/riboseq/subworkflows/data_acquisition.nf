@@ -57,6 +57,54 @@ workflow DATA_ACQUISITION {
             tuple(meta, row.Run)
         }
 
+    // Normalize optional reported trims once, keyed by the raw accession so
+    // every run receives its own recipe before library aggregation.
+    if (params.getrpf_trim_recipes) {
+        def recipe_path = params.getrpf_trim_recipes.toString()
+        if (!file(params.getrpf_trim_recipes).exists()) error "getrpf_trim_recipes does not exist: ${recipe_path}"
+        def recipe_sep = recipe_path.toLowerCase().endsWith('.tsv') ? '\t' : ','
+        getrpf_recipe_map = channel.fromPath(params.getrpf_trim_recipes)
+            .splitCsv(header: true, sep: recipe_sep)
+            .collect()
+            .map { rows ->
+                def recipes = [:]
+                def source_rows = [:]
+                rows.eachWithIndex { row, index ->
+                    def source = (row.source ?: "${recipe_path}:row${index + 2}").toString()
+                    def run_id = row.run_id?.toString()?.trim()
+                    if (!run_id) error "Malformed getRPF trim recipe at ${source}: run_id is blank"
+                    def recipe = [run_id: run_id, source: source]
+                    def adapter = row.adapter?.toString()?.trim()
+                    recipe.adapter = adapter && adapter.toLowerCase() != 'passed' ? adapter : null
+                    ['5p_barcode_length', '3p_barcode_length'].each { field ->
+                        def raw = row[field]?.toString()?.trim()
+                        if (!raw) {
+                            recipe[field] = null
+                        } else if (!(raw ==~ /[0-9]+/)) {
+                            error "Malformed getRPF trim recipe at ${source}: ${field} must be a non-negative integer or blank"
+                        } else {
+                            recipe[field] = raw.toInteger()
+                        }
+                    }
+                    def input_state = row.input_state?.toString()?.trim()
+                    if (input_state && input_state != 'pretrimmed') {
+                        error "Malformed getRPF trim recipe at ${source}: input_state must be blank or pretrimmed"
+                    }
+                    recipe.input_state = input_state ?: null
+                    def comparable_recipe = recipe.findAll { key, _value -> key != 'source' }
+                    def comparable_existing = recipes[run_id]?.findAll { key, _value -> key != 'source' }
+                    if (recipes.containsKey(run_id) && comparable_existing != comparable_recipe) {
+                        error "Conflicting getRPF trim recipes for ${run_id} at ${source_rows[run_id]} and ${source}"
+                    }
+                    recipes[run_id] = recipe
+                    source_rows[run_id] = source
+                }
+                recipes
+            }
+    } else {
+        getrpf_recipe_map = channel.value([:])
+    }
+
     // Locate existing collapsed reads or runs that need processing
     LOCATE(samples_ch)
 
@@ -104,14 +152,32 @@ workflow DATA_ACQUISITION {
             // getRPF Extraction (alignment-based - RECOMMENDED)
             // Uses STAR alignment to determine biological sequence boundaries
             // Produces collapsed FASTA directly (no separate collapse step needed)
+            extraction_inputs = FASTQ_DL.out.fastq
+                .combine(getrpf_recipe_map)
+                .map { meta, fastq, recipes ->
+                    tuple(meta, fastq, groovy.json.JsonOutput.toJson(recipes[meta.id]))
+                }
+
             EXTRACT_RPFS(
-                FASTQ_DL.out.fastq,
+                extraction_inputs,
                 star_index
             )
 
-            // Preserve all trimmed reads from getRPF, then gate the downstream RPF set.
-            FILTER_RPF_LENGTHS(EXTRACT_RPFS.out.trimmed_collapsed)
-            newly_collapsed_reads = FILTER_RPF_LENGTHS.out.collapsed_fasta
+            if (params.getrpf_prepare_for_alignment) {
+                // Read length is based on aligned query bases in preparation
+                // mode, so defer the 20–40 nt policy until profile eligibility.
+                newly_collapsed_reads = EXTRACT_RPFS.out.trimmed_collapsed
+                    .join(EXTRACT_RPFS.out.report)
+                    .map { meta, reads, report ->
+                        def report_json = new groovy.json.JsonSlurper().parse(report.toFile())
+                        def local = (report_json.preparation ?: [:]).requires_local_alignment ?: false
+                        def mode = local ? 'Local' : (params.alignment_type ?: 'EndToEnd')
+                        tuple(meta + [alignment_mode: mode, preparation: true], reads)
+                    }
+            } else {
+                FILTER_RPF_LENGTHS(EXTRACT_RPFS.out.trimmed_collapsed)
+                newly_collapsed_reads = FILTER_RPF_LENGTHS.out.collapsed_fasta
+            }
             getrpf_hold_reads = params.align_getrpf_holds
                 ? EXTRACT_RPFS.out.getrpf_hold_reads
                 : channel.empty()

@@ -7,6 +7,7 @@
 
 include { RIBOMETRIC } from '../modules/ribometric.nf'
 include { RIBOWALTZ } from '../modules/ribowaltz.nf'
+include { FILTER_PROFILE_ELIGIBLE_BAM } from '../modules/filter_profile_eligible_bam.nf'
 
 workflow ANALYSIS {
     take:
@@ -18,6 +19,14 @@ workflow ANALYSIS {
     main:
     def use_ribometric = params.ribometric_annotation || params.run_organism_setup || params.auto_build_indices
 
+    prepared_transcriptome = transcriptome_bam.filter { meta, _bam, _bai -> meta.preparation == true }
+    legacy_transcriptome = transcriptome_bam.filter { meta, _bam, _bai -> meta.preparation != true }
+    FILTER_PROFILE_ELIGIBLE_BAM(prepared_transcriptome)
+    ribowaltz_transcriptome = FILTER_PROFILE_ELIGIBLE_BAM.out.bam_and_bai
+        .map { meta, bam, bai -> tuple(meta, bam, bai) }
+        .mix(legacy_transcriptome)
+    profile_eligibility_stats_ch = FILTER_PROFILE_ELIGIBLE_BAM.out.stats
+
     if (use_ribometric) {
         if (params.ribometric_use_ribowaltz_offsets) {
             // Optional legacy mode: calculate offsets with RiboWaltz, then pass
@@ -26,7 +35,7 @@ workflow ANALYSIS {
             fasta_ch = fasta.map { value -> [[ id: 'reference' ], value] }
 
             RIBOWALTZ(
-                transcriptome_bam,
+                ribowaltz_transcriptome,
                 gtf_ch,
                 fasta_ch
             )
@@ -85,7 +94,7 @@ workflow ANALYSIS {
         fasta_ch = fasta.map { value -> [[ id: 'reference' ], value] }
 
         RIBOWALTZ(
-            transcriptome_bam,
+            ribowaltz_transcriptome,
             gtf_ch,
             fasta_ch
         )
@@ -112,6 +121,7 @@ workflow ANALYSIS {
     ribometric_json = ribometric_json_ch
     ribometric_csv = ribometric_csv_ch
     ribometric_offsets_audit = ribometric_offsets_audit_ch
+    profile_eligibility_stats = profile_eligibility_stats_ch
 
     // RiboWaltz outputs
     psite_offsets = psite_offsets_ch                 // tuple: [ meta, tsv.gz ]

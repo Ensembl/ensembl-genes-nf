@@ -191,6 +191,20 @@
       "default": 1000000,
       "description": "Reads sampled for getRPF read-structure inference"
     },
+    "getrpf_prepare_for_alignment": {
+      "type": "boolean",
+      "default": true,
+      "description": "Prepare independently supported terminal cuts and retain unresolved reads for the production alignment"
+    },
+    "getrpf_trim_recipes": {
+      "type": "string",
+      "description": "Optional CSV or TSV of reported getRPF trims keyed by raw run_id"
+    },
+    "getrpf_container": {
+      "type": "string",
+      "default": "ghcr.io/jackcurragh/get-rpf:sha-e9dce4a",
+      "description": "Pinned getRPF container with alignment preparation support"
+    },
     "align_getrpf_holds": {
       "type": "boolean",
       "default": false,
@@ -343,11 +357,6 @@
       "type": "integer",
       "default": 10000000,
       "description": "Number of reads to sample for RiboMetric analysis"
-    },
-    "ribometric_ignore_errors": {
-      "type": "boolean",
-      "default": true,
-      "description": "Skip a sample whose RiboMetric task fails after one retry. Set false for validation runs, so a failure fails the run instead of dropping the sample."
     },
     "run_choros": {
       "type": "boolean",

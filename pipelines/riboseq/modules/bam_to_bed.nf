@@ -10,6 +10,7 @@ process BAM_TO_BED {
 
     output:
     tuple val(meta), path("*.sorted.bedgraph"), emit: bedgraph
+    tuple val(meta), path("*.projection_stats.json"), emit: projection_stats
     path "versions.yml", emit: versions, topic: versions
 
     when:

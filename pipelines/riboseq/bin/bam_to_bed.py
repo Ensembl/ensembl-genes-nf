@@ -5,6 +5,7 @@ Optimized version using numpy arrays and buffered writes
 """
 
 import argparse
+import json
 import pysam 
 import numpy as np
 from pathlib import Path
@@ -28,6 +29,35 @@ DEFAULT_WRITE_BUFFER = 10000  # Number of positions to buffer before writing
 # Global variables that can be modified via command line
 chunk_size = DEFAULT_CHUNK_SIZE
 write_buffer = DEFAULT_WRITE_BUFFER
+
+
+def cigar_geometry(cigar, reference_start: int, is_reverse: bool):
+    """Return aligned query length, read-oriented 5′ clip, and query projection."""
+    aligned_length = sum(n for op, n in cigar if op in (0, 1, 7, 8))
+    five_prime_cigar = list(reversed(cigar)) if is_reverse else cigar
+    five_prime_clip = 0
+    for op, n in five_prime_cigar:
+        if op in (5, 6):
+            continue
+        five_prime_clip = n if op == 4 else 0
+        break
+    coordinates = []
+    ref = reference_start
+    for op, n in cigar:
+        if op in (0, 7, 8):
+            coordinates.extend(range(ref, ref + n))
+            ref += n
+        elif op == 1:
+            coordinates.extend([None] * n)
+        elif op in (2, 3):
+            ref += n
+    if is_reverse:
+        coordinates.reverse()
+    return aligned_length, five_prime_clip, coordinates
+
+
+def is_profile_eligible(aligned_length: int, five_prime_clip: int) -> bool:
+    return five_prime_clip == 0 and 20 <= aligned_length <= 40
 
 def read_offset_file(offset_file: str) -> Dict[int, int]:
     '''Read offset file and return dictionary of read length to offset'''
@@ -78,7 +108,7 @@ class CoverageAccumulator:
                 chunk_indices = nonzero[chunk_start:chunk_start + chunk_size]
                 yield 'combined', chunk_indices, self.combined[chunk_indices]
 
-def process_reads_chunk(chunk_reads, length_offsets: Dict[int, int], accumulator: CoverageAccumulator):
+def process_reads_chunk(chunk_reads, length_offsets: Dict[int, int], accumulator: CoverageAccumulator, stats=None):
     '''Process a chunk of reads efficiently
 
     Uses aligned length (number of reference positions) rather than query length
@@ -86,38 +116,40 @@ def process_reads_chunk(chunk_reads, length_offsets: Dict[int, int], accumulator
     '''
     # Pre-calculate valid read lengths
     valid_lengths = set(length_offsets.keys())
+    stats = stats if stats is not None else {}
+    for key in ("mapped_reads", "profile_eligible_reads", "projected_reads", "unprojectable_offsets", "unsupported_offset_lengths"):
+        stats.setdefault(key, 0)
 
     for read in chunk_reads:
-        # Get aligned positions (excludes soft-clipped bases)
-        positions = read.positions
-        if not positions:
+        if read.is_unmapped or read.is_secondary or read.is_supplementary or read.cigartuples is None:
             continue
-
-        # Use aligned length, not query length
-        # This ensures correct offset application for soft-clipped reads
-        aligned_length = len(positions)
-
-        # Skip invalid reads
-        if aligned_length < 25 or aligned_length not in valid_lengths:
+        read_count = int(read.query_name.split("_x")[1]) if "_x" in read.query_name else 1
+        stats["mapped_reads"] += read_count
+        cigar = read.cigartuples
+        aligned_length, five_prime_clip, reference_positions = cigar_geometry(
+            cigar, read.reference_start, read.is_reverse
+        )
+        # Apply the same footprint policy as RiboMetric: aligned query length
+        # (including insertions), 20–40 nt, and an aligned 5′ origin.
+        if not is_profile_eligible(aligned_length, five_prime_clip):
             continue
-
-        positions = np.array(positions)
+        stats["profile_eligible_reads"] += read_count
+        if aligned_length not in valid_lengths:
+            stats["unsupported_offset_lengths"] += read_count
+            continue
         offset = length_offsets[aligned_length]
-
-        # Validate offset is within bounds
-        if offset >= aligned_length:
+        if offset < 0 or offset >= aligned_length:
+            stats["unprojectable_offsets"] += read_count
             continue
+
+        if offset >= len(reference_positions) or reference_positions[offset] is None:
+            stats["unprojectable_offsets"] += read_count
+            continue
+        asite = reference_positions[offset]
 
         # Calculate read count
-        read_count = int(read.qname.split("_x")[1]) if "_x" in read.qname else 1
-
-        # Calculate A-site
-        if not read.is_reverse:
-            Asite = positions[offset]
-        else:
-            Asite = positions[-1 - offset]
-
-        accumulator.add_coverage(Asite, read_count, read.is_reverse)
+        stats["projected_reads"] += read_count
+        accumulator.add_coverage(asite, read_count, read.is_reverse)
 
 def write_coverage_chunk(chrom: str, indices: np.ndarray, values: np.ndarray, outfile: str):
     '''Write a chunk of coverage data efficiently'''
@@ -144,6 +176,7 @@ def process_bam_file(filepath: str, length_offsets: Dict[int, int], output_prefi
     for fname in outfiles.values():
         open(fname, 'w').close()
     
+    stats = {}
     # Process each chromosome
     for chrom in alignments.references:
         try:
@@ -160,7 +193,7 @@ def process_bam_file(filepath: str, length_offsets: Dict[int, int], output_prefi
                 chunk = list(itertools.islice(reads_iterator, chunk_size))
                 if not chunk:
                     break
-                process_reads_chunk(chunk, length_offsets, accumulator)
+                process_reads_chunk(chunk, length_offsets, accumulator, stats)
             
             # Write accumulated coverage
             for strand, indices, values in accumulator.get_coverage_chunks():
@@ -172,6 +205,15 @@ def process_bam_file(filepath: str, length_offsets: Dict[int, int], output_prefi
         except ValueError as e:
             logger.warning(f"Error processing {chrom}: {e}")
             continue
+    alignments.close()
+    stats["profile_eligible_fraction"] = (
+        stats.get("profile_eligible_reads", 0) / stats.get("mapped_reads", 1)
+        if stats.get("mapped_reads", 0) else 0.0
+    )
+    with open(f"{output_prefix}.projection_stats.json", "w") as handle:
+        json.dump(stats, handle, indent=2)
+        handle.write("\n")
+    return stats
 
 def main():
     parser = argparse.ArgumentParser(description="Process BAM file using length-specific offsets")

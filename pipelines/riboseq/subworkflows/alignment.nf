@@ -14,6 +14,7 @@ include { SAMTOOLS_INDEX as SAMTOOLS_INDEX_GETRPF_HOLDS_GENOME } from '../module
 include { SAMTOOLS_INDEX as SAMTOOLS_INDEX_GETRPF_HOLDS_TRANSCRIPTOME } from '../modules/samtools_index.nf'
 include { PUBLISH_STAR_ALIGNMENTS } from '../modules/publish_star_alignments.nf'
 include { PUBLISH_STAR_ALIGNMENTS as PUBLISH_STAR_ALIGNMENTS_GETRPF_HOLDS } from '../modules/publish_star_alignments.nf'
+include { PUBLISH_ALIGNMENT_INPUT } from '../modules/publish_alignment_input.nf'
 
 workflow ALIGNMENT {
     take:
@@ -24,6 +25,7 @@ workflow ALIGNMENT {
     main:
     // Run STAR alignment
     // STAR outputs genome BAM (sorted) and transcriptome BAM (unsorted)
+    PUBLISH_ALIGNMENT_INPUT(collapsed_reads)
     STAR_ALIGN(
         collapsed_reads,
         star_index,
@@ -53,6 +55,7 @@ workflow ALIGNMENT {
     genome_bam = SAMTOOLS_INDEX_GENOME.out.bam_and_bai           // tuple: [ meta, bam, bai ]
     transcriptome_bam = SAMTOOLS_INDEX_TRANSCRIPTOME.out.bam_and_bai                // tuple: [ meta, bam, bai ]
     logs = STAR_ALIGN.out.log                                    // tuple: [ meta, log ]
+    collapsed_fasta = PUBLISH_ALIGNMENT_INPUT.out.collapsed_fasta // exact STAR input, with multiplicity headers
 }
 
 /*

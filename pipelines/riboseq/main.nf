@@ -28,6 +28,9 @@ params {
     getrpf_max_reads: Integer = 5000
     getrpf_preserve_umi: Boolean = false
     getrpf_infer_reads: Integer = 1000000
+    getrpf_prepare_for_alignment: Boolean = true
+    getrpf_trim_recipes: String = null
+    getrpf_container: String = 'ghcr.io/jackcurragh/get-rpf:sha-e9dce4a'
     align_getrpf_holds: Boolean = false
     min_read_length: Integer = 20
     max_read_length: Integer = 0

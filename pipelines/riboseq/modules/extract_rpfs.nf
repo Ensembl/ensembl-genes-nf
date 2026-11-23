@@ -3,10 +3,10 @@ process EXTRACT_RPFS {
     label 'process_high'
 
     conda "conda-forge::python=3.10 conda-forge::biopython"
-    container "ghcr.io/jackcurragh/get-rpf:sha-e9dce4a"
+    container "${params.getrpf_container ?: 'ghcr.io/jackcurragh/get-rpf:sha-e9dce4a'}"
 
     input:
-    tuple val(meta), path(input_file)
+    tuple val(meta), path(input_file), val(trim_recipe_json)
     path star_index
 
     output:
@@ -25,10 +25,16 @@ process EXTRACT_RPFS {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    // 'structure': infer the read structure from the first getrpf_infer_reads
-    // reads, then apply it to every read (--star-index adds an alignment check).
-    // 'legacy': the pre-0.4 architecture matching and boundary estimation.
-    def structure = params.getrpf_method == 'legacy' ? '' : "--infer-structure --infer-reads ${params.getrpf_infer_reads}"
+    def prepare = params.getrpf_prepare_for_alignment ? '--prepare-for-alignment' : ''
+    def structure = (prepare || params.getrpf_method == 'legacy') ? '' : "--infer-structure --infer-reads ${params.getrpf_infer_reads}"
+    // Preparation skips its diagnostic STAR pass; the production BAM is the
+    // sole alignment and supplies clipping evidence downstream.
+    def star_check = prepare ? '' : "--star-index ${star_index} --star-threads ${task.cpus}"
+    def recipe_encoded = trim_recipe_json && trim_recipe_json != 'null'
+        ? trim_recipe_json.getBytes('UTF-8').encodeBase64().toString()
+        : ''
+    def recipe_write = recipe_encoded ? "python3 -c \"import base64; from pathlib import Path; Path('${prefix}.trim_recipe.json').write_bytes(base64.b64decode('${recipe_encoded}'))\"" : ''
+    def recipe_arg = trim_recipe_json && trim_recipe_json != 'null' ? "--trim-recipe ${prefix}.trim_recipe.json" : ''
     def hold_export = params.align_getrpf_holds ? """
     python3 - <<'PY'
 import gzip
@@ -56,15 +62,18 @@ if structure and not (structure.get("transform") or {}).get("emit", False):
 PY
     """ : ''
     """
+    $recipe_write
+
     getRPF extract \\
         ${input_file} \\
         ${prefix}_trimmed.fastq \\
         -f fastq \\
         --generate-seqspec \\
         --output-format json \\
-        --star-index ${star_index} \\
-        --star-threads ${task.cpus} \\
+        $star_check \\
         --collapsed-only \\
+        $prepare \\
+        $recipe_arg \\
         ${structure} \\
         $args
 
@@ -81,14 +90,16 @@ PY
     """
     touch ${prefix}_trimmed.collapsed.fa
     touch ${prefix}_trimmed.seqspec.yaml
-    touch ${prefix}_trimmed.extraction_report.json
+    cat > ${prefix}_trimmed.extraction_report.json <<'GETRPF_STUB_REPORT'
+    {"schema":"getrpf.structure.extraction/1","status":"prepared","preparation":{"requires_local_alignment":false}}
+    GETRPF_STUB_REPORT
     touch ${prefix}_trimmed.structure.json
     touch ${prefix}_trimmed.structure.txt
     ${params.align_getrpf_holds ? "touch ${prefix}_getrpf_hold.fastq.gz" : ''}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        getRPF: 0.5.0
+        getRPF: 0.6.0
     END_VERSIONS
     """
 }
