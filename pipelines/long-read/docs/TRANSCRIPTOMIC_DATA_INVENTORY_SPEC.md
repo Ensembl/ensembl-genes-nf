@@ -250,16 +250,25 @@ The default policy must:
 2. group runs by BioSample/sample identity;
 3. choose at most one technical representative per biological sample for the
    first-pass panel;
-4. prioritize marginal biological diversity across tissue, cell type,
+4. apply the sequencing-platform preference as a strict tier: PacBio CCS/HiFi
+   first, PacBio subreads/processed products second, and ONT third as a
+   fallback;
+5. prioritize marginal biological diversity across tissue, cell type,
    developmental stage, sex, strain, and mixed-tissue breadth;
-5. use read/base counts and estimated artifact size as evidence and cost
+6. use read/base counts and estimated artifact size as evidence and cost
    signals, not as proof of transcriptome quality;
-6. apply technical representation, download size, and raw-subread limits as
+7. apply technical representation, download size, and raw-subread limits as
    soft penalties by default;
-7. record `SELECTED`, `SELECTED_WITH_WARNING`, or `NOT_SELECTED` plus a
+8. record `SELECTED`, `SELECTED_WITH_WARNING`, or `NOT_SELECTED` plus a
    machine-readable reason;
-8. allow an explicit policy to require hard exclusion for a technology or
+9. allow an explicit policy to require hard exclusion for a technology or
    representation.
+
+The platform tier is evaluated before biological diversity and cost. Diversity
+and size therefore choose among candidates in the same tier; they must not
+silently promote ONT over an available PacBio candidate. A raw-subread FASTQ
+can remain a higher-priority PacBio review candidate while being ineligible for
+production until a subreads BAM and required PBCCS sidecar are identified.
 
 The selector must be deterministic for a fixed inventory and configuration.
 Ties must be resolved by stable accession ordering. Its output must include

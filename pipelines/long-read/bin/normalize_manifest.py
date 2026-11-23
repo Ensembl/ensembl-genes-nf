@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import json
+import urllib.parse
 from pathlib import Path
 
 REQUIRED = {"id", "run_id", "cohort_id", "technology", "assembly_id", "read_set_id", "sample_id", "library_id", "read_representation", "source_uri"}
@@ -36,9 +37,22 @@ def canonicalize_approved_row(row: dict[str, str], cohort_id: str) -> dict[str, 
         raise SystemExit("approved manifest row has no run_accession, accession, id, or sample_id")
     classification = (row.get("classification") or "").strip().upper()
     representation = (row.get("read_representation") or "").strip().lower()
-    is_bam = bool(row.get("bam") or row.get("ccs", "").lower().endswith(".bam") or classification.endswith("_BAM"))
+    source_value = row.get("source_uri") or row.get("selected_artifact_uri") or row.get("input", "")
+    source_name = Path(urllib.parse.urlparse(source_value).path).name.lower()
+    is_bam = bool(
+        row.get("bam")
+        or row.get("ccs", "").lower().endswith(".bam")
+        or classification.endswith("_BAM")
+        or source_name.endswith(".bam")
+    )
+    declares_raw_subreads = representation in {"raw_subread", "raw_subreads"} or "SUBREAD" in classification
+    if declares_raw_subreads and not is_bam:
+        raise SystemExit(
+            f"approved manifest row {run_id} declares raw_subreads but does not identify a BAM input; "
+            "raw-subread FASTQ cannot enter the PBCCS path"
+        )
     if is_bam:
-        if representation in {"raw_subread", "raw_subreads"} or "SUBREAD" in classification:
+        if declares_raw_subreads:
             representation = "raw_subreads"
         elif representation == "ccs" or "CCS" in classification:
             representation = "ccs"

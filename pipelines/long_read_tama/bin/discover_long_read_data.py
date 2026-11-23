@@ -95,6 +95,35 @@ def _representation_penalty(representation: str) -> int:
     }.get(representation, 4)
 
 
+def _platform_priority(representation: str) -> tuple[int, str]:
+    """Return the user-facing sequencing preference tier.
+
+    Platform preference is deliberately separate from technical risk.  A raw
+    PacBio subread record can be technically unsafe to run until it has a BAM
+    and PBCCS route, but it is still a higher-priority candidate than ONT.
+    """
+    if representation in {"PACBIO_CCS_BAM", "PACBIO_CCS_FASTQ"}:
+        return 1, "PacBio CCS/HiFi"
+    if representation in {
+        "PACBIO_PROCESSED_BAM",
+        "PACBIO_PROCESSED_FASTQ",
+        "PACBIO_SUBREAD_BAM",
+        "PACBIO_RAW_SUBREAD_FASTQ_GROUPABLE",
+        "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE",
+        "PACBIO_UNKNOWN",
+    }:
+        return 2, "PacBio subreads/processed"
+    if representation == "ONT_FASTQ":
+        return 3, "ONT"
+    return 4, "Unresolved"
+
+
+def _submitted_hifi_evidence(submitted_ftp: str) -> bool:
+    """Recognize ENA submitted filenames that explicitly identify HiFi/CCS."""
+    text = (submitted_ftp or "").lower()
+    return any(marker in text for marker in (".hifi_reads.", ".ccs.", "_hifi_reads.", "_ccs."))
+
+
 def _technical_annotation(row: dict) -> tuple[int, str, str]:
     representation = row["representation_class"]
     penalty = _representation_penalty(representation)
@@ -111,6 +140,20 @@ def _technical_annotation(row: dict) -> tuple[int, str, str]:
         label = "low" if penalty == 0 else "medium"
         warning = ""
     return penalty, label, warning
+
+
+def _processing_status(row: dict) -> str:
+    """Describe whether a selected row can enter the current pipeline."""
+    representation = row["representation_class"]
+    if representation == "ONT_FASTQ":
+        return "ONT_FALLBACK_FASTQ"
+    if "RAW_SUBREAD_FASTQ" in representation:
+        return "REVIEW_ONLY_RAW_SUBREAD_FASTQ"
+    if representation == "PACBIO_SUBREAD_BAM":
+        return "REQUIRES_PBCCS_BAM_INDEX"
+    if representation in {"PACBIO_CCS_BAM", "PACBIO_CCS_FASTQ", "PACBIO_PROCESSED_BAM", "PACBIO_PROCESSED_FASTQ"}:
+        return "PACBIO_READY_FOR_REVIEW"
+    return "REVIEW_PACBIO_REPRESENTATION"
 
 
 def discover(taxon: str, tree: bool, cache: Path, probe: bool, target: int,
@@ -169,6 +212,11 @@ def discover(taxon: str, tree: bool, cache: Path, probe: bool, target: int,
         elif observed == "PACBIO_CCS": representation = "PACBIO_CCS_FASTQ"
         elif observed == "ONT": representation = "ONT_FASTQ"
         elif subread_class: representation = subread_class
+        elif row.get("instrument_platform") == "PACBIO_SMRT" and _submitted_hifi_evidence(row.get("submitted_ftp", "")):
+            # ENA may expose a normalized accession FASTQ while retaining the
+            # submitted HiFi/CCS artifact name. Keep the normalized FASTQ URI
+            # for acquisition, but retain the submitted artifact as evidence.
+            representation = "PACBIO_CCS_FASTQ"
         elif row.get("instrument_platform") == "PACBIO_SMRT" and "subread" in fastq_name: representation = "PACBIO_RAW_SUBREAD_FASTQ_UNGROUPABLE"
         else: representation = "PACBIO_UNKNOWN" if row.get("instrument_platform") == "PACBIO_SMRT" else "ONT_FASTQ"
         selected_uri = subread_uri or row.get("fastq_ftp", "").split(";")[0]
@@ -202,15 +250,18 @@ def select(rows: list[dict], target: int, soft_download_budget: float, soft_raw_
     # while retaining every run in the full inventory for review.
     candidates = []
     for group in by_sample.values():
-        candidates.append(max(group, key=lambda r: (
-            -_representation_penalty(r["representation_class"]),
-            _first_number(r.get("base_count", "0")),
+        candidates.append(min(group, key=lambda r: (
+            _platform_priority(r["representation_class"])[0],
+            _representation_penalty(r["representation_class"]),
+            -_first_number(r.get("base_count", "0")),
+            r.get("run_accession", ""),
         )))
     selected, represented = [], set()
     represented_stages, represented_contexts = set(), set()
     used_download_gb, used_raw_subreads = 0.0, 0
     while candidates and len(selected) < target:
         def score(row):
+            platform_rank, _platform_label = _platform_priority(row["representation_class"])
             tissue = row["normalised_tissue"]
             stage = row["developmental_stage"]
             context = (tissue, stage)
@@ -224,20 +275,33 @@ def select(rows: list[dict], target: int, soft_download_budget: float, soft_raw_
             technical = technical_level * 16
             size_gb = _first_number(row.get("fastq_bytes", "0")) / 1e9
             acquisition = min(35, size_gb / 10.0)
-            raw_over_budget = max(0, used_raw_subreads + ("RAW_SUBREAD" in row["representation_class"]) - soft_raw_subread_budget)
             budget_over = max(0.0, used_download_gb + size_gb - soft_download_budget)
-            return biological + evidence - technical - acquisition - raw_over_budget * 35 - budget_over / 5
+            # Platform preference is the primary tier.  Diversity, evidence,
+            # technical risk, and size decide only within that tier.  The raw
+            # subread budget remains a warning policy, never a reason to
+            # replace a higher-priority PacBio candidate with ONT.
+            return (
+                -platform_rank,
+                biological + evidence - technical - acquisition - budget_over / 5,
+                -_first_number(row.get("base_count", "0")),
+                row.get("run_accession", ""),
+            )
         row = max(candidates, key=score); candidates.remove(row)
         gain = (100 if row["normalised_tissue"] not in represented else 0)
         gain += 55 if row["developmental_stage"] != "unknown" and row["developmental_stage"] not in represented_stages else 0
         gain += 25 if (row["normalised_tissue"], row["developmental_stage"]) not in represented_contexts else 0
         penalty, penalty_label, warning = _technical_annotation(row)
+        platform_rank, platform_label = _platform_priority(row["representation_class"])
+        row["platform_priority"] = platform_rank
+        row["platform_tier"] = platform_label
+        row["processing_status"] = _processing_status(row)
         size_gb = _first_number(row.get("fastq_bytes", "0")) / 1e9
         row["technical_penalty"] = penalty_label
         row["biological_gain"] = gain
         row["warnings"] = warning
         row["selection_status"] = "SELECTED_WITH_WARNING" if warning or used_download_gb + size_gb > soft_download_budget or used_raw_subreads + ("RAW_SUBREAD" in row["representation_class"]) > soft_raw_subread_budget else "SELECTED"
-        row["selection_reason"] = (f"Adds {row['normalised_tissue']} / {row['developmental_stage']} evidence; "
+        row["selection_reason"] = (f"Platform tier {platform_rank} ({platform_label}); "
+                                    f"adds {row['normalised_tissue']} / {row['developmental_stage']} evidence; "
                                     f"representation {row['representation_class']}, estimated FASTQ {size_gb:.1f} GB, "
                                     f"technical penalty {penalty_label}")
         selected.append(row); represented.add(row["normalised_tissue"])
@@ -248,6 +312,10 @@ def select(rows: list[dict], target: int, soft_download_budget: float, soft_raw_
     for row in rows:
         if "technical_penalty" not in row:
             _, row["technical_penalty"], row["warnings"] = _technical_annotation(row)
+        if "platform_priority" not in row:
+            row["platform_priority"], row["platform_tier"] = _platform_priority(row["representation_class"])
+        if "processing_status" not in row:
+            row["processing_status"] = _processing_status(row)
         if "selection_status" not in row:
             row["selection_status"] = "NOT_SELECTED"; row["biological_gain"] = 0
             row["selection_reason"] = "Biological context already represented or lower marginal value after sample-level comparison"
@@ -261,11 +329,16 @@ def main():
     fields = list(rows[0]) if rows else ["run_accession", "selection_status"]
     with (out / "long_read_inventory.tsv").open("w", newline="") as h:
         w = csv.DictWriter(h, fieldnames=fields, delimiter="\t"); w.writeheader(); w.writerows(rows)
-    with (out / "proposed_long_read_manifest.tsv").open("w", newline="") as h:
-        # This is the versioned manifest shape accepted by normalise_manifest.py.
-        # It contains selected runs only; selection metadata remain in inventory.
-        fields2 = ["run_accession", "tissue", "filename", "url", "md5", "source", "platform", "description", "selection_status", "selection_reason"]
-        w = csv.DictWriter(h, fieldnames=fields2, delimiter="\t", extrasaction="ignore"); w.writeheader(); w.writerows(selected)
+    fields2 = ["run_accession", "tissue", "filename", "url", "md5", "source", "platform", "description", "representation_class", "platform_priority", "platform_tier", "processing_status", "technical_penalty", "warnings", "selection_status", "selection_reason"]
+    for name, subset in (
+        ("proposed_long_read_manifest.tsv", selected),
+        ("pacbio_priority.tsv", [row for row in selected if row["platform_priority"] in {1, 2}]),
+        ("ont_fallback.tsv", [row for row in selected if row["platform_priority"] == 3]),
+    ):
+        with (out / name).open("w", newline="") as h:
+            # These are review sheets, not approved production manifests.  They
+            # contain selected runs only; selection metadata remain in inventory.
+            w = csv.DictWriter(h, fieldnames=fields2, delimiter="\t", extrasaction="ignore"); w.writeheader(); w.writerows(subset)
     summary = {"discovered_runs": len(rows), "biological_samples": len({r['sample_accession'] for r in rows}),
                "selected_runs": len(selected), "soft_download_budget_gb": a.soft_download_budget,
                "soft_raw_subread_budget": a.soft_raw_subread_budget,

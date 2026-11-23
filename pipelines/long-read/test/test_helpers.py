@@ -126,6 +126,22 @@ def test_manifest_allows_remote_input_only_for_explicit_acquisition(tmp_path: Pa
     assert row["input_sha256"] == ""
 
 
+def test_approved_manifest_rejects_raw_subread_fastq(tmp_path: Path):
+    manifest = tmp_path / "raw_subreads_fastq.tsv"
+    manifest.write_text(
+        "run_id\ttechnology\tassembly_id\tread_set_id\tsample_id\tlibrary_id\tread_representation\tsource_uri\n"
+        "run1\tpacbio\tfixture\tset1\tsample1\tlib1\traw_subreads\thttps://example.invalid/run1_subreads.fastq.gz\n"
+    )
+    result = run_helper(
+        "normalize_manifest.py", "--manifest", str(manifest), "--mode", "approved_manifest",
+        "--allow-unresolved-inputs", "--ccs-mode", "pbccs", "--cohort-id", "fixture",
+        "--normalized", str(tmp_path / "normalized.tsv"), "--manifest-checksum", str(tmp_path / "normalized.sha256"),
+        "--checksums", str(tmp_path / "checksums.tsv"), "--status", str(tmp_path / "status.tsv")
+    )
+    assert result.returncode != 0
+    assert "raw-subread FASTQ cannot enter the PBCCS path" in result.stderr
+
+
 def test_approved_manifest_preserves_primary_tsv_run_id(tmp_path: Path):
     manifest = tmp_path / "primary.tsv"
     manifest.write_text(
