@@ -11,3 +11,29 @@ Each species directory contains:
 The `fastq` paths are relative to the repository launch directory, matching the `feature/long-read` pipeline contract. When launching from the feature worktree root, download each `source_uri` into the exact path under `pipelines/long-read/manifests/20261106/<species>/fastq/` and verify `selected_artifact_md5` before launching Nextflow. Multi-FASTQ review rows require concatenation or a pipeline-specific split decision; they are not silently reduced to one file.
 
 The primary manifest contract is `run_id`, `fastq`, `technology`, and `minimap2_preset`; the extra columns preserve provenance and biology. The primary manifests contain no raw PacBio subread rows, so they are the conservative starting point for the feature pipeline.
+
+## Processing tiers
+
+The primary inventory is split into disjoint processing batches:
+
+- `tier1.tsv`: first-pass, tissue/study/technology-diverse panel
+- `tier2.tsv`: expansion panel, with explicit PacBio quotas where PacBio is available
+- `remaining.tsv`: primary runs held for later expansion
+
+The current tier sizes are controlled by `tier_targets.tsv` and summarized in
+`tier_manifest_index.tsv`. The selection audit is in
+`tier_selection_audit.tsv`. Selection is deterministic and rewards new
+biological context, technology, study, sample, breed/strain, and read
+representation. It gives extra weight to technologies below the tier's target.
+
+Regenerate the tiers from the repository root with:
+
+```bash
+python3 pipelines/long-read/bin/make_tiered_manifests.py \
+  --manifest-root pipelines/long-read/manifests/20261106 \
+  --targets pipelines/long-read/manifests/20261106/tier_targets.tsv
+```
+
+The tiers are disjoint. Run `tier1.tsv`, then `tier2.tsv`, and only process
+`remaining.tsv` if the added data are justified by model saturation, missing
+tissues, or technology-specific evidence.

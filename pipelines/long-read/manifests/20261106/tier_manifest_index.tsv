@@ -1,0 +1,8 @@
+species	primary_runs	tier1_runs	tier2_runs	remaining_runs	tier1_manifest	tier2_manifest	remaining_manifest
+cat	12	12	0	0	cat/tier1.tsv	cat/tier2.tsv	cat/remaining.tsv
+chicken	146	30	30	86	chicken/tier1.tsv	chicken/tier2.tsv	chicken/remaining.tsv
+dog	30	15	15	0	dog/tier1.tsv	dog/tier2.tsv	dog/remaining.tsv
+pig	61	30	15	16	pig/tier1.tsv	pig/tier2.tsv	pig/remaining.tsv
+rat	119	30	30	59	rat/tier1.tsv	rat/tier2.tsv	rat/remaining.tsv
+sheep	143	30	30	83	sheep/tier1.tsv	sheep/tier2.tsv	sheep/remaining.tsv
+zebrafish	21	21	0	0	zebrafish/tier1.tsv	zebrafish/tier2.tsv	zebrafish/remaining.tsv

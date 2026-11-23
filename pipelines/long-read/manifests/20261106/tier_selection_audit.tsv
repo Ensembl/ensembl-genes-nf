@@ -1,0 +1,289 @@
+species	tier	selection_rank	run_id	selection_score	known_biology	tissue_context	technology	study_accession	sample_id
+cat	1	1	SRR33483404	415	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408552
+cat	1	2	SRR33483405	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408553
+cat	1	3	SRR33483406	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408554
+cat	1	4	SRR33483407	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408555
+cat	1	5	SRR33483408	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408556
+cat	1	6	SRR33483409	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408557
+cat	1	7	SRR33483410	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408558
+cat	1	8	SRR33483411	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408559
+cat	1	9	SRR33483412	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408560
+cat	1	10	SRR33483413	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408561
+cat	1	11	SRR33483414	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408562
+cat	1	12	SRR33483415	260	1	tissue:cardiac biopsy left ventricle	ont	prjna1260996	samn48408563
+chicken	1	1	SRR21968764	420	1	tissue:chicken hierarchical follicle	ont	prjna891942	samn31361610
+chicken	1	2	SRR31429658	385	1	tissue:testis	ont	prjna1188790	samn44849016
+chicken	1	3	SRR39329065	385	1	tissue:cecum	ont	prjna1473222	samn61117215
+chicken	1	4	SRR12888486	380	1	tissue:adipose	ont	prjna671673	samn16540004
+chicken	1	5	SRR21977656	380	1	tissue:chicken pre-hierarchical follicle	ont	prjna892218	samn31370764
+chicken	1	6	SRR12888494	360	1	tissue:cerebellum	ont	prjna671673	samn16540028
+chicken	1	7	SRR12888498	360	1	tissue:colon	ont	prjna671673	samn16540024
+chicken	1	8	SRR12888502	360	1	tissue:braincortex	ont	prjna671673	samn16540020
+chicken	1	9	SRR12888506	360	1	tissue:duodenum	ont	prjna671673	samn16540051
+chicken	1	10	SRR12888509	360	1	tissue:gizzard	ont	prjna671673	samn16539965
+chicken	1	11	SRR12888512	360	1	tissue:heart	ont	prjna671673	samn16539962
+chicken	1	12	SRR12888514	360	1	tissue:hypothalamus	ont	prjna671673	samn16540000
+chicken	1	13	SRR12888518	360	1	tissue:ileum	ont	prjna671673	samn16539996
+chicken	1	14	SRR12888522	360	1	tissue:jejunum	ont	prjna671673	samn16539992
+chicken	1	15	SRR12888526	360	1	tissue:kidney	ont	prjna671673	samn16539988
+chicken	1	16	SRR12888530	360	1	tissue:liver	ont	prjna671673	samn16539984
+chicken	1	17	SRR12888534	360	1	tissue:lung	ont	prjna671673	samn16540015
+chicken	1	18	SRR12888538	360	1	tissue:muscle	ont	prjna671673	samn16540011
+chicken	1	19	SRR12888542	360	1	tissue:ovary	ont	prjna671673	samn16539934
+chicken	1	20	SRR12888544	360	1	tissue:spleen	ont	prjna671673	samn16539932
+chicken	1	21	ERR7015099	310	0	<unknown>	pacbio	prjeb48060	samea9122905
+chicken	1	22	ERR7015100	260	0	<unknown>	pacbio	prjeb48060	samea9122906
+chicken	1	23	ERR7015101	260	0	<unknown>	pacbio	prjeb48060	samea9122909
+chicken	1	24	ERR7015102	260	0	<unknown>	pacbio	prjeb48060	samea9122907
+chicken	1	25	ERR7015103	260	0	<unknown>	pacbio	prjeb48060	samea9122908
+chicken	1	26	ERR7015104	260	0	<unknown>	pacbio	prjeb48060	samea9122910
+chicken	1	27	ERR7015105	260	0	<unknown>	pacbio	prjeb48060	samea9122911
+chicken	1	28	ERR7015106	260	0	<unknown>	pacbio	prjeb48060	samea9122912
+chicken	1	29	ERR7015107	260	0	<unknown>	pacbio	prjeb48060	samea9122913
+chicken	1	30	ERR7015108	260	0	<unknown>	pacbio	prjeb48060	samea9122916
+chicken	2	1	SRR12888550	360	1	tissue:thymus	ont	prjna671673	samn16539959
+chicken	2	2	SRR31429663	360	1	tissue:skeletal muscle	ont	prjna1188790	samn44849012
+chicken	2	3	SRR31429665	360	1	tissue:hippocampus	ont	prjna1188790	samn44849010
+chicken	2	4	SRR31429667	360	1	tissue:frontal cortex	ont	prjna1188790	samn44849008
+chicken	2	5	SRR12888487	260	1	tissue:adipose	ont	prjna671673	samn16540035
+chicken	2	6	SRR12888488	260	1	tissue:adipose	ont	prjna671673	samn16540034
+chicken	2	7	SRR12888489	260	1	tissue:adipose	ont	prjna671673	samn16540033
+chicken	2	8	SRR12888490	260	1	tissue:cecum	ont	prjna671673	samn16540032
+chicken	2	9	SRR12888491	260	1	tissue:cecum	ont	prjna671673	samn16540031
+chicken	2	10	SRR12888492	260	1	tissue:cecum	ont	prjna671673	samn16540030
+chicken	2	11	SRR12888493	260	1	tissue:cecum	ont	prjna671673	samn16540029
+chicken	2	12	SRR12888495	260	1	tissue:cerebellum	ont	prjna671673	samn16540027
+chicken	2	13	SRR12888496	260	1	tissue:cerebellum	ont	prjna671673	samn16540026
+chicken	2	14	SRR12888497	260	1	tissue:cerebellum	ont	prjna671673	samn16540025
+chicken	2	15	SRR12888499	260	1	tissue:colon	ont	prjna671673	samn16540023
+chicken	2	16	SRR12888500	260	1	tissue:colon	ont	prjna671673	samn16540022
+chicken	2	17	SRR12888501	260	1	tissue:colon	ont	prjna671673	samn16540021
+chicken	2	18	SRR12888503	260	1	tissue:braincortex	ont	prjna671673	samn16540019
+chicken	2	19	SRR12888504	260	1	tissue:braincortex	ont	prjna671673	samn16540018
+chicken	2	20	SRR12888505	260	1	tissue:braincortex	ont	prjna671673	samn16540052
+chicken	2	21	ERR7015110	260	0	<unknown>	pacbio	prjeb48060	samea9122914
+chicken	2	22	ERR7015112	260	0	<unknown>	pacbio	prjeb48060	samea9122915
+chicken	2	23	ERR7015114	260	0	<unknown>	pacbio	prjeb48060	samea9122917
+chicken	2	24	ERR7015116	260	0	<unknown>	pacbio	prjeb48060	samea9122918
+chicken	2	25	ERR7015118	260	0	<unknown>	pacbio	prjeb48060	samea9122919
+chicken	2	26	ERR7015120	260	0	<unknown>	pacbio	prjeb48060	samea9122920
+chicken	2	27	ERR7015122	260	0	<unknown>	pacbio	prjeb48060	samea9122923
+chicken	2	28	ERR7015126	260	0	<unknown>	pacbio	prjeb48060	samea9122924
+chicken	2	29	ERR7015128	260	0	<unknown>	pacbio	prjeb48060	samea9122925
+chicken	2	30	ERR9837115	260	0	<unknown>	pacbio	prjeb48060	samea9122921
+dog	1	1	SRR14601784	420	1	tissue:right ventricular myocardium	ont	prjna731299	samn19276460
+dog	1	2	SRR31429672	385	1	tissue:liver	ont	prjna1188790	samn44849004
+dog	1	3	SRR31429676	360	1	tissue:skeletal muscle	ont	prjna1188790	samn44849000
+dog	1	4	SRR31429678	360	1	tissue:hippocampus	ont	prjna1188790	samn44848998
+dog	1	5	SRR31429680	360	1	tissue:frontal cortex	ont	prjna1188790	samn44848996
+dog	1	6	SRR31429683	360	1	tissue:cerebellum	ont	prjna1188790	samn44848994
+dog	1	7	ERR5884020	310	0	<unknown>	pacbio	prjeb44465	samea8599104
+dog	1	8	ERR14857342	280	0	<unknown>	ont	prjeb88593	samea118006230
+dog	1	9	SRR14601785	260	1	tissue:right ventricular myocardium	ont	prjna731299	samn19276459
+dog	1	10	SRR14601786	260	1	tissue:right ventricular myocardium	ont	prjna731299	samn19276458
+dog	1	11	SRR14601787	260	1	tissue:right ventricular myocardium	ont	prjna731299	samn19276457
+dog	1	12	SRR14601788	260	1	tissue:right ventricular myocardium	ont	prjna731299	samn19276456
+dog	1	13	ERR5884021	260	0	<unknown>	pacbio	prjeb44465	samea8599105
+dog	1	14	ERR5884022	260	0	<unknown>	pacbio	prjeb44465	samea8599106
+dog	1	15	ERR5884023	260	0	<unknown>	pacbio	prjeb44465	samea8599107
+dog	2	1	SRR14601789	260	1	tissue:right ventricular myocardium	ont	prjna731299	samn19276455
+dog	2	2	SRR31429674	260	1	tissue:liver	ont	prjna1188790	samn44849002
+dog	2	3	SRR31429675	260	1	tissue:liver	ont	prjna1188790	samn44849001
+dog	2	4	SRR31429679	260	1	tissue:hippocampus	ont	prjna1188790	samn44848997
+dog	2	5	SRR31429682	260	1	tissue:frontal cortex	ont	prjna1188790	samn44848995
+dog	2	6	SRR31429684	260	1	tissue:cerebellum	ont	prjna1188790	samn44848993
+dog	2	7	ERR14857343	260	0	<unknown>	ont	prjeb88593	samea118006231
+dog	2	8	ERR14857344	260	0	<unknown>	ont	prjeb88593	samea118006232
+dog	2	9	ERR14857345	260	0	<unknown>	ont	prjeb88593	samea118006233
+dog	2	10	ERR14857346	260	0	<unknown>	ont	prjeb88593	samea118006234
+dog	2	11	ERR14857347	260	0	<unknown>	ont	prjeb88593	samea118006235
+dog	2	12	ERR14857348	260	0	<unknown>	ont	prjeb88593	samea118006236
+dog	2	13	ERR14857349	260	0	<unknown>	ont	prjeb88593	samea118006237
+dog	2	14	ERR5884024	260	0	<unknown>	pacbio	prjeb44465	samea8599108
+dog	2	15	ERR5884025	260	0	<unknown>	pacbio	prjeb44465	samea8599109
+pig	1	1	SRR12738853	420	1	tissue:heart	ont	prjna666320	samn16288294
+pig	1	2	SRR35514712	415	1	tissue:lung	pacbio	prjna1331737	samn51642925
+pig	1	3	SRR37499850	385	1	tissue:pooled	ont	prjna1432743	samn56359819
+pig	1	4	SRR12888554	380	1	tissue:adipose	ont	prjna671673	samn16539955
+pig	1	5	SRR24298645	380	1	tissue:prostate gland	pacbio	prjna961656	samn34360931
+pig	1	6	SRR29338735	380	1	tissue:liver	pacbio	prjna1121914	samn41768878
+pig	1	7	SRR12888556	360	1	tissue:cerebellum	ont	prjna671673	samn16539953
+pig	1	8	SRR12888558	360	1	tissue:colon	ont	prjna671673	samn16539951
+pig	1	9	SRR12888559	360	1	tissue:braincortex	ont	prjna671673	samn16539950
+pig	1	10	SRR12888560	360	1	tissue:duodenum	ont	prjna671673	samn16539949
+pig	1	11	SRR12888562	360	1	tissue:hypothalamus	ont	prjna671673	samn16539947
+pig	1	12	SRR12888564	360	1	tissue:ileum	ont	prjna671673	samn16539945
+pig	1	13	SRR12888566	360	1	tissue:jejunum	ont	prjna671673	samn16539981
+pig	1	14	SRR12888568	360	1	tissue:kidney	ont	prjna671673	samn16539979
+pig	1	15	SRR12888574	360	1	tissue:lymph	ont	prjna671673	samn16539977
+pig	1	16	SRR12888576	360	1	tissue:muscle	ont	prjna671673	samn16539971
+pig	1	17	SRR12888578	360	1	tissue:spleen	ont	prjna671673	samn16539969
+pig	1	18	SRR12888580	360	1	tissue:thymus	ont	prjna671673	samn16539967
+pig	1	19	ERR8606824	280	0	<unknown>	pacbio	prjeb50963	samea9089018
+pig	1	20	SRR29338729	260	1	tissue:lung	pacbio	prjna1121914	samn41768872
+pig	1	21	ERR8606826	260	0	<unknown>	pacbio	prjeb50963	samea9089019
+pig	1	22	ERR8606827	260	0	<unknown>	pacbio	prjeb50963	samea9089022
+pig	1	23	ERR8606829	260	0	<unknown>	pacbio	prjeb50963	samea9089020
+pig	1	24	ERR8606831	260	0	<unknown>	pacbio	prjeb50963	samea9089021
+pig	1	25	ERR8606832	260	0	<unknown>	pacbio	prjeb50963	samea9089023
+pig	1	26	ERR8606833	260	0	<unknown>	pacbio	prjeb50963	samea9089024
+pig	1	27	ERR8606834	260	0	<unknown>	pacbio	prjeb50963	samea9089025
+pig	1	28	ERR8606835	260	0	<unknown>	pacbio	prjeb50963	samea9089026
+pig	1	29	ERR8606836	260	0	<unknown>	pacbio	prjeb50963	samea9089029
+pig	1	30	ERR8606837	260	0	<unknown>	pacbio	prjeb50963	samea9089027
+pig	2	1	ERR8606838	260	0	<unknown>	pacbio	prjeb50963	samea9089028
+pig	2	2	ERR8606839	260	0	<unknown>	pacbio	prjeb50963	samea9089030
+pig	2	3	ERR8606840	260	0	<unknown>	pacbio	prjeb50963	samea9089031
+pig	2	4	ERR8606841	260	0	<unknown>	pacbio	prjeb50963	samea9089032
+pig	2	5	ERR8606842	260	0	<unknown>	pacbio	prjeb50963	samea9089033
+pig	2	6	ERR8606843	260	0	<unknown>	pacbio	prjeb50963	samea9089036
+pig	2	7	ERR8606844	260	0	<unknown>	pacbio	prjeb50963	samea9089034
+pig	2	8	ERR8606845	260	0	<unknown>	pacbio	prjeb50963	samea9089035
+pig	2	9	ERR8606847	260	0	<unknown>	pacbio	prjeb50963	samea9089037
+pig	2	10	ERR8606849	260	0	<unknown>	pacbio	prjeb50963	samea9089038
+pig	2	11	ERR8606825	250	0	<unknown>	pacbio	prjeb50963	samea9089018
+pig	2	12	ERR8606828	250	0	<unknown>	pacbio	prjeb50963	samea9089022
+pig	2	13	ERR8606830	250	0	<unknown>	pacbio	prjeb50963	samea9089020
+pig	2	14	ERR8606846	250	0	<unknown>	pacbio	prjeb50963	samea9089035
+pig	2	15	ERR8606848	250	0	<unknown>	pacbio	prjeb50963	samea9089037
+rat	1	1	ERR15844986	420	1	organism_part:femoral tissue	ont	prjeb102818	samea120526003
+rat	1	2	SRR27645896	415	1	tissue:liver	pacbio	prjna1027884	samn37807429
+rat	1	3	SRR22582414	385	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119476
+rat	1	4	SRR26360171	385	1	tissue:pituitary	ont	prjna1027125	samn37779130
+rat	1	5	SRR8487226	385	1	tissue:heart	ont	prjna517125	samn10819925
+rat	1	6	SRR25133731	380	1	cell_type:embryonic cardiomyocyte	ont	prjna991446	samn36294204
+rat	1	7	SRR30998171	380	1	tissue:lung	ont	prjna1173124	samn44291578
+rat	1	8	SRR33373470	380	1	tissue:thalamus	ont	prjna1256755	samn48206613
+rat	1	9	SRR38195314	380	1	tissue:abdominal aorta ec	ont	prjna1455609	samn57371043
+rat	1	10	SRR40273283	380	1	tissue:embryonic lung	ont	prjna1515821	samn62586572
+rat	1	11	SRR26360173	360	1	tissue:hypothalamic	ont	prjna1027125	samn37779128
+rat	1	12	SRR26360178	360	1	tissue:testicular	ont	prjna1027125	samn37779144
+rat	1	13	ERR9165242	280	0	<unknown>	ont	prjeb51442	samea13301144
+rat	1	14	SRR22399481	280	0	<unknown>	ont	prjna904815	samn31855544
+rat	1	15	SRR8487227	265	1	tissue:heart	ont	prjna517125	samn10819924
+rat	1	16	SRR8487230	265	1	tissue:heart	ont	prjna517125	samn10819923
+rat	1	17	SRR8487231	265	1	tissue:heart	ont	prjna517125	samn10819922
+rat	1	18	ERR15844987	260	1	organism_part:femoral tissue	ont	prjeb102818	samea120526004
+rat	1	19	ERR15844988	260	1	organism_part:femoral tissue	ont	prjeb102818	samea120526005
+rat	1	20	ERR15844989	260	1	organism_part:femoral tissue	ont	prjeb102818	samea120526006
+rat	1	21	ERR15844990	260	1	organism_part:femoral tissue	ont	prjeb102818	samea120526007
+rat	1	22	ERR15844991	260	1	organism_part:femoral tissue	ont	prjeb102818	samea120526008
+rat	1	23	ERR15844992	260	1	organism_part:femoral tissue	ont	prjeb102818	samea120526009
+rat	1	24	ERR15844993	260	1	organism_part:femoral tissue	ont	prjeb102818	samea120526010
+rat	1	25	ERR15844994	260	1	organism_part:femoral tissue	ont	prjeb102818	samea120526011
+rat	1	26	ERR15844995	260	1	organism_part:femoral tissue	ont	prjeb102818	samea120526012
+rat	1	27	SRR22582415	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119475
+rat	1	28	SRR22582416	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119474
+rat	1	29	SRR22582417	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119473
+rat	1	30	SRR22582418	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119472
+rat	2	1	SRR22582419	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119471
+rat	2	2	SRR22582420	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119470
+rat	2	3	SRR22582421	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119479
+rat	2	4	SRR22582422	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119478
+rat	2	5	SRR22582423	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119469
+rat	2	6	SRR22582424	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119468
+rat	2	7	SRR23984936	260	1	tissue:sinonasal mucosa	ont	prjna910244	samn32119477
+rat	2	8	SRR25133732	260	1	cell_type:embryonic cardiomyocyte	ont	prjna991446	samn36294205
+rat	2	9	SRR25133733	260	1	cell_type:embryonic cardiomyocyte	ont	prjna991446	samn36294206
+rat	2	10	SRR25133734	260	1	cell_type:embryonic cardiomyocyte	ont	prjna991446	samn36294207
+rat	2	11	SRR25133735	260	1	cell_type:embryonic cardiomyocyte	ont	prjna991446	samn36294208
+rat	2	12	SRR25133736	260	1	cell_type:embryonic cardiomyocyte	ont	prjna991446	samn36294209
+rat	2	13	SRR26360172	260	1	tissue:pituitary	ont	prjna1027125	samn37779129
+rat	2	14	SRR26360174	260	1	tissue:hypothalamic	ont	prjna1027125	samn37779127
+rat	2	15	SRR26360175	260	1	tissue:hypothalamic	ont	prjna1027125	samn37779126
+rat	2	16	SRR26360176	260	1	tissue:hypothalamic	ont	prjna1027125	samn37779125
+rat	2	17	SRR26360177	260	1	tissue:hypothalamic	ont	prjna1027125	samn37779124
+rat	2	18	SRR26360179	260	1	tissue:testicular	ont	prjna1027125	samn37779143
+rat	2	19	SRR26360180	260	1	tissue:testicular	ont	prjna1027125	samn37779142
+rat	2	20	SRR26360181	260	1	tissue:testicular	ont	prjna1027125	samn37779141
+rat	2	21	SRR26360182	260	1	tissue:hypothalamic	ont	prjna1027125	samn37779123
+rat	2	22	SRR26360183	260	1	tissue:testicular	ont	prjna1027125	samn37779140
+rat	2	23	SRR26360184	260	1	tissue:testicular	ont	prjna1027125	samn37779139
+rat	2	24	SRR26360185	260	1	tissue:testicular	ont	prjna1027125	samn37779138
+rat	2	25	SRR26360186	260	1	tissue:testicular	ont	prjna1027125	samn37779137
+rat	2	26	SRR26360187	260	1	tissue:pituitary	ont	prjna1027125	samn37779136
+rat	2	27	SRR26360188	260	1	tissue:pituitary	ont	prjna1027125	samn37779135
+rat	2	28	SRR26360189	260	1	tissue:pituitary	ont	prjna1027125	samn37779134
+rat	2	29	SRR26360190	260	1	tissue:pituitary	ont	prjna1027125	samn37779133
+rat	2	30	SRR26360191	260	1	tissue:pituitary	ont	prjna1027125	samn37779132
+sheep	1	1	ERR9599165	420	1	organism_part:testis	ont	prjeb52335	samea14091971
+sheep	1	2	SRR28710552	385	1	tissue:ovary	ont	prjna1100789	samn40980742
+sheep	1	3	SRR37905523	385	1	tissue:restricted access	ont	prjna1447419	samn56962640
+sheep	1	4	SRR30404909	380	1	tissue:pituitary	ont	prjna1152572	samn43370217
+sheep	1	5	SRR28755707	285	1	tissue:ovary	ont	prjna1102185	samn41014358
+sheep	1	6	SRR38798231	285	1	tissue:ovary	ont	prjna1469422	samn60357200
+sheep	1	7	SRR37905424	265	0	<unknown>	ont	prjna1447419	samn56962737
+sheep	1	8	SRR37905425	265	0	<unknown>	ont	prjna1447419	samn56962736
+sheep	1	9	SRR37905426	265	0	<unknown>	ont	prjna1447419	samn56962735
+sheep	1	10	SRR37905427	265	0	<unknown>	ont	prjna1447419	samn56962734
+sheep	1	11	SRR37905428	265	0	<unknown>	ont	prjna1447419	samn56962733
+sheep	1	12	SRR37905429	265	0	<unknown>	ont	prjna1447419	samn56962732
+sheep	1	13	SRR37905430	265	0	<unknown>	ont	prjna1447419	samn56962731
+sheep	1	14	SRR37905431	265	0	<unknown>	ont	prjna1447419	samn56962730
+sheep	1	15	SRR37905432	265	0	<unknown>	ont	prjna1447419	samn56962729
+sheep	1	16	SRR37905433	265	0	<unknown>	ont	prjna1447419	samn56962648
+sheep	1	17	SRR37905434	265	0	<unknown>	ont	prjna1447419	samn56962728
+sheep	1	18	SRR37905435	265	0	<unknown>	ont	prjna1447419	samn56962727
+sheep	1	19	SRR37905436	265	0	<unknown>	ont	prjna1447419	samn56962726
+sheep	1	20	SRR37905437	265	0	<unknown>	ont	prjna1447419	samn56962725
+sheep	1	21	SRR37905438	265	0	<unknown>	ont	prjna1447419	samn56962724
+sheep	1	22	SRR37905439	265	0	<unknown>	ont	prjna1447419	samn56962723
+sheep	1	23	SRR37905440	265	0	<unknown>	ont	prjna1447419	samn56962722
+sheep	1	24	SRR37905441	265	0	<unknown>	ont	prjna1447419	samn56962721
+sheep	1	25	SRR37905442	265	0	<unknown>	ont	prjna1447419	samn56962720
+sheep	1	26	SRR37905443	265	0	<unknown>	ont	prjna1447419	samn56962719
+sheep	1	27	SRR37905444	265	0	<unknown>	ont	prjna1447419	samn56962647
+sheep	1	28	SRR37905445	265	0	<unknown>	ont	prjna1447419	samn56962718
+sheep	1	29	SRR37905446	265	0	<unknown>	ont	prjna1447419	samn56962717
+sheep	1	30	SRR37905447	265	0	<unknown>	ont	prjna1447419	samn56962716
+sheep	2	1	SRR37905448	265	0	<unknown>	ont	prjna1447419	samn56962715
+sheep	2	2	SRR37905449	265	0	<unknown>	ont	prjna1447419	samn56962714
+sheep	2	3	SRR37905450	265	0	<unknown>	ont	prjna1447419	samn56962713
+sheep	2	4	SRR37905451	265	0	<unknown>	ont	prjna1447419	samn56962712
+sheep	2	5	SRR37905452	265	0	<unknown>	ont	prjna1447419	samn56962711
+sheep	2	6	SRR37905453	265	0	<unknown>	ont	prjna1447419	samn56962710
+sheep	2	7	SRR37905454	265	0	<unknown>	ont	prjna1447419	samn56962709
+sheep	2	8	SRR37905455	265	0	<unknown>	ont	prjna1447419	samn56962646
+sheep	2	9	SRR37905456	265	0	<unknown>	ont	prjna1447419	samn56962708
+sheep	2	10	SRR37905457	265	0	<unknown>	ont	prjna1447419	samn56962707
+sheep	2	11	SRR37905458	265	0	<unknown>	ont	prjna1447419	samn56962706
+sheep	2	12	SRR37905459	265	0	<unknown>	ont	prjna1447419	samn56962705
+sheep	2	13	SRR37905460	265	0	<unknown>	ont	prjna1447419	samn56962704
+sheep	2	14	SRR37905461	265	0	<unknown>	ont	prjna1447419	samn56962703
+sheep	2	15	SRR37905462	265	0	<unknown>	ont	prjna1447419	samn56962702
+sheep	2	16	SRR37905463	265	0	<unknown>	ont	prjna1447419	samn56962701
+sheep	2	17	SRR37905464	265	0	<unknown>	ont	prjna1447419	samn56962700
+sheep	2	18	SRR37905465	265	0	<unknown>	ont	prjna1447419	samn56962699
+sheep	2	19	SRR37905466	265	0	<unknown>	ont	prjna1447419	samn56962645
+sheep	2	20	SRR37905467	265	0	<unknown>	ont	prjna1447419	samn56962698
+sheep	2	21	SRR37905468	265	0	<unknown>	ont	prjna1447419	samn56962697
+sheep	2	22	SRR37905469	265	0	<unknown>	ont	prjna1447419	samn56962696
+sheep	2	23	SRR37905470	265	0	<unknown>	ont	prjna1447419	samn56962695
+sheep	2	24	SRR37905471	265	0	<unknown>	ont	prjna1447419	samn56962694
+sheep	2	25	SRR37905472	265	0	<unknown>	ont	prjna1447419	samn56962693
+sheep	2	26	SRR37905473	265	0	<unknown>	ont	prjna1447419	samn56962692
+sheep	2	27	SRR37905474	265	0	<unknown>	ont	prjna1447419	samn56962691
+sheep	2	28	SRR37905475	265	0	<unknown>	ont	prjna1447419	samn56962690
+sheep	2	29	SRR37905476	265	0	<unknown>	ont	prjna1447419	samn56962689
+sheep	2	30	SRR37905477	265	0	<unknown>	ont	prjna1447419	samn56962644
+zebrafish	1	1	SRR37486486	420	1	tissue:embryo	ont	prjna1432743	samn56348522
+zebrafish	1	2	SRR33046245	380	1	cell_type:testis	ont	prjna1248410	samn47857717
+zebrafish	1	3	SRR33046248	360	1	cell_type:heart	ont	prjna1248410	samn47857720
+zebrafish	1	4	SRR33046251	360	1	cell_type:early embryonic cell	ont	prjna1248410	samn47857723
+zebrafish	1	5	SRR37486492	360	1	tissue:trunk	ont	prjna1432743	samn56348516
+zebrafish	1	6	SRR37536011	360	1	tissue:brain	ont	prjna1248410	samn56400168
+zebrafish	1	7	SRR37536012	360	1	tissue:shield	ont	prjna1248410	samn56400169
+zebrafish	1	8	SRR33046246	260	1	cell_type:testis	ont	prjna1248410	samn47857718
+zebrafish	1	9	SRR33046247	260	1	cell_type:testis	ont	prjna1248410	samn47857719
+zebrafish	1	10	SRR33046249	260	1	cell_type:heart	ont	prjna1248410	samn47857721
+zebrafish	1	11	SRR33046250	260	1	cell_type:heart	ont	prjna1248410	samn47857722
+zebrafish	1	12	SRR33046252	260	1	cell_type:early embryonic cell	ont	prjna1248410	samn47857724
+zebrafish	1	13	SRR33046253	260	1	cell_type:early embryonic cell	ont	prjna1248410	samn47857725
+zebrafish	1	14	SRR33046254	260	1	cell_type:early embryonic cell	ont	prjna1248410	samn47857726
+zebrafish	1	15	SRR33046255	260	1	cell_type:early embryonic cell	ont	prjna1248410	samn47857727
+zebrafish	1	16	SRR33046256	260	1	cell_type:early embryonic cell	ont	prjna1248410	samn47857728
+zebrafish	1	17	SRR37486487	260	1	tissue:embryo	ont	prjna1432743	samn56348521
+zebrafish	1	18	SRR37486488	260	1	tissue:embryo	ont	prjna1432743	samn56348520
+zebrafish	1	19	SRR37486489	260	1	tissue:embryo	ont	prjna1432743	samn56348519
+zebrafish	1	20	SRR37486490	260	1	tissue:embryo	ont	prjna1432743	samn56348518
+zebrafish	1	21	SRR37486491	260	1	tissue:embryo	ont	prjna1432743	samn56348517
