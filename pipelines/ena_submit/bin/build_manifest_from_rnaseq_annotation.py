@@ -426,7 +426,10 @@ def main() -> int:
     args = parser.parse_args()
 
     rnaseq_dir = Path(args.rnaseq_dir).resolve()
-    alignment_dir = Path(args.alignment_dir).expanduser().resolve() if args.alignment_dir else rnaseq_dir
+    # Preserve the spelling of an alternate alignment root.  On the production
+    # filesystem /nfs may be a symlink to /gpfs; resolving it here writes the
+    # target path into files.tsv, which may not be visible inside Singularity.
+    alignment_dir = Path(args.alignment_dir).expanduser().absolute() if args.alignment_dir else rnaseq_dir
     assembly_dir = rnaseq_dir.parent
     reference_fasta, assembly_report = find_reference_files(
         assembly_dir, args.assembly_accession, args.reference_fasta, args.assembly_report

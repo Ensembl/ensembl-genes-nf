@@ -10,9 +10,55 @@ from pathlib import Path
 PIPELINE_DIR = Path(__file__).parents[1]
 EXPANDER = PIPELINE_DIR / "bin" / "expand_file_manifest.py"
 RUN_MANIFEST_BUILDER = PIPELINE_DIR / "bin" / "build_manifest_from_runs.py"
+ANNOTATION_MANIFEST_BUILDER = PIPELINE_DIR / "bin" / "build_manifest_from_rnaseq_annotation.py"
 
 
 class ExpandManifestTests(unittest.TestCase):
+    def test_annotation_builder_preserves_alternate_alignment_path_spelling(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp = Path(temp_dir)
+            assembly = temp / "danio_rerio" / "GCA_1"
+            rnaseq = assembly / "rnaseq"
+            rnaseq.mkdir(parents=True)
+            fasta = assembly / "GCA_1_genomic.fna"
+            fasta.write_text(">chr1\nACGT\n")
+            report = assembly / "GCA_1_assembly_report.txt"
+            report.write_text("# Sequence-Name\tSequence-Role\n")
+
+            alignment_target = temp / "alignment_target"
+            (alignment_target / "output").mkdir(parents=True)
+            bam = alignment_target / "output" / "ERR1_Aligned.sortedByCoord.out.bam"
+            bam.write_bytes(b"bam")
+            alignment_alias = temp / "nfs_alignment"
+            alignment_alias.symlink_to(alignment_target, target_is_directory=True)
+
+            runs_csv = rnaseq / "danio_rerio.csv"
+            runs_csv.write_text("sample_1\tERR1\n")
+            outdir = temp / "manifest"
+            command = [
+                sys.executable, str(ANNOTATION_MANIFEST_BUILDER),
+                "--rnaseq-dir", str(rnaseq),
+                "--alignment-dir", str(alignment_alias),
+                "--runs-csv", str(runs_csv),
+                "--reference-fasta", str(fasta),
+                "--assembly-report", str(report),
+                "--assembly-accession", "GCA_1",
+                "--last-geneset-update", "2026-09",
+                "--species", "danio_rerio",
+                "--study", "PRJEB1",
+                "--file-format", "bam",
+                "--no-bam-header",
+                "--outdir", str(outdir),
+            ]
+            result = subprocess.run(command, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            with (outdir / "files.tsv").open(newline="") as handle:
+                file_row = next(csv.DictReader(handle, delimiter="\t"))
+            self.assertEqual(
+                file_row["file_path"],
+                str(alignment_alias / "output" / "ERR1_Aligned.sortedByCoord.out.bam"),
+            )
+
     def test_runs_builder_emits_workflow_compatible_nested_manifest(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             temp = Path(temp_dir)
