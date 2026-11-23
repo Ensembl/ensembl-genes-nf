@@ -170,6 +170,12 @@ For `map`, the resolver first checks the same standard FTP structure. If the tar
 
 For `map_same_version`, the resolver uses this pre-release location directly. The pre-release directory must contain exactly one `*.dna.softmasked.fa.gz` and exactly one `*.gff3.gz`. Reference files do not use this pre-release fallback.
 
+### Target GFF3 validation
+
+Before any mapping run creates a mapping-session record or starts LiftOn, the resolver verifies that the target GFF3 and target core database contain exactly the same gene stable-ID set. It compares GFF3 `gene`, `ncRNA_gene` and `pseudogene` features with `gene.stable_id` in the core database.
+
+The run fails with counts and example IDs for both core-only and GFF3-only genes when the sets differ. This prevents incomplete inputs, such as chromosome-only GFF3 files that omit mitochondrial or unplaced annotations, from generating stable-ID SQL.
+
 ## Pipeline parameters
 
 ### Required choice
