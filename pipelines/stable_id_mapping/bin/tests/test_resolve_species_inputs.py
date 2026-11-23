@@ -98,6 +98,11 @@ def mock_common_resolution(monkeypatch) -> None:
             "translation": "ENSXP:00000000100-00000000199",
         },
     )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "validate_target_gff_gene_ids",
+        lambda db_name, target_gff: None,
+    )
 
 
 def mock_nonconforming_stable_ids(monkeypatch) -> None:
@@ -296,6 +301,176 @@ def test_explicit_map_without_live_reference_fails(
             target_gff_override=Path("target.gff3"),
             assembly_metadata_db=ASSEMBLY_METADATA_DB,
         )
+
+
+def test_map_same_version_uses_live_reference_and_pre_release_target(
+    monkeypatch,
+) -> None:
+    mock_common_resolution(monkeypatch)
+
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_same_version_live_reference",
+        lambda chain, version, assembly_metadata_db: (
+            "GCA_000000001",
+            3,
+            30,
+        ),
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_live_reference",
+        lambda *_args: pytest.fail("lower-version lookup was called"),
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_ftp_paths",
+        lambda *_args: (Path("reference.fa"), Path("reference.gff3")),
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_pre_release_paths",
+        lambda *_args: (
+            Path("pre-release-target.fa.gz"),
+            Path("pre-release-target.gff3.gz"),
+        ),
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "insert_mapping_session",
+        lambda *_args: 777,
+    )
+
+    result = resolve_species_inputs.resolve_species_inputs(
+        "test_core",
+        requested_mode="map_same_version",
+        assembly_metadata_db=ASSEMBLY_METADATA_DB,
+    )
+
+    assert result.effective_mode == "map"
+    assert result.reference_assembly_id == 30
+    assert result.ref_fasta == "reference.fa"
+    assert result.ref_gff == "reference.gff3"
+    assert result.target_fasta == "pre-release-target.fa.gz"
+    assert result.target_gff == "pre-release-target.gff3.gz"
+    assert result.mapping_session_id == 777
+
+
+def test_map_same_version_rejects_identical_inputs(
+    monkeypatch,
+) -> None:
+    mock_common_resolution(monkeypatch)
+
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "resolve_same_version_live_reference",
+        lambda *_args: ("GCA_000000001", 3, 30),
+    )
+
+    with pytest.raises(ValueError, match="requires distinct reference"):
+        resolve_species_inputs.resolve_species_inputs(
+            "test_core",
+            requested_mode="map_same_version",
+            target_fasta_override=Path("same.fa"),
+            target_gff_override=Path("same.gff3"),
+            ref_fasta_override=Path("same.fa"),
+            ref_gff_override=Path("same.gff3"),
+            assembly_metadata_db=ASSEMBLY_METADATA_DB,
+        )
+
+
+def test_target_gff_gene_ids_must_match_core_database(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    target_gff = tmp_path / "target.gff3"
+    target_gff.write_text(
+        "1\t.\tgene\t1\t10\t.\t+\t.\tID=gene:ENSXG00000000100\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        resolve_species_inputs,
+        "load_current_features",
+        lambda db_name: {
+            "gene": [
+                {"feature_id": 1, "stable_id": "ENSXG00000000101"},
+            ],
+        },
+    )
+
+    with pytest.raises(ValueError, match="gene IDs do not match") as error:
+        resolve_species_inputs.validate_target_gff_gene_ids(
+            "test_core",
+            target_gff,
+        )
+
+    assert "Core-only genes: 1" in str(error.value)
+    assert "GFF3-only genes: 1" in str(error.value)
+
+
+def test_resolve_ftp_paths_uses_accession_based_layout(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    ftp_root = tmp_path / "ensemblorganisms"
+    release_dir = (
+        ftp_root
+        / "GCA"
+        / "000"
+        / "003"
+        / "025"
+        / "6"
+        / "ensembl"
+        / "2022_02"
+    )
+    genome_dir = release_dir / "genome"
+    geneset_dir = release_dir / "geneset"
+    genome_dir.mkdir(parents=True)
+    geneset_dir.mkdir()
+
+    expected_fasta = genome_dir / "unmasked.fa.bgz"
+    expected_gff = geneset_dir / "genes.gff3.gz"
+    expected_fasta.touch()
+    expected_gff.touch()
+
+    monkeypatch.setattr(resolve_species_inputs, "FTP_ROOT", ftp_root)
+
+    fasta, gff = resolve_species_inputs.resolve_ftp_paths(
+        "Sus scrofa",
+        "GCA_000003025",
+        6,
+    )
+
+    assert fasta == expected_fasta
+    assert gff == expected_gff
+
+
+def test_resolve_ftp_paths_falls_back_to_legacy_layout(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    ftp_root = tmp_path / "ensemblorganisms"
+    assembly_dir = ftp_root / "Test_species" / "GCA_000000001.3"
+    genome_dir = assembly_dir / "genome"
+    geneset_dir = assembly_dir / "ensembl" / "geneset" / "2022_02"
+    genome_dir.mkdir(parents=True)
+    geneset_dir.mkdir(parents=True)
+
+    expected_fasta = genome_dir / "unmasked.fa.gz"
+    expected_gff = geneset_dir / "genes.gff3.gz"
+    expected_fasta.touch()
+    expected_gff.touch()
+
+    monkeypatch.setattr(resolve_species_inputs, "FTP_ROOT", ftp_root)
+
+    fasta, gff = resolve_species_inputs.resolve_ftp_paths(
+        "Test species",
+        "GCA_000000001",
+        3,
+    )
+
+    assert fasta == expected_fasta
+    assert gff == expected_gff
 
 
 def test_resolve_pre_release_paths(

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import re
 import sys
@@ -99,6 +100,90 @@ def optional_path(value: str) -> Path | None:
     return Path(value)
 
 
+def split_gff_stable_id(value: str) -> str:
+    stable_id = value.split(":", 1)[-1]
+    identifier, separator, version = stable_id.rpartition(".")
+    if separator and version.isdigit():
+        return identifier
+    return stable_id
+
+
+def target_gff_gene_ids(path: Path) -> set[str]:
+    opener = gzip.open if path.suffix in {".gz", ".bgz"} else open
+    gene_ids: set[str] = set()
+
+    with opener(path, "rt", encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, start=1):
+            if line.startswith("#"):
+                continue
+
+            fields = line.rstrip("\n").split("\t")
+            if len(fields) != 9 or fields[2].lower() not in {
+                "gene",
+                "ncrna_gene",
+                "pseudogene",
+            }:
+                continue
+
+            attributes = {
+                key: value
+                for item in fields[8].split(";")
+                if "=" in item
+                for key, value in [item.split("=", 1)]
+            }
+            raw_id = attributes.get("ID")
+            if not raw_id:
+                raise ValueError(
+                    f"{path}:{line_number}: gene feature has no ID attribute"
+                )
+
+            stable_id = split_gff_stable_id(raw_id)
+            if stable_id in gene_ids:
+                raise ValueError(
+                    f"{path}:{line_number}: duplicate gene ID {stable_id!r}"
+                )
+            gene_ids.add(stable_id)
+
+    return gene_ids
+
+
+def validate_target_gff_gene_ids(db_name: str, target_gff: Path) -> None:
+    core_rows = load_current_features(db_name)["gene"]
+    missing_core_ids = [
+        row["feature_id"]
+        for row in core_rows
+        if not row.get("stable_id")
+    ]
+    if missing_core_ids:
+        examples = ", ".join(str(value) for value in missing_core_ids[:10])
+        raise ValueError(
+            f"Target core database {db_name} has {len(missing_core_ids)} gene "
+            f"row(s) without a stable ID (examples: {examples})"
+        )
+
+    core_gene_ids = {row["stable_id"] for row in core_rows}
+    gff_gene_ids = target_gff_gene_ids(target_gff)
+    core_only = core_gene_ids - gff_gene_ids
+    gff_only = gff_gene_ids - core_gene_ids
+
+    if core_only or gff_only:
+        details = [
+            "Target GFF3 gene IDs do not match the target core database.",
+            f"Core genes: {len(core_gene_ids)}; GFF3 genes: {len(gff_gene_ids)}.",
+        ]
+        if core_only:
+            details.append(
+                f"Core-only genes: {len(core_only)} "
+                f"(examples: {', '.join(sorted(core_only)[:10])})"
+            )
+        if gff_only:
+            details.append(
+                f"GFF3-only genes: {len(gff_only)} "
+                f"(examples: {', '.join(sorted(gff_only)[:10])})"
+            )
+        raise ValueError("\n".join(details))
+
+
 def parse_gca_accession(accession: str) -> tuple[str, int]:
     match = re.match(r"^(GCA_\d+)\.(\d+)$", accession)
     if not match:
@@ -186,6 +271,41 @@ def resolve_live_reference(
     return (
         target_chain,
         row["gca_version"],
+        row["assembly_id"],
+    )
+
+
+def resolve_same_version_live_reference(
+    target_chain: str,
+    target_version: int,
+    assembly_metadata_db: str,
+) -> tuple[str, int, int] | None:
+    """Return the live annotation for exactly the target assembly version."""
+    conn = _connect_reg_ro()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"USE {assembly_metadata_db}")
+            cur.execute(
+                "SELECT a.assembly_id "
+                "FROM assembly a "
+                "INNER JOIN genebuild_status gs "
+                "  ON gs.assembly_id = a.assembly_id "
+                "WHERE a.gca_chain = %s "
+                "  AND a.gca_version = %s "
+                "  AND gs.gb_status = 'live' "
+                "LIMIT 1",
+                (target_chain, target_version),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if row is None:
+        return None
+
+    return (
+        target_chain,
+        target_version,
         row["assembly_id"],
     )
 
@@ -316,7 +436,58 @@ def insert_mapping_session(
     return mapping_session_id
 
 
-def resolve_ftp_paths(binomial_name: str, gca_chain: str, gca_version: int) -> tuple[Path, Path]:
+def resolve_accession_ftp_paths(
+    gca_chain: str,
+    gca_version: int,
+) -> tuple[Path, Path]:
+    if not gca_chain.startswith("GCA_"):
+        raise ValueError(f"Unrecognized GCA chain: {gca_chain}")
+
+    accession_digits = gca_chain[4:]
+    if not accession_digits.isdigit():
+        raise ValueError(f"Unrecognized GCA chain: {gca_chain}")
+
+    accession_parts = [
+        accession_digits[index:index + 3]
+        for index in range(0, len(accession_digits), 3)
+    ]
+    ensembl_root = (
+        FTP_ROOT
+        / "GCA"
+        / Path(*accession_parts)
+        / str(gca_version)
+        / "ensembl"
+    )
+
+    if not ensembl_root.is_dir():
+        raise FileNotFoundError(
+            f"No accession-based Ensembl directory found: {ensembl_root}"
+        )
+
+    release_directories = sorted(
+        path for path in ensembl_root.iterdir() if path.is_dir()
+    )
+    if not release_directories:
+        raise FileNotFoundError(
+            f"No dated release directory found: {ensembl_root}"
+        )
+
+    release_directory = release_directories[-1]
+    genome_fasta = release_directory / "genome" / "unmasked.fa.bgz"
+    geneset_gff = release_directory / "geneset" / "genes.gff3.gz"
+
+    for path in (genome_fasta, geneset_gff):
+        if not path.exists():
+            raise FileNotFoundError(f"Expected file not found: {path}")
+
+    return genome_fasta, geneset_gff
+
+
+def resolve_legacy_ftp_paths(
+    binomial_name: str,
+    gca_chain: str,
+    gca_version: int,
+) -> tuple[Path, Path]:
     formatted_name = binomial_name.replace(" ", "_")
     assembly_dir = FTP_ROOT / formatted_name / f"{gca_chain}.{gca_version}"
     genome_fasta = assembly_dir / "genome" / "unmasked.fa.gz"
@@ -332,6 +503,29 @@ def resolve_ftp_paths(binomial_name: str, gca_chain: str, gca_version: int) -> t
             raise FileNotFoundError(f"Expected file not found: {path}")
 
     return genome_fasta, geneset_gff
+
+
+def resolve_ftp_paths(
+    binomial_name: str,
+    gca_chain: str,
+    gca_version: int,
+) -> tuple[Path, Path]:
+    try:
+        return resolve_accession_ftp_paths(gca_chain, gca_version)
+    except FileNotFoundError as accession_error:
+        try:
+            return resolve_legacy_ftp_paths(
+                binomial_name,
+                gca_chain,
+                gca_version,
+            )
+        except FileNotFoundError as legacy_error:
+            raise FileNotFoundError(
+                "Standard FTP files were unavailable in both the "
+                "accession-based and legacy layouts.\n"
+                f"Accession-based lookup: {accession_error}\n"
+                f"Legacy lookup: {legacy_error}"
+            ) from legacy_error
 
 
 def resolve_pre_release_paths(
@@ -417,10 +611,10 @@ def resolve_species_inputs(
     ref_fasta_override: Path | None = None,
     ref_gff_override: Path | None = None,
 ) -> SpeciesInputs:
-    if requested_mode not in {"auto", "map", "reassign"}:
+    if requested_mode not in {"auto", "map", "map_same_version", "reassign"}:
         raise ValueError(
             f"Unknown mode {requested_mode!r}; "
-            "expected auto, map, or reassign"
+            "expected auto, map, map_same_version, or reassign"
         )
 
     meta = fetch_core_db_meta(db_name)
@@ -452,12 +646,26 @@ def resolve_species_inputs(
             target_version,
             assembly_metadata_db,
         )
+    elif requested_mode == "map_same_version":
+        reference = resolve_same_version_live_reference(
+            target_chain,
+            target_version,
+            assembly_metadata_db,
+        )
 
     if requested_mode == "map":
         if reference is None:
             raise NoLiveReferenceError(
                 f"Mode 'map' requested, but no live reference version "
                 f"exists for {target_chain} below version {target_version}"
+            )
+        effective_mode = "map"
+
+    elif requested_mode == "map_same_version":
+        if reference is None:
+            raise NoLiveReferenceError(
+                f"Mode 'map_same_version' requested, but no live reference "
+                f"exists for {target_chain}.{target_version}"
             )
         effective_mode = "map"
     
@@ -487,11 +695,18 @@ def resolve_species_inputs(
             target_fasta = target_fasta_override
             target_gff = target_gff_override
         elif target_fasta_override is None and target_gff_override is None:
-            target_fasta, target_gff = resolve_target_paths(
-                binomial_name,
-                target_chain,
-                target_version,
-            )
+            if requested_mode == "map_same_version":
+                target_fasta, target_gff = resolve_pre_release_paths(
+                    binomial_name,
+                    target_chain,
+                    target_version,
+                )
+            else:
+                target_fasta, target_gff = resolve_target_paths(
+                    binomial_name,
+                    target_chain,
+                    target_version,
+                )
         else:
             raise ValueError(
                 "Provide both target_fasta and target_gff, or neither"
@@ -510,6 +725,25 @@ def resolve_species_inputs(
             raise ValueError(
                 "Provide both ref_fasta and ref_gff, or neither"
             )
+
+        if requested_mode == "map_same_version":
+            duplicate_inputs = [
+                label
+                for label, reference_path, target_path in (
+                    ("FASTA", ref_fasta, target_fasta),
+                    ("GFF3", ref_gff, target_gff),
+                )
+                if reference_path.resolve() == target_path.resolve()
+            ]
+            if duplicate_inputs:
+                raise ValueError(
+                    "Mode 'map_same_version' requires distinct reference and "
+                    "target inputs; identical "
+                    + ", ".join(duplicate_inputs)
+                    + " path(s) were resolved"
+                )
+
+        validate_target_gff_gene_ids(db_name, target_gff)
     
         if mapping_session_id_override is not None:
             mapping_session_id = mapping_session_id_override
@@ -593,7 +827,7 @@ def main() -> None:
     parser.add_argument("--assembly-metadata-db", required=True)
     parser.add_argument(
         "--mode",
-        choices=("auto", "map", "reassign"),
+        choices=("auto", "map", "map_same_version", "reassign"),
         default="auto",
     )
     parser.add_argument("--output-json", type=Path, required=True)
