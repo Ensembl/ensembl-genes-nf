@@ -36,7 +36,7 @@ process STAGE_SPECIES_INPUTS {
 	    output="\$2"
 	
 	    case "\$input" in
-	        *.gz)
+	        *.gz|*.bgz)
 	            gzip -cd "\$input" > "\$output"
 	            ;;
 	        *)

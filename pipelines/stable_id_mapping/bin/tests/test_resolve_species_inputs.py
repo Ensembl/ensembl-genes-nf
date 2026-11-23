@@ -374,6 +374,71 @@ def test_map_same_version_rejects_identical_inputs(
         )
 
 
+def test_resolve_ftp_paths_uses_accession_based_layout(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    ftp_root = tmp_path / "ensemblorganisms"
+    release_dir = (
+        ftp_root
+        / "GCA"
+        / "000"
+        / "003"
+        / "025"
+        / "6"
+        / "ensembl"
+        / "2022_02"
+    )
+    genome_dir = release_dir / "genome"
+    geneset_dir = release_dir / "geneset"
+    genome_dir.mkdir(parents=True)
+    geneset_dir.mkdir()
+
+    expected_fasta = genome_dir / "unmasked.fa.bgz"
+    expected_gff = geneset_dir / "genes.gff3.gz"
+    expected_fasta.touch()
+    expected_gff.touch()
+
+    monkeypatch.setattr(resolve_species_inputs, "FTP_ROOT", ftp_root)
+
+    fasta, gff = resolve_species_inputs.resolve_ftp_paths(
+        "Sus scrofa",
+        "GCA_000003025",
+        6,
+    )
+
+    assert fasta == expected_fasta
+    assert gff == expected_gff
+
+
+def test_resolve_ftp_paths_falls_back_to_legacy_layout(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    ftp_root = tmp_path / "ensemblorganisms"
+    assembly_dir = ftp_root / "Test_species" / "GCA_000000001.3"
+    genome_dir = assembly_dir / "genome"
+    geneset_dir = assembly_dir / "ensembl" / "geneset" / "2022_02"
+    genome_dir.mkdir(parents=True)
+    geneset_dir.mkdir(parents=True)
+
+    expected_fasta = genome_dir / "unmasked.fa.gz"
+    expected_gff = geneset_dir / "genes.gff3.gz"
+    expected_fasta.touch()
+    expected_gff.touch()
+
+    monkeypatch.setattr(resolve_species_inputs, "FTP_ROOT", ftp_root)
+
+    fasta, gff = resolve_species_inputs.resolve_ftp_paths(
+        "Test species",
+        "GCA_000000001",
+        3,
+    )
+
+    assert fasta == expected_fasta
+    assert gff == expected_gff
+
+
 def test_resolve_pre_release_paths(
     monkeypatch,
     tmp_path: Path,

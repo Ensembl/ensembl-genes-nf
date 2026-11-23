@@ -351,7 +351,58 @@ def insert_mapping_session(
     return mapping_session_id
 
 
-def resolve_ftp_paths(binomial_name: str, gca_chain: str, gca_version: int) -> tuple[Path, Path]:
+def resolve_accession_ftp_paths(
+    gca_chain: str,
+    gca_version: int,
+) -> tuple[Path, Path]:
+    if not gca_chain.startswith("GCA_"):
+        raise ValueError(f"Unrecognized GCA chain: {gca_chain}")
+
+    accession_digits = gca_chain[4:]
+    if not accession_digits.isdigit():
+        raise ValueError(f"Unrecognized GCA chain: {gca_chain}")
+
+    accession_parts = [
+        accession_digits[index:index + 3]
+        for index in range(0, len(accession_digits), 3)
+    ]
+    ensembl_root = (
+        FTP_ROOT
+        / "GCA"
+        / Path(*accession_parts)
+        / str(gca_version)
+        / "ensembl"
+    )
+
+    if not ensembl_root.is_dir():
+        raise FileNotFoundError(
+            f"No accession-based Ensembl directory found: {ensembl_root}"
+        )
+
+    release_directories = sorted(
+        path for path in ensembl_root.iterdir() if path.is_dir()
+    )
+    if not release_directories:
+        raise FileNotFoundError(
+            f"No dated release directory found: {ensembl_root}"
+        )
+
+    release_directory = release_directories[-1]
+    genome_fasta = release_directory / "genome" / "unmasked.fa.bgz"
+    geneset_gff = release_directory / "geneset" / "genes.gff3.gz"
+
+    for path in (genome_fasta, geneset_gff):
+        if not path.exists():
+            raise FileNotFoundError(f"Expected file not found: {path}")
+
+    return genome_fasta, geneset_gff
+
+
+def resolve_legacy_ftp_paths(
+    binomial_name: str,
+    gca_chain: str,
+    gca_version: int,
+) -> tuple[Path, Path]:
     formatted_name = binomial_name.replace(" ", "_")
     assembly_dir = FTP_ROOT / formatted_name / f"{gca_chain}.{gca_version}"
     genome_fasta = assembly_dir / "genome" / "unmasked.fa.gz"
@@ -367,6 +418,29 @@ def resolve_ftp_paths(binomial_name: str, gca_chain: str, gca_version: int) -> t
             raise FileNotFoundError(f"Expected file not found: {path}")
 
     return genome_fasta, geneset_gff
+
+
+def resolve_ftp_paths(
+    binomial_name: str,
+    gca_chain: str,
+    gca_version: int,
+) -> tuple[Path, Path]:
+    try:
+        return resolve_accession_ftp_paths(gca_chain, gca_version)
+    except FileNotFoundError as accession_error:
+        try:
+            return resolve_legacy_ftp_paths(
+                binomial_name,
+                gca_chain,
+                gca_version,
+            )
+        except FileNotFoundError as legacy_error:
+            raise FileNotFoundError(
+                "Standard FTP files were unavailable in both the "
+                "accession-based and legacy layouts.\n"
+                f"Accession-based lookup: {accession_error}\n"
+                f"Legacy lookup: {legacy_error}"
+            ) from legacy_error
 
 
 def resolve_pre_release_paths(
