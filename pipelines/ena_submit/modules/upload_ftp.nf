@@ -1,7 +1,7 @@
 process ENA_FTP_UPLOAD {
     label 'process_single_long'
     tag { file_meta.remote_name ?: file.getName() }
-    container 'community.wave.seqera.io/library/curl:8.18.0--78f80c4b644630b0'
+    container 'docker.io/library/python:3.11.13-bookworm'
     secret 'ENA_WEBIN_PASSWORD'
 
     input:
@@ -21,29 +21,48 @@ process ENA_FTP_UPLOAD {
     def remote_path = remoteDir ? "${remoteDir}/${remoteName}" : remoteName
     """
     set -euo pipefail
-    command -v curl >/dev/null 2>&1 || { echo 'curl is required' >&2; exit 127; }
-    umask 077
-    netrc_file=.ena-netrc
-    trap 'rm -f "\$netrc_file"' EXIT
-    cat > "\$netrc_file" <<EOF
-machine ${ftp_host}
-login ${webin_user}
-password \$ENA_WEBIN_PASSWORD
-EOF
-    curl --fail --show-error --ftp-pasv --ftp-create-dirs \
-        --netrc-file "\$netrc_file" \
-        --upload-file "${file}" \
-        "ftp://${ftp_host}/${remote_path}"
-    curl --fail --show-error --ftp-pasv --ftp-create-dirs \
-        --netrc-file "\$netrc_file" \
-        --upload-file "${md5}" \
-        "ftp://${ftp_host}/${remote_path}.md5"
-    printf 'ENA_FTP_UPLOAD:\n  curl: "%s"\n' "\$(curl --version | awk 'NR==1 {print \$2}')" > versions.yml
+    python3 - "${file}" "${md5}" "${ftp_host}" "${webin_user}" \
+        "${remote_path}" "${remote_path}.md5" <<'PY'
+import ftplib
+import os
+import sys
+
+local_file, local_md5, host, user, remote_file, remote_md5 = sys.argv[1:]
+timeout = 1800
+
+
+def upload(ftp, home, local_path, remote_path):
+    ftp.cwd(home)
+    parts = remote_path.strip('/').split('/')
+    remote_name = parts.pop()
+    for directory in parts:
+        try:
+            ftp.cwd(directory)
+        except ftplib.error_perm:
+            try:
+                ftp.mkd(directory)
+            except ftplib.error_perm:
+                pass
+            ftp.cwd(directory)
+    with open(local_path, 'rb') as handle:
+        ftp.storbinary(f'STOR {remote_name}', handle, blocksize=8 * 1024 * 1024)
+
+
+with ftplib.FTP() as ftp:
+    ftp.connect(host, 21, timeout=timeout)
+    ftp.login(user, os.environ['ENA_WEBIN_PASSWORD'])
+    ftp.set_pasv(True)
+    ftp.sock.settimeout(timeout)
+    home = ftp.pwd()
+    upload(ftp, home, local_file, remote_file)
+    upload(ftp, home, local_md5, remote_md5)
+PY
+    printf 'ENA_FTP_UPLOAD:\n  python: "%s"\n' "\$(python3 --version 2>&1 | awk '{print \$2}')" > versions.yml
     """
 
     stub:
     """
     touch ${md5}
-    printf 'ENA_FTP_UPLOAD:\n  curl: "stub"\n' > versions.yml
+    printf 'ENA_FTP_UPLOAD:\n  python: "stub"\n' > versions.yml
     """
 }

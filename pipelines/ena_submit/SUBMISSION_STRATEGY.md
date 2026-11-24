@@ -58,7 +58,7 @@ Defaults applied by the workflow:
 - In TEST mode, `RUN_REF` is included unless `omit_run_refs_in_test=true` for the row.
 
 ## Operational notes
-- Upload via FTP with `curl`. Aspera is not implemented in the current workflow.
+- Upload via FTP with Python `ftplib`. Aspera is not implemented in the current workflow.
 - Webin v2 async queue is used; receipts are polled until success/failure.
 - Outputs: XML per analysis, queue responses, and consolidated `accessions.tsv`.
 
