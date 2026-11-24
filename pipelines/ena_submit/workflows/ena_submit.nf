@@ -1,0 +1,451 @@
+nextflow.enable.dsl=2
+
+include { ENA_COMPUTE_MD5 }   from '../modules/compute_md5.nf'
+include { ENA_FTP_UPLOAD }    from '../modules/upload_ftp.nf'
+include { ENA_GENERATE_XML }  from '../modules/generate_xml.nf'
+include { ENA_SUBMIT_WEBIN as ENA_SUBMIT_PROJECT } from '../modules/submit_webin.nf'
+include { ENA_SUBMIT_WEBIN as ENA_SUBMIT_ANALYSIS } from '../modules/submit_webin.nf'
+include { ENA_POLL_WEBIN as ENA_POLL_PROJECT } from '../modules/poll_webin.nf'
+include { ENA_POLL_WEBIN as ENA_POLL_ANALYSIS } from '../modules/poll_webin.nf'
+include { ENA_GENERATE_PROJECT_XML } from '../modules/generate_project_xml.nf'
+include { ENA_GENERATE_UMBRELLA_XML } from '../modules/generate_umbrella_xml.nf'
+include { ENA_LINK_UMBRELLA } from '../modules/link_umbrella.nf'
+include { ENA_RESOLVE_METADATA } from '../modules/resolve_metadata.nf'
+include { ENA_EXPAND_FILE_MANIFEST } from '../modules/expand_file_manifest.nf'
+include { ENA_CONVERT_TO_CRAM } from '../modules/convert_to_cram.nf'
+include { ENA_REHEADER_BAM } from '../modules/reheader_bam.nf'
+include { ENA_PREPARE_REFERENCE } from '../modules/prepare_reference.nf'
+include { ENA_INDEX_REFERENCE } from '../modules/index_reference.nf'
+include { ENA_EXTRACT_BAM_HEADER } from '../modules/extract_bam_header.nf'
+include { ENA_BUILD_BAM_HEADER } from '../modules/build_bam_header.nf'
+include { ENA_INDEX_BAM } from '../modules/index_bam.nf'
+include { ENA_INDEX_CRAM } from '../modules/index_cram.nf'
+include { ENA_VALIDATE_ALIGNMENT } from '../modules/validate_alignment.nf'
+include { COLLECT_SOFTWARE_VERSIONS } from '../modules/collect_software_versions.nf'
+
+// Parse an annotation-level manifest and dispatch one ENA analysis per file.
+workflow ENA_SUBMIT_WORKFLOW {
+    main:
+    assert params.manifest :      "--manifest is required"
+    def webin_user = params.webin_user?.toString()?.trim()
+    assert webin_user : "--webin_user is required"
+    assert !(webin_user.toLowerCase() in ['true', 'false']) : "--webin_user resolved to '${webin_user}'; check WEBIN_USER before launching Nextflow"
+    if (!workflow.stubRun) {
+        assert secrets.ENA_WEBIN_PASSWORD : "Nextflow secret ENA_WEBIN_PASSWORD is required (run: nextflow secrets set ENA_WEBIN_PASSWORD)"
+    }
+    assert params.mode in ['test', 'prod'] : "--mode must be 'test' or 'prod'"
+    assert params.outdir :        "--outdir is required"
+    def create_project = params.create_project?.toString()?.toLowerCase() in ['1', 'true', 'yes']
+    def release_mode = params.release_mode?.toString()?.trim()?.toLowerCase() ?: 'none'
+    assert release_mode in ['none', 'immediate', 'date'] : "--release_mode must be none, immediate, or date"
+    assert !(params.mode == 'test' && release_mode != 'none') : "Release actions are disabled in --mode test"
+    if (release_mode == 'date') {
+        assert params.release_date?.toString()?.trim() ==~ /\d{4}-\d{2}-\d{2}/ :
+            "--release_date YYYY-MM-DD is required when --release_mode date is supplied"
+    }
+
+    def ch_webin_user     = Channel.value(webin_user)
+    // Base endpoint derived from mode unless overridden
+    def ch_webin_base = Channel.value(params.webin_base ?: ((params.mode == 'prod') ? 'https://www.ebi.ac.uk/ena/submit/webin-v2' : 'https://wwwdev.ebi.ac.uk/ena/submit/webin-v2'))
+
+    Channel
+      .fromPath(params.manifest)
+      .splitCsv(header:true, sep:'\t')
+      .map { row ->
+          if (!row.files_tsv) { throw new RuntimeException("Manifest row missing files_tsv") }
+          if (!row.assembly_accession) { throw new RuntimeException("Manifest row missing assembly_accession") }
+          if (!row.last_geneset_update && !row.partial_release_label) { throw new RuntimeException("Manifest row missing last_geneset_update/partial_release_label") }
+          def release = row.partial_release_label ?: "${row.assembly_accession}-Ensembl-${row.last_geneset_update}"
+          def prj_alias = row.project_alias ?: ("prj_${release}").replaceAll('[^A-Za-z0-9._-]', '_')
+          def ensembl_url = row.ensembl_url ?: "https://www.ensembl.org/genome/${row.assembly_accession}"
+          def annotation_suffix = "Ensembl annotation: ${ensembl_url}"
+          if (!(row.description ?: '').contains(ensembl_url)) {
+              row.description = [row.description?.trim(), annotation_suffix].findAll { it }.join(' ')
+          }
+          def annotation_link = "Ensembl annotation|${ensembl_url}"
+          if (!(row.analysis_links ?: '').contains(ensembl_url)) {
+              row.analysis_links = [row.analysis_links?.trim(), annotation_link].findAll { it }.join('; ')
+          }
+          row.ensembl_url = ensembl_url
+          if (create_project && row.study) {
+              throw new RuntimeException("Manifest row ${prj_alias} supplies study='${row.study}' while --create_project is true; leave study blank for a new child project or set --create_project false")
+          }
+          if (!create_project && !row.study) {
+              throw new RuntimeException("Manifest row must provide study when --create_project is false")
+          }
+          // Use derived child project alias as a refname only for a new project.
+          if (create_project && !row.study) { row.study = prj_alias }
+          if (params.umbrella_study && !row.umbrella_study) { row.umbrella_study = params.umbrella_study }
+          if (row.umbrella_study && !(row.analysis_attributes ?: '').contains('attr_umbrella_study=')) {
+              row.analysis_attributes = [row.analysis_attributes, "attr_umbrella_study=${row.umbrella_study}"].findAll { it }.join('; ')
+          }
+          def id = row.analysis_alias ?: "rnaseq_alignment_evidence_${row.assembly_accession}_${release}".replaceAll('[^A-Za-z0-9._-]', '_')
+          def meta = [ id:id, project_alias: prj_alias, assembly: row.assembly_accession, release: release ]
+          tuple(meta, row)
+      }
+      .set { analyses }
+
+    def ch_metadata_resolver = Channel.value(file("${projectDir}/bin/resolve_ena_metadata.py"))
+    def analyses_with_files = analyses.map { meta, row -> tuple(meta, row, file(row.files_tsv)) }
+    ENA_RESOLVE_METADATA(analyses_with_files, ch_metadata_resolver)
+
+    def ch_project_gate
+    if (create_project) {
+        // Build projects only after source metadata has been resolved.
+        def resolved_project_summaries = ENA_RESOLVE_METADATA.out.resolved
+            .map { meta, row, resolved_files, summary -> summary }
+            .splitCsv(header:true, sep:'\t')
+        def ch_proj_rows = resolved_project_summaries
+            .map { summary ->
+                def alias = summary.project_alias
+                def title = "Annotation evidence project for ${summary.assembly_accession}, ${summary.release}"
+                def ensembl_url = "https://www.ensembl.org/genome/${summary.assembly_accession}"
+                def annotation_suffix = "Annotation browser: ${ensembl_url}"
+                def project_base = params.project_description ?: "Annotation evidence project for ${summary.assembly_accession}, ${summary.release}; processed RNA-seq alignment evidence with ENA-resolved source metadata."
+                def description = project_base.contains(ensembl_url) ? project_base :
+                    "${project_base.take(Math.max(0, 248 - annotation_suffix.size())).trim()} ${annotation_suffix}"
+                tuple(alias, [ alias: alias, name: alias, title: title, description: description,
+                               scientific_name: summary.scientific_name, taxon_id: summary.taxon_id,
+                               hold_until: params.hold_until ?: '' ])
+            }
+            .groupTuple()
+            .map { alias, metas ->
+                def taxa = metas.collect { it.taxon_id }.findAll { it }.unique()
+                def names = metas.collect { it.scientific_name }.findAll { it }.unique()
+                if (taxa.size() > 1 || names.size() > 1) {
+                    throw new RuntimeException("Project ${alias} contains conflicting source taxonomy: taxon_id=${taxa}, scientific_name=${names}")
+                }
+                metas[0]
+            }
+
+        ENA_GENERATE_PROJECT_XML(ch_proj_rows)
+        ENA_SUBMIT_PROJECT(ENA_GENERATE_PROJECT_XML.out.xml, ch_webin_base, ch_webin_user)
+        def ch_proj_files = ENA_SUBMIT_PROJECT.out.queued.map { meta, f -> f }
+
+        ENA_POLL_PROJECT(
+            ch_proj_files.collect(),
+            ch_webin_user,
+            Channel.value(params.poll_interval    ?: 20),
+            Channel.value(params.poll_max_attempts ?: 30)
+            )
+        ch_project_gate = ENA_POLL_PROJECT.out.accessions
+    } else {
+        ch_project_gate = Channel.value('existing-study')
+    }
+
+    def ch_expander_script = Channel.value(file("${projectDir}/bin/expand_file_manifest.py"))
+    def resolved_files_inputs = ENA_RESOLVE_METADATA.out.resolved
+        .map { meta, row, resolved_files, summary -> tuple(meta, row, resolved_files) }
+    ENA_EXPAND_FILE_MANIFEST(resolved_files_inputs, ch_expander_script)
+
+    def file_inputs = ENA_EXPAND_FILE_MANIFEST.out.expanded
+        .map { meta, row, expanded_tsv -> expanded_tsv }
+        .splitCsv(header:true, sep:'\t')
+        .map { file_row ->
+            def meta = [
+                id: file_row.analysis_id,
+                project_alias: file_row.project_alias,
+                assembly: file_row.assembly,
+                release: file_row.release,
+            ]
+            def row = [
+                study: file_row.study,
+                umbrella_study: file_row.umbrella_study,
+                analysis_alias: file_row.analysis_alias,
+                title: file_row.title,
+                description: file_row.description,
+                assembly_accession: file_row.assembly_accession,
+                reference_fasta: file_row.reference_fasta,
+                assembly_report: file_row.assembly_report,
+                reference_supplement: file_row.reference_supplement,
+                last_geneset_update: file_row.last_geneset_update,
+                partial_release_label: file_row.partial_release_label,
+                species: file_row.species ?: file_row.scientific_name?.replaceAll(' ', '_'),
+                taxon_id: file_row.taxon_id,
+                scientific_name: file_row.scientific_name,
+                aggregation_scope: file_row.aggregation_scope,
+                metadata_source: file_row.metadata_source,
+                sample_accession: file_row.sample_accession,
+                sample_accessions: file_row.sample_accessions,
+                biosample_accessions: file_row.biosample_accessions,
+                secondary_sample_accessions: file_row.secondary_sample_accessions,
+                experiment_accession: file_row.experiment_accession,
+                experiment_accessions: file_row.experiment_accessions,
+                source_study_accessions: file_row.source_study_accessions,
+                secondary_study_accessions: file_row.secondary_study_accessions,
+                platform: file_row.platform,
+                manifest_platform: file_row.manifest_platform,
+                library_strategies: file_row.library_strategies,
+                library_sources: file_row.library_sources,
+                instrument_platforms: file_row.instrument_platforms,
+                instrument_models: file_row.instrument_models,
+                source_metadata_count: file_row.source_metadata_count,
+                source_metadata_json: file_row.source_metadata_json,
+                source_fastq_count: file_row.source_fastq_count,
+                source_fastq_urls: file_row.source_fastq_urls,
+                source_fastq_md5s: file_row.source_fastq_md5s,
+                bam_sort_order: file_row.bam_sort_order,
+                bam_pg_programs: file_row.bam_pg_programs,
+                alignment_software: file_row.alignment_software,
+                alignment_software_version: file_row.alignment_software_version,
+                ref_seqs: file_row.ref_seqs,
+                analysis_links: file_row.analysis_links,
+                analysis_attributes: file_row.analysis_attributes,
+                analysis_type: file_row.analysis_type,
+                omit_run_refs_in_test: file_row.omit_run_refs_in_test,
+            ]
+            def file_meta = [
+                analysis_id: file_row.analysis_id,
+                file_type: file_row.file_type,
+                remote_name: file_row.remote_name,
+                run_accession: file_row.run_accession,
+                run_accessions: file_row.run_accessions,
+                sample_accession: file_row.sample_accession,
+                sample_accessions: file_row.sample_accessions,
+                biosample_accessions: file_row.biosample_accessions,
+                secondary_sample_accessions: file_row.secondary_sample_accessions,
+                experiment_accession: file_row.experiment_accession,
+                experiment_accessions: file_row.experiment_accessions,
+                source_study_accessions: file_row.source_study_accessions,
+                secondary_study_accessions: file_row.secondary_study_accessions,
+                is_index: false,
+            ]
+            tuple(meta, row, file_meta, file(file_row.file_path))
+        }
+
+    def prepared_references = null
+    def reheader_bams = params.reheader_bams?.toString()?.toLowerCase() in ['1', 'true', 'yes']
+    if (reheader_bams) {
+        def header_script = file("${projectDir}/bin/build_reheader_header.py")
+        def alignment_inputs = file_inputs.filter { meta, row, file_meta, file ->
+            (file_meta.file_type ?: '').toString().toLowerCase() in ['bam', 'cram']
+        }.map { meta, row, file_meta, bam ->
+            def fasta_path = params.reference_fasta ?: row.reference_fasta
+            def report_path = params.reference_assembly_report ?: row.assembly_report
+            def supplement_path = row.reference_supplement
+            if (!fasta_path) { throw new RuntimeException("Manifest row missing reference_fasta") }
+            if (!report_path) { throw new RuntimeException("Manifest row missing assembly_report") }
+            def fasta = file(fasta_path)
+            def report = file(report_path)
+            if (!fasta.exists()) { throw new RuntimeException("Reference FASTA not found: ${fasta}") }
+            if (!report.exists()) { throw new RuntimeException("Assembly report not found: ${report}") }
+            if (!supplement_path) { throw new RuntimeException("Manifest row missing reference_supplement") }
+            def supplement = file(supplement_path)
+            if (!supplement.exists()) { throw new RuntimeException("Reference supplement not found: ${supplement}") }
+            def reference_key = "${fasta_path}|${report_path}|${supplement_path}"
+            tuple(reference_key, meta, row, file_meta, bam, fasta, report, supplement)
+        }
+        def non_alignment_inputs = file_inputs.filter { meta, row, file_meta, file ->
+            !((file_meta.file_type ?: '').toString().toLowerCase() in ['bam', 'cram'])
+        }
+        def reference_inputs = alignment_inputs
+            .map { reference_key, meta, row, file_meta, bam, fasta, report, supplement -> tuple(reference_key, fasta, report, supplement) }
+            .distinct()
+        ENA_PREPARE_REFERENCE(reference_inputs)
+        ENA_INDEX_REFERENCE(ENA_PREPARE_REFERENCE.out.prepared)
+        prepared_references = ENA_INDEX_REFERENCE.out.indexed
+        def prepared_alignments = alignment_inputs
+            .combine(prepared_references, by: 0)
+            .map { reference_key, meta, row, file_meta, bam, fasta, report, supplement, prepared_fasta, reference_fai, prepared_report, reference_names ->
+                tuple(reference_key, meta, row, file_meta, bam)
+            }
+        ENA_EXTRACT_BAM_HEADER(prepared_alignments)
+        def header_inputs = ENA_EXTRACT_BAM_HEADER.out.extracted
+            .combine(prepared_references, by: 0)
+            .map { reference_key, meta, row, file_meta, bam, header, prepared_fasta, reference_fai, prepared_report, reference_names ->
+                tuple(reference_key, meta, row, file_meta, bam, header, reference_fai, prepared_report, reference_names, header_script)
+            }
+        ENA_BUILD_BAM_HEADER(header_inputs)
+        def built_alignments = ENA_BUILD_BAM_HEADER.out.built
+        def reheader_inputs = built_alignments
+            .filter { reference_key, meta, row, file_meta, bam, header ->
+                (file_meta.file_type ?: '').toString().toLowerCase() == 'bam'
+            }
+            .map { reference_key, meta, row, file_meta, bam, header ->
+                tuple(reference_key, meta, row, file_meta, bam, header)
+            }
+        ENA_REHEADER_BAM(reheader_inputs)
+        ENA_INDEX_BAM(ENA_REHEADER_BAM.out.reheadered)
+        def reheadered_bams = ENA_INDEX_BAM.out.indexed.map { reference_key, meta, row, file_meta, bam, bai ->
+            tuple(meta, row, file_meta, bam)
+        }
+        def cram_validation_inputs = built_alignments
+            .filter { reference_key, meta, row, file_meta, bam, header ->
+                (file_meta.file_type ?: '').toString().toLowerCase() == 'cram'
+            }
+            .combine(prepared_references, by: 0)
+            .map { reference_key, meta, row, file_meta, bam, header, prepared_fasta, reference_fai, prepared_report, reference_names ->
+                tuple(reference_key, meta, row, file_meta, bam, reference_fai, prepared_report, reference_names, header_script)
+            }
+        ENA_VALIDATE_ALIGNMENT(cram_validation_inputs)
+        def validated_crams = ENA_VALIDATE_ALIGNMENT.out.validated.map { meta, row, file_meta, cram ->
+            tuple(meta, row, file_meta, cram)
+        }
+        file_inputs = reheadered_bams.mix(validated_crams).mix(non_alignment_inputs)
+    }
+
+    // Optionally convert BAMs to CRAM and retain the CRAI as an upload-only
+    // companion file. The CRAI is excluded from the ANALYSIS XML itself.
+    def md5_inputs
+    def convert_to_cram = params.convert_to_cram?.toString()?.toLowerCase() in ['1', 'true', 'yes']
+    if (convert_to_cram) {
+        def reference = params.reference_fasta ? file(params.reference_fasta) : null
+        def reference_fai = params.reference_fasta ? file("${params.reference_fasta}.fai") : null
+        if (!reheader_bams) {
+            assert reference : "--reference_fasta is required with --convert_to_cram true when --reheader_bams is false"
+            assert reference.exists() : "Reference FASTA not found: ${params.reference_fasta}"
+            assert reference_fai.exists() : "Reference FASTA index not found: ${params.reference_fasta}.fai"
+        }
+
+        def bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
+            (file_meta.file_type ?: '').toString().toLowerCase() == 'bam'
+        }
+        def non_bam_inputs = file_inputs.filter { meta, row, file_meta, file ->
+            (file_meta.file_type ?: '').toString().toLowerCase() != 'bam'
+        }
+        def cram_inputs
+        if (reheader_bams) {
+            // Match each reheadered BAM with its reference by reference key.
+            // Positional pairing of queue channels would lose all but the
+            // first BAM when several BAMs share one reference.
+            cram_inputs = ENA_INDEX_BAM.out.indexed
+                .map { reference_key, meta, row, file_meta, bam, bai ->
+                    tuple(reference_key, meta, row, file_meta, bam)
+                }
+                .combine(prepared_references, by: 0)
+                .map { reference_key, meta, row, file_meta, bam, prepared_fasta, prepared_fai, report, names ->
+                    tuple(meta, row, file_meta, bam, prepared_fasta, prepared_fai)
+                }
+        } else {
+            cram_inputs = bam_inputs.map { meta, row, file_meta, bam ->
+                tuple(meta, row, file_meta, bam, reference, reference_fai)
+            }
+        }
+        ENA_CONVERT_TO_CRAM(cram_inputs)
+        ENA_INDEX_CRAM(ENA_CONVERT_TO_CRAM.out.converted)
+        def converted_inputs = ENA_INDEX_CRAM.out.indexed.flatMap { meta, row, file_meta, cram, crai ->
+            def cram_name = (file_meta.remote_name ?: cram.getName()).replaceFirst(/\.bam$/, '.cram')
+            def cram_meta = file_meta + [file_type: 'cram', remote_name: cram_name, is_index: false]
+            def crai_meta = file_meta + [file_type: 'crai', remote_name: "${cram_name}.crai", is_index: true]
+            [
+                tuple(meta, row, cram_meta, cram),
+                tuple(meta, row, crai_meta, crai),
+            ]
+        }
+        md5_inputs = converted_inputs.mix(non_bam_inputs)
+    } else {
+        md5_inputs = file_inputs
+    }
+
+    // Compute md5 per file
+    ENA_COMPUTE_MD5(md5_inputs)
+    def md5s = ENA_COMPUTE_MD5.out.md5
+
+    ENA_FTP_UPLOAD(
+        md5s,
+        params.remote_dir ?: '',
+        params.webin_ftp_host ?: 'webin2.ebi.ac.uk',
+        ch_webin_user
+        )
+
+    def uploaded_after_projects = ENA_FTP_UPLOAD.out.uploaded
+        .combine(ch_project_gate)
+        .map { meta, row, file_meta, f, md5, accessions -> tuple(meta.id, meta, row, file_meta, f, md5) }
+        .groupTuple(by: 0)
+        .map { id, metas, rows, file_metas, files, md5_list -> tuple(metas[0], rows[0], file_metas, files, md5_list) }
+
+    // Generate one analysis XML per alignment after the derived project has been accepted by Webin.
+    ENA_GENERATE_XML(
+        uploaded_after_projects,
+        params.remote_dir ?: '',
+        params.hold_until ?: ''
+        )
+
+    // Submit to async queue — one POST per alignment analysis, returns immediately with a submission ID.
+    ENA_SUBMIT_ANALYSIS(
+        ENA_GENERATE_XML.out.xml,
+        ch_webin_base,
+        ch_webin_user
+        )
+    def ch_analysis_files = ENA_SUBMIT_ANALYSIS.out.queued.map { meta, f -> f }
+
+    ENA_POLL_ANALYSIS(
+        ch_analysis_files.collect(),
+        ch_webin_user,
+        Channel.value(params.poll_interval    ?: 20),
+        Channel.value(params.poll_max_attempts ?: 30)
+        )
+
+    ENA_POLL_ANALYSIS.out.accessions.view { f -> "Accessions written to: ${f}" }
+
+    // Umbrella linking is terminal: the child project and all analyses must
+    // have permanent accessions before the umbrella MODIFY request is made.
+    def umbrella_accession = params.umbrella_study?.toString()?.trim()
+    if (umbrella_accession) {
+        assert create_project : "--umbrella_study currently requires --create_project true so new child accessions can be verified"
+        assert params.umbrella_alias?.toString()?.trim() : "--umbrella_alias is required when --umbrella_study is supplied"
+        assert params.umbrella_title?.toString()?.trim() : "--umbrella_title is required when --umbrella_study is supplied"
+        assert params.umbrella_description?.toString()?.trim() : "--umbrella_description is required when --umbrella_study is supplied"
+
+        def umbrella_inputs = ENA_POLL_PROJECT.out.accessions
+            .combine(ENA_POLL_ANALYSIS.out.accessions)
+            .map { project_receipt, analysis_receipt ->
+                tuple([id: 'umbrella_link'], project_receipt, analysis_receipt)
+            }
+        ENA_GENERATE_UMBRELLA_XML(
+            umbrella_inputs,
+            Channel.value('modify'),
+            Channel.value(params.umbrella_alias.toString().trim()),
+            Channel.value(params.umbrella_title.toString().trim()),
+            Channel.value(params.umbrella_description.toString().trim())
+        )
+        ENA_LINK_UMBRELLA(
+            ENA_GENERATE_UMBRELLA_XML.out.xml,
+            Channel.value(umbrella_accession),
+            ch_webin_user,
+            Channel.value(release_mode),
+            Channel.value(params.release_date?.toString()?.trim() ?: '')
+        )
+        ENA_LINK_UMBRELLA.out.status.view { f -> "Umbrella status written to: ${f}" }
+    }
+
+    def all_versions = channel.empty()
+    if (create_project) {
+        all_versions = all_versions
+            .mix(ENA_GENERATE_PROJECT_XML.out.versions)
+            .mix(ENA_SUBMIT_PROJECT.out.versions)
+            .mix(ENA_POLL_PROJECT.out.versions)
+    }
+    all_versions = all_versions
+        .mix(ENA_RESOLVE_METADATA.out.versions)
+        .mix(ENA_EXPAND_FILE_MANIFEST.out.versions)
+        .mix(ENA_COMPUTE_MD5.out.versions)
+        .mix(ENA_FTP_UPLOAD.out.versions)
+        .mix(ENA_GENERATE_XML.out.versions)
+        .mix(ENA_SUBMIT_ANALYSIS.out.versions)
+        .mix(ENA_POLL_ANALYSIS.out.versions)
+    if (reheader_bams) {
+        all_versions = all_versions
+            .mix(ENA_PREPARE_REFERENCE.out.versions)
+            .mix(ENA_INDEX_REFERENCE.out.versions)
+            .mix(ENA_EXTRACT_BAM_HEADER.out.versions)
+            .mix(ENA_BUILD_BAM_HEADER.out.versions)
+            .mix(ENA_REHEADER_BAM.out.versions)
+            .mix(ENA_INDEX_BAM.out.versions)
+            .mix(ENA_VALIDATE_ALIGNMENT.out.versions)
+    }
+    if (convert_to_cram) {
+        all_versions = all_versions
+            .mix(ENA_CONVERT_TO_CRAM.out.versions)
+            .mix(ENA_INDEX_CRAM.out.versions)
+    }
+    if (umbrella_accession) {
+        all_versions = all_versions
+            .mix(ENA_GENERATE_UMBRELLA_XML.out.versions)
+            .mix(ENA_LINK_UMBRELLA.out.versions)
+    }
+    COLLECT_SOFTWARE_VERSIONS(all_versions.collect())
+
+    emit:
+    accessions = ENA_POLL_ANALYSIS.out.accessions
+}

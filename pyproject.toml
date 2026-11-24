@@ -110,9 +110,10 @@ warn_unused_configs = true
 
 [tool.pytest.ini_options]
 addopts = "-v --tb=native"
+pythonpath = ["."]
 norecursedirs = [
     "docs",
     "*.egg_info",
 ]
-testpaths = ["tests"]
+testpaths = ["tests", "pipelines/ena_submit/test"]
 

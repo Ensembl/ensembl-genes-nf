@@ -1,0 +1,74 @@
+# ENA Submission Strategy (Ensembl Annotation Evidence)
+
+This document captures decisions and conventions for submitting alignment evidence to ENA via this pipeline.
+
+## Scope
+- Submissions are ANALYSIS of type `REFERENCE_ALIGNMENT` pointing to BAM/CRAM aligned to a public assembly.
+- One Project (Study) per annotation / assembly / partial release.
+- One ANALYSIS per processed RNA-seq alignment file. ENA rejects multiple BAM/CRAM
+  files grouped in one ANALYSIS.
+- Every submission links to the original data submitter’s source runs with `RUN_REF` and, when known, `SAMPLE_REF`.
+
+## Projects / Studies
+- Model: one ENA Project (Study) per assembly + Ensembl partial release (e.g., `prj_GCA_052040795.1-Ensembl-2025-12`).
+- The workflow derives and registers this Project automatically before any analyses.
+- An umbrella study for Ensembl RNA-seq submissions is expected. Supply its
+  accession, exact alias, title, and description with `--umbrella_study`,
+  `--umbrella_alias`, `--umbrella_title`, and `--umbrella_description`.
+- The workflow links the newly created child project in a terminal ENA
+  `MODIFY` submission after project and analysis polling have completed. The
+  official umbrella relationship is retained as its own XML, receipt, and
+  accession table.
+
+Rationale: keeps evidence for a given assembly/release discoverable and isolated; avoids alias collisions across releases.
+
+## Idempotency and Retries
+- Aliases are stable: re‑submitting the same alias is treated as success (status `EXISTS`).
+- Poller detects typical Webin messages like “already exists/alias not unique” and records `EXISTS` with any accession found.
+- Safe to re‑run on partial failures; successful accessions are preserved in `accessions.tsv`.
+
+## Linking rules
+- RUN_REF: include by default in both PROD and TEST. Set `omit_run_refs_in_test=true` for a TEST submission whose source runs are not available in the TEST environment.
+- SAMPLE_REF: include the linked ENA Sample accession (`ERS`/`SRS`/`DRS`), not
+  the BioSample accession (`SAMEA`/`SAMN`/`SAMD`). Retain the BioSample ID as
+  provenance or an analysis attribute.
+- EXPERIMENT_REF: optional; use if you prefer experiment‑level links.
+- Existing-study submissions use `--create_project false` and a study accession or
+  alias in each manifest row. A row must not provide `study` while
+  `--create_project true`, because that would make the target study ambiguous.
+
+## Assembly requirements
+- Preferred: `assembly_accession` (GCA/GCF) present in ENA. The XML uses `<ASSEMBLY><STANDARD accession=.../>`.
+- If the assembly is not yet in ENA, you can supply `ref_seqs` (comma list) to populate `<SEQUENCE accession=.../>` under `REFERENCE_ALIGNMENT` as an interim reference.
+
+## Manifest shape
+The workflow uses a two-step manifest:
+
+- `manifest.tsv`: one row per annotation-level release/project, with `files_tsv`, `assembly_accession`, `last_geneset_update`, `partial_release_label`, project/study fields, and shared analysis metadata. The workflow expands this into one analysis per file.
+- `files.tsv`: one row per BAM/CRAM with local file path, remote filename, run accession, sample accession, and optional header-derived alignment metadata.
+
+Source sample and experiment values are resolved from ENA by run accession. Any
+valid accession supplied by the manifest is checked against the ENA response;
+the XML uses the resolved values, not stale local values. The resolver also
+retains secondary sample/study accessions and the library/instrument fields
+returned by the Portal API.
+
+Defaults applied by the workflow:
+- `analysis_type` coerced to `REFERENCE_ALIGNMENT` (ENA schema requirement).
+- In TEST mode, `RUN_REF` is included unless `omit_run_refs_in_test=true` for the row.
+
+## Operational notes
+- Upload via FTP with Python `ftplib`. Aspera is not implemented in the current workflow.
+- Webin v2 async queue is used; receipts are polled until success/failure.
+- Outputs: XML per analysis, queue responses, and consolidated `accessions.tsv`.
+
+## Open questions
+- Whether the umbrella alias/title/description should come from the registry
+  rather than CLI parameters.
+- Whether production submissions should use BAMs as-is or CRAMs.
+- Whether a separate sample-registration workflow is required. Registering new
+  sample objects needs a checklist-aware sample manifest; analysis manifests
+  should only reference existing samples.
+- BioSample-to-ENA-Sample mapping is resolved from the ENA Portal API before
+  XML generation; direct BioSample values are rejected as `SAMPLE_REF`.
+- Which registry fields will replace CLI arguments for assembly/annotation metadata.
