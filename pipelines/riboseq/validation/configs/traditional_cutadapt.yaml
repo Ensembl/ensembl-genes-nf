@@ -1,0 +1,6 @@
+# Traditional trimming comparison using direct cutadapt with automatic
+# per-sample adapter inference from FastQC and the adapter reference list.
+rpf_extraction_method: 'traditional'
+traditional_trimmer: 'cutadapt'
+adapter_detection_method: 'auto'
+run_rrna_filter: false

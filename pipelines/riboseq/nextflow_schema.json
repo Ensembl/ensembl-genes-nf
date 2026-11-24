@@ -175,6 +175,17 @@
       "default": false,
       "description": "Preserve UMI information in getRPF output"
     },
+    "traditional_trimmer": {
+      "type": "string",
+      "enum": ["fastp", "trimgalore", "cutadapt"],
+      "default": "fastp",
+      "description": "Traditional trimming tool"
+    },
+    "traditional_trim_quality": {
+      "type": "integer",
+      "default": 0,
+      "description": "Quality cutoff for Trim Galore or cutadapt traditional trimming"
+    },
     "adapter_detection_method": {
       "type": "string",
       "enum": ["auto", "fastqc_tophit", "explicit", "fasta"],

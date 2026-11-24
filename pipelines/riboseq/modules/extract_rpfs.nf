@@ -23,7 +23,8 @@ process EXTRACT_RPFS {
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     # Use the recommended 'extract' command (alignment-based extraction)
-    # Optimized with --collapsed-only for speed and disk space
+    # Keep the default collapsed-only output; optional contaminant filtering
+    # expands this already-trimmed output in a separate process.
     getRPF extract \\
         ${input_file} \\
         ${prefix}_trimmed.fastq \\

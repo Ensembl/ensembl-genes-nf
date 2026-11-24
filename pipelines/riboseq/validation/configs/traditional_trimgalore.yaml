@@ -1,0 +1,5 @@
+# Traditional trimming comparison using Trim Galore.
+rpf_extraction_method: 'traditional'
+traditional_trimmer: 'trimgalore'
+adapter_detection_method: 'auto'
+run_rrna_filter: false

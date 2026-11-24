@@ -15,6 +15,8 @@ This document outlines a comprehensive validation framework to systematically ev
 | `adapter_fastqc_tophit` | FastQC top hit | Use top overrepresented sequence from FastQC | - |
 | `adapter_fastp_auto` | fastp auto-detect | Let fastp auto-detect adapters | - |
 | `adapter_fastp_reflist` | fastp reference list | Trim using reference adapter list | `adapter_list` |
+| `traditional_trimgalore` | Trim Galore | Traditional Cutadapt-backed trimming | `traditional_trimmer=trimgalore` |
+| `traditional_cutadapt` | cutadapt | Traditional automatic adapter inference + trimming | `traditional_trimmer=cutadapt` |
 | `adapter_getrpf_extract` | getRPF extract | Alignment-based RPF extraction (recommended) | `sample_size`, `preserve_umi` |
 | `adapter_getrpf_decidetrim` | getRPF decide-trim | Combined architecture + alignment decision | `max_reads` |
 

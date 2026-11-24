@@ -19,8 +19,9 @@ process FASTP {
         'biocontainers/fastp:0.23.4--h5f740d0_0' }"
 
     input:
-    tuple val(meta), path(reads)
-    path adapter_fasta  // Optional: can be empty/placeholder file
+    // Keep the adapter file paired with its sample.  This matters when
+    // FASTQC-derived adapter reports differ between runs.
+    tuple val(meta), path(reads), path(adapter_fasta)
 
     output:
     tuple val(meta), path("*_trimmed.fastq.gz"), emit: trimmed_fastq

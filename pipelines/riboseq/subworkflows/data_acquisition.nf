@@ -4,10 +4,10 @@
  *
  * Supports multiple adapter detection methods:
  * - getRPF (alignment-based extraction - RECOMMENDED)
- * - Traditional with multiple fastp modes:
- *   - fastp auto-detection
- *   - fastp with explicit adapter sequence
- *   - fastp with adapter FASTA from FASTQC top-hit
+ * - Traditional with selectable trimmers:
+ *   - fastp
+ *   - Trim Galore
+ *   - cutadapt
  *
  * Supports multiple rRNA filtering methods:
  * - Bowtie (alignment-based, requires index)
@@ -21,15 +21,20 @@ include { FIND_ADAPTERS } from '../modules/find_adapters.nf'
 include { EXTRACT_RPFS } from '../modules/extract_rpfs.nf'
 include { FILTER_RPF_LENGTHS } from '../modules/filter_rpf_lengths.nf'
 include { FASTP } from '../modules/fastp.nf'
+include { TRIM_GALORE_RPF } from '../modules/trim_galore_rpf.nf'
+include { CUTADAPT_RPF } from '../modules/cutadapt_rpf.nf'
 include { BOWTIE_RRNA_FILTER } from '../modules/bowtie_rrna_filter.nf'
 include { RIBODETECTOR } from '../modules/ribodetector.nf'
+include { EXPAND_COLLAPSED_FASTQ } from '../modules/expand_collapsed_fastq.nf'
 include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_FINAL } from '../modules/collapse_fastq.nf'
+include { COLLAPSE_FASTQ as COLLAPSE_FASTQ_GETRPF } from '../modules/collapse_fastq.nf'
 
 workflow DATA_ACQUISITION {
     take:
     sample_sheet      // path: CSV/TSV file with Run,study_accession columns
     adapter_list      // path: adapter list file for FASTQC
     star_index        // path: STAR index directory
+    rrna_index        // path: Bowtie1 rRNA index directory/files when enabled
 
     main:
     // Validate required parameters
@@ -103,33 +108,73 @@ workflow DATA_ACQUISITION {
         if (use_getrpf) {
             // getRPF Extraction (alignment-based - RECOMMENDED)
             // Uses STAR alignment to determine biological sequence boundaries
-            // Produces collapsed FASTA directly (no separate collapse step needed)
+            // All getRPF trimming completes before optional contaminant removal.
             EXTRACT_RPFS(
                 FASTQ_DL.out.fastq,
                 star_index
             )
 
-            // Preserve all trimmed reads from getRPF, then gate the downstream RPF set.
-            FILTER_RPF_LENGTHS(EXTRACT_RPFS.out.trimmed_collapsed)
+            // The normal getRPF path keeps its existing collapsed output. When
+            // contaminant removal is requested, use the fully trimmed FASTQ,
+            // filter it, collapse the survivors, and only then apply the
+            // downstream 20-40 nt gate.
+            if (params.run_rrna_filter) {
+                def rrna_method = params.rrna_filter_method ?: 'bowtie'
+
+                EXPAND_COLLAPSED_FASTQ(EXTRACT_RPFS.out.trimmed_collapsed)
+
+                if (rrna_method == 'ribodetector') {
+                    RIBODETECTOR(EXPAND_COLLAPSED_FASTQ.out.trimmed_fastq)
+                    filtered_fastq = RIBODETECTOR.out.filtered_fastq
+                } else if (rrna_method == 'bowtie') {
+                    BOWTIE_RRNA_FILTER(
+                        EXPAND_COLLAPSED_FASTQ.out.trimmed_fastq,
+                        rrna_index
+                    )
+                    filtered_fastq = BOWTIE_RRNA_FILTER.out.filtered_fastq
+                } else {
+                    error "Unsupported rRNA filtering method: ${rrna_method}. Choose 'bowtie' or 'ribodetector'."
+                }
+
+                COLLAPSE_FASTQ_GETRPF(filtered_fastq)
+                getrpf_collapsed_reads = COLLAPSE_FASTQ_GETRPF.out.collapsed_fasta
+            } else {
+                getrpf_collapsed_reads = EXTRACT_RPFS.out.trimmed_collapsed
+            }
+
+            FILTER_RPF_LENGTHS(getrpf_collapsed_reads)
             newly_collapsed_reads = FILTER_RPF_LENGTHS.out.collapsed_fasta
         } else {
-            // Traditional fastp-based approach
+            // Traditional adapter trimming.  All trimmers emit the same
+            // FASTQ contract.  fastp and Trim Galore can auto-detect from the
+            // reads directly; cutadapt receives a per-sample adapter FASTA
+            // produced by FIND_ADAPTERS when no override is supplied.
             // Determine adapter source based on params:
             // 1. params.fastp_adapter_sequence - explicit sequence (handled in module)
             // 2. params.fastp_adapter_fasta - user-provided FASTA file
-            // 3. FASTQC top-hit via FIND_ADAPTERS
-            // 4. fastp auto-detection (no adapter file)
+            // 3. FASTQC/adapter-list inference via FIND_ADAPTERS
+            // 4. tool-specific default detection (no adapter file)
+
+            def no_adapter_file = file("${projectDir}/resources/NO_ADAPTER_FILE")
+            def traditional_trimmer = params.traditional_trimmer ?: 'fastp'
+            def needs_pipeline_adapter_detection =
+                params.adapter_detection_method == 'fastqc_tophit' ||
+                (traditional_trimmer == 'cutadapt' &&
+                    !params.fastp_adapter_sequence &&
+                    !params.fastp_adapter_fasta)
 
             if (params.fastp_adapter_fasta) {
                 // User-provided adapter FASTA file
-                adapter_file = channel.fromPath(params.fastp_adapter_fasta)
+                adapter_file = channel.fromPath(params.fastp_adapter_fasta, checkIfExists: true).first()
                 fastq_with_adapter = FASTQ_DL.out.fastq
                     .combine(adapter_file)
             } else if (params.fastp_adapter_sequence) {
-                // Explicit sequence - pass placeholder, module uses param
-                fastq_with_adapter = FASTQ_DL.out.fastq
-                    .map { meta, fastq -> tuple(meta, fastq, file('NO_ADAPTER_FILE')) }
-            } else if (params.adapter_detection_method == 'fastqc_tophit') {
+                // Explicit sequence is a parameter; pass the placeholder so
+                // the tuple shape remains identical for every trimmer.
+                fastq_with_adapter = FASTQ_DL.out.fastq.map { meta, fastq ->
+                    tuple(meta, fastq, no_adapter_file)
+                }
+            } else if (needs_pipeline_adapter_detection) {
                 // Use FASTQC to find top-hit adapter
                 FIND_ADAPTERS(
                     FASTQ_DL.out.fastq,
@@ -139,16 +184,24 @@ workflow DATA_ACQUISITION {
                 fastq_with_adapter = FASTQ_DL.out.fastq
                     .join(FIND_ADAPTERS.out.adapter_report)
             } else {
-                // fastp auto-detection (default for traditional)
+                // No external adapter file; fastp/Trim Galore use their
+                // configured defaults.
                 fastq_with_adapter = FASTQ_DL.out.fastq
-                    .map { meta, fastq -> tuple(meta, fastq, file('NO_ADAPTER_FILE')) }
+                    .map { meta, fastq -> tuple(meta, fastq, no_adapter_file) }
             }
 
-            // Unpack and run FASTP with appropriate inputs
-            FASTP(
-                fastq_with_adapter.map { meta, fastq, _adapter -> tuple(meta, fastq) },
-                fastq_with_adapter.map { _meta, _fastq, adapter -> adapter }.first()
-            )
+            if (traditional_trimmer == 'fastp') {
+                FASTP(fastq_with_adapter)
+                trimmed_fastq = FASTP.out.trimmed_fastq
+            } else if (traditional_trimmer == 'trimgalore') {
+                TRIM_GALORE_RPF(fastq_with_adapter)
+                trimmed_fastq = TRIM_GALORE_RPF.out.trimmed_fastq
+            } else if (traditional_trimmer == 'cutadapt') {
+                CUTADAPT_RPF(fastq_with_adapter)
+                trimmed_fastq = CUTADAPT_RPF.out.trimmed_fastq
+            } else {
+                error "Unsupported traditional_trimmer: ${traditional_trimmer}. Choose 'fastp', 'trimgalore', or 'cutadapt'."
+            }
 
             // Filter rRNA contamination (if explicitly enabled)
             if (params.run_rrna_filter) {
@@ -156,21 +209,21 @@ workflow DATA_ACQUISITION {
 
                 if (rrna_method == 'ribodetector') {
                     // ML-based rRNA detection (no reference required)
-                    RIBODETECTOR(FASTP.out.trimmed_fastq)
+                    RIBODETECTOR(trimmed_fastq)
                     filtered_fastq = RIBODETECTOR.out.filtered_fastq
-                } else if (rrna_method == 'bowtie' && params.rrna_index) {
-                    // Bowtie alignment-based filtering (requires index)
+                } else if (rrna_method == 'bowtie') {
+                    // Bowtie alignment-based filtering (requires the wired index)
                     BOWTIE_RRNA_FILTER(
-                        FASTP.out.trimmed_fastq,
-                        file("${params.rrna_index}/*")
+                        trimmed_fastq,
+                        rrna_index
                     )
                     filtered_fastq = BOWTIE_RRNA_FILTER.out.filtered_fastq
                 } else {
                     log.warn "rRNA filtering enabled but no valid method/index. Using unfiltered reads."
-                    filtered_fastq = FASTP.out.trimmed_fastq
+                    filtered_fastq = trimmed_fastq
                 }
             } else {
-                filtered_fastq = FASTP.out.trimmed_fastq
+                filtered_fastq = trimmed_fastq
             }
 
             // Collapse after trimming and filtering
