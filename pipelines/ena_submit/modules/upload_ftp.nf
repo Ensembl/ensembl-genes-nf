@@ -45,6 +45,13 @@ def upload(ftp, home, local_path, remote_path):
             except ftplib.error_perm:
                 pass
             ftp.cwd(directory)
+    try:
+        ftp.voidcmd('TYPE I')
+        if ftp.size(remote_name) == os.path.getsize(local_path):
+            print(f'Skipping existing complete file: {remote_path}', file=sys.stderr)
+            return
+    except ftplib.error_perm:
+        pass
     with open(local_path, 'rb') as handle:
         ftp.storbinary(f'STOR {remote_name}', handle, blocksize=8 * 1024 * 1024)
 
