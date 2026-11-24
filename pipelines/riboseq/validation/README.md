@@ -31,6 +31,8 @@ nextflow run main.nf \
 | adapter_getrpf_decidetrim.yaml | getrpf decide-trim | Combined architecture + alignment decision |
 | adapter_fastp_auto.yaml | fastp auto-detect | fastp built-in adapter detection |
 | adapter_fastp_reflist.yaml | fastp + ref list | fastp with reference adapter list |
+| traditional_trimgalore.yaml | Trim Galore | Traditional Cutadapt-backed trimming |
+| traditional_cutadapt.yaml | cutadapt | Traditional automatic adapter inference + trimming |
 | rpf_traditional.yaml | traditional | FASTQC + fastp trimming |
 
 ### rRNA Filtering

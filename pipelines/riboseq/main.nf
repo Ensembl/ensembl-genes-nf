@@ -32,6 +32,8 @@ params {
     getrpf_trim_recipes: String = null
     getrpf_container: String = 'ghcr.io/jackcurragh/get-rpf:sha-e9dce4a'
     align_getrpf_holds: Boolean = false
+    traditional_trimmer: String = 'fastp'
+    traditional_trim_quality: Integer = 0
     min_read_length: Integer = 20
     max_read_length: Integer = 0
     run_rrna_filter: Boolean = false
@@ -117,6 +119,25 @@ workflow {
 
     // Validate parameters inside the entry workflow for strict DSL2 syntax.
     validateParameters()
+
+    if (params.rpf_extraction_method == 'traditional') {
+        def traditional_trimmer = params.traditional_trimmer ?: 'fastp'
+        if (!(traditional_trimmer in ['fastp', 'trimgalore', 'cutadapt'])) {
+            error "Unsupported traditional_trimmer: ${traditional_trimmer}. Choose 'fastp', 'trimgalore', or 'cutadapt'."
+        }
+        if (params.adapter_detection_method == 'explicit' && !params.fastp_adapter_sequence) {
+            error "adapter_detection_method=explicit requires --fastp_adapter_sequence."
+        }
+        if (params.adapter_detection_method == 'fasta' && !params.fastp_adapter_fasta) {
+            error "adapter_detection_method=fasta requires --fastp_adapter_fasta."
+        }
+        if (traditional_trimmer == 'cutadapt' &&
+            !params.fastp_adapter_sequence &&
+            !params.fastp_adapter_fasta &&
+            !(params.adapter_detection_method in ['auto', 'fastqc_tophit'])) {
+            error "traditional_trimmer=cutadapt requires adapter_detection_method=auto/fastqc_tophit, an explicit adapter, or an adapter FASTA."
+        }
+    }
 
     // All modules publish their runtime-generated versions.yml files to the
     // shared versions topic. Collate them once after the workflow completes.
@@ -241,6 +262,20 @@ workflow {
             channel.fromPath(params.ribometric_annotation, checkIfExists: true).first() :
             channel.value(file('NO_FILE')))
 
+        // Use one shared rRNA index for all samples. Organism setup supplies
+        // the generated index; standalone runs may provide --rrna_index.
+        rrna_index_ch = use_organism_setup ?
+            ORGANISM_SETUP.out.rrna_index.first() :
+            (params.rrna_index ?
+                channel.fromPath(params.rrna_index, checkIfExists: true).first() :
+                channel.value(null))
+
+        if (params.run_rrna_filter &&
+            (params.rrna_filter_method ?: 'bowtie') == 'bowtie' &&
+            !use_organism_setup && !params.rrna_index) {
+            error "Bowtie rRNA filtering requires --rrna_index, or organism setup that builds one."
+        }
+
         transcriptome_fasta_ch = use_organism_setup ?
         ORGANISM_SETUP.out.transcriptome :
         (params.transcriptome_fasta ?
@@ -268,7 +303,8 @@ workflow {
     DATA_ACQUISITION(
         params.sample_sheet,
         file(params.adapter_list),
-        star_index_ch
+        star_index_ch,
+        rrna_index_ch
     )
 
     // Optional diagnostic branch: align raw reads for samples whose getRPF

@@ -64,6 +64,9 @@ PY
     """
     $recipe_write
 
+    # Use the recommended 'extract' command (alignment-based extraction)
+    # Keep the default collapsed-only output; optional contaminant filtering
+    # expands this already-trimmed output in a separate process.
     getRPF extract \\
         ${input_file} \\
         ${prefix}_trimmed.fastq \\
