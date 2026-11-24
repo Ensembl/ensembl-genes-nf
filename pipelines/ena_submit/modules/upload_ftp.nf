@@ -22,12 +22,20 @@ process ENA_FTP_UPLOAD {
     """
     set -euo pipefail
     command -v curl >/dev/null 2>&1 || { echo 'curl is required' >&2; exit 127; }
+    umask 077
+    netrc_file=.ena-netrc
+    trap 'rm -f "\$netrc_file"' EXIT
+    cat > "\$netrc_file" <<EOF
+machine ${ftp_host}
+login ${webin_user}
+password \$ENA_WEBIN_PASSWORD
+EOF
     curl --fail --show-error --ftp-pasv --ftp-create-dirs \
-        --user "${webin_user}:\$ENA_WEBIN_PASSWORD" \
+        --netrc-file "\$netrc_file" \
         --upload-file "${file}" \
         "ftp://${ftp_host}/${remote_path}"
     curl --fail --show-error --ftp-pasv --ftp-create-dirs \
-        --user "${webin_user}:\$ENA_WEBIN_PASSWORD" \
+        --netrc-file "\$netrc_file" \
         --upload-file "${md5}" \
         "ftp://${ftp_host}/${remote_path}.md5"
     printf 'ENA_FTP_UPLOAD:\n  curl: "%s"\n' "\$(curl --version | awk 'NR==1 {print \$2}')" > versions.yml
