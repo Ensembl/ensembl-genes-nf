@@ -125,6 +125,22 @@ The manifest must contain the required columns from
 manifest directory or `--manifest_base_dir`. Output records retain the
 original entity ID while filenames use a collision-checked sanitized ID.
 
+### Supplemental assembly sequences
+
+When the BAMs include assembly sequences absent from the primary FASTA, pass
+their FASTA with `--supplemental_reference`. The pipeline indexes a staged copy,
+validates names and lengths, appends new sequence sizes before BAM preflight,
+and publishes `reference/supplemental_sequences.tsv`. It does not infer
+reference sequences from BAM headers. For the Danio rerio run above:
+
+```bash
+--supplemental_reference /hps/nobackup/flicek/ensembl/genebuild/jackt/ena-manifests/danio_rerio/GCA_052040795.2/reference_supplement.fasta
+```
+
+The BAM and primary reference still must agree on the complete sequence-length
+set after the supplement is applied. Duplicate names with conflicting lengths
+fail before track generation.
+
 For BAM-dependent tracks, the pipeline uses a manifest-supplied BAM index or
 an adjacent `.bai`/`.csi` only when its modification time is at least as new
 as the BAM. If no current index exists, it creates a `.bai` with `samtools index`

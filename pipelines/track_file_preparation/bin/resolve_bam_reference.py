@@ -5,36 +5,32 @@ from __future__ import annotations
 
 import argparse
 import csv
-import subprocess
 import sys
 from pathlib import Path
 from typing import List, Sequence, Tuple
 
 
-def read_bam_dictionary(bam: Path) -> List[Tuple[str, int]]:
-    result = subprocess.run(
-        ["samtools", "view", "-H", str(bam)], check=True, text=True,
-        stdout=subprocess.PIPE,
-    )
+def read_bam_dictionary(header: Path) -> List[Tuple[str, int]]:
     rows: List[Tuple[str, int]] = []
     seen = set()
-    for line in result.stdout.splitlines():
-        fields = line.split("\t")
-        if not fields or fields[0] != "@SQ":
-            continue
-        values = {}
-        for field in fields[1:]:
-            if ":" in field:
-                key, value = field.split(":", 1)
-                values[key] = value
-        name = values.get("SN", "")
-        length = values.get("LN", "")
-        if not name or not length.isdigit() or int(length) < 1:
-            raise ValueError(f"Invalid BAM sequence dictionary row: {line}")
-        if name in seen:
-            raise ValueError(f"Duplicate BAM sequence name: {name}")
-        seen.add(name)
-        rows.append((name, int(length)))
+    with header.open() as handle:
+        for line in handle:
+            fields = line.rstrip("\n").split("\t")
+            if not fields or fields[0] != "@SQ":
+                continue
+            values = {}
+            for field in fields[1:]:
+                if ":" in field:
+                    key, value = field.split(":", 1)
+                    values[key] = value
+            name = values.get("SN", "")
+            length = values.get("LN", "")
+            if not name or not length.isdigit() or int(length) < 1:
+                raise ValueError(f"Invalid BAM sequence dictionary row: {line.rstrip()}")
+            if name in seen:
+                raise ValueError(f"Duplicate BAM sequence name: {name}")
+            seen.add(name)
+            rows.append((name, int(length)))
     if not rows:
         raise ValueError("BAM sequence dictionary is empty")
     return rows
@@ -67,7 +63,7 @@ def write_tsv(path: Path, rows: Sequence[Sequence[object]]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--bam", required=True, type=Path)
+    parser.add_argument("--bam-header", required=True, type=Path)
     parser.add_argument("--chrom-sizes", required=True, type=Path)
     parser.add_argument("--gca", required=True)
     parser.add_argument("--assembly-release", required=True)
@@ -76,7 +72,7 @@ def main() -> int:
     args = parser.parse_args()
     prefix = Path(args.output_prefix)
     try:
-        bam_rows = read_bam_dictionary(args.bam)
+        bam_rows = read_bam_dictionary(args.bam_header)
         ref_rows = read_chrom_sizes(args.chrom_sizes)
         bam_by_name = {name: length for name, length in bam_rows}
         ref_by_name = {name: length for name, length in ref_rows}
@@ -99,14 +95,11 @@ def main() -> int:
             ["gca_accession", "assembly_release", "entity_id", "resolution", "chromosome_count"],
             [args.gca, args.assembly_release, args.entity_id, resolution, len(resolved)],
         ])
-        version = subprocess.run(["samtools", "--version"], check=True, text=True,
-                                 stdout=subprocess.PIPE).stdout.splitlines()[0].split()
         write_tsv(Path(f"{prefix}.reference_resolution.versions.yml"), [
             [f'"RESOLVE_BAM_REFERENCE":'],
-            [f"    samtools: {version[1] if len(version) > 1 else 'unknown'}"],
             [f"    reference_resolution: {resolution}"],
         ])
-    except (OSError, subprocess.CalledProcessError, ValueError, IndexError) as exc:
+    except (OSError, ValueError, IndexError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
     return 0

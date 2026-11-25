@@ -133,7 +133,14 @@ manifest:
 chrom.sizes
 contig_names/order metadata
 assembly release or identifier
+optional supplemental FASTA for additional assembly sequences
 ```
+
+When provided, the supplemental FASTA is indexed from a staged copy. Its
+sequence names and lengths are checked against the primary `chrom.sizes` and
+new sequences are appended before BAM preflight. Repeated names are accepted
+only when lengths agree. BAM-only contigs are never added automatically; the
+reference sequence must be declared as supplemental input.
 
 The reference contract must include a deterministic contig order. The pipeline
 must validate that every input BAM, GTF, and SJ table uses legal contig names

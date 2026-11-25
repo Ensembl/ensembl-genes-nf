@@ -10,6 +10,7 @@ from unittest.mock import patch
 BIN = Path(__file__).resolve().parents[1] / "bin"
 sys.path.insert(0, str(BIN))
 
+import augment_chrom_sizes
 import resolve_bam_reference
 import validate_reference
 import validate_star_junctions
@@ -22,17 +23,13 @@ class BinHelperTests(unittest.TestCase):
             root = Path(temp)
             chrom_sizes = root / "reference.chrom.sizes"
             chrom_sizes.write_text("CM001\t100\nNC_1\t20\n")
-            header = "@HD\tVN:1.6\n@SQ\tSN:1\tLN:100\n@SQ\tSN:MT\tLN:20\n"
-            results = [
-                type("Completed", (), {"stdout": header})(),
-                type("Completed", (), {"stdout": "samtools 1.20\n"})(),
-            ]
-            argv = ["resolve_bam_reference.py", "--bam", str(root / "x.bam"),
+            header = root / "header.sam"
+            header.write_text("@HD\tVN:1.6\n@SQ\tSN:1\tLN:100\n@SQ\tSN:MT\tLN:20\n")
+            argv = ["resolve_bam_reference.py", "--bam-header", str(header),
                     "--chrom-sizes", str(chrom_sizes), "--gca", "GCA_000000001.1",
                     "--assembly-release", "test", "--entity-id", "run_1",
                     "--output-prefix", str(root / "out")]
-            with patch.object(sys, "argv", argv), patch.object(resolve_bam_reference.subprocess,
-                    "run", side_effect=results), patch("sys.stderr", new_callable=io.StringIO):
+            with patch.object(sys, "argv", argv), patch("sys.stderr", new_callable=io.StringIO):
                 self.assertEqual(resolve_bam_reference.main(), 0)
             self.assertEqual((root / "out.chrom.sizes").read_text(), "1\t100\nMT\t20\n")
             with (root / "out.reference_resolution.tsv").open() as handle:
@@ -44,16 +41,31 @@ class BinHelperTests(unittest.TestCase):
             root = Path(temp)
             chrom_sizes = root / "reference.chrom.sizes"
             chrom_sizes.write_text("CM001\t100\n")
-            header = "@SQ\tSN:1\tLN:100\n@SQ\tSN:MT\tLN:20\n"
-            argv = ["resolve_bam_reference.py", "--bam", str(root / "x.bam"),
+            header = root / "header.sam"
+            header.write_text("@SQ\tSN:1\tLN:100\n@SQ\tSN:MT\tLN:20\n")
+            argv = ["resolve_bam_reference.py", "--bam-header", str(header),
                     "--chrom-sizes", str(chrom_sizes), "--gca", "GCA_000000001.1",
                     "--assembly-release", "test", "--entity-id", "run_1",
                     "--output-prefix", str(root / "out")]
-            with patch.object(sys, "argv", argv), patch.object(resolve_bam_reference.subprocess,
-                    "run", return_value=type("Completed", (), {"stdout": header})()), \
-                    patch("sys.stderr", new_callable=io.StringIO) as stderr:
+            with patch.object(sys, "argv", argv), patch("sys.stderr", new_callable=io.StringIO) as stderr:
                 self.assertEqual(resolve_bam_reference.main(), 1)
             self.assertIn("sequence lengths do not match", stderr.getvalue())
+
+    def test_augment_chrom_sizes_adds_supplemental_sequence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            primary = root / "primary.chrom.sizes"
+            supplement = root / "supplement.fasta.fai"
+            primary.write_text("CM001\t100\n")
+            supplement.write_text("NC_002333.2\t16596\t0\t80\t81\n")
+            output, report, versions = root / "combined.sizes", root / "report.tsv", root / "versions.yml"
+            argv = ["augment_chrom_sizes.py", "--chrom-sizes", str(primary),
+                    "--supplemental-fai", str(supplement), "--output", str(output),
+                    "--report", str(report), "--versions", str(versions)]
+            with patch.object(sys, "argv", argv):
+                self.assertEqual(augment_chrom_sizes.main(), 0)
+            self.assertEqual(output.read_text(), "CM001\t100\nNC_002333.2\t16596\n")
+            self.assertIn("supplemental_fasta\tadded", report.read_text())
 
     def test_validate_reference_writes_same_check_contract(self):
         with tempfile.TemporaryDirectory() as temp:

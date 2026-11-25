@@ -5,6 +5,8 @@ include { PREFLIGHT_TRACK_INPUTS } from './subworkflows/preflight.nf'
 include { STAGE_LTS_INPUTS } from './subworkflows/stage_lts_inputs.nf'
 include { PREPARE_COVERAGE_TRACKS } from './subworkflows/coverage.nf'
 include { INDEX_BAM } from './modules/index_bam.nf'
+include { INDEX_SUPPLEMENTAL_REFERENCE } from './modules/index_supplemental_reference.nf'
+include { AUGMENT_CHROM_SIZES } from './modules/augment_chrom_sizes.nf'
 include { PREPARE_GENE_MODEL_TRACKS } from './subworkflows/gene_models.nf'
 include { PREPARE_SCALLOP_GENE_MODEL_TRACKS } from './subworkflows/gene_models.nf'
 include { PREPARE_SPLICE_TRACKS } from './subworkflows/splice.nf'
@@ -139,6 +141,17 @@ workflow {
     def base_dir = params.manifest_base_dir ? file(params.manifest_base_dir) : new File(params.input_manifest.toString()).getAbsoluteFile().getParentFile()
     if (!base_dir.exists()) error "Manifest base directory does not exist: ${base_dir}"
 
+    def chrom_sizes = channel.value(file(params.chrom_sizes, checkIfExists: true))
+    def supplemental_reference_versions = channel.empty()
+    if (params.supplemental_reference) {
+        def supplemental_reference = file(params.supplemental_reference, checkIfExists: true)
+        def indexed_supplement = INDEX_SUPPLEMENTAL_REFERENCE(supplemental_reference)
+        def augmented_sizes = AUGMENT_CHROM_SIZES(chrom_sizes, indexed_supplement.fai,
+            file("${projectDir}/bin/augment_chrom_sizes.py", checkIfExists: true))
+        chrom_sizes = augmented_sizes.chrom_sizes
+        supplemental_reference_versions = indexed_supplement.versions.mix(augmented_sizes.versions)
+    }
+
     def entity_records = manifest_entities(params.input_manifest, base_dir, params.track_types == 'all' ? null : params.track_types)
     def has_lts_inputs = entity_records.any { meta, _bam, _gtf, _sj, _bai -> meta.contains_lts_path }
     if (has_lts_inputs) {
@@ -153,17 +166,20 @@ workflow {
     entities = STAGE_LTS_INPUTS.out.entities.map { meta, bam, gtf, sj, bai ->
         tuple(meta, bam, gtf, sj, resolve_current_bam_index(bam, bai, meta.id, false))
     }
-    chrom_sizes = file(params.chrom_sizes, checkIfExists: true)
     bam_reference_entities = entities
         .filter { _meta, bam, _gtf, _sj, _bai -> bam }
-        .map { meta, bam, _gtf, _sj, _bai -> tuple(meta, bam, chrom_sizes) }
+        .map { meta, bam, _gtf, _sj, _bai -> tuple(meta, bam) }
+        .combine(chrom_sizes)
+        .map { meta, bam, compatible_chrom_sizes -> tuple(meta, bam, compatible_chrom_sizes) }
     PREFLIGHT_TRACK_INPUTS(chrom_sizes, params.assembly_release, bam_reference_entities)
 
     bam_reference_sizes = PREFLIGHT_TRACK_INPUTS.out.bam_references
         .map { meta, compatible_chrom_sizes -> tuple("${meta.gca_accession}\t${meta.id}", compatible_chrom_sizes) }
     no_bam_reference_sizes = entities
         .filter { _meta, bam, _gtf, _sj, _bai -> !bam }
-        .map { meta, _bam, _gtf, _sj, _bai -> tuple("${meta.gca_accession}\t${meta.id}", chrom_sizes) }
+        .map { meta, _bam, _gtf, _sj, _bai -> meta }
+        .combine(chrom_sizes)
+        .map { meta, compatible_chrom_sizes -> tuple("${meta.gca_accession}\t${meta.id}", compatible_chrom_sizes) }
     entity_reference_sizes = bam_reference_sizes.mix(no_bam_reference_sizes)
 
     bam_index_entities = entities
@@ -192,7 +208,9 @@ workflow {
     gene_entities = entities.filter { meta, _bam, _gtf, _sj, _bai ->
         'gene_model' in meta.track_types && meta.gene_model_source == 'manifest'
     }
-        .map { meta, _bam, gtf, _sj, _bai -> tuple(meta, gtf, chrom_sizes) }
+        .map { meta, _bam, gtf, _sj, _bai -> tuple(meta, gtf) }
+        .combine(chrom_sizes)
+        .map { meta, gtf, compatible_chrom_sizes -> tuple(meta, gtf, compatible_chrom_sizes) }
     scallop_entities = indexed_entities
         .filter { meta, _bam, _bai ->
             'gene_model' in meta.track_types && meta.gene_model_source == 'scallop'
@@ -214,7 +232,8 @@ workflow {
         .mix(genes.results.map { _meta, _artifact, result, _provenance, _exception -> result })
         .mix(scallop_genes.results.map { _meta, _artifact, result, _provenance, _exception -> result })
         .mix(splice.results.map { _meta, _artifact, result, _provenance, _exception -> result })
-    version_channels = PREFLIGHT_TRACK_INPUTS.out.versions
+    version_channels = supplemental_reference_versions
+        .mix(PREFLIGHT_TRACK_INPUTS.out.versions)
         .mix(STAGE_LTS_INPUTS.out.versions)
         .mix(coverage.versions)
         .mix(generated_indexes.versions)
