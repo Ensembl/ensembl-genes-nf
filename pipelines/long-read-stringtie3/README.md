@@ -96,21 +96,18 @@ nextflow run pipelines/long-read-stringtie3/main.nf \
   --manifest /data/long_reads.tsv \
   --outdir /data/long-read-results \
   -work-dir /scratch/nextflow/long-read-stringtie3 \
-  -profile singularity \
+  -profile slurm \
   -with-report /data/long-read-results/pipeline_info/report.html \
   -with-trace /data/long-read-results/pipeline_info/trace.tsv
 ```
 
 The repository's shared configuration defaults to Singularity. Use
 `-profile docker_runtime` for Docker, or `-profile apptainer` where Apptainer
-is installed. Defaults are two concurrent genome downloads, index builds,
-alignments, StringTie assemblies, and quantification tasks, with one merge at a
-time. Set `max_genome_download_jobs`, `max_index_jobs`, `max_alignment_jobs`,
-`max_stringtie_assembly_jobs`,
-`max_stringtie_merge_jobs`, and `max_stringtie_quantification_jobs` to match
-the site allocation and scratch capacity. The per-stage caps bound large tasks
-in flight; `executor_queue_size` provides an additional total cap on queued or
-running tasks for grid executors.
+is installed. The configuration allows two concurrent genome downloads,
+reference indexes, alignments, StringTie assemblies, and quantification tasks,
+with one merge at a time. These per-stage `maxForks` limits and the executor
+queue size are set in `nextflow.config` so the run manifest only contains
+biological inputs.
 
 Every genome-download, index, alignment, and StringTie task gets one retry with
 more CPUs, memory, and/or time; a second failure is ignored so independent
