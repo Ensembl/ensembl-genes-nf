@@ -25,10 +25,15 @@ abramis_brama	GCA_963993115.1	GCA_963993115.1	ERR13757885	SAMEA11296570	pacbio	/
 Required columns are `species_id`, `assembly_id`, `assembly_accession`,
 `run_id`, `technology`, and `fastq`. `sample_id`, `minimap2_preset`, and
 `nascent_mode` are optional. FASTQ may be a local path (absolute or relative to
-the manifest) or a remote HTTP(S)/FTP URI. The bare `ftp.sra.ebi.ac.uk/...`
-form in project batch manifests is interpreted as HTTPS. The workflow fetches
-one genome per species/assembly using `bin/fetch_genome.py`: it prefers the
-latest available Ensembl Organisms release, falls back to NCBI Datasets, and
+the manifest) or an ENA/SRA run URI. Local FASTQs are used directly. Remote
+FASTQ URIs mark the run for acquisition; the pipeline uses `run_id` with the
+pinned `fastq-dl` tool to resolve and download the accession, preferring ENA
+over HTTPS with three attempts and ENA checksum validation. `run_id` must be an
+ENA/SRA run accession (`ERR`, `SRR`, or `DRR`) for remote inputs, and exactly
+one FASTQ per run is required. The URI is retained in the archived manifest as
+provenance. The workflow fetches one genome per species/assembly using
+`bin/fetch_genome.py`: it prefers the latest available Ensembl Organisms
+release, falls back to NCBI Datasets, and
 normalizes FASTA headers using the selected source's rules before indexing.
 The NCBI assembly report is retained beside the fetched FASTA as provenance.
 
@@ -111,15 +116,16 @@ nextflow run pipelines/long-read-stringtie3/main.nf \
 The `slurm` profile selects the Slurm executor and Singularity containers. Use
 `-profile docker_runtime` for Docker, or `-profile apptainer` where Apptainer
 is installed. The shared config writes the report, timeline, and trace into
-`tracedir`. The pipeline configuration allows two concurrent genome downloads,
-each reference-indexing task, alignments, BAM-indexing tasks, alignment-QC
-tasks, StringTie assemblies, and quantification tasks, with one merge at a
-time. These per-stage `maxForks` limits and the executor queue size are set in
-`nextflow.config` so the run manifest only contains biological inputs.
+`tracedir`. The pipeline configuration allows up to two concurrent genome
+downloads, FASTQ acquisitions, reference-indexing tasks, alignments,
+BAM-indexing tasks, alignment-QC tasks, StringTie assemblies, and
+quantification tasks, with one merge at a time. These per-stage `maxForks` limits and the executor
+queue size are set in `nextflow.config` so the run manifest only contains
+biological inputs.
 
-Every genome-download, index, alignment, and StringTie task gets one retry with
-more CPUs, memory, and/or time; a second failure is ignored so independent
-species and runs can finish. The ignored-error limit is unlimited for these
+Every genome-download, FASTQ-acquisition, index, alignment, and StringTie task
+gets one retry with more CPUs, memory, and/or time; a second failure is ignored
+so independent species and runs can finish. The ignored-error limit is unlimited for these
 stages. Keep the Nextflow trace: after the run, summarize
 the terminal failures (including a short stderr excerpt) with:
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env nextflow
 
+import java.nio.file.Path
+
 nextflow.enable.dsl = 2
 nextflow.enable.strict = true
 
@@ -16,7 +18,7 @@ def manifest_path(value, root, field, row_number) {
     def raw = (value ?: '').toString().trim()
     if (!raw) error "manifest row ${row_number}: ${field} is required"
     // Accept local files, explicit URIs, and the bare ENA FTP host paths used
-    // by the project batch tables. Nextflow stages remote Path inputs natively.
+    // by the project batch tables. Remote URIs are acquired by fastq-dl later.
     if (raw.startsWith('ftp.')) raw = "https://${raw}"
     def remote = raw ==~ /^[A-Za-z][A-Za-z0-9+.-]*:\/\/.*/
     if (remote) return raw
@@ -136,6 +138,50 @@ process ARCHIVE_INPUT_MANIFEST {
     """
     cp ${manifest} input_manifest.tsv
     printf 'stub  input_manifest.tsv\\n' > input_manifest.tsv.sha256
+    """
+}
+
+process DOWNLOAD_FASTQ {
+    label 'fastq_download'
+    tag "${meta.species_id}/${meta.assembly_id}/${meta.run_id}"
+    container 'quay.io/biocontainers/fastq-dl@sha256:9a3fc95f1a287912ac33f678156ae4cb97243cbc8f3f3419521107f0a81fd0a2'
+
+    input:
+    tuple val(meta), val(source_uri)
+
+    output:
+    tuple val(meta), path('reads.fastq.gz'), emit: reads
+    path 'fastq_download.versions.yml', emit: versions
+
+    script:
+    """
+    set -euo pipefail
+    fastq-dl \\
+      --accession '${meta.run_id}' \\
+      --provider ena \\
+      --protocol https \\
+      --max-attempts 3 \\
+      --cpus ${task.cpus} \\
+      --outdir fastq_dl
+    mapfile -t fastqs < <(find fastq_dl -maxdepth 1 -type f \\
+      \\( -name '*.fastq.gz' -o -name '*.fq.gz' \\) -print | sort)
+    if (( \${#fastqs[@]} != 1 )); then
+      printf 'expected one FASTQ for %s, found %s\\n' '${meta.run_id}' "\${#fastqs[@]}" >&2
+      printf '%s\\n' "\${fastqs[@]}" >&2
+      exit 1
+    fi
+    mv "\${fastqs[0]}" reads.fastq.gz
+    test -s reads.fastq.gz
+    cat > fastq_download.versions.yml <<VERSIONS
+"${task.process}":
+    fastq-dl: \$(fastq-dl --version | sed 's/fastq-dl //')
+VERSIONS
+    """
+
+    stub:
+    """
+    printf '@stub\\nACGT\\n+\\n!!!!\\n' | gzip -c > reads.fastq.gz
+    printf '"DOWNLOAD_FASTQ":\\n    fastq-dl: stub\\n' > fastq_download.versions.yml
     """
 }
 
@@ -361,6 +407,8 @@ workflow {
                 def nascent_mode = row.nascent_mode?.toString()?.trim()?.toLowerCase() ?: 'off'
                 if (!(nascent_mode in ['off', 'mature', 'retain'])) error "manifest row ${row_number}: nascent_mode must be off, mature, or retain"
                 def reads = manifest_path(row.fastq, root, 'fastq', row_number)
+                if (reads instanceof CharSequence && !(run_id ==~ /(?:ERR|SRR|DRR)\d+/))
+                    error "manifest row ${row_number}: remote FASTQ acquisition requires an ENA/SRA run accession in run_id"
                 def assembly_accession = (row.assembly_accession ?: '').toString().trim()
                 if (!(assembly_accession ==~ /GCA_\d{9}\.\d+/))
                     error "manifest row ${row_number}: assembly_accession must be a GCA accession such as GCA_000001405.29"
@@ -401,12 +449,21 @@ workflow {
     BUILD_MINIMAP2_INDEX(reference_sequences.map { key, meta, reference -> tuple(key, meta, reference) })
     INDEX_REFERENCE_FASTA(reference_sequences.map { key, meta, reference -> tuple(key, meta, reference) })
 
-    alignment_inputs = manifest_rows
+    run_inputs = manifest_rows
         .flatMap { records -> records }
+    local_read_inputs = run_inputs
+        .filter { key, meta, reads, _assembly_accession -> reads instanceof Path }
+        .map { key, meta, reads, _assembly_accession -> tuple(meta, reads) }
+    remote_read_inputs = run_inputs
+        .filter { key, meta, reads, _assembly_accession -> reads instanceof CharSequence }
+        .map { key, meta, reads, _assembly_accession -> tuple(meta, reads.toString()) }
+    DOWNLOAD_FASTQ(remote_read_inputs)
+    read_inputs = local_read_inputs.mix(DOWNLOAD_FASTQ.out.reads)
+
+    alignment_inputs = read_inputs
+        .map { meta, reads -> tuple(meta.key, meta, reads) }
         .combine(BUILD_MINIMAP2_INDEX.out.index, by: 0)
-        .map { key, meta, reads, _assembly_accession, _assembly_meta, index ->
-            tuple(meta, file(reads), index)
-        }
+        .map { key, meta, reads, _assembly_meta, index -> tuple(meta, reads, index) }
     ALIGN_AND_SORT_BAM(alignment_inputs)
     INDEX_ALIGNMENT_BAM(ALIGN_AND_SORT_BAM.out.aligned)
 
