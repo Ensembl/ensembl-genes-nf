@@ -14,18 +14,19 @@ code handles input validation, reference indexing, alignment, and scheduling.
 Provide a tab-delimited file with one row per run:
 
 ```tsv
-species_id	assembly_id	run_id	sample_id	technology	fastq	reference_fasta	minimap2_preset	nascent_mode
-abramis_brama	GCA_963993115.1	ERR13757885	SAMEA11296570	pacbio	/data/fastq/ERR13757885.fastq.gz	https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/963/993/115/1/example_genomic.fna.gz	splice:hq	off
+species_id	assembly_id	assembly_accession	run_id	sample_id	technology	fastq	minimap2_preset	nascent_mode
+abramis_brama	GCA_963993115.1	GCA_963993115.1	ERR13757885	SAMEA11296570	pacbio	/data/fastq/ERR13757885.fastq.gz	splice:hq	off
 ```
 
-Required columns are `species_id`, `assembly_id`, `run_id`, `technology`,
-`fastq`, and `reference_fasta`. `sample_id`, `minimap2_preset`, and
-`nascent_mode` are optional. Each FASTQ and reference may be a local path
-(absolute or relative to the manifest) or a remote HTTP(S)/FTP URI. The bare
-`ftp.sra.ebi.ac.uk/...` form in the project batch manifests is interpreted as
-HTTPS. Nextflow stages remote files natively; no separate downloader process is
-needed. Reference FASTA files ending in `.gz` or `.bgz` are decompressed for
-index construction.
+Required columns are `species_id`, `assembly_id`, `assembly_accession`,
+`run_id`, `technology`, and `fastq`. `sample_id`, `minimap2_preset`, and
+`nascent_mode` are optional. FASTQ may be a local path (absolute or relative to
+the manifest) or a remote HTTP(S)/FTP URI. The bare `ftp.sra.ebi.ac.uk/...`
+form in project batch manifests is interpreted as HTTPS. The workflow fetches
+one genome per species/assembly using `bin/fetch_genome.py`: it prefers the
+latest available Ensembl Organisms release, falls back to NCBI Datasets, and
+normalizes FASTA headers using the selected source's rules before indexing.
+The NCBI assembly report is retained beside the fetched FASTA as provenance.
 
 A FASTQ column identifies one input file per run. For multiple lanes from one
 biological sample, supply one row per run and use `sample_id` as the shared
@@ -34,10 +35,10 @@ manifest. IDs may contain letters, numbers, dots, underscores, and hyphens.
 Technology is `ont` or `pacbio`; default minimap2 presets are `splice` and
 `splice:hq`, respectively. The supported presets share splice index settings.
 
-All rows for one `species_id` + `assembly_id` must use the same reference FASTA
-and nascent mode. An assembly gets one minimap2 index, shared by its runs.
-`assembly_id` should identify the selected genome assembly/accession; the
-reference sequence names must match the sequence names in the aligned reads.
+All rows for one `species_id` + `assembly_id` must use the same
+`assembly_accession` and nascent mode. An assembly gets one genome download and
+one minimap2 index, shared by its runs. The downloader normalizes reference
+sequence names before alignment and transcript assembly.
 
 `nascent_mode` defaults to `off`. For total-RNA / rRNA-depleted libraries,
 StringTie3 recommends nascent-aware assembly: set it to `mature` to use `-N`
@@ -52,6 +53,8 @@ pipeline_info/
   input_manifest.tsv
   input_manifest.tsv.sha256
 per_assembly/<species>/<assembly>/reference/
+  GCA_...vN.fa
+  *_assembly_report.txt (when supplied by NCBI)
   reference.mmi
   reference.fa.fai
 per_assembly/<species>/<assembly>/stringtie3/merge/
@@ -79,9 +82,11 @@ tables. The shared-catalog abundance table is the one to use for cross-run
 comparisons. StringTie creates these GTF and evidence tables directly.
 
 The retained BAM and CSI are copied to the output directory while a work copy
-remains available for downstream tasks and resume. Budget scratch for the BAMs
-across the whole run, their published copies, staged references, and temporary
-sort files. Set `-work-dir` to scratch. After confirming published outputs,
+remains available for downstream tasks and resume. Genome downloads are
+published once per assembly; each assembly's fetch and index can proceed while
+other assemblies are still downloading. Budget scratch for BAMs across the run,
+their published copies, staged references, and temporary sort files. Set
+`-work-dir` to scratch. After confirming published outputs,
 `nextflow clean` can reclaim the work copy; cleaning it removes resume data.
 
 ## Run
@@ -98,9 +103,10 @@ nextflow run pipelines/long-read-stringtie3/main.nf \
 
 The repository's shared configuration defaults to Singularity. Use
 `-profile docker_runtime` for Docker, or `-profile apptainer` where Apptainer
-is installed. Defaults are two concurrent index builds, alignments, StringTie
-assemblies, and quantification tasks, with one merge at a time. Set
-`max_index_jobs`, `max_alignment_jobs`, `max_stringtie_assembly_jobs`,
+is installed. Defaults are two concurrent genome downloads, index builds,
+alignments, StringTie assemblies, and quantification tasks, with one merge at a
+time. Set `max_genome_download_jobs`, `max_index_jobs`, `max_alignment_jobs`,
+`max_stringtie_assembly_jobs`,
 `max_stringtie_merge_jobs`, and `max_stringtie_quantification_jobs` to match
 the site allocation and scratch capacity. The per-stage caps bound large tasks
 in flight; `executor_queue_size` provides an additional total cap on queued or

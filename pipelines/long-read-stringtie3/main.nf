@@ -25,6 +25,33 @@ def manifest_path(value, root, field, row_number) {
     candidate.toAbsolutePath().normalize()
 }
 
+process FETCH_GENOME {
+    label 'genome_download'
+    tag "${meta.species_id}/${meta.assembly_id}"
+    container params.use_containers ? params.tool_containers.fetch_genome : null
+    publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/reference" }, mode: 'copy'
+
+    input:
+    tuple val(key), val(meta), val(assembly_accession), path(fetch_script, stageAs: 'fetch_genome.py')
+
+    output:
+    tuple val(key), val(meta), path('*.fa'), emit: reference
+    path '*_assembly_report.txt', optional: true, emit: assembly_report
+    path 'versions.yml', emit: versions
+
+    script:
+    """
+    python3 fetch_genome.py --gca '${assembly_accession}' --output_dir .
+    printf 'fetch_genome.py: %s\\n' "\$(python3 fetch_genome.py --version)" > versions.yml
+    """
+
+    stub:
+    """
+    printf '>chr1\\nACGT\\n' > '${assembly_accession.replace('.', 'v')}.fa'
+    printf 'stub\\n' > versions.yml
+    """
+}
+
 process BUILD_REFERENCE_INDEX {
     label 'index'
     tag "${meta.species_id}/${meta.assembly_id}"
@@ -238,7 +265,7 @@ workflow {
             if (!rows) error 'manifest has no data rows'
             def root = manifest_file.parent
             def run_ids = [] as Set
-            def assembly_files = [:]
+            def assembly_accessions = [:]
             def assembly_nascent_modes = [:]
             rows.eachWithIndex { row, idx ->
                 def row_number = idx + 2
@@ -253,20 +280,18 @@ workflow {
                 def nascent_mode = row.nascent_mode?.toString()?.trim()?.toLowerCase() ?: 'off'
                 if (!(nascent_mode in ['off', 'mature', 'retain'])) error "manifest row ${row_number}: nascent_mode must be off, mature, or retain"
                 def reads = manifest_path(row.fastq, root, 'fastq', row_number)
-                def reference = manifest_path(row.reference_fasta, root, 'reference_fasta', row_number)
-                def reference_name = reference.toString()
-                def reference_compressed = reference_name.toLowerCase() ==~ /.*\.(gz|bgz)(?:[?#].*)?$/
+                def assembly_accession = (row.assembly_accession ?: '').toString().trim()
+                if (!(assembly_accession ==~ /GCA_\d{9}\.\d+/))
+                    error "manifest row ${row_number}: assembly_accession must be a GCA accession such as GCA_000001405.29"
                 def assembly_key = "${species_id}::${assembly_id}"
-                def signature = reference.toString()
-                if (assembly_files.containsKey(assembly_key) && assembly_files[assembly_key] != signature)
-                    error "manifest rows for ${assembly_key} must use the same reference_fasta"
+                if (assembly_accessions.containsKey(assembly_key) && assembly_accessions[assembly_key] != assembly_accession)
+                    error "manifest rows for ${assembly_key} must use the same assembly_accession"
                 if (assembly_nascent_modes.containsKey(assembly_key) && assembly_nascent_modes[assembly_key] != nascent_mode)
                     error "manifest rows for ${assembly_key} must use the same nascent_mode so their transcript sets can be merged consistently"
-                assembly_files[assembly_key] = signature
+                assembly_accessions[assembly_key] = assembly_accession
                 assembly_nascent_modes[assembly_key] = nascent_mode
                 row._reads = reads
-                row._reference = reference
-                row._reference_compressed = reference_compressed
+                row._assembly_accession = assembly_accession
                 row._normalized = [
                     key: assembly_key,
                     species_id: species_id,
@@ -280,22 +305,23 @@ workflow {
             }
             rows.collect { row ->
                 def meta = row._normalized
-                tuple(meta.key, meta, row._reads, row._reference, row._reference_compressed)
+                tuple(meta.key, meta, row._reads, row._assembly_accession)
             }
         }
 
     reference_inputs = manifest_rows.flatMap { records ->
         records.groupBy { record -> record[0] }.collect { key, records_for_assembly ->
             def first = records_for_assembly[0]
-            tuple(key, first[1], file(first[3]), first[4])
+            tuple(key, first[1], first[3], file("${projectDir}/bin/fetch_genome.py"))
         }
     }
-    BUILD_REFERENCE_INDEX(reference_inputs)
+    FETCH_GENOME(reference_inputs)
+    BUILD_REFERENCE_INDEX(FETCH_GENOME.out.reference.map { key, meta, reference -> tuple(key, meta, reference, false) })
 
     alignment_inputs = manifest_rows
         .flatMap { records -> records }
         .combine(BUILD_REFERENCE_INDEX.out.index, by: 0)
-        .map { key, meta, reads, _reference, _reference_compressed, _assembly_meta, index, reference_fai ->
+        .map { key, meta, reads, _assembly_accession, _assembly_meta, index, reference_fai ->
             tuple(meta, file(reads), index, reference_fai)
         }
     ALIGN_SORT_INDEX_QC(alignment_inputs)
