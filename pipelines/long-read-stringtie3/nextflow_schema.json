@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/Ensembl/ensembl-genes-nf/long-read-stringtie3",
-  "title": "Multi-species long-read alignment and StringTie3 pipeline",
+  "title": "Multi-species long-read de novo assembly with StringTie3",
   "type": "object",
   "required": ["manifest"],
   "properties": {

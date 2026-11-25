@@ -1,4 +1,4 @@
-species_id	assembly_id	run_id	sample_id	technology	fastq	reference_fasta	annotation_gtf	minimap2_preset
-species_a	assembly_a	run_a1	sample_a	ont	../../../long-read/test/data/reads.fastq	../../../long-read/test/data/reference.fa	reference.gtf	splice
-species_a	assembly_a	run_a2	sample_a	pacbio	../../../long-read/test/data/reads.fastq	../../../long-read/test/data/reference.fa	reference.gtf	splice:hq
-species_b	assembly_b	run_b1	sample_b	ont	../../../long-read/test/data/reads.fastq	../../../long-read/test/data/reference.fa	reference.gtf	splice
+species_id	assembly_id	run_id	sample_id	technology	fastq	reference_fasta	minimap2_preset
+species_a	assembly_a	run_a1	sample_a	ont	../../../long-read/test/data/reads.fastq	../../../long-read/test/data/reference.fa	splice
+species_a	assembly_a	run_a2	sample_a	pacbio	../../../long-read/test/data/reads.fastq	../../../long-read/test/data/reference.fa	splice:hq
+species_b	assembly_b	run_b1	sample_b	ont	../../../long-read/test/data/reads.fastq	../../../long-read/test/data/reference.fa	splice

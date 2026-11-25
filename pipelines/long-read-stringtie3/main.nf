@@ -15,6 +15,11 @@ def safe_id(value, field, row_number) {
 def manifest_path(value, root, field, row_number) {
     def raw = (value ?: '').toString().trim()
     if (!raw) error "manifest row ${row_number}: ${field} is required"
+    // Accept local files, explicit URIs, and the bare ENA FTP host paths used
+    // by the project batch tables. Nextflow stages remote Path inputs natively.
+    if (raw.startsWith('ftp.')) raw = "https://${raw}"
+    def remote = raw ==~ /^[A-Za-z][A-Za-z0-9+.-]*:\/\/.*/
+    if (remote) return raw
     def candidate = raw.startsWith('/') ? file(raw) : file("${root}/${raw}")
     if (!candidate.exists()) error "manifest row ${row_number}: ${field} does not exist: ${candidate}"
     candidate.toAbsolutePath().normalize()
@@ -27,7 +32,7 @@ process BUILD_REFERENCE_INDEX {
     publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/reference" }, mode: 'copy'
 
     input:
-    tuple val(key), val(meta), path(reference, stageAs: 'reference.fa')
+    tuple val(key), val(meta), path(reference, stageAs: 'reference.input'), val(reference_compressed)
 
     output:
     tuple val(key), val(meta), path('reference.mmi'), path('reference.fa.fai'), emit: index
@@ -35,8 +40,14 @@ process BUILD_REFERENCE_INDEX {
 
     script:
     """
+    if [ '${reference_compressed}' = 'true' ]; then
+      gzip -cd reference.input > reference.fa
+    else
+      ln -s reference.input reference.fa
+    fi
     minimap2 -x splice -d reference.mmi reference.fa
     samtools faidx reference.fa
+    rm reference.fa
     cat > versions.yml <<VERSIONS
 "\${task.process}":
     minimap2: \$(minimap2 --version)
@@ -132,19 +143,18 @@ process STRINGTIE3_ASSEMBLE {
     publishDir path: { "${params.outdir}/per_run/${meta.species_id}/${meta.assembly_id}/${meta.run_id}/stringtie3/assembly" }, mode: 'copy'
 
     input:
-    tuple val(meta), path(bam), path(annotation, stageAs: 'reference.gtf')
+    tuple val(meta), path(bam)
 
     output:
     tuple val(meta), path("${meta.run_id}.assembled.gtf"), emit: assembled
     path 'gene_abundances.tsv', emit: gene_abundances
-    path 'fully_covered_reference.gtf', emit: fully_covered
     path 'versions.yml', emit: versions
 
     script:
     def nascent_args = meta.nascent_mode == 'mature' ? '-N' : (meta.nascent_mode == 'retain' ? '--nasc' : '')
     """
-    stringtie -L ${nascent_args} -p ${task.cpus} -G ${annotation} \\
-      -A gene_abundances.tsv -C fully_covered_reference.gtf \\
+    stringtie -L ${nascent_args} -p ${task.cpus} \\
+      -A gene_abundances.tsv \\
       -o '${meta.run_id}.assembled.gtf' ${bam}
     printf 'stringtie: %s\\n' "\$(stringtie --version 2>&1 | head -n1)" > versions.yml
     """
@@ -153,7 +163,6 @@ process STRINGTIE3_ASSEMBLE {
     """
     printf 'chr1\\tStringTie\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "t1";\\n' > '${meta.run_id}.assembled.gtf'
     printf 'gene\\tcoverage\\tFPKM\\tTPM\\ng1\\t1\\t1\\t1\\n' > gene_abundances.tsv
-    printf 'chr1\\tStringTie\\ttranscript\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "t1";\\n' > fully_covered_reference.gtf
     touch versions.yml
     """
 }
@@ -165,7 +174,7 @@ process STRINGTIE3_MERGE {
     publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/stringtie3/merge" }, mode: 'copy'
 
     input:
-    tuple val(meta), path(gtfs), path(annotation, stageAs: 'reference.gtf')
+    tuple val(meta), path(gtfs)
 
     output:
     tuple val(meta), path('merged.gtf'), emit: merged
@@ -173,7 +182,7 @@ process STRINGTIE3_MERGE {
 
     script:
     """
-    stringtie --merge -p ${task.cpus} -G ${annotation} -o merged.gtf ${gtfs}
+    stringtie --merge -p ${task.cpus} -o merged.gtf ${gtfs}
     printf 'stringtie: %s\\n' "\$(stringtie --version 2>&1 | head -n1)" > versions.yml
     """
 
@@ -245,18 +254,19 @@ workflow {
                 if (!(nascent_mode in ['off', 'mature', 'retain'])) error "manifest row ${row_number}: nascent_mode must be off, mature, or retain"
                 def reads = manifest_path(row.fastq, root, 'fastq', row_number)
                 def reference = manifest_path(row.reference_fasta, root, 'reference_fasta', row_number)
-                def annotation = manifest_path(row.annotation_gtf, root, 'annotation_gtf', row_number)
+                def reference_name = reference.toString()
+                def reference_compressed = reference_name.toLowerCase() ==~ /.*\.(gz|bgz)(?:[?#].*)?$/
                 def assembly_key = "${species_id}::${assembly_id}"
-                def signature = [reference.toString(), annotation.toString()]
+                def signature = reference.toString()
                 if (assembly_files.containsKey(assembly_key) && assembly_files[assembly_key] != signature)
-                    error "manifest rows for ${assembly_key} must use the same reference_fasta and annotation_gtf"
+                    error "manifest rows for ${assembly_key} must use the same reference_fasta"
                 if (assembly_nascent_modes.containsKey(assembly_key) && assembly_nascent_modes[assembly_key] != nascent_mode)
                     error "manifest rows for ${assembly_key} must use the same nascent_mode so their transcript sets can be merged consistently"
                 assembly_files[assembly_key] = signature
                 assembly_nascent_modes[assembly_key] = nascent_mode
                 row._reads = reads
                 row._reference = reference
-                row._annotation = annotation
+                row._reference_compressed = reference_compressed
                 row._normalized = [
                     key: assembly_key,
                     species_id: species_id,
@@ -270,14 +280,14 @@ workflow {
             }
             rows.collect { row ->
                 def meta = row._normalized
-                tuple(meta.key, meta, row._reads, row._reference, row._annotation)
+                tuple(meta.key, meta, row._reads, row._reference, row._reference_compressed)
             }
         }
 
     reference_inputs = manifest_rows.flatMap { records ->
         records.groupBy { record -> record[0] }.collect { key, records_for_assembly ->
             def first = records_for_assembly[0]
-            tuple(key, first[1], first[3])
+            tuple(key, first[1], file(first[3]), first[4])
         }
     }
     BUILD_REFERENCE_INDEX(reference_inputs)
@@ -285,32 +295,17 @@ workflow {
     alignment_inputs = manifest_rows
         .flatMap { records -> records }
         .combine(BUILD_REFERENCE_INDEX.out.index, by: 0)
-        .map { key, meta, reads, _reference, _annotation, _assembly_meta, index, reference_fai ->
-            tuple(meta, reads, index, reference_fai)
+        .map { key, meta, reads, _reference, _reference_compressed, _assembly_meta, index, reference_fai ->
+            tuple(meta, file(reads), index, reference_fai)
         }
     ALIGN_SORT_INDEX_QC(alignment_inputs)
-    annotation_by_run = manifest_rows.flatMap { records ->
-        records.collect { key, meta, _reads, _reference, annotation -> tuple(meta.run_id, annotation) }
-    }
-    stringtie_inputs = ALIGN_SORT_INDEX_QC.out.aligned
-        .map { meta, bam, _bai -> tuple(meta.run_id, meta, bam) }
-        .combine(annotation_by_run, by: 0)
-        .map { run_id, meta, bam, annotation -> tuple(meta, bam, annotation) }
-    STRINGTIE3_ASSEMBLE(stringtie_inputs)
+    STRINGTIE3_ASSEMBLE(ALIGN_SORT_INDEX_QC.out.aligned.map { meta, bam, _bai -> tuple(meta, bam) })
 
     assembly_groups = STRINGTIE3_ASSEMBLE.out.assembled
         .map { meta, gtf -> tuple(meta.key, meta, gtf) }
         .groupTuple(by: 0)
         .map { key, metas, gtfs -> tuple(key, metas[0], gtfs) }
-    assembly_annotations = manifest_rows.flatMap { records ->
-        records.groupBy { record -> record[0] }.collect { key, records_for_assembly ->
-            tuple(key, records_for_assembly[0][4])
-        }
-    }
-    merge_inputs = assembly_groups
-        .combine(assembly_annotations, by: 0)
-        .map { key, meta, gtfs, annotation -> tuple(meta, gtfs, annotation) }
-    STRINGTIE3_MERGE(merge_inputs)
+    STRINGTIE3_MERGE(assembly_groups.map { key, meta, gtfs -> tuple(meta, gtfs) })
 
     quantified_inputs = ALIGN_SORT_INDEX_QC.out.aligned
         .map { meta, bam, _bai -> tuple(meta.key, meta, bam) }
