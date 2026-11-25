@@ -114,7 +114,8 @@ running tasks for grid executors.
 
 Every genome-download, index, alignment, and StringTie task gets one retry with
 more CPUs, memory, and/or time; a second failure is ignored so independent
-species and runs can finish. Keep the Nextflow trace: after the run, summarize
+species and runs can finish. The ignored-error limit is unlimited for these
+stages. Keep the Nextflow trace: after the run, summarize
 the terminal failures (including a short stderr excerpt) with:
 
 ```bash
