@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Supporting evidence aggregation pipeline parameters",
+  "type": "object",
+  "properties": {
+    "track_manifest": {"type": "string", "exists": true, "description": "Completed track-preparation track_manifest.tsv"},
+    "manifest_base_dir": {"type": ["string", "null"], "description": "Base directory for relative track_path values"},
+    "track_types": {"type": "string", "enum": ["all", "coverage", "splice_junction"], "default": "all", "description": "Build coverage matrices, splice-junction matrices, or both"},
+    "source_entity_type": {"type": "string", "enum": ["run", "sample", "merged"], "default": "run", "description": "Entity type retained as one column identity per source"},
+    "species_name": {"type": ["string", "null"], "description": "Optional species label for the output bundle; defaults to the assembly accession"},
+    "allow_opaque_normalization": {"type": "boolean", "default": false, "description": "Allow legacy non-JSON coverage normalization metadata"},
+    "coverage_bin_size": {"type": "integer", "minimum": 1, "default": 1000, "description": "Bin size used for coverage QC matrices"},
+    "outdir": {"type": "string", "default": "./results"},
+    "tracedir": {"type": ["string", "null"], "description": "Directory for execution reports"}
+  },
+  "required": ["track_manifest"]
+}
