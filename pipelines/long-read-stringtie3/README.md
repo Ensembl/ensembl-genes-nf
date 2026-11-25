@@ -112,6 +112,23 @@ the site allocation and scratch capacity. The per-stage caps bound large tasks
 in flight; `executor_queue_size` provides an additional total cap on queued or
 running tasks for grid executors.
 
+Every genome-download, index, alignment, and StringTie task gets one retry with
+more CPUs, memory, and/or time; a second failure is ignored so independent
+species and runs can finish. Keep the Nextflow trace: after the run, summarize
+the terminal failures (including a short stderr excerpt) with:
+
+```bash
+python3 pipelines/long-read-stringtie3/bin/summarize_ignored_failures.py \
+  /data/long-read-results/pipeline_info/trace.tsv \
+  /data/long-read-results/pipeline_info/ignored_failures.tsv
+```
+
+For the current five-species mammal pilot, use
+`manifests/gdm_mammal_first_test.tsv`. It contains ten runs each from vervet,
+rat, dog, cattle, and horse (50 total), ordered within each species as CCS/HiFi
+then ONT. One rat run with two FASTQ files was replaced by the next eligible
+single-file ONT run because the manifest currently takes one FASTQ URI per run.
+
 For a wiring-only check with the bundled two-species fixture:
 
 ```bash
