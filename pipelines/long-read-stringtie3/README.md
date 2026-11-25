@@ -95,15 +95,16 @@ their published copies, staged references, and temporary sort files. Set
 nextflow run pipelines/long-read-stringtie3/main.nf \
   --manifest /data/long_reads.tsv \
   --outdir /data/long-read-results \
+  --tracedir /data/long-read-results/pipeline_info \
   -work-dir /scratch/nextflow/long-read-stringtie3 \
   -profile slurm \
-  -with-report /data/long-read-results/pipeline_info/report.html \
-  -with-trace /data/long-read-results/pipeline_info/trace.tsv
+  -resume
 ```
 
-The repository's shared configuration defaults to Singularity. Use
+The `slurm` profile selects the Slurm executor and Singularity containers. Use
 `-profile docker_runtime` for Docker, or `-profile apptainer` where Apptainer
-is installed. The configuration allows two concurrent genome downloads,
+is installed. The shared config writes the report, timeline, and trace into
+`tracedir`. The pipeline configuration allows two concurrent genome downloads,
 reference indexes, alignments, StringTie assemblies, and quantification tasks,
 with one merge at a time. These per-stage `maxForks` limits and the executor
 queue size are set in `nextflow.config` so the run manifest only contains
@@ -117,7 +118,7 @@ the terminal failures (including a short stderr excerpt) with:
 
 ```bash
 python3 pipelines/long-read-stringtie3/bin/summarize_ignored_failures.py \
-  /data/long-read-results/pipeline_info/trace.tsv \
+  /data/long-read-results/pipeline_info/execution_trace.txt \
   /data/long-read-results/pipeline_info/ignored_failures.tsv
 ```
 

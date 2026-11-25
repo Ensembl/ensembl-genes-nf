@@ -24,7 +24,7 @@ def error_excerpt(workdir: str) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("trace", type=Path, help="Nextflow -with-trace TSV")
+    parser.add_argument("trace", type=Path, help="Nextflow trace file in TSV format")
     parser.add_argument("output", type=Path, help="Output TSV for terminal failures")
     args = parser.parse_args()
 
