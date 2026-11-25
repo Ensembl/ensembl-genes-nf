@@ -6,8 +6,12 @@ assembly per run, merges transcript models per species/assembly, then estimates
 abundance for each run against that StringTie-derived merged catalog. It does
 not consume external gene annotations.
 
-StringTie performs the transcript assembly, merge, and quantification. Workflow
-code handles input validation, reference indexing, alignment, and scheduling.
+StringTie performs transcript assembly, merge, and quantification. The workflow
+uses separate processes for genome fetching, minimap2 index creation, FASTA
+indexing, alignment and BAM sorting, BAM indexing, alignment QC, and each
+StringTie operation. Each tool process declares its pinned container directly.
+Compute processes retry once with upgraded resources before a failed task is
+ignored.
 
 ## Run manifest
 
@@ -37,8 +41,11 @@ Technology is `ont` or `pacbio`; default minimap2 presets are `splice` and
 
 All rows for one `species_id` + `assembly_id` must use the same
 `assembly_accession` and nascent mode. An assembly gets one genome download and
-one minimap2 index, shared by its runs. The downloader normalizes reference
-sequence names before alignment and transcript assembly.
+one minimap2 index, shared by its runs. The FASTA index is built independently.
+Alignment depends only on the minimap2 index, so it can start as soon as that
+index is ready without waiting for the FASTA index; alignment QC uses the FASTA
+index separately. The downloader normalizes reference sequence names before
+alignment and transcript assembly.
 
 `nascent_mode` defaults to `off`. For total-RNA / rRNA-depleted libraries,
 StringTie3 recommends nascent-aware assembly: set it to `mature` to use `-N`
@@ -105,10 +112,10 @@ The `slurm` profile selects the Slurm executor and Singularity containers. Use
 `-profile docker_runtime` for Docker, or `-profile apptainer` where Apptainer
 is installed. The shared config writes the report, timeline, and trace into
 `tracedir`. The pipeline configuration allows two concurrent genome downloads,
-reference indexes, alignments, StringTie assemblies, and quantification tasks,
-with one merge at a time. These per-stage `maxForks` limits and the executor
-queue size are set in `nextflow.config` so the run manifest only contains
-biological inputs.
+each reference-indexing task, alignments, BAM-indexing tasks, alignment-QC
+tasks, StringTie assemblies, and quantification tasks, with one merge at a
+time. These per-stage `maxForks` limits and the executor queue size are set in
+`nextflow.config` so the run manifest only contains biological inputs.
 
 Every genome-download, index, alignment, and StringTie task gets one retry with
 more CPUs, memory, and/or time; a second failure is ignored so independent

@@ -28,7 +28,7 @@ def manifest_path(value, root, field, row_number) {
 process FETCH_GENOME {
     label 'genome_download'
     tag "${meta.species_id}/${meta.assembly_id}"
-    container params.use_containers ? params.tool_containers.fetch_genome : null
+    container 'docker.io/library/python@sha256:17b9724493d916f56565c131f389faff2597f46dec6ce09516f95125bc9f519f'
     publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/reference" }, mode: 'copy'
 
     input:
@@ -37,56 +37,80 @@ process FETCH_GENOME {
     output:
     tuple val(key), val(meta), path('*.fa'), emit: reference
     path '*_assembly_report.txt', optional: true, emit: assembly_report
-    path 'versions.yml', emit: versions
+    path 'fetch_genome.versions.yml', emit: versions
 
     script:
     """
     python3 fetch_genome.py --gca '${assembly_accession}' --output_dir .
-    printf 'fetch_genome.py: %s\\n' "\$(python3 fetch_genome.py --version)" > versions.yml
+    printf 'fetch_genome.py: %s\\n' "\$(python3 fetch_genome.py --version)" > fetch_genome.versions.yml
     """
 
     stub:
     """
     printf '>chr1\\nACGT\\n' > '${assembly_accession.replace('.', 'v')}.fa'
-    printf 'stub\\n' > versions.yml
+    printf 'stub\\n' > fetch_genome.versions.yml
     """
 }
 
-process BUILD_REFERENCE_INDEX {
+process BUILD_MINIMAP2_INDEX {
     label 'index'
     tag "${meta.species_id}/${meta.assembly_id}"
-    container params.use_containers ? params.tool_containers.alignment : null
-    publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/reference" }, mode: 'copy'
+    container 'quay.io/biocontainers/mulled-v2-66534bcbb7031a148b13e2ad42583020b9cd25c4@sha256:9352893c7f30ec6a3d6e5591d14a4034260a9489537d6577a0a23ae8ee8fd259'
+    publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/reference" }, mode: 'copy', saveAs: { filename ->
+        filename in ['reference.mmi', 'minimap2_index.versions.yml'] ? filename : null
+    }
 
     input:
-    tuple val(key), val(meta), path(reference, stageAs: 'reference.input'), val(reference_compressed)
+    tuple val(key), val(meta), path(reference, stageAs: 'reference.fa')
 
     output:
-    tuple val(key), val(meta), path('reference.mmi'), path('reference.fa.fai'), emit: index
-    path 'versions.yml', emit: versions
+    tuple val(key), val(meta), path('reference.mmi'), emit: index
+    path 'minimap2_index.versions.yml', emit: versions
 
     script:
     """
-    if [ '${reference_compressed}' = 'true' ]; then
-      gzip -cd reference.input > reference.fa
-    else
-      ln -s reference.input reference.fa
-    fi
     minimap2 -x splice -d reference.mmi reference.fa
-    samtools faidx reference.fa
-    rm reference.fa
-    cat > versions.yml <<VERSIONS
-"\${task.process}":
+    cat > minimap2_index.versions.yml <<VERSIONS
+"${task.process}":
     minimap2: \$(minimap2 --version)
-    samtools: \$(samtools --version | head -n1)
 VERSIONS
     """
 
     stub:
     """
     printf 'stub index\\n' > reference.mmi
+    touch minimap2_index.versions.yml
+    """
+}
+
+process INDEX_REFERENCE_FASTA {
+    label 'fasta_index'
+    tag "${meta.species_id}/${meta.assembly_id}"
+    container 'quay.io/biocontainers/mulled-v2-66534bcbb7031a148b13e2ad42583020b9cd25c4@sha256:9352893c7f30ec6a3d6e5591d14a4034260a9489537d6577a0a23ae8ee8fd259'
+    publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/reference" }, mode: 'copy', saveAs: { filename ->
+        filename in ['reference.fa.fai', 'samtools_faidx.versions.yml'] ? filename : null
+    }
+
+    input:
+    tuple val(key), val(meta), path(reference, stageAs: 'reference.fa')
+
+    output:
+    tuple val(key), val(meta), path('reference.fa.fai'), emit: index
+    path 'samtools_faidx.versions.yml', emit: versions
+
+    script:
+    """
+    samtools faidx reference.fa
+    cat > samtools_faidx.versions.yml <<VERSIONS
+"${task.process}":
+    samtools: \$(samtools --version | head -n1)
+VERSIONS
+    """
+
+    stub:
+    """
     printf 'chr1\\t1000\\t0\\t1000\\t1001\\n' > reference.fa.fai
-    touch versions.yml
+    touch samtools_faidx.versions.yml
     """
 }
 
@@ -115,22 +139,20 @@ process ARCHIVE_INPUT_MANIFEST {
     """
 }
 
-process ALIGN_SORT_INDEX_QC {
+process ALIGN_AND_SORT_BAM {
     label 'alignment'
     tag "${meta.species_id}/${meta.assembly_id}/${meta.run_id}"
-    container params.use_containers ? params.tool_containers.alignment : null
+    container 'quay.io/biocontainers/mulled-v2-66534bcbb7031a148b13e2ad42583020b9cd25c4@sha256:9352893c7f30ec6a3d6e5591d14a4034260a9489537d6577a0a23ae8ee8fd259'
     publishDir path: { "${params.outdir}/per_run/${meta.species_id}/${meta.assembly_id}/${meta.run_id}/alignment" }, mode: 'copy', saveAs: { filename ->
-        filename in ['aligned.sorted.bam', 'aligned.sorted.bam.csi', 'flagstat.txt', 'idxstats.tsv', 'versions.yml'] ? filename : null
+        filename in ['aligned.sorted.bam', 'alignment.versions.yml'] ? filename : null
     }
 
     input:
-    tuple val(meta), path(reads), path(index), path(reference_fai, stageAs: 'reference.fa.fai')
+    tuple val(meta), path(reads), path(index)
 
     output:
-    tuple val(meta), path('aligned.sorted.bam'), path('aligned.sorted.bam.csi'), emit: aligned
-    path 'versions.yml', emit: versions
-    path 'flagstat.txt', emit: flagstat
-    path 'idxstats.tsv', emit: idxstats
+    tuple val(meta), path('aligned.sorted.bam'), emit: aligned
+    path 'alignment.versions.yml', emit: versions
 
     script:
     // minimap2 uses an extra I/O thread; reserve the remaining two slots for samtools sort.
@@ -139,15 +161,8 @@ process ALIGN_SORT_INDEX_QC {
     set -o pipefail
     minimap2 -t ${threads} -ax ${meta.minimap2_preset} --secondary=no ${index} ${reads} \\
       | samtools sort -@ 1 -o aligned.sorted.bam -
-    samtools index -c -o aligned.sorted.bam.csi aligned.sorted.bam
-    samtools quickcheck -v aligned.sorted.bam
-    samtools idxstats aligned.sorted.bam > idxstats.tsv
-    cut -f1,2 reference.fa.fai | sort > expected_contigs.tsv
-    awk '\$1 != "*" {print \$1 "\\t" \$2}' idxstats.tsv | sort > observed_contigs.tsv
-    diff -u expected_contigs.tsv observed_contigs.tsv
-    samtools flagstat aligned.sorted.bam > flagstat.txt
-    cat > versions.yml <<VERSIONS
-"\${task.process}":
+    cat > alignment.versions.yml <<VERSIONS
+"${task.process}":
     minimap2: \$(minimap2 --version)
     samtools: \$(samtools --version | head -n1)
 VERSIONS
@@ -156,17 +171,83 @@ VERSIONS
     stub:
     """
     printf 'BAM\\n' > aligned.sorted.bam
+    touch alignment.versions.yml
+    """
+}
+
+process INDEX_ALIGNMENT_BAM {
+    label 'bam_index'
+    tag "${meta.species_id}/${meta.assembly_id}/${meta.run_id}"
+    container 'quay.io/biocontainers/mulled-v2-66534bcbb7031a148b13e2ad42583020b9cd25c4@sha256:9352893c7f30ec6a3d6e5591d14a4034260a9489537d6577a0a23ae8ee8fd259'
+    publishDir path: { "${params.outdir}/per_run/${meta.species_id}/${meta.assembly_id}/${meta.run_id}/alignment" }, mode: 'copy', saveAs: { filename ->
+        filename in ['aligned.sorted.bam.csi', 'bam_index.versions.yml'] ? filename : null
+    }
+
+    input:
+    tuple val(meta), path(bam)
+
+    output:
+    tuple val(meta), path('aligned.sorted.bam.csi'), emit: index
+    path 'bam_index.versions.yml', emit: versions
+
+    script:
+    """
+    samtools index -c -o aligned.sorted.bam.csi ${bam}
+    cat > bam_index.versions.yml <<VERSIONS
+"${task.process}":
+    samtools: \$(samtools --version | head -n1)
+VERSIONS
+    """
+
+    stub:
+    """
     printf 'CSI\\n' > aligned.sorted.bam.csi
+    touch bam_index.versions.yml
+    """
+}
+
+process QC_ALIGNMENT_BAM {
+    label 'alignment_qc'
+    tag "${meta.species_id}/${meta.assembly_id}/${meta.run_id}"
+    container 'quay.io/biocontainers/mulled-v2-66534bcbb7031a148b13e2ad42583020b9cd25c4@sha256:9352893c7f30ec6a3d6e5591d14a4034260a9489537d6577a0a23ae8ee8fd259'
+    publishDir path: { "${params.outdir}/per_run/${meta.species_id}/${meta.assembly_id}/${meta.run_id}/alignment" }, mode: 'copy', saveAs: { filename ->
+        filename in ['flagstat.txt', 'idxstats.tsv', 'alignment_qc.versions.yml'] ? filename : null
+    }
+
+    input:
+    tuple val(meta), path(bam), path(reference_fai, stageAs: 'reference.fa.fai')
+
+    output:
+    path 'flagstat.txt', emit: flagstat
+    path 'idxstats.tsv', emit: idxstats
+    path 'alignment_qc.versions.yml', emit: versions
+
+    script:
+    """
+    samtools quickcheck -v ${bam}
+    samtools idxstats ${bam} > idxstats.tsv
+    cut -f1,2 reference.fa.fai | sort > expected_contigs.tsv
+    awk '\$1 != "*" {print \$1 "\\t" \$2}' idxstats.tsv | sort > observed_contigs.tsv
+    diff -u expected_contigs.tsv observed_contigs.tsv
+    samtools flagstat ${bam} > flagstat.txt
+    cat > alignment_qc.versions.yml <<VERSIONS
+"${task.process}":
+    samtools: \$(samtools --version | head -n1)
+VERSIONS
+    """
+
+    stub:
+    """
     printf 'chr1\\t10\\t0\\t0\\t0\\n*\\t0\\t0\\t0\\t0\\n' > idxstats.tsv
     printf 'expected\\n' > flagstat.txt
-    touch versions.yml
+    touch alignment_qc.versions.yml
     """
 }
 
 process STRINGTIE3_ASSEMBLE {
     label 'stringtie_assembly'
     tag "${meta.species_id}/${meta.assembly_id}/${meta.run_id}"
-    container params.use_containers ? params.tool_containers.stringtie3 : null
+    container 'quay.io/biocontainers/stringtie@sha256:1e2d08591607f70ee10b830a5fd17eaa3c1c34d25ca28cb224a73658053a1f31'
     publishDir path: { "${params.outdir}/per_run/${meta.species_id}/${meta.assembly_id}/${meta.run_id}/stringtie3/assembly" }, mode: 'copy'
 
     input:
@@ -197,7 +278,7 @@ process STRINGTIE3_ASSEMBLE {
 process STRINGTIE3_MERGE {
     label 'stringtie_merge'
     tag "${meta.species_id}/${meta.assembly_id}"
-    container params.use_containers ? params.tool_containers.stringtie3 : null
+    container 'quay.io/biocontainers/stringtie@sha256:1e2d08591607f70ee10b830a5fd17eaa3c1c34d25ca28cb224a73658053a1f31'
     publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/stringtie3/merge" }, mode: 'copy'
 
     input:
@@ -223,7 +304,7 @@ process STRINGTIE3_MERGE {
 process STRINGTIE3_QUANTIFY {
     label 'stringtie_quantification'
     tag "${meta.species_id}/${meta.assembly_id}/${meta.run_id}"
-    container params.use_containers ? params.tool_containers.stringtie3 : null
+    container 'quay.io/biocontainers/stringtie@sha256:1e2d08591607f70ee10b830a5fd17eaa3c1c34d25ca28cb224a73658053a1f31'
     publishDir path: { "${params.outdir}/per_run/${meta.species_id}/${meta.assembly_id}/${meta.run_id}/stringtie3/quantification" }, mode: 'copy'
 
     input:
@@ -316,16 +397,26 @@ workflow {
         }
     }
     FETCH_GENOME(reference_inputs)
-    BUILD_REFERENCE_INDEX(FETCH_GENOME.out.reference.map { key, meta, reference -> tuple(key, meta, reference, false) })
+    reference_sequences = FETCH_GENOME.out.reference
+    BUILD_MINIMAP2_INDEX(reference_sequences.map { key, meta, reference -> tuple(key, meta, reference) })
+    INDEX_REFERENCE_FASTA(reference_sequences.map { key, meta, reference -> tuple(key, meta, reference) })
 
     alignment_inputs = manifest_rows
         .flatMap { records -> records }
-        .combine(BUILD_REFERENCE_INDEX.out.index, by: 0)
-        .map { key, meta, reads, _assembly_accession, _assembly_meta, index, reference_fai ->
-            tuple(meta, file(reads), index, reference_fai)
+        .combine(BUILD_MINIMAP2_INDEX.out.index, by: 0)
+        .map { key, meta, reads, _assembly_accession, _assembly_meta, index ->
+            tuple(meta, file(reads), index)
         }
-    ALIGN_SORT_INDEX_QC(alignment_inputs)
-    STRINGTIE3_ASSEMBLE(ALIGN_SORT_INDEX_QC.out.aligned.map { meta, bam, _bai -> tuple(meta, bam) })
+    ALIGN_AND_SORT_BAM(alignment_inputs)
+    INDEX_ALIGNMENT_BAM(ALIGN_AND_SORT_BAM.out.aligned)
+
+    alignment_qc_inputs = ALIGN_AND_SORT_BAM.out.aligned
+        .map { meta, bam -> tuple(meta.key, meta, bam) }
+        .combine(INDEX_REFERENCE_FASTA.out.index.map { key, _meta, reference_fai -> tuple(key, reference_fai) }, by: 0)
+        .map { key, meta, bam, reference_fai -> tuple(meta, bam, reference_fai) }
+    QC_ALIGNMENT_BAM(alignment_qc_inputs)
+
+    STRINGTIE3_ASSEMBLE(ALIGN_AND_SORT_BAM.out.aligned.map { meta, bam -> tuple(meta, bam) })
 
     assembly_groups = STRINGTIE3_ASSEMBLE.out.assembled
         .map { meta, gtf -> tuple(meta.key, meta, gtf) }
@@ -333,8 +424,8 @@ workflow {
         .map { key, metas, gtfs -> tuple(key, metas[0], gtfs) }
     STRINGTIE3_MERGE(assembly_groups.map { key, meta, gtfs -> tuple(meta, gtfs) })
 
-    quantified_inputs = ALIGN_SORT_INDEX_QC.out.aligned
-        .map { meta, bam, _bai -> tuple(meta.key, meta, bam) }
+    quantified_inputs = ALIGN_AND_SORT_BAM.out.aligned
+        .map { meta, bam -> tuple(meta.key, meta, bam) }
         .combine(STRINGTIE3_MERGE.out.merged.map { meta, merged_gtf -> tuple(meta.key, merged_gtf) }, by: 0)
         .map { key, meta, bam, merged_gtf -> tuple(meta, bam, merged_gtf) }
     STRINGTIE3_QUANTIFY(quantified_inputs)

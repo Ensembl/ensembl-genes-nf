@@ -8,17 +8,6 @@
     "manifest": {"type": "string", "format": "file-path", "exists": true, "description": "Tab-separated run manifest"},
     "outdir": {"type": "string", "description": "Durable output directory"},
     "tracedir": {"type": "string", "description": "Optional Nextflow execution report directory"},
-    "use_containers": {"type": "boolean", "default": true},
-    "tool_containers": {
-      "type": "object",
-      "required": ["fetch_genome", "alignment", "stringtie3"],
-      "properties": {
-        "fetch_genome": {"type": "string"},
-        "alignment": {"type": "string", "pattern": "^quay\\.io/biocontainers/.+@sha256:[0-9a-f]{64}$"},
-        "stringtie3": {"type": "string", "pattern": "^quay\\.io/biocontainers/.+@sha256:[0-9a-f]{64}$"}
-      },
-      "additionalProperties": false
-    }
   },
   "additionalProperties": true
 }
