@@ -83,6 +83,34 @@ manifest. Strict mode is the default: any unresolved candidate prevents the
 manifest from being published. `--dry-run` writes diagnostics without the
 manifest.
 
+### Build from an ENA submission inventory
+
+Use `build_manifest_from_ena_files.py` when the track inputs must be exactly
+the BAMs listed in an existing ENA `files.tsv`, or when companion files are in
+separate roots. It treats `files.tsv` as the authoritative run inventory,
+matches GTFs named `<run>_Aligned.sortedByCoord.out.gtf`, and matches STAR
+junction files at `<run>__STARpass1/SJ.out.tab`. The manifest is withheld in
+strict mode if a requested BAM, GTF, or junction file is missing. Review the
+adjacent audit, exceptions, and summary before using the output.
+
+For the Danio rerio GCA_052040795.2 layout described above:
+
+```bash
+python3 pipelines/track_file_preparation/bin/build_manifest_from_ena_files.py \
+  --files-tsv /hps/nobackup/flicek/ensembl/genebuild/jackt/ena-manifests/danio_rerio/GCA_052040795.2/files.tsv \
+  --gca GCA_052040795.2 \
+  --assembly-release GCA_052040795.2-Ensembl-2026-09 \
+  --gtf-dir /nfs/production/flicek/ensembl/genebuild/jackt/main/zebrafish/danio_rerio/GCA_052040795.2/rnaseq/output/scallop \
+  --sj-dir /hps/nobackup/flicek/ensembl/genebuild/jackt/main/zebrafish/danio_rerio/GCA_052040795.2/rnaseq/output \
+  --output-manifest /hps/nobackup/flicek/ensembl/genebuild/jackt/ena-manifests/danio_rerio/GCA_052040795.2/track_manifest.tsv
+```
+
+The BAM paths come directly from `files.tsv`; the locations above are the
+observed GTF and STAR-junction roots. Confirm that the summary reports the
+expected input row count and that exceptions are empty before running track
+prep. `--track-types` can select a subset when some companion type is not
+needed.
+
 Run the wiring test with:
 
 ```bash
