@@ -20,7 +20,8 @@ workflow PREPARE_COVERAGE_TRACKS {
         tuple(meta + [current_track: "coverage_${meta.coverage_strand}"], track)
     }
     checksummed = CHECKSUM_TRACK(record_input)
-    records = WRITE_TRACK_RECORD(checksummed.checksummed)
+    records = WRITE_TRACK_RECORD(checksummed.checksummed,
+        file("${projectDir}/bin/write_track_record.py", checkIfExists: true))
 
     emit:
     results = records.results

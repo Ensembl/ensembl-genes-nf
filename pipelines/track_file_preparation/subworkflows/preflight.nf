@@ -8,8 +8,10 @@ workflow PREFLIGHT_TRACK_INPUTS {
     bam_entities // tuple [meta, bam, chrom_sizes]
 
     main:
-    reference = VALIDATE_REFERENCE(chrom_sizes, assembly_release)
-    resolved_bam_reference = RESOLVE_BAM_REFERENCE(bam_entities)
+    reference = VALIDATE_REFERENCE(chrom_sizes, assembly_release,
+        file("${projectDir}/bin/validate_reference.py", checkIfExists: true))
+    resolved_bam_reference = RESOLVE_BAM_REFERENCE(bam_entities,
+        file("${projectDir}/bin/resolve_bam_reference.py", checkIfExists: true))
 
     emit:
     checked = reference.checked

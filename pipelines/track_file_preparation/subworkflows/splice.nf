@@ -14,7 +14,8 @@ workflow PREPARE_SPLICE_TRACKS {
     splice_inputs = splice_entities.map { meta, sj, bam, chrom_sizes ->
         tuple(meta + [source_path: sj.toString()], sj, bam, chrom_sizes)
     }
-    supplied_validated = VALIDATE_STAR_JUNCTIONS(splice_inputs)
+    supplied_validated = VALIDATE_STAR_JUNCTIONS(splice_inputs,
+        file("${projectDir}/bin/validate_star_junctions.py", checkIfExists: true))
     bed = STAR_JUNCTIONS_TO_BED(supplied_validated.validated, file("${projectDir}/bin/sj_to_bed.py", checkIfExists: true))
     sorted = SORT_JUNCTION_BED(bed.bed)
     bigbed_input = sorted.sorted.map { meta, junction_bed, _source, chrom_sizes -> tuple(meta, junction_bed, chrom_sizes) }
@@ -22,7 +23,8 @@ workflow PREPARE_SPLICE_TRACKS {
     validated = VALIDATE_SPLICE_BIGBED(bigbed.bigbed)
     record_input = validated.validated.map { meta, track -> tuple(meta + [current_track: 'splice_junction'], track) }
     checksummed = CHECKSUM_TRACK(record_input)
-    records = WRITE_TRACK_RECORD(checksummed.checksummed)
+    records = WRITE_TRACK_RECORD(checksummed.checksummed,
+        file("${projectDir}/bin/write_track_record.py", checkIfExists: true))
 
     emit:
     results = records.results

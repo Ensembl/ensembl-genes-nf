@@ -289,17 +289,23 @@ Every module should wrap one primary tool responsibility. Independent
 conversion, sorting, validation, and publication steps must remain separate.
 The expected module responsibilities are:
 
+Process scripts should orchestrate a tool or invoke a focused helper from
+`pipelines/track_file_preparation/bin/`. Keep multi-step parsing, comparison,
+validation, and metadata-writing logic in those helpers so it can be reviewed
+and tested independently of Nextflow wiring.
+
 ### Input and preflight modules
 
 - `READ_TRACK_MANIFEST`: parse the TSV into structured records.
 - `VALIDATE_MANIFEST_RECORD`: validate row fields and track selection.
 - `VALIDATE_REFERENCE`: validate `chrom.sizes`, assembly metadata, and contig
-  order.
+  order via `bin/validate_reference.py`.
 - `RESOLVE_BAM_REFERENCE`: compare BAM sequence names and lengths with
   `chrom.sizes`; use a sorted supplied dictionary when names match, or emit a
   BAM-named dictionary when names differ but the complete length multiset
   matches. Stop before track generation when lengths disagree, and report the
-  resolution per entity.
+  resolution per entity. The comparison and report logic live in
+  `bin/resolve_bam_reference.py`.
 - `VALIDATE_ENTITY_INPUTS`: check required paths and entity naming.
 - `NORMALIZE_ENTITY_METADATA`: create canonical `meta` without mutating the
   original record.
@@ -328,7 +334,8 @@ The expected module responsibilities are:
 ### Splice-junction modules
 
 - `VALIDATE_STAR_JUNCTIONS`: validate supplied `SJ.out.tab`, allowing the
-  standard nine-column STAR header on the first line.
+  standard nine-column STAR header on the first line, using
+  `bin/validate_star_junctions.py`.
 - `STAR_JUNCTIONS_TO_BED`: convert STAR columns to the declared nine-column
   schema and apply `chromStart = STAR start - 1`, `chromEnd = STAR end`.
   BED score is `min(unique_reads, 1000)`; unique and multimapping counts are
@@ -363,6 +370,8 @@ assumes a dUTP/NSR/NNSR library; forward/reverse labels follow that convention.
 - `JOIN_TRACK_RESULTS`: join by stable metadata keys and verify cardinality.
 - `CHECKSUM_TRACKS`: calculate SHA-256 checksums.
 - `WRITE_ENTITY_PROVENANCE`: write one structured provenance record per entity.
+- `WRITE_TRACK_RECORD`: publish each track with result, provenance, exception,
+  and version records using `bin/write_track_record.py`.
 - `WRITE_TRACK_MANIFEST`: write the final metadata-join manifest.
 - `WRITE_ENTITY_STATUS`: summarize complete, partial, failed, and skipped
   entities.
