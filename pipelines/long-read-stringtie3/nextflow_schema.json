@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Ensembl/ensembl-genes-nf/long-read-stringtie3",
+  "title": "Multi-species long-read alignment and StringTie3 pipeline",
+  "type": "object",
+  "required": ["manifest"],
+  "properties": {
+    "manifest": {"type": "string", "format": "file-path", "exists": true, "description": "Tab-separated run manifest"},
+    "outdir": {"type": "string", "description": "Durable output directory"},
+    "tracedir": {"type": "string", "description": "Optional Nextflow execution report directory"},
+    "use_containers": {"type": "boolean", "default": true},
+    "max_index_jobs": {"type": "integer", "minimum": 1, "default": 2},
+    "max_alignment_jobs": {"type": "integer", "minimum": 1, "default": 2},
+    "max_stringtie_assembly_jobs": {"type": "integer", "minimum": 1, "default": 2},
+    "max_stringtie_merge_jobs": {"type": "integer", "minimum": 1, "default": 1},
+    "max_stringtie_quantification_jobs": {"type": "integer", "minimum": 1, "default": 2},
+    "executor_queue_size": {"type": "integer", "minimum": 1, "default": 8, "description": "Global submitted-task cap for grid executors"},
+    "tool_containers": {
+      "type": "object",
+      "required": ["alignment", "stringtie3"],
+      "properties": {
+        "alignment": {"type": "string", "pattern": "^quay\\.io/biocontainers/.+@sha256:[0-9a-f]{64}$"},
+        "stringtie3": {"type": "string", "pattern": "^quay\\.io/biocontainers/.+@sha256:[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}
