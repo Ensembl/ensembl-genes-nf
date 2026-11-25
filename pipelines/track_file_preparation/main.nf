@@ -208,9 +208,9 @@ workflow {
     gene_entities = entities.filter { meta, _bam, _gtf, _sj, _bai ->
         'gene_model' in meta.track_types && meta.gene_model_source == 'manifest'
     }
-        .map { meta, _bam, gtf, _sj, _bai -> tuple(meta, gtf) }
-        .combine(chrom_sizes)
-        .map { meta, gtf, compatible_chrom_sizes -> tuple(meta, gtf, compatible_chrom_sizes) }
+        .map { meta, _bam, gtf, _sj, _bai -> tuple("${meta.gca_accession}\t${meta.id}", meta, gtf) }
+        .join(entity_reference_sizes)
+        .map { _key, meta, gtf, compatible_chrom_sizes -> tuple(meta, gtf, compatible_chrom_sizes) }
     scallop_entities = indexed_entities
         .filter { meta, _bam, _bai ->
             'gene_model' in meta.track_types && meta.gene_model_source == 'scallop'
