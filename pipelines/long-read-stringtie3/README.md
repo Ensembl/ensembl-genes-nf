@@ -14,14 +14,15 @@ There are no custom transcript assembly, merge, or quantification scripts.
 Provide a tab-delimited file with one row per run:
 
 ```tsv
-species_id	assembly_id	run_id	sample_id	technology	fastq	reference_fasta	annotation_gtf	minimap2_preset
-Homo_sapiens	GRCh38	run001	sample001	pacbio	reads/run001.fastq.gz	refs/GRCh38.fa	refs/GRCh38.gtf	splice:hq
-Mus_musculus	GRCm39	run002	sample002	ont	reads/run002.fastq.gz	refs/GRCm39.fa	refs/GRCm39.gtf	splice
+species_id	assembly_id	run_id	sample_id	technology	fastq	reference_fasta	annotation_gtf	minimap2_preset	nascent_mode
+Homo_sapiens	GRCh38	run001	sample001	pacbio	reads/run001.fastq.gz	refs/GRCh38.fa	refs/GRCh38.gtf	splice:hq	off
+Mus_musculus	GRCm39	run002	sample002	ont	reads/run002.fastq.gz	refs/GRCm39.fa	refs/GRCm39.gtf	splice	off
 ```
 
 Required columns are `species_id`, `assembly_id`, `run_id`, `technology`,
 `fastq`, `reference_fasta`, and `annotation_gtf`. `sample_id` and
-`minimap2_preset` are optional. Paths may be absolute or relative to the
+`minimap2_preset` and `nascent_mode` are optional. Paths may be absolute or
+relative to the
 manifest. A FASTQ column identifies one input file per run. For multiple lanes
 from one biological sample, supply one row per run and use `sample_id` as the
 shared metadata key; the workflow still produces per-run outputs. IDs may
@@ -34,6 +35,14 @@ index is built with splice-mode settings; the supported `splice` and
 `splice:hq` mapping presets share those index settings. Reference annotation
 is required so StringTie can produce guided assemblies, fully covered
 reference transcript GTFs, and quantification tables.
+
+`nascent_mode` defaults to `off`. For total-RNA / rRNA-depleted libraries,
+StringTie3 recommends nascent-aware assembly: set it to `mature` to use `-N`
+(emit mature models only), or `retain` to use `--nasc` (also retain nascent
+intermediates, marked in the GTF with their mature parent). Keep the value
+consistent within an assembly so runs contribute comparable transcript sets to
+the merge. Quantification uses the merged catalog directly and does not rerun
+assembly-mode options.
 
 ## Outputs
 
@@ -69,6 +78,11 @@ tables directly from StringTie. The two abundance tables answer different
 questions: discovery-pass abundance is tied to each run's own assembled set;
 quantification-pass abundance uses the common merged set and is the one to use
 for cross-run comparisons.
+
+These are StringTie-native outputs: assembled and merged GTFs, gene abundance
+tables (`-A`), fully covered reference transcripts (`-C`), and Ballgown coverage
+tables (`-b`). Nascent-aware assembly is opt-in through `nascent_mode` because
+it depends on library preparation.
 
 The retained BAM and CSI are copied to the output directory while a work copy
 remains available for downstream tasks and resume. Budget scratch for the BAMs

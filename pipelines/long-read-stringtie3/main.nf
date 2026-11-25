@@ -141,8 +141,9 @@ process STRINGTIE3_ASSEMBLE {
     path 'versions.yml', emit: versions
 
     script:
+    def nascent_args = meta.nascent_mode == 'mature' ? '-N' : (meta.nascent_mode == 'retain' ? '--nasc' : '')
     """
-    stringtie -L -p ${task.cpus} -G ${annotation} \\
+    stringtie -L ${nascent_args} -p ${task.cpus} -G ${annotation} \\
       -A gene_abundances.tsv -C fully_covered_reference.gtf \\
       -o '${meta.run_id}.assembled.gtf' ${bam}
     printf 'stringtie: %s\\n' "\$(stringtie --version 2>&1 | head -n1)" > versions.yml
@@ -229,6 +230,7 @@ workflow {
             def root = manifest_file.parent
             def run_ids = [] as Set
             def assembly_files = [:]
+            def assembly_nascent_modes = [:]
             rows.eachWithIndex { row, idx ->
                 def row_number = idx + 2
                 def species_id = safe_id(row.species_id, 'species_id', row_number)
@@ -239,6 +241,8 @@ workflow {
                 if (!(technology in ['ont', 'pacbio'])) error "manifest row ${row_number}: technology must be ont or pacbio"
                 def preset = row.minimap2_preset?.toString()?.trim() ?: (technology == 'ont' ? 'splice' : 'splice:hq')
                 if (!(preset in ['splice', 'splice:hq'])) error "manifest row ${row_number}: minimap2_preset must be splice or splice:hq"
+                def nascent_mode = row.nascent_mode?.toString()?.trim()?.toLowerCase() ?: 'off'
+                if (!(nascent_mode in ['off', 'mature', 'retain'])) error "manifest row ${row_number}: nascent_mode must be off, mature, or retain"
                 def reads = manifest_path(row.fastq, root, 'fastq', row_number)
                 def reference = manifest_path(row.reference_fasta, root, 'reference_fasta', row_number)
                 def annotation = manifest_path(row.annotation_gtf, root, 'annotation_gtf', row_number)
@@ -246,7 +250,10 @@ workflow {
                 def signature = [reference.toString(), annotation.toString()]
                 if (assembly_files.containsKey(assembly_key) && assembly_files[assembly_key] != signature)
                     error "manifest rows for ${assembly_key} must use the same reference_fasta and annotation_gtf"
+                if (assembly_nascent_modes.containsKey(assembly_key) && assembly_nascent_modes[assembly_key] != nascent_mode)
+                    error "manifest rows for ${assembly_key} must use the same nascent_mode so their transcript sets can be merged consistently"
                 assembly_files[assembly_key] = signature
+                assembly_nascent_modes[assembly_key] = nascent_mode
                 row._reads = reads
                 row._reference = reference
                 row._annotation = annotation
@@ -257,7 +264,8 @@ workflow {
                     run_id: run_id,
                     sample_id: safe_id(row.sample_id ?: run_id, 'sample_id', row_number),
                     technology: technology,
-                    minimap2_preset: preset
+                    minimap2_preset: preset,
+                    nascent_mode: nascent_mode
                 ]
             }
             rows.collect { row ->
