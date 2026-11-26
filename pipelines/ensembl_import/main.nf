@@ -17,8 +17,16 @@ workflow {
         }
 
     def settings = new groovy.json.JsonSlurper().parse(file(params.server_settings))
-    if (!settings.db_read_user)
-        throw new IllegalArgumentException("server_settings must contain db_read_user for taxonomy loading")
+    def requiredSettings = [
+        'db_host', 'db_port', 'db_user', 'db_password', 'db_read_user',
+        'registry_host', 'registry_port', 'registry_user',
+        'registry_password', 'registry_database'
+    ]
+    def missingSettings = requiredSettings.findAll { setting -> !settings[setting] }
+    if (missingSettings)
+        throw new IllegalArgumentException(
+            "server_settings is missing required fields: ${missingSettings.join(', ')}"
+        )
 
     db_config_ch = channel
         .value(
@@ -31,8 +39,20 @@ workflow {
             )
         )
 
+    registry_config_ch = channel
+        .value(
+            tuple(
+                settings.registry_host,
+                settings.registry_port,
+                settings.registry_user,
+                settings.registry_password,
+                settings.registry_database
+            )
+        )
+
     IMPORT_REFSEQ(
         sample_ch,
-        db_config_ch
+        db_config_ch,
+        registry_config_ch
     )
 }

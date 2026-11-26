@@ -15,6 +15,17 @@
       "format": "file-path",
       "description": "Path to the server settings file"
     },
+    "genebuilder": {
+      "type": "string",
+      "default": "automated",
+      "description": "Registry genebuilder recorded for the import"
+    },
+    "skip_start_check": {
+      "type": "string",
+      "enum": ["true", "false"],
+      "default": "false",
+      "description": "Reuse an existing registry row when its genebuilder matches; accepts true or false"
+    },
     "outdir": {
       "type": "string",
       "default": "./results",
