@@ -9,7 +9,7 @@
     "source_entity_type": {"type": "string", "enum": ["run", "sample", "merged"], "default": "run", "description": "Entity type retained as one column identity per source"},
     "species_name": {"type": ["string", "null"], "description": "Optional species label for the output bundle; defaults to the assembly accession"},
     "allow_opaque_normalization": {"type": "boolean", "default": false, "description": "Allow legacy non-JSON coverage normalization metadata"},
-    "coverage_bin_size": {"type": "integer", "minimum": 1, "default": 1000, "description": "Bin size used for coverage QC matrices"},
+    "coverage_bin_size": {"type": ["integer", "string"], "pattern": "^[1-9][0-9]*$", "minimum": 1, "default": 1000, "description": "Bin size used for coverage QC matrices"},
     "outdir": {"type": "string", "default": "./results"},
     "tracedir": {"type": ["string", "null"], "description": "Directory for execution reports"}
   },

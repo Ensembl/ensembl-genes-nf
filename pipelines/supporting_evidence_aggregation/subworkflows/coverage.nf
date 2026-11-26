@@ -27,7 +27,7 @@ workflow BUILD_COVERAGE_MATRICES {
                 expected_sha256: row.sha256,
                 normalization_parameters: java.net.URLDecoder.decode(row.normalization_parameters, 'UTF-8'),
                 source_path: row.source_path,
-                summary_bin_size: params.coverage_bin_size,
+                summary_bin_size: params.coverage_bin_size as int,
             ]
             tuple(meta, file(row.track_path, checkIfExists: true))
         }
