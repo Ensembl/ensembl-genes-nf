@@ -176,9 +176,11 @@ workflow DATA_ACQUISITION {
                 }
             } else if (needs_pipeline_adapter_detection) {
                 // Use FASTQC to find top-hit adapter
+                fastq_with_fastqc = FASTQ_DL.out.fastq
+                    .join(FASTQC.out.txt)
+                    .map { meta, fastq, fastqc_data -> tuple(meta, fastq, fastqc_data) }
                 FIND_ADAPTERS(
-                    FASTQ_DL.out.fastq,
-                    FASTQC.out.txt,
+                    fastq_with_fastqc,
                     file("${projectDir}/resources/adapter_list.tsv")
                 )
                 fastq_with_adapter = FASTQ_DL.out.fastq

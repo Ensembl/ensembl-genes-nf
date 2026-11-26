@@ -21,8 +21,14 @@ def get_adapter_dict(adapter_path: str) -> dict:
     Output:
         dictionary of adapter sequences and names
     '''
-    df = pd.read_csv(adapter_path, sep='\t', header=None, comment='#')
-    print(df)
+    df = pd.read_csv(
+        adapter_path, sep='\t', header=None, comment='#',
+        names=[0, 1], usecols=[0, 1], dtype=str, skip_blank_lines=True,
+    )
+    df = df.dropna(subset=[0, 1])
+    df[0] = df[0].str.strip()
+    df[1] = df[1].str.strip()
+    df = df[(df[0] != '') & (df[1] != '')]
     return df.set_index(0)[1].to_dict()
 
 
@@ -69,18 +75,27 @@ def get_top_adapter(adapter_module: list, adapter_dict: dict) -> str:
         module_string = ''.join(adapter_module)
         str = StringIO(module_string)
         adapter_df = pd.read_csv(str, sep='\t', comment='%').drop(columns=['#Position'])
+        adapter_df = adapter_df[[col for col in adapter_df.columns if col in adapter_dict]]
+        if adapter_df.empty or adapter_df.shape[1] == 0:
+            with open(args.output, 'w'):
+                pass
+            return None
         for col in adapter_df.columns:
-            adapter_df[col] = adapter_df[col].astype(float)
+            adapter_df[col] = pd.to_numeric(adapter_df[col], errors='coerce').fillna(0)
 
         sums = adapter_df.sum(axis=0)
         top_adapter = sums.idxmax()
+        if sums[top_adapter] <= 0:
+            with open(args.output, 'w'):
+                pass
+            return None
         with open(args.output, 'w') as f:
             f.write(f'>{top_adapter}\n')
             f.write(f'{adapter_dict[top_adapter].strip()}\n')
         return adapter_dict[top_adapter]
     else:
         with open(args.output, 'w') as f:
-            f.write(f'\n')
+            pass
 
 
 def main(args):
@@ -93,6 +108,7 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Get top adapter sequence from fastqc_data.txt')
+    parser.add_argument('--version', action='version', version='get_adapters.py v1.0.0')
     parser.add_argument('-i', '--input', help='fastqc_data.txt file', required=True)
     parser.add_argument('-a', '--adapters', help='adapter sequence and names tab delimed file', required=True)
     parser.add_argument('-o', '--output', help='output file name', required=True)

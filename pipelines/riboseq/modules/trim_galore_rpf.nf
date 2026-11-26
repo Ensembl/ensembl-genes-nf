@@ -74,7 +74,12 @@ process TRIM_GALORE_RPF {
         ${args} \\
         ${reads} > ${prefix}_trim_galore.log 2>&1
 
-    trimmed_output=\$(find . -maxdepth 1 -type f \( -name '*_trimmed.fq.gz' -o -name '*_trimmed.fastq.gz' \) -print -quit)
+    trimmed_output=''
+    for candidate in *_trimmed.fq.gz *_trimmed.fastq.gz; do
+        [ -f "\$candidate" ] || continue
+        trimmed_output=\$candidate
+        break
+    done
     if [ -z "\$trimmed_output" ]; then
         echo "Trim Galore did not produce a trimmed FASTQ for ${input_name}." >&2
         exit 3

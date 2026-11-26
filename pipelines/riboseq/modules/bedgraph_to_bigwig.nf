@@ -12,7 +12,7 @@ process BEDGRAPH_TO_BIGWIG {
     path chrom_sizes
 
     output:
-    tuple val(meta), path("*.bw"), emit: bigwig
+    tuple val(meta), path("*.bw"), optional: true, emit: bigwig
     path "versions.yml", emit: versions, topic: versions
 
     when:
@@ -24,7 +24,7 @@ process BEDGRAPH_TO_BIGWIG {
         // Stranded output: process each bedgraph file
         def commands = bedgraph.collect { bg ->
             def prefix = bg.name.replaceFirst(/\.sorted\.bedgraph$/, '')
-            "bedGraphToBigWig ${bg} ${chrom_sizes} ${prefix}.bw"
+            "if [ -s '${bg}' ]; then bedGraphToBigWig '${bg}' '${chrom_sizes}' '${prefix}.bw'; else echo 'Skipping empty bedGraph: ${bg}' >&2; fi"
         }.join('\n    ')
         """
         ${commands}
@@ -38,7 +38,11 @@ process BEDGRAPH_TO_BIGWIG {
         // Single bedgraph file
         def prefix = bedgraph.name.replaceFirst(/\.sorted\.bedgraph$/, '')
         """
-        bedGraphToBigWig ${bedgraph} ${chrom_sizes} ${prefix}.bw
+        if [ -s '${bedgraph}' ]; then
+            bedGraphToBigWig '${bedgraph}' '${chrom_sizes}' '${prefix}.bw'
+        else
+            echo 'Skipping empty bedGraph: ${bedgraph}' >&2
+        fi
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":

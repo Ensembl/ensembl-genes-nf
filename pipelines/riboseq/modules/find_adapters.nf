@@ -6,8 +6,7 @@ process FIND_ADAPTERS {
     container "ghcr.io/lapti-ucc/riboseqorg-nf-python-pandas-sqlite:latest"
 
     input:
-    tuple val(meta), path(raw_fastq)
-    tuple val(meta2), path(fastqc_data)
+    tuple val(meta), path(raw_fastq), path(fastqc_data)
     path adapter_list
 
     output:
@@ -21,7 +20,7 @@ process FIND_ADAPTERS {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    get_adapters.py \\
+    python3 "\$(command -v get_adapters.py)" \\
         -i $fastqc_data \\
         -a ${adapter_list} \\
         -o "${prefix}_adapter_report.fa" \\
@@ -30,7 +29,7 @@ process FIND_ADAPTERS {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python --version | sed 's/Python //g')
-        get_adapters.py: \$(get_adapters.py --version 2>&1 | sed 's/get_adapters.py v//g')
+        get_adapters.py: \$(python3 "\$(command -v get_adapters.py)" --version 2>&1 | sed 's/get_adapters.py v//g')
     END_VERSIONS
     """
 
