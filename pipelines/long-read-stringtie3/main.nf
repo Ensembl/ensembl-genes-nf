@@ -287,7 +287,7 @@ process STRINGTIE3_ASSEMBLE {
     tuple val(meta), path(bam)
 
     output:
-    tuple val(meta), path("${meta.run_id}.assembled.gtf"), emit: assembled
+    tuple val(meta), path("${meta.run_id}.assembled.gtf"), path('assembly_status.txt'), emit: assembled
     path 'gene_abundances.tsv', emit: gene_abundances
     path 'versions.yml', emit: versions
 
@@ -297,12 +297,18 @@ process STRINGTIE3_ASSEMBLE {
     stringtie -L ${nascent_args} -p ${task.cpus} \\
       -A gene_abundances.tsv \\
       -o '${meta.run_id}.assembled.gtf' ${bam}
+    if awk -F '\t' '$3 == "transcript" { found=1; exit } END { exit !found }' '${meta.run_id}.assembled.gtf'; then
+      printf 'TRANSCRIPTS_FOUND\\n' > assembly_status.txt
+    else
+      printf 'NO_TRANSCRIPTS\\n' > assembly_status.txt
+    fi
     printf 'stringtie: %s\\n' "\$(stringtie --version 2>&1 | head -n1)" > versions.yml
     """
 
     stub:
     """
     printf 'chr1\\tStringTie\\texon\\t1\\t100\\t.\\t+\\t.\\tgene_id "g1"; transcript_id "t1";\\n' > '${meta.run_id}.assembled.gtf'
+    printf 'TRANSCRIPTS_FOUND\\n' > assembly_status.txt
     printf 'gene\\tcoverage\\tFPKM\\tTPM\\ng1\\t1\\t1\\t1\\n' > gene_abundances.tsv
     touch versions.yml
     """
@@ -368,11 +374,69 @@ process STRINGTIE3_QUANTIFY {
 
 workflow {
     validateParameters()
+    if (!(params.run_mode in ['batch', 'merge']))
+        error "run_mode must be 'batch' or 'merge'"
+    if (params.run_mode == 'merge' && params.defer_merge)
+        error 'defer_merge is only valid with run_mode=batch'
     log.info(paramsSummaryLog(workflow))
 
     manifest_file = file(params.manifest, checkIfExists: true).toAbsolutePath().normalize()
     ARCHIVE_INPUT_MANIFEST(channel.fromPath(manifest_file))
-    manifest_rows = channel.fromPath(manifest_file)
+    merge_gtfs = Channel.empty()
+    quantify_bams = Channel.empty()
+    if (params.run_mode == 'merge') {
+        merge_manifest_rows = channel.fromPath(manifest_file)
+            .splitCsv(header: true, sep: '\t')
+            .collect()
+            .map { rows ->
+                if (!rows) error 'merge manifest has no data rows'
+                def run_ids = [] as Set
+                def assembly_accessions = [:]
+                rows.eachWithIndex { row, idx ->
+                    def row_number = idx + 2
+                    def species_id = safe_id(row.species_id, 'species_id', row_number)
+                    def assembly_id = safe_id(row.assembly_id, 'assembly_id', row_number)
+                    def run_id = safe_id(row.run_id, 'run_id', row_number)
+                    if (!run_ids.add(run_id)) error "merge manifest contains duplicate run_id '${run_id}'"
+                    def assembly_accession = (row.assembly_accession ?: '').toString().trim()
+                    if (!(assembly_accession ==~ /GCA_\d{9}\.\d+/))
+                        error "merge manifest row ${row_number}: assembly_accession must be a GCA accession"
+                    def assembly_key = "${species_id}::${assembly_id}"
+                    if (assembly_accessions.containsKey(assembly_key) && assembly_accessions[assembly_key] != assembly_accession)
+                        error "merge manifest rows for ${assembly_key} use different assembly_accessions"
+                    assembly_accessions[assembly_key] = assembly_accession
+                    def assembly_status = (row.assembly_status ?: '').toString().trim()
+                    if (!(assembly_status in ['TRANSCRIPTS_FOUND', 'NO_TRANSCRIPTS', 'ASSEMBLY_MISSING']))
+                        error "merge manifest row ${row_number}: assembly_status must be TRANSCRIPTS_FOUND, NO_TRANSCRIPTS, or ASSEMBLY_MISSING"
+                    def bam_path = (row.bam_path ?: '').toString().trim()
+                    if (!bam_path) error "merge manifest row ${row_number}: bam_path is required"
+                    row._bam = file(bam_path, checkIfExists: true)
+                    def gtf_path = (row.gtf_path ?: '').toString().trim()
+                    if (assembly_status != 'ASSEMBLY_MISSING' && !gtf_path)
+                        error "merge manifest row ${row_number}: gtf_path is required for ${assembly_status}"
+                    row._gtf = gtf_path ? file(gtf_path, checkIfExists: true) : null
+                    row._normalized = [
+                        key: assembly_key,
+                        species_id: species_id,
+                        assembly_id: assembly_id,
+                        assembly_accession: assembly_accession,
+                        run_id: run_id,
+                        sample_id: safe_id(row.sample_id ?: run_id, 'sample_id', row_number)
+                    ]
+                    row._assembly_status = assembly_status
+                }
+                rows
+            }
+
+        merge_gtfs = merge_manifest_rows.flatMap { rows ->
+            rows.findAll { it._assembly_status == 'TRANSCRIPTS_FOUND' }
+                .collect { row -> tuple(row._normalized.key, row._normalized, row._gtf) }
+        }
+        quantify_bams = merge_manifest_rows.flatMap { rows ->
+            rows.collect { row -> tuple(row._normalized.key, row._normalized, row._bam) }
+        }
+    } else {
+      manifest_rows = channel.fromPath(manifest_file)
         .splitCsv(header: true, sep: '\t')
         .collect()
         .map { rows ->
@@ -486,16 +550,26 @@ workflow {
 
     STRINGTIE3_ASSEMBLE(ALIGN_AND_SORT_BAM.out.aligned.map { meta, bam -> tuple(meta, bam) })
 
-    assembly_groups = STRINGTIE3_ASSEMBLE.out.assembled
-        .map { meta, gtf -> tuple(meta.key, meta, gtf) }
-        .groupTuple(by: 0)
-        .map { key, metas, gtfs -> tuple(key, metas[0], gtfs) }
-    STRINGTIE3_MERGE(assembly_groups.map { key, meta, gtfs -> tuple(meta, gtfs) })
+    if (!params.defer_merge) {
+        merge_gtfs = STRINGTIE3_ASSEMBLE.out.assembled
+            .filter { meta, gtf, status -> status.text.trim() == 'TRANSCRIPTS_FOUND' }
+            .map { meta, gtf, status -> tuple(meta.key, meta, gtf) }
+        quantify_bams = ALIGN_AND_SORT_BAM.out.aligned
+            .map { meta, bam -> tuple(meta.key, meta, bam) }
+    } else {
+        log.info('Species-level merge and quantification deferred; per-run BAMs, assemblies, and assembly status files are published for a later merge run.')
+    }
+    }
 
-    quantified_inputs = ALIGN_AND_SORT_BAM.out.aligned
-        .map { meta, bam -> tuple(meta.key, meta, bam) }
-        .combine(STRINGTIE3_MERGE.out.merged.map { meta, merged_gtf -> tuple(meta.key, merged_gtf) }, by: 0)
-        .map { key, meta, bam, merged_gtf -> tuple(meta, bam, merged_gtf) }
-    STRINGTIE3_QUANTIFY(quantified_inputs)
+    if (!params.defer_merge) {
+        merge_groups = merge_gtfs
+            .groupTuple(by: 0)
+            .map { key, metas, gtfs -> tuple(key, metas[0], gtfs) }
+        STRINGTIE3_MERGE(merge_groups.map { key, meta, gtfs -> tuple(meta, gtfs) })
 
+        quantified_inputs = quantify_bams
+            .combine(STRINGTIE3_MERGE.out.merged.map { meta, merged_gtf -> tuple(meta.key, merged_gtf) }, by: 0)
+            .map { key, meta, bam, merged_gtf -> tuple(meta, bam, merged_gtf) }
+        STRINGTIE3_QUANTIFY(quantified_inputs)
+    }
 }

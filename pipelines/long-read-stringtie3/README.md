@@ -79,6 +79,7 @@ per_run/<species>/<assembly>/<run>/alignment/
   idxstats.tsv
 per_run/<species>/<assembly>/<run>/stringtie3/assembly/
   <run_id>.assembled.gtf
+  assembly_status.txt (TRANSCRIPTS_FOUND or NO_TRANSCRIPTS)
   gene_abundances.tsv
 per_run/<species>/<assembly>/<run>/stringtie3/quantification/
   quantified.gtf
@@ -93,6 +94,60 @@ StringTie-generated merged GTF, so every run is quantified against the same
 transcript catalog; `-A` and `-b` produce gene abundance and Ballgown coverage
 tables. The shared-catalog abundance table is the one to use for cross-run
 comparisons. StringTie creates these GTF and evidence tables directly.
+
+An assembly with no `transcript` feature rows is published with
+`assembly_status.txt` set to `NO_TRANSCRIPTS`. Such runs retain their BAM and
+QC outputs but their empty GTFs are excluded from merge inputs. If every run
+for an assembly has no transcript records, the workflow skips that assembly's
+merge and quantification rather than failing the other assemblies.
+
+## Batch assembly and final species merge
+
+For multi-wave projects, run each batch with `--defer_merge true`. This keeps
+alignment and per-run assembly in the batch phase and avoids creating a partial
+species catalog for each wave. After all waves finish, build one merge manifest
+from their durable output directories:
+
+```bash
+nextflow run pipelines/long-read-stringtie3/main.nf \
+  -profile slurm,low_storage \
+  --manifest /data/long_reads_wave_001.tsv \
+  --defer_merge true \
+  --outdir /data/results/release2_wave_001 \
+  --reference_cache_dir /data/shared/long-read-reference-cache \
+  -work-dir /scratch/nextflow/release2_wave_001
+
+python3 pipelines/long-read-stringtie3/bin/build_stringtie_merge_manifest.py \
+  --outdir /data/results/release2_wave_001 \
+  --outdir /data/results/release2_wave_002 \
+  --output /data/results/release2_final/stringtie_merge_manifest.tsv
+```
+
+Repeat `--outdir` for every completed wave. The builder records BAM and GTF
+paths, classifies missing or transcript-free assemblies, and rejects duplicate
+run outputs. It also supports earlier runs that predate `assembly_status.txt`
+by inspecting their published GTFs.
+
+Run the merge-only phase once across the combined manifest:
+
+```bash
+nextflow run pipelines/long-read-stringtie3/main.nf \
+  -profile slurm,low_storage \
+  --run_mode merge \
+  --manifest /data/results/release2_final/stringtie_merge_manifest.tsv \
+  --outdir /data/results/release2_final \
+  --tracedir /data/results/release2_final/pipeline_info \
+  -work-dir /scratch/nextflow/release2_final_merge
+```
+
+The merge-only phase merges once per species/assembly from all non-empty GTFs
+and quantifies every available BAM for that assembly against the resulting
+catalog. It does not download FASTQs, align reads, or rebuild references.
+`--defer_merge` applies only to batch mode. As with other `low_storage` runs,
+do not use `-resume`. The generated merge manifest has columns
+`species_id`, `assembly_id`, `assembly_accession`, `run_id`, `sample_id`,
+`bam_path`, `gtf_path`, and `assembly_status`; use the builder rather than
+hand-editing it.
 
 The retained BAM and CSI are copied to the output directory while a work copy
 remains available for downstream tasks and resume. Genome FASTA and indexes are
