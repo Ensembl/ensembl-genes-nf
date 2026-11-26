@@ -26,11 +26,40 @@ def manifest_path(value, root, field, row_number) {
     candidate.toAbsolutePath().normalize()
 }
 
+def reference_cache_root() {
+    params.reference_cache_dir ?: "${params.outdir}/per_assembly"
+}
+
+def reference_cache_assets(meta) {
+    def directory = file("${reference_cache_root()}/${meta.species_id}/${meta.assembly_accession}/reference")
+    def fasta = file("${directory}/reference.fa")
+    if (!fasta.exists()) {
+        def legacy_fastas = directory.toFile().listFiles()?.findAll { asset -> asset.isFile() && asset.name.endsWith('.fa') }
+        if (legacy_fastas?.size() == 1) fasta = legacy_fastas[0].toPath()
+    }
+    def minimap_index = file("${directory}/reference.mmi")
+    def fasta_index = file("${directory}/reference.fa.fai")
+    def version = file("${directory}/reference_cache.version")
+    def assets_present = [fasta, minimap_index, fasta_index].every { asset ->
+        asset.exists() && asset.toFile().length() > 0
+    }
+    def versioned_cache = version.exists() && version.text.trim() == 'reference-cache-v1'
+    def legacy_cache = !version.exists() && [
+        file("${directory}/fetch_genome.versions.yml"),
+        file("${directory}/minimap2_index.versions.yml"),
+        file("${directory}/samtools_faidx.versions.yml")
+    ].every { asset -> asset.exists() && asset.toFile().length() > 0 }
+    def complete = assets_present && (versioned_cache || legacy_cache)
+    [complete: complete, fasta: fasta, minimap_index: minimap_index, fasta_index: fasta_index]
+}
+
 process FETCH_GENOME {
     label 'genome_download'
     tag "${meta.species_id}/${meta.assembly_id}"
     container 'docker.io/library/python@sha256:17b9724493d916f56565c131f389faff2597f46dec6ce09516f95125bc9f519f'
-    publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/reference" }, mode: 'copy'
+    publishDir path: { "${reference_cache_root()}/${meta.species_id}/${meta.assembly_accession}/reference" }, mode: 'copy', saveAs: { filename ->
+        filename.endsWith('.fa') ? 'reference.fa' : filename
+    }
 
     input:
     tuple val(key), val(meta), val(assembly_accession), path(fetch_script, stageAs: 'fetch_genome.py')
@@ -38,17 +67,20 @@ process FETCH_GENOME {
     output:
     tuple val(key), val(meta), path('*.fa'), emit: reference
     path '*_assembly_report.txt', optional: true, emit: assembly_report
+    path 'reference_cache.version', emit: cache_version
     path 'fetch_genome.versions.yml', emit: versions
 
     script:
     """
     python3 fetch_genome.py --gca '${assembly_accession}' --output_dir .
+    printf 'reference-cache-v1\\n' > reference_cache.version
     printf 'fetch_genome.py: %s\\n' "\$(python3 fetch_genome.py --version)" > fetch_genome.versions.yml
     """
 
     stub:
     """
     printf '>chr1\\nACGT\\n' > '${assembly_accession.replace('.', 'v')}.fa'
+    printf 'reference-cache-v1\\n' > reference_cache.version
     printf 'stub\\n' > fetch_genome.versions.yml
     """
 }
@@ -57,7 +89,7 @@ process BUILD_MINIMAP2_INDEX {
     label 'index'
     tag "${meta.species_id}/${meta.assembly_id}"
     container 'quay.io/biocontainers/mulled-v2-66534bcbb7031a148b13e2ad42583020b9cd25c4@sha256:9352893c7f30ec6a3d6e5591d14a4034260a9489537d6577a0a23ae8ee8fd259'
-    publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/reference" }, mode: 'copy', saveAs: { filename ->
+    publishDir path: { "${reference_cache_root()}/${meta.species_id}/${meta.assembly_accession}/reference" }, mode: 'copy', saveAs: { filename ->
         filename in ['reference.mmi', 'minimap2_index.versions.yml'] ? filename : null
     }
 
@@ -88,7 +120,7 @@ process INDEX_REFERENCE_FASTA {
     label 'fasta_index'
     tag "${meta.species_id}/${meta.assembly_id}"
     container 'quay.io/biocontainers/mulled-v2-66534bcbb7031a148b13e2ad42583020b9cd25c4@sha256:9352893c7f30ec6a3d6e5591d14a4034260a9489537d6577a0a23ae8ee8fd259'
-    publishDir path: { "${params.outdir}/per_assembly/${meta.species_id}/${meta.assembly_id}/reference" }, mode: 'copy', saveAs: { filename ->
+    publishDir path: { "${reference_cache_root()}/${meta.species_id}/${meta.assembly_accession}/reference" }, mode: 'copy', saveAs: { filename ->
         filename in ['reference.fa.fai', 'samtools_faidx.versions.yml'] ? filename : null
     }
 
@@ -380,6 +412,7 @@ workflow {
                     key: assembly_key,
                     species_id: species_id,
                     assembly_id: assembly_id,
+                    assembly_accession: assembly_accession,
                     run_id: run_id,
                     sample_id: safe_id(row.sample_id ?: run_id, 'sample_id', row_number),
                     technology: technology,
@@ -393,16 +426,39 @@ workflow {
             }
         }
 
-    reference_inputs = manifest_rows.flatMap { records ->
+    reference_specs = manifest_rows.flatMap { records ->
         records.groupBy { record -> record[0] }.collect { key, records_for_assembly ->
             def first = records_for_assembly[0]
-            tuple(key, first[1], first[3], file("${projectDir}/bin/fetch_genome.py"))
+            def first_meta = first[1]
+            def reference_meta = [
+                key: key,
+                species_id: first_meta.species_id,
+                assembly_id: first_meta.assembly_id,
+                assembly_accession: first[3]
+            ]
+            tuple(key, reference_meta, first[3], file("${projectDir}/bin/fetch_genome.py"))
         }
     }
+    reference_inputs = reference_specs
+        .filter { key, meta, accession, fetch_script -> !reference_cache_assets(meta).complete }
+    cached_references = reference_specs
+        .filter { key, meta, accession, fetch_script -> reference_cache_assets(meta).complete }
+        .map { key, meta, accession, fetch_script ->
+            def assets = reference_cache_assets(meta)
+            tuple(key, meta, assets.fasta, assets.minimap_index, assets.fasta_index)
+        }
+
     FETCH_GENOME(reference_inputs)
-    reference_sequences = FETCH_GENOME.out.reference
-    BUILD_MINIMAP2_INDEX(reference_sequences.map { key, meta, reference -> tuple(key, meta, reference) })
-    INDEX_REFERENCE_FASTA(reference_sequences.map { key, meta, reference -> tuple(key, meta, reference) })
+    fetched_reference_sequences = FETCH_GENOME.out.reference
+    BUILD_MINIMAP2_INDEX(fetched_reference_sequences.map { key, meta, reference -> tuple(key, meta, reference) })
+    INDEX_REFERENCE_FASTA(fetched_reference_sequences.map { key, meta, reference -> tuple(key, meta, reference) })
+
+    minimap_indexes = BUILD_MINIMAP2_INDEX.out.index.mix(
+        cached_references.map { key, meta, _reference, minimap_index, _fasta_index -> tuple(key, meta, minimap_index) }
+    )
+    fasta_indexes = INDEX_REFERENCE_FASTA.out.index.mix(
+        cached_references.map { key, meta, _reference, _minimap_index, fasta_index -> tuple(key, meta, fasta_index) }
+    )
 
     run_inputs = manifest_rows
         .flatMap { records -> records }
@@ -417,14 +473,14 @@ workflow {
 
     alignment_inputs = read_inputs
         .map { meta, reads -> tuple(meta.key, meta, reads) }
-        .combine(BUILD_MINIMAP2_INDEX.out.index, by: 0)
+        .combine(minimap_indexes, by: 0)
         .map { key, meta, reads, _assembly_meta, index -> tuple(meta, reads, index) }
     ALIGN_AND_SORT_BAM(alignment_inputs)
     INDEX_ALIGNMENT_BAM(ALIGN_AND_SORT_BAM.out.aligned)
 
     alignment_qc_inputs = ALIGN_AND_SORT_BAM.out.aligned
         .map { meta, bam -> tuple(meta.key, meta, bam) }
-        .combine(INDEX_REFERENCE_FASTA.out.index.map { key, _meta, reference_fai -> tuple(key, reference_fai) }, by: 0)
+        .combine(fasta_indexes.map { key, _meta, reference_fai -> tuple(key, reference_fai) }, by: 0)
         .map { key, meta, bam, reference_fai -> tuple(meta, bam, reference_fai) }
     QC_ALIGNMENT_BAM(alignment_qc_inputs)
 

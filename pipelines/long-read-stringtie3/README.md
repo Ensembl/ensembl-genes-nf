@@ -64,11 +64,12 @@ contribute comparable transcript sets to the merge.
 pipeline_info/
   input_manifest.tsv
   input_manifest.tsv.sha256
-per_assembly/<species>/<assembly>/reference/
-  GCA_...vN.fa
+per_assembly/<species>/<assembly accession>/reference/
+  reference.fa (or the original accession-named FASTA in legacy entries)
   *_assembly_report.txt (when supplied by NCBI)
   reference.mmi
   reference.fa.fai
+  reference_cache.version
 per_assembly/<species>/<assembly>/stringtie3/merge/
   merged.gtf
 per_run/<species>/<assembly>/<run>/alignment/
@@ -94,12 +95,24 @@ tables. The shared-catalog abundance table is the one to use for cross-run
 comparisons. StringTie creates these GTF and evidence tables directly.
 
 The retained BAM and CSI are copied to the output directory while a work copy
-remains available for downstream tasks and resume. Genome downloads are
-published once per assembly; each assembly's fetch and index can proceed while
-other assemblies are still downloading. Budget scratch for BAMs across the run,
-their published copies, staged references, and temporary sort files. Set
-`-work-dir` to scratch. After confirming published outputs,
-`nextflow clean` can reclaim the work copy; cleaning it removes resume data.
+remains available for downstream tasks and resume. Genome FASTA and indexes are
+published together as a versioned reference cache. Complete entries are reused
+on later runs, including runs with different FASTQ inputs. By default, the
+cache is `<outdir>/per_assembly`; set `--reference_cache_dir` to a stable shared
+path to reuse references across result directories. The FASTA, minimap2 index,
+FASTA index, and cache-version marker must all be present and nonempty. Existing
+published reference bundles without the new marker are also reusable when their
+fetch and index version records are all present.
+
+The `low_storage` profile enables `nf-boost` cleanup of intermediate work files
+during execution. Published BAMs and the reference cache live outside task work
+directories and remain available. Because Boost removes work files needed by
+Nextflow `-resume`, do not use `-resume` with this profile. Use it for
+production-sized runs only after validating outputs and ignored-task reporting
+on a small run. Failed task attempts are retained for their error logs, so
+ignored failures can still be investigated. Without `low_storage`, all work
+files are retained for resume. Budget scratch for BAMs, published copies,
+staged references, and temporary sort files.
 
 ## Run
 
@@ -107,21 +120,23 @@ their published copies, staged references, and temporary sort files. Set
 nextflow run pipelines/long-read-stringtie3/main.nf \
   --manifest /data/long_reads.tsv \
   --outdir /data/long-read-results \
+  --reference_cache_dir /data/shared/long-read-reference-cache \
   --tracedir /data/long-read-results/pipeline_info \
   -work-dir /scratch/nextflow/long-read-stringtie3 \
-  -profile slurm \
-  -resume
+  -profile slurm,low_storage
 ```
+
+Omit `low_storage` and add `-resume` when continuing a run that must retain
+Nextflow's task cache.
 
 The `slurm` profile selects the Slurm executor and Singularity containers. Use
 `-profile docker_runtime` for Docker, or `-profile apptainer` where Apptainer
 is installed. The shared config writes the report, timeline, and trace into
-`tracedir`. The pipeline configuration allows up to two concurrent genome
-downloads, FASTQ acquisitions, reference-indexing tasks, alignments,
-BAM-indexing tasks, alignment-QC tasks, StringTie assemblies, and
-quantification tasks, with one merge at a time. These per-stage `maxForks` limits and the executor
-queue size are set in `nextflow.config` so the run manifest only contains
-biological inputs.
+`tracedir`. The pipeline configuration allows up to 20 concurrent alignments.
+Other resource-heavy stages remain capped independently, with one merge at a
+time. The executor queue ceiling is configured separately so it does not
+throttle the per-process alignment cap; Slurm still schedules jobs according
+to cluster availability and policy.
 
 Every genome-download, FASTQ-acquisition, index, alignment, and StringTie task
 gets one retry with more CPUs, memory, and/or time; a second failure is ignored

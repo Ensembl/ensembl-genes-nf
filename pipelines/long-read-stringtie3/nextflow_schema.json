@@ -7,6 +7,7 @@
   "properties": {
     "manifest": {"type": "string", "format": "file-path", "exists": true, "description": "Tab-separated run manifest"},
     "outdir": {"type": "string", "description": "Durable output directory"},
+    "reference_cache_dir": {"type": "string", "description": "Persistent reference cache root; defaults to <outdir>/per_assembly"},
     "tracedir": {"type": "string", "description": "Optional Nextflow execution report directory"},
   },
   "additionalProperties": true
