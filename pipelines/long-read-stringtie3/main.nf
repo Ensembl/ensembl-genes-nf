@@ -374,9 +374,10 @@ process STRINGTIE3_QUANTIFY {
 
 workflow {
     validateParameters()
+    def defer_merge = params.defer_merge.toString().trim().toLowerCase() == 'true'
     if (!(params.run_mode in ['batch', 'merge']))
         error "run_mode must be 'batch' or 'merge'"
-    if (params.run_mode == 'merge' && params.defer_merge)
+    if (params.run_mode == 'merge' && defer_merge)
         error 'defer_merge is only valid with run_mode=batch'
     log.info(paramsSummaryLog(workflow))
 
@@ -550,7 +551,7 @@ workflow {
 
     STRINGTIE3_ASSEMBLE(ALIGN_AND_SORT_BAM.out.aligned.map { meta, bam -> tuple(meta, bam) })
 
-    if (!params.defer_merge) {
+    if (!defer_merge) {
         merge_gtfs = STRINGTIE3_ASSEMBLE.out.assembled
             .filter { meta, gtf, status -> status.text.trim() == 'TRANSCRIPTS_FOUND' }
             .map { meta, gtf, status -> tuple(meta.key, meta, gtf) }
@@ -561,7 +562,7 @@ workflow {
     }
     }
 
-    if (!params.defer_merge) {
+    if (!defer_merge) {
         merge_groups = merge_gtfs
             .groupTuple(by: 0)
             .map { key, metas, gtfs -> tuple(key, metas[0], gtfs) }

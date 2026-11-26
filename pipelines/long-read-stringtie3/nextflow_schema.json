@@ -7,7 +7,7 @@
   "properties": {
     "manifest": {"type": "string", "format": "file-path", "exists": true, "description": "Tab-separated batch run manifest, or assembled BAM/GTF manifest when run_mode is merge"},
     "run_mode": {"type": "string", "enum": ["batch", "merge"], "default": "batch", "description": "Run alignment/assembly batches or merge completed per-run assemblies"},
-    "defer_merge": {"type": "boolean", "default": false, "description": "In batch mode, defer species-level merge and quantification until all waves are complete"},
+    "defer_merge": {"type": "string", "enum": ["true", "false"], "default": "false", "description": "In batch mode, defer species-level merge and quantification until all waves are complete"},
     "outdir": {"type": "string", "description": "Durable output directory"},
     "reference_cache_dir": {"type": "string", "description": "Persistent reference cache root; defaults to <outdir>/per_assembly"},
     "tracedir": {"type": "string", "description": "Optional Nextflow execution report directory"}
