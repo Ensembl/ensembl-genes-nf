@@ -297,7 +297,7 @@ process STRINGTIE3_ASSEMBLE {
     stringtie -L ${nascent_args} -p ${task.cpus} \\
       -A gene_abundances.tsv \\
       -o '${meta.run_id}.assembled.gtf' ${bam}
-    if awk -F '\t' '$3 == "transcript" { found=1; exit } END { exit !found }' '${meta.run_id}.assembled.gtf'; then
+    if awk -F '\t' '\$3 == "transcript" { found=1; exit } END { exit !found }' '${meta.run_id}.assembled.gtf'; then
       printf 'TRANSCRIPTS_FOUND\\n' > assembly_status.txt
     else
       printf 'NO_TRANSCRIPTS\\n' > assembly_status.txt
