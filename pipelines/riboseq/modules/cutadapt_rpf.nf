@@ -36,8 +36,12 @@ process CUTADAPT_RPF {
 
     if (params.fastp_adapter_sequence) {
         adapter_args = "--adapter '${params.fastp_adapter_sequence}'"
-    } else if (adapter_fasta.name != 'NO_ADAPTER_FILE') {
+    } else if (adapter_fasta.name != 'NO_ADAPTER_FILE' && adapter_fasta.size() > 0) {
         adapter_args = "--adapter file:${adapter_fasta}"
+    } else if (adapter_fasta.name != 'NO_ADAPTER_FILE') {
+        // FastQC found no recognized adapter. Preserve the reads and record
+        // the no-adapter result instead of passing an empty FASTA to Cutadapt.
+        adapter_args = ''
     } else if ((params.adapter_detection_method ?: 'auto') != 'auto') {
         throw new IllegalArgumentException(
             "CUTADAPT_RPF requires --fastp_adapter_sequence or --fastp_adapter_fasta"
@@ -51,15 +55,20 @@ process CUTADAPT_RPF {
     """
     set -euo pipefail
 
-    cutadapt \\
-        --cores ${task.cpus} \\
-        --minimum-length ${min_len} \\
-        ${max_len_arg} \\
-        --quality-cutoff ${quality} \\
-        ${adapter_args} \\
-        ${args} \\
-        --output ${prefix}_trimmed.fastq.gz \\
-        ${reads} > ${prefix}_cutadapt.log 2>&1
+    if [ "${adapter_fasta.name}" != "NO_ADAPTER_FILE" ] && [ ! -s "${adapter_fasta}" ]; then
+        cp ${reads} ${prefix}_trimmed.fastq.gz
+        printf 'No recognized adapter was found for this sample; input copied unchanged.\\n' > ${prefix}_cutadapt.log
+    else
+        cutadapt \\
+            --cores ${task.cpus} \\
+            --minimum-length ${min_len} \\
+            ${max_len_arg} \\
+            --quality-cutoff ${quality} \\
+            ${adapter_args} \\
+            ${args} \\
+            --output ${prefix}_trimmed.fastq.gz \\
+            ${reads} > ${prefix}_cutadapt.log 2>&1
+    fi
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
