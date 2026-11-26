@@ -3,13 +3,6 @@ name: Deploy Pipeline Documentation
 # It can be extended to support multiple pipelines in the future
 
 on:
-    push:
-        branches:
-            - dev # Deploy from this branch during development
-        paths:
-            - "docs/**"
-            - "mkdocs.yml"
-            - ".github/workflows/docs.yaml"
 
     pull_request:
         branches:
