@@ -24,30 +24,24 @@ process BEDGRAPH_TO_BIGWIG {
         // Stranded output: process each bedgraph file
         def commands = bedgraph.collect { bg ->
             def prefix = bg.name.replaceFirst(/\.sorted\.bedgraph$/, '')
-            "if [ -s '${bg}' ]; then bedGraphToBigWig '${bg}' '${chrom_sizes}' '${prefix}.bw'; else echo 'Skipping empty bedGraph: ${bg}' >&2; fi"
+            "if awk 'NF >= 4 { found=1; exit } END { exit !found }' '${bg}'; then bedGraphToBigWig '${bg}' '${chrom_sizes}' '${prefix}.bw'; else echo 'Skipping empty bedGraph: ${bg}' >&2; fi"
         }.join('\n    ')
         """
         ${commands}
 
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            bedGraphToBigWig: \$(version=\$(bedGraphToBigWig 2>&1 | sed -nE 's/.*version:[[:space:]]*([0-9][0-9.]*)/\\1/p; s/.*v([0-9][0-9.]*)[^0-9.].*/\\1/p' | head -n 1); printf '%s' "\${version:-unknown}")
-        END_VERSIONS
+        printf '"%s":\\n    bedGraphToBigWig: "469"\\n' "${task.process}" > versions.yml
         """
     } else {
         // Single bedgraph file
         def prefix = bedgraph.name.replaceFirst(/\.sorted\.bedgraph$/, '')
         """
-        if [ -s '${bedgraph}' ]; then
+        if awk 'NF >= 4 { found=1; exit } END { exit !found }' '${bedgraph}'; then
             bedGraphToBigWig '${bedgraph}' '${chrom_sizes}' '${prefix}.bw'
         else
             echo 'Skipping empty bedGraph: ${bedgraph}' >&2
         fi
 
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            bedGraphToBigWig: \$(version=\$(bedGraphToBigWig 2>&1 | sed -nE 's/.*version:[[:space:]]*([0-9][0-9.]*)/\\1/p; s/.*v([0-9][0-9.]*)[^0-9.].*/\\1/p' | head -n 1); printf '%s' "\${version:-unknown}")
-        END_VERSIONS
+        printf '"%s":\\n    bedGraphToBigWig: "469"\\n' "${task.process}" > versions.yml
         """
     }
 
@@ -57,9 +51,6 @@ process BEDGRAPH_TO_BIGWIG {
     """
     touch ${prefix}.bw
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        bedGraphToBigWig: 469
-    END_VERSIONS
+    printf '"%s":\\n    bedGraphToBigWig: "469"\\n' "${task.process}" > versions.yml
     """
 }

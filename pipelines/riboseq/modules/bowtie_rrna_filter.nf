@@ -71,11 +71,11 @@ EOF
     echo "Bowtie alignment summary:" >> ${prefix}_rrna_filter.log
     cat ${prefix}_bowtie.stderr >> ${prefix}_rrna_filter.log
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        bowtie: \$(bowtie --version 2>&1 | head -n1 | sed 's/.*version //g')
-        samtools: \$(samtools --version 2>&1 | head -n1 | sed 's/samtools //g')
-    END_VERSIONS
+    printf '"%s":\\n    bowtie: "%s"\\n    samtools: "%s"\\n' \\
+        "${task.process}" \\
+        "\$(bowtie --version 2>&1 | head -n1 | sed 's/.*version //g')" \\
+        "\$(samtools --version 2>&1 | head -n1 | sed 's/samtools //g')" \\
+        > versions.yml
     """
 
     stub:
@@ -91,10 +91,7 @@ Filtered reads (no rRNA): 500000
 Percentage retained: 50.0
 EOF
 
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        bowtie: 1.3.1
-        samtools: 1.19
-    END_VERSIONS
+    printf '"%s":\\n    bowtie: "1.3.1"\\n    samtools: "1.19"\\n' \\
+        "${task.process}" > versions.yml
     """
 }
