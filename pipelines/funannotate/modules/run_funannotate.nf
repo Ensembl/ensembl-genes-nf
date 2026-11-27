@@ -15,7 +15,7 @@ process RUN_FUNANNOTATE {
 
     output:
     tuple val(meta), path('predict_results'), emit: results
-    path 'predict_results/*.gff3', emit: gff3
+    path 'predict_results/predict_results/*.gff3', emit: gff3
     path 'funannotate.stdout.log', emit: stdout
     path 'funannotate.stderr.log', emit: stderr
     path 'versions.yml', emit: versions

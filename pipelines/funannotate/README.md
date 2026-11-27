@@ -18,15 +18,21 @@ Funannotate process.
 
 1. Parse and validate the manifest.
 2. Stage the local genome and optional local evidence files.
-3. Download the CRAMs from FTP and verify requested SHA-256 checksums.
-4. Create a genome FASTA index with `samtools faidx`.
-5. Check every CRAM with `samtools quickcheck`.
-6. Convert each CRAM to BAM using the staged genome as the reference.
-7. Merge the converted BAMs, sort the merged BAM, and create its index. The
+3. Discover CRAMs from the FTP directory, then download each CRAM as a
+   separate Slurm task. Downloads run in parallel up to the configured
+   `maxForks` limit and completed files in `stage_dir` are reused. Interrupted
+   downloads are kept as `.partial` files and resumed by curl.
+4. Assemble the local files and downloaded CRAMs into the staged input
+   directory, verifying requested SHA-256 checksums where explicit CRAM URLs
+   were supplied.
+5. Create a genome FASTA index with `samtools faidx`.
+6. Check every CRAM with `samtools quickcheck`.
+7. Convert each CRAM to BAM using the staged genome as the reference.
+8. Merge the converted BAMs, sort the merged BAM, and create its index. The
    main BAM passed to Funannotate is `staged/all_runs.merged.sorted.bam`.
-8. Convert all protein-alignment GTFs into one Funannotate GFF3 file.
-9. Convert the Scallop GTF to transcript FASTA with `gffread` when present.
-10. Run `funannotate predict` using the merged BAM and available evidence.
+9. Convert all protein-alignment GTFs into one Funannotate GFF3 file.
+10. Convert the Scallop GTF to transcript FASTA with `gffread` when present.
+11. Run `funannotate predict` using the merged BAM and available evidence.
 
 The original staged inputs are retained. Derived files are added to the staged
 directory for the Funannotate task.
@@ -103,7 +109,7 @@ runtime; no local absolute image paths are required.
 
 | Process | Container |
 |---|---|
-| FTP staging | `quay.io/biocontainers/curl:7.80.0` |
+| FTP discovery and CRAM downloads | `quay.io/biocontainers/curl:7.80.0` |
 | CRAM validation, conversion, and BAM merging | `quay.io/biocontainers/samtools:1.20` |
 | Scallop GTF conversion | `docker://getwilds/gffread:0.12.7` |
 | Protein-alignment conversion | Repository-standard `python` process container |
